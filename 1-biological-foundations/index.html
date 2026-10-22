@@ -1,0 +1,879 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview · Lecture 1 · Biological foundations for statistical genetics</title>
+<meta name="description" content="Lecture 1 of a statistical genetics course for data scientists: the biology and the measurement processes behind genotype–phenotype data, organized around two mental models, with UK Biobank as the running example.">
+<link rel="stylesheet" href="assets/css/site.css">
+<script defer src="assets/js/pages.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<style>
+body[data-page="index"] .strip-svg a:hover > rect:first-child,
+body[data-page="index"] .strip-svg a:focus-visible > rect:first-child { stroke: var(--accent); stroke-width: 2.5; }
+body[data-page="index"] .strip-svg a:focus { outline: none; }
+body[data-page="index"] ol.mx-legend { list-style: none; counter-reset: mx; padding-left: 0; margin: 0.8em 0 0; display: grid; gap: 8px; }
+body[data-page="index"] ol.mx-legend > li { counter-increment: mx; position: relative; padding-left: 2.2em; margin: 0; line-height: 1.5; }
+body[data-page="index"] ol.mx-legend > li::before { content: counter(mx); position: absolute; left: 0; top: 0.1em; width: 1.55em; height: 1.55em; border-radius: 50%; background: var(--fg); color: #fff; font-weight: 700; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+body[data-page="index"] .mm-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+body[data-page="index"] .mm-scroll > svg { display: block; width: 100%; height: auto; }
+body[data-page="index"] .go { font-size: 0.86rem; color: var(--fg-muted); }
+body[data-page="index"] ul.checklist { list-style: none; padding-left: 0; display: grid; gap: 6px; }
+body[data-page="index"] ul.checklist > li { position: relative; padding-left: 1.8em; margin: 0; }
+body[data-page="index"] ul.checklist > li::before { content: ""; position: absolute; left: 0.1em; top: 0.3em; width: 0.95em; height: 0.95em; border: 2px solid var(--border-strong); border-radius: 3px; }
+body[data-page="index"] .swatch { display: inline-block; width: 0.95em; height: 0.95em; border-radius: 3px; vertical-align: -0.12em; margin-right: 4px; border: 1px solid rgba(0,0,0,.15); }
+body[data-page="index"] .conventions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px 14px; margin: 0.8em 0 1.2em; }
+body[data-page="index"] .conventions > div { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--bg); font-size: 0.92rem; line-height: 1.5; }
+body[data-page="index"] .conventions .cv-head { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 2px; }
+body[data-page="index"] .cv-chip { font-size: 0.66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #fff; border-radius: 999px; padding: 2px 8px; }
+body[data-page="index"] .part-label { font-size: 0.8rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin: 1.2em 0 0.2em; }
+body[data-page="index"] .part-label.a { color: var(--mm); }
+body[data-page="index"] .part-label.b { color: var(--data); }
+body[data-page="index"] .part-label.w { color: var(--fg-muted); }
+body[data-page="index"] .card-grid { margin-top: 0.5em; }
+body[data-page="index"] .card .card-l2 { display: block; margin-top: 6px; font-size: 0.78rem; color: var(--bridge); font-weight: 600; }
+body[data-page="index"] table.examples td:first-child { white-space: nowrap; }
+body[data-page="index"] table.examples td { vertical-align: top; }
+</style>
+</head>
+<body data-page="index">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Biological foundations for statistical genetics</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="lecture-2-bridge.html" class="optional">Lecture 2 decoder</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Start here · Overview</p>
+  <h1>Biological foundations for statistical genetics</h1>
+  <p class="lede">Statistical genetics analyzes a table: one row per person, one column per position in the genome where people differ, plus columns for traits such as cholesterol level or heart disease. This lecture explains where every part of that table comes from: the biology that creates genetic differences between people, and the measurement processes that turn people into rows of data. It prepares you for Lecture 2, an introduction to genome-wide association studies, and for working with UK Biobank data.</p>
+  <div class="chips">
+    <span class="chip core">Prepares you for Lecture 2</span>
+    <span class="chip">13 topic pages · 2 parts</span>
+    <span class="chip data">Running example: UK Biobank</span>
+  </div>
+</header>
+
+<h2 id="how-to-use">How to use this site</h2>
+<p>Each topic page starts with a <strong>mental model</strong>: one figure and one sentence that hold the main ideas of the page. The rest of the page fills in details that hang off that model. Read the mental model first; if you remember only the mental models, you will be able to follow Lecture 2.</p>
+<div class="conventions">
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--mm)">Mental model</span></div>The one picture to remember from a page. Purple boxes.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--bridge)">Lecture 2</span></div>Links a concept to specific Lecture 2 slides, with a thumbnail of the slide. Amber boxes.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--data)">In the data</span></div>Where the concept shows up in real files, columns or quality checks. Teal boxes.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--key)">Key points</span></div>A short summary of what matters most. Green boxes.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--pitfall)">Common confusion</span></div>A mistake that is easy to make, and how to avoid it. Red boxes.</div>
+  <div><div class="cv-head"><span class="tag core">Core</span> <span class="tag optional">Optional</span></div>Every section is tagged. Core sections are needed for Lecture 2; optional sections add depth.</div>
+  <div><div class="cv-head">Underlined terms</div>Technical terms have a dotted underline. Hover over one (or tap it once on a phone) to see its definition; click it (or tap again) to open its full <a href="glossary.html">glossary</a> entry.</div>
+  <div><div class="cv-head">Figures and widgets</div>Click an image to enlarge it. Interactive widgets use simulated data, labeled <span class="illustrative">Simulated</span>; all values for individual people anywhere on this site are made up.</div>
+</div>
+
+<section class="mental-model" aria-labelledby="mm1">
+  <span class="mm-label">Mental model 1 · The zoom ladder</span>
+  <h2 id="mm1" data-toc="Mental model 1: from molecule to matrix">From molecule to matrix</h2>
+  <figure>
+    <div class="mm-scroll"><svg class="strip-svg" viewBox="0 0 900 300" role="img" aria-labelledby="st-t st-d" style="min-width:720px">
+<title id="st-t">From molecule to matrix</title>
+<desc id="st-d">Ten linked levels, left to right: a cell, its chromosomes, the DNA molecule, a gene, a variant, a family, a population, a trait, a biobank, and the data matrix. Braces group the first eight as the biological system (Part A) and the last two as measurement (Part B).</desc>
+<defs><marker id="st-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker></defs>
+<line x1="91" y1="122" x2="98" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="cells-chromosomes.html" aria-label="Cell: go to the page">
+<rect x="10" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="50.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Cell</text>
+<text x="50.0" y="191" text-anchor="middle" class="t-xs">nucleus holds</text>
+<text x="50.0" y="204" text-anchor="middle" class="t-xs">the genome</text>
+<ellipse cx="50.0" cy="122" rx="32" ry="26" fill="#fdf3e7" stroke="#d9a35a" stroke-width="1.5"/>
+<circle cx="54.0" cy="122" r="11" fill="#e8e2fb" stroke="var(--mm)" stroke-width="1.5"/>
+</a>
+<line x1="180" y1="122" x2="187" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="cells-chromosomes.html" aria-label="Chromosomes: go to the page">
+<rect x="99" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="139.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Chromosomes</text>
+<text x="139.0" y="191" text-anchor="middle" class="t-xs">46 per cell:</text>
+<text x="139.0" y="204" text-anchor="middle" class="t-xs">2 sets of 23</text>
+<rect x="121.0" y="100.0" width="8" height="44" rx="4" fill="var(--mat-fill)" stroke="var(--mat)" stroke-width="1.3"/>
+<line x1="121.0" y1="116.72" x2="129.0" y2="116.72" stroke="var(--mat)" stroke-width="1.3"/>
+<rect x="131.0" y="100.0" width="8" height="44" rx="4" fill="var(--pat-fill)" stroke="var(--pat)" stroke-width="1.3"/>
+<line x1="131.0" y1="116.72" x2="139.0" y2="116.72" stroke="var(--pat)" stroke-width="1.3"/>
+<rect x="143.0" y="107.0" width="8" height="30" rx="4" fill="var(--mat-fill)" stroke="var(--mat)" stroke-width="1.3"/>
+<line x1="143.0" y1="118.4" x2="151.0" y2="118.4" stroke="var(--mat)" stroke-width="1.3"/>
+<rect x="153.0" y="107.0" width="8" height="30" rx="4" fill="var(--pat-fill)" stroke="var(--pat)" stroke-width="1.3"/>
+<line x1="153.0" y1="118.4" x2="161.0" y2="118.4" stroke="var(--pat)" stroke-width="1.3"/>
+</a>
+<line x1="269" y1="122" x2="276" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="dna.html" aria-label="DNA: go to the page">
+<rect x="188" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="228.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">DNA</text>
+<text x="228.0" y="191" text-anchor="middle" class="t-xs">two strands of</text>
+<text x="228.0" y="204" text-anchor="middle" class="t-xs">A, C, G, T</text>
+<line x1="196.0" y1="110" x2="260.0" y2="110" stroke="#8a93a0" stroke-width="3"/>
+<line x1="196.0" y1="134" x2="260.0" y2="134" stroke="#8a93a0" stroke-width="3"/>
+<line x1="204.0" y1="112" x2="204.0" y2="121" stroke="var(--base-a)" stroke-width="3"/>
+<line x1="204.0" y1="123" x2="204.0" y2="132" stroke="var(--base-t)" stroke-width="3"/>
+<line x1="216.0" y1="112" x2="216.0" y2="121" stroke="var(--base-c)" stroke-width="3"/>
+<line x1="216.0" y1="123" x2="216.0" y2="132" stroke="var(--base-g)" stroke-width="3"/>
+<line x1="228.0" y1="112" x2="228.0" y2="121" stroke="var(--base-g)" stroke-width="3"/>
+<line x1="228.0" y1="123" x2="228.0" y2="132" stroke="var(--base-c)" stroke-width="3"/>
+<line x1="240.0" y1="112" x2="240.0" y2="121" stroke="var(--base-t)" stroke-width="3"/>
+<line x1="240.0" y1="123" x2="240.0" y2="132" stroke="var(--base-a)" stroke-width="3"/>
+<line x1="252.0" y1="112" x2="252.0" y2="121" stroke="var(--base-c)" stroke-width="3"/>
+<line x1="252.0" y1="123" x2="252.0" y2="132" stroke="var(--base-g)" stroke-width="3"/>
+</a>
+<line x1="358" y1="122" x2="365" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="genes-expression.html" aria-label="Genes: go to the page">
+<rect x="277" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="317.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Genes</text>
+<text x="317.0" y="191" text-anchor="middle" class="t-xs">DNA → RNA</text>
+<text x="317.0" y="204" text-anchor="middle" class="t-xs">→ protein</text>
+<line x1="283.0" y1="126" x2="351.0" y2="126" stroke="#5a6370" stroke-width="1.5"/>
+<rect x="291.0" y="119" width="12" height="14" rx="2" fill="var(--q1)"/>
+<rect x="311.0" y="119" width="9" height="14" rx="2" fill="var(--q1)"/>
+<rect x="329.0" y="119" width="16" height="14" rx="2" fill="var(--q1)"/>
+<path d="M287.0,118 L287.0,106 L303.0,106" fill="none" stroke="var(--key)" stroke-width="1.6" marker-end="url(#st-arr)"/>
+</a>
+<line x1="447" y1="122" x2="454" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="variation.html" aria-label="Variants: go to the page">
+<rect x="366" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="406.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Variants</text>
+<text x="406.0" y="191" text-anchor="middle" class="t-xs">where genomes</text>
+<text x="406.0" y="204" text-anchor="middle" class="t-xs">differ</text>
+<text x="376.0" y="119" text-anchor="middle" class="t-mono base-A" style="font-size:12px">A</text>
+<text x="376.0" y="136" text-anchor="middle" class="t-mono base-A" style="font-size:12px">A</text>
+<text x="388.0" y="119" text-anchor="middle" class="t-mono base-C" style="font-size:12px">C</text>
+<text x="388.0" y="136" text-anchor="middle" class="t-mono base-C" style="font-size:12px">C</text>
+<text x="400.0" y="119" text-anchor="middle" class="t-mono base-G" style="font-size:12px">G</text>
+<text x="400.0" y="136" text-anchor="middle" class="t-mono base-G" style="font-size:12px">G</text>
+<rect x="406.0" y="106" width="12" height="34" rx="3" fill="#fff1b8" stroke="var(--bridge)" stroke-width="1"/>
+<text x="412.0" y="119" text-anchor="middle" class="t-mono base-T" style="font-size:12px">T</text>
+<text x="412.0" y="136" text-anchor="middle" class="t-mono base-C" style="font-size:12px">C</text>
+<text x="424.0" y="119" text-anchor="middle" class="t-mono base-C" style="font-size:12px">C</text>
+<text x="424.0" y="136" text-anchor="middle" class="t-mono base-C" style="font-size:12px">C</text>
+<text x="436.0" y="119" text-anchor="middle" class="t-mono base-A" style="font-size:12px">A</text>
+<text x="436.0" y="136" text-anchor="middle" class="t-mono base-A" style="font-size:12px">A</text>
+</a>
+<line x1="536" y1="122" x2="543" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="inheritance.html" aria-label="Families: go to the page">
+<rect x="455" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="495.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Families</text>
+<text x="495.0" y="191" text-anchor="middle" class="t-xs">meiosis mixes</text>
+<text x="495.0" y="204" text-anchor="middle" class="t-xs">parent copies</text>
+<rect x="465.0" y="96" width="16" height="16" fill="#fff" stroke="#5a6370" stroke-width="1.5"/>
+<circle cx="517.0" cy="104" r="8" fill="#fff" stroke="#5a6370" stroke-width="1.5"/>
+<line x1="481.0" y1="104" x2="509.0" y2="104" stroke="#5a6370" stroke-width="1.5"/>
+<line x1="495.0" y1="104" x2="495.0" y2="124" stroke="#5a6370" stroke-width="1.5"/>
+<rect x="487.0" y="124" width="16" height="16" fill="#fff" stroke="#5a6370" stroke-width="1.5"/>
+<rect x="489.0" y="144" width="5" height="12" fill="var(--mat-fill)" stroke="var(--mat)"/>
+<rect x="496.0" y="144" width="5" height="12" fill="var(--pat-fill)" stroke="var(--pat)"/>
+</a>
+<line x1="625" y1="122" x2="632" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="allele-frequencies.html" aria-label="Populations: go to the page">
+<rect x="544" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="584.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Populations</text>
+<text x="584.0" y="191" text-anchor="middle" class="t-xs">frequencies,</text>
+<text x="584.0" y="204" text-anchor="middle" class="t-xs">LD, ancestry</text>
+<circle cx="554.0" cy="100" r="3.6" fill="var(--g2)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="564.0" cy="100" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="574.0" cy="100" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="584.0" cy="100" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="594.0" cy="100" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="604.0" cy="100" r="3.6" fill="var(--g2)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="614.0" cy="100" r="3.6" fill="var(--g2)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="554.0" cy="110" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="564.0" cy="110" r="3.6" fill="var(--g2)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="574.0" cy="110" r="3.6" fill="var(--g2)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="584.0" cy="110" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="594.0" cy="110" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="604.0" cy="110" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="614.0" cy="110" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="554.0" cy="120" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="564.0" cy="120" r="3.6" fill="var(--g2)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="574.0" cy="120" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="584.0" cy="120" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="594.0" cy="120" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="604.0" cy="120" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="614.0" cy="120" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="554.0" cy="130" r="3.6" fill="var(--g2)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="564.0" cy="130" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="574.0" cy="130" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="584.0" cy="130" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="594.0" cy="130" r="3.6" fill="var(--g2)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="604.0" cy="130" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="614.0" cy="130" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="554.0" cy="140" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="564.0" cy="140" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="574.0" cy="140" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="584.0" cy="140" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="594.0" cy="140" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="604.0" cy="140" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+<circle cx="614.0" cy="140" r="3.6" fill="var(--g0)" stroke="#9aa6b5" stroke-width="0.8"/>
+</a>
+<line x1="714" y1="122" x2="721" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="genotype-to-phenotype.html" aria-label="Traits: go to the page">
+<rect x="633" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="673.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Traits</text>
+<text x="673.0" y="191" text-anchor="middle" class="t-xs">genes +</text>
+<text x="673.0" y="204" text-anchor="middle" class="t-xs">environment</text>
+<line x1="643.0" y1="144" x2="703.0" y2="144" stroke="#9aa6b5" stroke-width="1"/>
+<line x1="653.0" y1="114" x2="653.0" y2="142" stroke="#5a6370" stroke-width="1.2"/>
+<rect x="647.0" y="122" width="12" height="14" fill="var(--g1)" stroke="#5a6370" stroke-width="1.2"/>
+<line x1="647.0" y1="129" x2="659.0" y2="129" stroke="#1d2127" stroke-width="1.6"/>
+<text x="653.0" y="155" text-anchor="middle" class="t-xs" style="font-size:9px">0</text>
+<line x1="673.0" y1="106" x2="673.0" y2="134" stroke="#5a6370" stroke-width="1.2"/>
+<rect x="667.0" y="114" width="12" height="14" fill="var(--g1)" stroke="#5a6370" stroke-width="1.2"/>
+<line x1="667.0" y1="121" x2="679.0" y2="121" stroke="#1d2127" stroke-width="1.6"/>
+<text x="673.0" y="155" text-anchor="middle" class="t-xs" style="font-size:9px">1</text>
+<line x1="693.0" y1="98" x2="693.0" y2="126" stroke="#5a6370" stroke-width="1.2"/>
+<rect x="687.0" y="106" width="12" height="14" fill="var(--g1)" stroke="#5a6370" stroke-width="1.2"/>
+<line x1="687.0" y1="113" x2="699.0" y2="113" stroke="#1d2127" stroke-width="1.6"/>
+<text x="693.0" y="155" text-anchor="middle" class="t-xs" style="font-size:9px">2</text>
+</a>
+<line x1="803" y1="122" x2="810" y2="122" stroke="#8a93a0" stroke-width="1.5" marker-end="url(#st-arr)"/>
+<a href="uk-biobank.html" aria-label="Biobank: go to the page">
+<rect x="722" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="762.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Biobank</text>
+<text x="762.0" y="191" text-anchor="middle" class="t-xs">recruit and</text>
+<text x="762.0" y="204" text-anchor="middle" class="t-xs">measure people</text>
+<circle cx="746.0" cy="106" r="7" fill="#fff" stroke="#5a6370" stroke-width="1.5"/>
+<path d="M734.0,136 q0,-20 12,-20 q12,0 12,20 z" fill="#fff" stroke="#5a6370" stroke-width="1.5"/>
+<rect x="768.0" y="100" width="10" height="34" rx="4" fill="#fff" stroke="#5a6370" stroke-width="1.5"/>
+<rect x="769.5" y="118" width="7" height="14.5" rx="2" fill="#d9534f" opacity=".75"/>
+<rect x="769.5" y="114" width="7" height="4" fill="#f5f0dc"/>
+<rect x="782.0" y="104" width="14" height="22" rx="2" fill="#fff" stroke="#5a6370" stroke-width="1.3"/>
+<line x1="785.0" y1="110" x2="793.0" y2="110" stroke="#9aa6b5" stroke-width="1.2"/>
+<line x1="785.0" y1="116" x2="793.0" y2="116" stroke="#9aa6b5" stroke-width="1.2"/>
+<line x1="785.0" y1="122" x2="793.0" y2="122" stroke="#9aa6b5" stroke-width="1.2"/>
+</a>
+<a href="the-data.html" aria-label="Data matrix: go to the page">
+<rect x="811" y="70" width="80" height="150" rx="10" fill="#fff" stroke="#d9dee5" stroke-width="1.5"/>
+<text x="851.0" y="174" text-anchor="middle" class="t-b" style="font-size:12px">Data matrix</text>
+<text x="851.0" y="191" text-anchor="middle" class="t-xs">rows: people</text>
+<text x="851.0" y="204" text-anchor="middle" class="t-xs">cols: variants</text>
+<rect x="817.0" y="96" width="10" height="10" fill="var(--g1)"/>
+<rect x="828.0" y="96" width="10" height="10" fill="var(--g2)"/>
+<rect x="839.0" y="96" width="10" height="10" fill="var(--g1)"/>
+<rect x="850.0" y="96" width="10" height="10" fill="var(--g1)"/>
+<rect x="861.0" y="96" width="10" height="10" fill="var(--g2)"/>
+<rect x="817.0" y="107" width="10" height="10" fill="var(--g2)"/>
+<rect x="828.0" y="107" width="10" height="10" fill="var(--g0)"/>
+<rect x="839.0" y="107" width="10" height="10" fill="var(--g0)"/>
+<rect x="850.0" y="107" width="10" height="10" fill="var(--g2)"/>
+<rect x="861.0" y="107" width="10" height="10" fill="var(--g1)"/>
+<rect x="817.0" y="118" width="10" height="10" fill="var(--g2)"/>
+<rect x="828.0" y="118" width="10" height="10" fill="var(--g0)"/>
+<rect x="839.0" y="118" width="10" height="10" fill="var(--g0)"/>
+<rect x="850.0" y="118" width="10" height="10" fill="var(--g1)"/>
+<rect x="861.0" y="118" width="10" height="10" fill="var(--g1)"/>
+<rect x="817.0" y="129" width="10" height="10" fill="var(--g0)"/>
+<rect x="828.0" y="129" width="10" height="10" fill="var(--g0)"/>
+<rect x="839.0" y="129" width="10" height="10" fill="var(--g2)"/>
+<rect x="850.0" y="129" width="10" height="10" fill="var(--g0)"/>
+<rect x="861.0" y="129" width="10" height="10" fill="var(--g2)"/>
+<rect x="817.0" y="140" width="10" height="10" fill="var(--g1)"/>
+<rect x="828.0" y="140" width="10" height="10" fill="var(--g1)"/>
+<rect x="839.0" y="140" width="10" height="10" fill="var(--g2)"/>
+<rect x="850.0" y="140" width="10" height="10" fill="var(--g0)"/>
+<rect x="861.0" y="140" width="10" height="10" fill="var(--g2)"/>
+<rect x="875.0" y="96" width="10" height="10" fill="var(--bridge-soft)" stroke="#e3c896" stroke-width="0.8"/>
+<rect x="875.0" y="107" width="10" height="10" fill="var(--bridge-soft)" stroke="#e3c896" stroke-width="0.8"/>
+<rect x="875.0" y="118" width="10" height="10" fill="var(--bridge-soft)" stroke="#e3c896" stroke-width="0.8"/>
+<rect x="875.0" y="129" width="10" height="10" fill="var(--bridge-soft)" stroke="#e3c896" stroke-width="0.8"/>
+<rect x="875.0" y="140" width="10" height="10" fill="var(--bridge-soft)" stroke="#e3c896" stroke-width="0.8"/>
+</a>
+<path d="M10,64 L10,56 L713,56 L713,64" fill="none" stroke="var(--mm)" stroke-width="2"/>
+<text x="361.5" y="48" text-anchor="middle" class="t-b" style="fill:var(--mm);font-size:12.5px">Part A · the biological system (pages 1–9)</text>
+<path d="M722,64 L722,56 L891,56 L891,64" fill="none" stroke="var(--data)" stroke-width="2"/>
+<text x="806.5" y="48" text-anchor="middle" class="t-b" style="fill:var(--data);font-size:12.5px">Part B · measuring it (10–13)</text>
+<text x="50.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">page 1</text>
+<text x="139.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">page 1</text>
+<text x="228.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">page 2</text>
+<text x="317.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">page 3</text>
+<text x="406.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">page 4</text>
+<text x="495.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">page 5</text>
+<text x="584.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">pages 6–8</text>
+<text x="673.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">page 9</text>
+<text x="762.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">pages 10–12</text>
+<text x="851.0" y="238" text-anchor="middle" class="t-xs" style="fill:var(--accent)">page 13</text>
+<text x="450.0" y="268" text-anchor="middle" class="t-sm">Each level explains one feature of the data matrix at the far right.</text>
+</svg></div>
+  </figure>
+  <p class="mm-statement">Genotype–phenotype data are the end of a chain. A cell carries chromosomes; each chromosome is one DNA molecule; genes are segments of that DNA; variants are positions where people's DNA differs; families pass variants from parents to children; populations differ in how common each variant is and in which variants travel together; traits depend on variants and environment; and a biobank measures many people to produce a data matrix.</p>
+  <ul class="mm-hooks">
+    <li>Each level explains one feature of the data matrix in mental model 2: for example, two copies of each chromosome are why every genotype is 0, 1 or 2.</li>
+    <li>Part A (pages 1–9) climbs the ladder through the biology. Part B (pages 10–13) shows how UK Biobank measured it. Click a box to go to its page.</li>
+  </ul>
+</section>
+
+<section class="mental-model" aria-labelledby="mm2">
+  <span class="mm-label">Mental model 2 · The data matrix</span>
+  <h2 id="mm2" data-toc="Mental model 2: the data matrix">Anatomy of the genotype–phenotype data matrix</h2>
+  <figure>
+    <div class="mm-scroll"><svg viewBox="0 0 760 392" role="img" aria-labelledby="mx-t mx-d" style="min-width:600px">
+<title id="mx-t">Anatomy of the genotype–phenotype data matrix</title>
+<desc id="mx-d">A grid of ten participants (rows, labeled by eid) by fourteen variants (columns, ordered by position along one chromosome). Entries count copies of one allele, 0, 1 or 2, shaded light to dark. Three entries are missing (NA); two columns hold fractional imputed dosages. A green box marks three neighboring columns whose values move together (linkage disequilibrium); a purple box marks three rows of people whose ancestors lived in a different region. Below the grid, each column mean divided by two gives an allele frequency. To the right are covariate columns (age, sex, first principal component) and the phenotype column y. Numbered badges 1 to 10 match the numbered list under the figure.</desc>
+<defs><pattern id="mx-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><line x1="0" y1="0" x2="0" y2="6" stroke="#c9cfd8" stroke-width="2"/></pattern></defs>
+<text x="100" y="18" class="t-sm">positions along one chromosome →</text>
+<rect x="100" y="26" width="420" height="12" rx="6" fill="var(--pat-fill)" stroke="var(--pat)" stroke-width="1.5"/>
+<line x1="115.0" y1="38" x2="115.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="115.0" y="67" text-anchor="middle" class="t-xs">v1</text>
+<line x1="145.0" y1="38" x2="145.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="145.0" y="67" text-anchor="middle" class="t-xs">v2</text>
+<line x1="175.0" y1="38" x2="175.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="175.0" y="67" text-anchor="middle" class="t-xs">v3</text>
+<line x1="205.0" y1="38" x2="205.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="205.0" y="67" text-anchor="middle" class="t-xs">v4</text>
+<line x1="235.0" y1="38" x2="235.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="235.0" y="67" text-anchor="middle" class="t-xs">v5</text>
+<line x1="265.0" y1="38" x2="265.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="265.0" y="67" text-anchor="middle" class="t-xs">v6</text>
+<line x1="295.0" y1="38" x2="295.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="295.0" y="67" text-anchor="middle" class="t-xs">v7</text>
+<line x1="325.0" y1="38" x2="325.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="325.0" y="67" text-anchor="middle" class="t-xs">v8</text>
+<line x1="355.0" y1="38" x2="355.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="355.0" y="67" text-anchor="middle" class="t-xs">v9</text>
+<line x1="385.0" y1="38" x2="385.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="385.0" y="67" text-anchor="middle" class="t-xs">v10</text>
+<line x1="415.0" y1="38" x2="415.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="415.0" y="67" text-anchor="middle" class="t-xs">v11</text>
+<line x1="445.0" y1="38" x2="445.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="445.0" y="67" text-anchor="middle" class="t-xs">v12</text>
+<line x1="475.0" y1="38" x2="475.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="475.0" y="67" text-anchor="middle" class="t-xs">v13</text>
+<line x1="505.0" y1="38" x2="505.0" y2="52" stroke="#b9c1cc" stroke-width="1"/>
+<text x="505.0" y="67" text-anchor="middle" class="t-xs">v14</text>
+<text x="92" y="67" text-anchor="end" class="t-xs" style="font-weight:700">eid</text>
+<text x="92" y="92.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1001</text>
+<text x="92" y="116.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1002</text>
+<text x="92" y="140.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1003</text>
+<text x="92" y="164.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1004</text>
+<text x="92" y="188.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1005</text>
+<text x="92" y="212.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1006</text>
+<text x="92" y="236.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1007</text>
+<text x="92" y="260.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1008</text>
+<text x="92" y="284.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1009</text>
+<text x="92" y="308.0" text-anchor="end" class="t-xs" style="font-family:var(--mono)">1010</text>
+<rect x="100" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="115.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="130" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="145.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="160" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="175.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="190" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="205.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="220" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="235.0" y="92.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">1.01</text>
+<rect x="250" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="265.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="280" y="76" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="295.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="310" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="325.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="340" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="355.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="370" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="385.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="400" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="415.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="430" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="445.0" y="92.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.89</text>
+<rect x="460" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="475.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="490" y="76" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="505.0" y="92.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="100" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="115.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="130" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="145.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="160" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="175.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="190" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="205.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="220" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="235.0" y="116.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">1.02</text>
+<rect x="250" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="265.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="280" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="295.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="310" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="325.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="340" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="355.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="370" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="385.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="400" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="415.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="430" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="445.0" y="116.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">1.11</text>
+<rect x="460" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="475.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="490" y="100" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="505.0" y="116.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="100" y="124" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="115.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="130" y="124" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="145.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="160" y="124" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="175.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="190" y="124" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="205.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="220" y="124" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="235.0" y="140.0" text-anchor="middle" style="font-size:9.5px;fill:#fff;font-family:var(--mono)">2.00</text>
+<rect x="250" y="124" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="265.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="280" y="124" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="295.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="310" y="124" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="325.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="340" y="124" width="30" height="24" fill="url(#mx-hatch)" stroke="#fff"/>
+<text x="355.0" y="140.0" text-anchor="middle" class="t-xs" style="font-weight:700">NA</text>
+<rect x="370" y="124" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="385.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="400" y="124" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="415.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="430" y="124" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="445.0" y="140.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.05</text>
+<rect x="460" y="124" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="475.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="490" y="124" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="505.0" y="140.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="100" y="148" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="115.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="130" y="148" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="145.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="160" y="148" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="175.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="190" y="148" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="205.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="220" y="148" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="235.0" y="164.0" text-anchor="middle" style="font-size:9.5px;fill:#fff;font-family:var(--mono)">1.89</text>
+<rect x="250" y="148" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="265.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="280" y="148" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="295.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="310" y="148" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="325.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="340" y="148" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="355.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="370" y="148" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="385.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="400" y="148" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="415.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="430" y="148" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="445.0" y="164.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.05</text>
+<rect x="460" y="148" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="475.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="490" y="148" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="505.0" y="164.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="100" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="115.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="130" y="172" width="30" height="24" fill="url(#mx-hatch)" stroke="#fff"/>
+<text x="145.0" y="188.0" text-anchor="middle" class="t-xs" style="font-weight:700">NA</text>
+<rect x="160" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="175.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="190" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="205.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="220" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="235.0" y="188.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.89</text>
+<rect x="250" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="265.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="280" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="295.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="310" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="325.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="340" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="355.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="370" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="385.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="400" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="415.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="430" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="445.0" y="188.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.93</text>
+<rect x="460" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="475.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="490" y="172" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="505.0" y="188.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="100" y="196" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="115.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="130" y="196" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="145.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="160" y="196" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="175.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="190" y="196" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="205.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="220" y="196" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="235.0" y="212.0" text-anchor="middle" style="font-size:9.5px;fill:#fff;font-family:var(--mono)">2.00</text>
+<rect x="250" y="196" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="265.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="280" y="196" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="295.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="310" y="196" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="325.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="340" y="196" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="355.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="370" y="196" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="385.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="400" y="196" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="415.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="430" y="196" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="445.0" y="212.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.01</text>
+<rect x="460" y="196" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="475.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="490" y="196" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="505.0" y="212.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="100" y="220" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="115.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="130" y="220" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="145.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="160" y="220" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="175.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="190" y="220" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="205.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="220" y="220" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="235.0" y="236.0" text-anchor="middle" style="font-size:9.5px;fill:#fff;font-family:var(--mono)">1.98</text>
+<rect x="250" y="220" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="265.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="280" y="220" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="295.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="310" y="220" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="325.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="340" y="220" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="355.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="370" y="220" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="385.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="400" y="220" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="415.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="430" y="220" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="445.0" y="236.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.04</text>
+<rect x="460" y="220" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="475.0" y="236.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="490" y="220" width="30" height="24" fill="url(#mx-hatch)" stroke="#fff"/>
+<text x="505.0" y="236.0" text-anchor="middle" class="t-xs" style="font-weight:700">NA</text>
+<rect x="100" y="244" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="115.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="130" y="244" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="145.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="160" y="244" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="175.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="190" y="244" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="205.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="220" y="244" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="235.0" y="260.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.05</text>
+<rect x="250" y="244" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="265.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="280" y="244" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="295.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="310" y="244" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="325.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="340" y="244" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="355.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="370" y="244" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="385.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="400" y="244" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="415.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="430" y="244" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="445.0" y="260.0" text-anchor="middle" style="font-size:9.5px;fill:#fff;font-family:var(--mono)">2.00</text>
+<rect x="460" y="244" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="475.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="490" y="244" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="505.0" y="260.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="100" y="268" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="115.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="130" y="268" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="145.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="160" y="268" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="175.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="190" y="268" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="205.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="220" y="268" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="235.0" y="284.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.05</text>
+<rect x="250" y="268" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="265.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="280" y="268" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="295.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="310" y="268" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="325.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="340" y="268" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="355.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="370" y="268" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="385.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="400" y="268" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="415.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="430" y="268" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="445.0" y="284.0" text-anchor="middle" style="font-size:9.5px;fill:#fff;font-family:var(--mono)">1.90</text>
+<rect x="460" y="268" width="30" height="24" fill="var(--g1)" stroke="#fff"/>
+<text x="475.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">1</text>
+<rect x="490" y="268" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="505.0" y="284.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="100" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="115.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="130" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="145.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="160" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="175.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="190" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="205.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="220" y="292" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="235.0" y="308.0" text-anchor="middle" style="font-size:9.5px;fill:var(--fg);font-family:var(--mono)">0.05</text>
+<rect x="250" y="292" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="265.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="280" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="295.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="310" y="292" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="325.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="340" y="292" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="355.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="370" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="385.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="400" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="415.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="430" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="445.0" y="308.0" text-anchor="middle" style="font-size:9.5px;fill:#fff;font-family:var(--mono)">1.93</text>
+<rect x="460" y="292" width="30" height="24" fill="var(--g2)" stroke="#fff"/>
+<text x="475.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:#fff;font-family:var(--mono)">2</text>
+<rect x="490" y="292" width="30" height="24" fill="var(--g0)" stroke="#fff"/>
+<text x="505.0" y="308.0" text-anchor="middle" style="font-size:11px;fill:var(--fg);font-family:var(--mono)">0</text>
+<rect x="431" y="77" width="28" height="238" fill="none" stroke="var(--q2)" stroke-width="2" stroke-dasharray="4 3"/>
+<rect x="221" y="77" width="28" height="238" fill="none" stroke="var(--q2)" stroke-width="2" stroke-dasharray="4 3"/>
+<rect x="160" y="74" width="90" height="244" fill="none" stroke="var(--q3)" stroke-width="2.5" rx="3"/>
+<rect x="98" y="244" width="424" height="72" fill="none" stroke="var(--q7)" stroke-width="2.5" rx="3"/>
+<text x="92" y="346" text-anchor="end" class="t-xs" style="font-weight:700">mean ÷ 2</text>
+<text x="115.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.45</text>
+<text x="145.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.44</text>
+<text x="175.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.75</text>
+<text x="205.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.75</text>
+<text x="235.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.55</text>
+<text x="265.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.15</text>
+<text x="295.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.50</text>
+<text x="325.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.55</text>
+<text x="355.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.50</text>
+<text x="385.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.45</text>
+<text x="415.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.45</text>
+<text x="445.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.45</text>
+<text x="475.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.75</text>
+<text x="505.0" y="346" text-anchor="middle" style="font-size:9.5px;font-family:var(--mono);fill:var(--fg-muted)">0.50</text>
+<text x="310.0" y="372" text-anchor="middle" class="t-sm">genotype matrix G: n participants × m variants</text>
+<text x="570" y="67" text-anchor="middle" class="t-xs" style="font-weight:700">age</text>
+<rect x="550" y="76" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="92.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">57</text>
+<rect x="550" y="100" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="116.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">63</text>
+<rect x="550" y="124" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="140.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">48</text>
+<rect x="550" y="148" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="164.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">66</text>
+<rect x="550" y="172" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="188.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">52</text>
+<rect x="550" y="196" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="212.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">44</text>
+<rect x="550" y="220" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="236.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">61</text>
+<rect x="550" y="244" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="260.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">59</text>
+<rect x="550" y="268" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="284.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">50</text>
+<rect x="550" y="292" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="570" y="308.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">68</text>
+<text x="612" y="67" text-anchor="middle" class="t-xs" style="font-weight:700">sex</text>
+<rect x="592" y="76" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="92.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">F</text>
+<rect x="592" y="100" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="116.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">M</text>
+<rect x="592" y="124" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="140.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">F</text>
+<rect x="592" y="148" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="164.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">F</text>
+<rect x="592" y="172" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="188.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">M</text>
+<rect x="592" y="196" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="212.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">M</text>
+<rect x="592" y="220" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="236.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">F</text>
+<rect x="592" y="244" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="260.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">M</text>
+<rect x="592" y="268" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="284.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">F</text>
+<rect x="592" y="292" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="612" y="308.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">M</text>
+<text x="654" y="67" text-anchor="middle" class="t-xs" style="font-weight:700">PC1</text>
+<rect x="634" y="76" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="92.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">-.01</text>
+<rect x="634" y="100" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="116.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">-.02</text>
+<rect x="634" y="124" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="140.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">.00</text>
+<rect x="634" y="148" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="164.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">-.01</text>
+<rect x="634" y="172" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="188.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">.01</text>
+<rect x="634" y="196" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="212.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">-.02</text>
+<rect x="634" y="220" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="236.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">.00</text>
+<rect x="634" y="244" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="260.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">.09</text>
+<rect x="634" y="268" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="284.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">.11</text>
+<rect x="634" y="292" width="40" height="24" fill="#f1f3f6" stroke="#fff"/>
+<text x="654" y="308.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">.10</text>
+<text x="713" y="67" text-anchor="middle" class="t-xs" style="font-weight:700">y</text>
+<rect x="690" y="76" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="92.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">3.1</text>
+<rect x="690" y="100" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="116.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">4.6</text>
+<rect x="690" y="124" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="140.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">2.9</text>
+<rect x="690" y="148" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="164.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">3.8</text>
+<rect x="690" y="172" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="188.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">5.2</text>
+<rect x="690" y="196" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="212.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">3.3</text>
+<rect x="690" y="220" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="236.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">4.0</text>
+<rect x="690" y="244" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="260.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">3.6</text>
+<rect x="690" y="268" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="284.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">4.4</text>
+<rect x="690" y="292" width="46" height="24" fill="#fde9c4" stroke="#fff"/>
+<text x="713" y="308.0" text-anchor="middle" style="font-size:10.5px;font-family:var(--mono);fill:var(--fg)">2.7</text>
+<text x="612" y="18" text-anchor="middle" class="t-sm">covariates C</text>
+<text x="713" y="18" text-anchor="middle" class="t-sm">phenotype</text>
+<text x="713" y="31" text-anchor="middle" class="t-xs">(LDL, mmol/L)</text>
+<text x="612" y="346" text-anchor="middle" class="t-xs">from questionnaires,</text>
+<text x="612" y="359" text-anchor="middle" class="t-xs">measurements, genotypes</text>
+<text x="713" y="346" text-anchor="middle" class="t-xs">measured</text>
+<text x="713" y="359" text-anchor="middle" class="t-xs">trait</text>
+<g class="mx-badge"><circle cx="56" cy="63" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="56" y="67" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">1</text></g>
+<g class="mx-badge"><circle cx="534" cy="32" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="534" y="36" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">2</text></g>
+<g class="mx-badge"><circle cx="99" cy="75" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="99" y="79" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">3</text></g>
+<g class="mx-badge"><circle cx="34" cy="342" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="34" y="346" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">4</text></g>
+<g class="mx-badge"><circle cx="205.0" cy="319" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="205.0" y="323" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">5</text></g>
+<g class="mx-badge"><circle cx="533" cy="280.0" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="533" y="284.0" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">6</text></g>
+<g class="mx-badge"><circle cx="533" cy="232.0" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="533" y="236.0" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">7</text></g>
+<g class="mx-badge"><circle cx="445.0" cy="319" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="445.0" y="323" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">8</text></g>
+<g class="mx-badge"><circle cx="560" cy="14" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="560" y="18" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">9</text></g>
+<g class="mx-badge"><circle cx="670" cy="14" r="9.5" fill="var(--fg)" stroke="#fff" stroke-width="2"/><text x="670" y="18" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">10</text></g>
+</svg></div>
+  </figure>
+  <p class="mm-statement">Every analysis in this course starts from three blocks joined by a participant ID: a genotype matrix G (people × variants, entries 0, 1 or 2), covariates C, and a phenotype y. Each numbered feature below is a piece of biology or of measurement that you will learn on one of the pages.</p>
+  <ol class="mx-legend">
+    <li><strong>Rows are people.</strong> Each row is one participant, identified by a participant ID (in UK Biobank, the <code>eid</code>). Who ends up in the rows depends on how people were recruited. <span class="go">→ <a href="uk-biobank.html#recruitment">who was recruited</a> (p. 10) · <a href="the-data.html#participant-table">the participant table</a> (p. 13)</span></li>
+    <li><strong>Columns are variants</strong>, positions in the genome where people differ, ordered by their position along a chromosome. A column is named by its chromosome, position, and alleles, or by an rsID. <span class="go">→ <a href="dna.html#coordinates">coordinates</a> (p. 2) · <a href="variation.html#naming">naming variants</a> (p. 4)</span></li>
+    <li><strong>Each entry counts copies of one allele: 0, 1 or 2.</strong> People carry two copies of each autosome, one from each parent, so they carry zero, one or two copies of any given allele. <span class="go">→ <a href="cells-chromosomes.html#diploid">two sets of chromosomes</a> (p. 1) · <a href="variation.html#genotypes">genotypes as counts</a> (p. 4)</span></li>
+    <li><strong>Column mean ÷ 2 is an allele frequency</strong>: the fraction of all chromosome copies in the sample that carry the counted allele. Under random mating, the counts of 0, 1 and 2 in a column follow Hardy–Weinberg proportions, which is used to check data quality. <span class="go">→ <a href="allele-frequencies.html#counting">counting alleles</a> · <a href="allele-frequencies.html#hwe">Hardy–Weinberg</a> (p. 6)</span></li>
+    <li><strong>Neighboring columns are correlated</strong> (green box). Alleles at nearby positions are inherited together on the same stretch of chromosome, so their columns rise and fall together. This correlation is linkage disequilibrium (LD); it is why a GWAS finds regions rather than single variants. <span class="go">→ <a href="haplotypes-ld.html#origins">how LD arises</a> · <a href="haplotypes-ld.html#gwas-peaks">GWAS peaks</a> (p. 7)</span></li>
+    <li><strong>Groups of rows differ</strong> (purple box). People whose ancestors lived in different places differ in allele frequency at many variants at once, and relatives share long identical stretches of DNA. Principal components such as PC1 capture this structure. <span class="go">→ <a href="ancestry.html#pca">PCA</a> (p. 8) · <a href="inheritance.html#ibd">relatedness</a> (p. 5)</span></li>
+    <li><strong>NA is a failed measurement</strong>: the genotyping assay could not decide the genotype for this person at this variant. The fraction of missing calls per person and per variant is one of the first quality checks. <span class="go">→ <a href="samples-to-genotypes.html#arrays">genotyping arrays</a> · <a href="samples-to-genotypes.html#qc">quality control</a> (p. 11)</span></li>
+    <li><strong>Fractional values are predicted, not measured</strong> (dashed orange columns). Imputation predicts genotypes at variants that were not on the genotyping array, using LD with the variants that were measured; the result is an expected allele count (a dosage) between 0 and 2. <span class="go">→ <a href="samples-to-genotypes.html#imputation">imputation</a> (p. 11)</span></li>
+    <li><strong>Covariates C</strong> are variables included in every model, such as age, sex and principal components, mainly to prevent confounding. <span class="go">→ <a href="the-data.html#analysis-matrix">the analysis-ready matrix</a> (p. 13) · <a href="ancestry.html#stratification">confounding by ancestry</a> (p. 8)</span></li>
+    <li><strong>The phenotype y</strong> is the measured trait, here LDL cholesterol. A genome-wide association study (GWAS) tests each column of G for association with y, one variant at a time, adjusting for C, and writes one row of results per variant. <span class="go">→ <a href="phenotypes.html#mm">measuring phenotypes</a> (p. 12) · <a href="genotype-to-phenotype.html#gwas">what a GWAS does</a> (p. 9) · <a href="the-data.html#gwas-output">GWAS output</a> (p. 13)</span></li>
+  </ol>
+  <p class="fig-note" style="margin-top:0.8em;font-size:0.85rem;color:var(--fg-muted)">Values in this figure are illustrative, not real participants. Drawn for this lecture.</p>
+</section>
+
+<h2 id="roadmap">Roadmap</h2>
+<p>The pages follow the zoom ladder. Each card lists the page's question; the amber line names the Lecture 2 topics that rely on it.</p>
+<p class="part-label a">Part A · The biological system</p>
+<div class="card-grid">
+  <a class="card" href="cells-chromosomes.html"><span class="card-num">Page 1</span><span class="card-title">Cells, chromosomes &amp; the genome</span><span class="card-desc">Where is the genome in the body, and why does everyone carry two copies of it?</span><span class="card-l2">Lecture 2: Slides 59–60: chromosomes, karyotype, cytobands</span></a>
+  <a class="card" href="dna.html"><span class="card-num">Page 2</span><span class="card-title">DNA, strands &amp; coordinates</span><span class="card-desc">What is DNA made of, how is one position in the genome written down, and why do strand and genome build matter?</span><span class="card-l2">Lecture 2: Slides 57–58, 66–69: base pairs, SNP alleles and strand</span></a>
+  <a class="card" href="genes-expression.html"><span class="card-num">Page 3</span><span class="card-title">Genes &amp; gene expression</span><span class="card-desc">How does DNA specify proteins, and how can a variant outside any gene change a trait?</span><span class="card-l2">Lecture 2: Slides 61–63; TWAS (slide 25)</span></a>
+  <a class="card" href="variation.html"><span class="card-num">Page 4</span><span class="card-title">Genetic variation</span><span class="card-desc">What kinds of differences exist between two genomes, and how are variants named?</span><span class="card-l2">Lecture 2: Slides 63, 66–69: SNPs, coding and non-coding changes</span></a>
+  <a class="card" href="inheritance.html"><span class="card-num">Page 5</span><span class="card-title">Inheritance &amp; relatedness</span><span class="card-desc">How are variants passed from parents to children, and how can we tell which people in a sample are related?</span><span class="card-l2">Lecture 2: Slides 72 and 111: maternal and paternal alleles, recombination; the practical&#x27;s relatedness check</span></a>
+  <a class="card" href="allele-frequencies.html"><span class="card-num">Page 6</span><span class="card-title">Allele frequencies &amp; HWE</span><span class="card-desc">How do we summarize a whole population at one variant, and what does Hardy–Weinberg equilibrium predict?</span><span class="card-l2">Lecture 2: Slides 70–83 and 88: frequencies, HWE, rare variants</span></a>
+  <a class="card" href="haplotypes-ld.html"><span class="card-num">Page 7</span><span class="card-title">Haplotypes &amp; LD</span><span class="card-desc">Why are nearby variants correlated, and why does that make GWAS and imputation work?</span><span class="card-l2">Lecture 2: Slides 84–86, 94–96 and the appendix (107–124)</span></a>
+  <a class="card" href="ancestry.html"><span class="card-num">Page 8</span><span class="card-title">Ancestry &amp; structure</span><span class="card-desc">Why do allele frequencies differ between populations, and how can that create false associations?</span><span class="card-l2">Lecture 2: Slides 37, 89–105: diversity, STRUCTURE, PCA</span></a>
+  <a class="card" href="genotype-to-phenotype.html"><span class="card-num">Page 9</span><span class="card-title">Genotype → phenotype</span><span class="card-desc">How do genotypes relate to traits, from single-gene disorders to traits shaped by thousands of variants?</span><span class="card-l2">Lecture 2: Slides 15–25: PCSK9, HbF, Mendelian randomization, TWAS</span></a>
+</div>
+<p class="part-label b">Part B · Measuring the system</p>
+<div class="card-grid">
+  <a class="card" href="uk-biobank.html"><span class="card-num">Page 10</span><span class="card-title">UK Biobank: recruitment</span><span class="card-desc">Who is in UK Biobank, how were they recruited and measured, and what does that mean for analyses?</span><span class="card-l2">Lecture 2: Slide 11 (epidemiology); slides 31–35 (UK Biobank example)</span></a>
+  <a class="card" href="samples-to-genotypes.html"><span class="card-num">Page 11</span><span class="card-title">Samples → genotypes</span><span class="card-desc">How does a blood sample become a row of genotypes, and what can go wrong on the way?</span><span class="card-l2">Lecture 2: Slide 8: the practical&#x27;s quality-control steps</span></a>
+  <a class="card" href="phenotypes.html"><span class="card-num">Page 12</span><span class="card-title">Measuring phenotypes</span><span class="card-desc">How is each trait column measured, and which errors and gaps come with each source?</span><span class="card-l2">Lecture 2: Session 2 (slide 47): outcomes and covariates in association models</span></a>
+  <a class="card" href="the-data.html"><span class="card-num">Page 13</span><span class="card-title">What the data looks like</span><span class="card-desc">What do the tables and files look like, and what does a GWAS produce from them?</span><span class="card-l2">Lecture 2: PLINK files (practical); REGENIE and Manhattan plots (Session 2)</span></a>
+</div>
+<p class="part-label w">Wrap-up</p>
+<div class="card-grid">
+  <a class="card" href="lecture-2-bridge.html"><span class="card-title">Lecture 2 decoder</span><span class="card-desc">A slide-by-slide map from Lecture 2 to the explanations here, a notation cheat sheet, and ten questions to answer before the lecture.</span></a>
+  <a class="card" href="glossary.html"><span class="card-title">Glossary</span><span class="card-desc">Every technical term on this site with a short definition; each entry lists the pages that use it.</span></a>
+  <a class="card" href="resources.html"><span class="card-title">Learn more</span><span class="card-desc">Checked links to free textbooks, reviews, databases, software documentation and UK Biobank pages, by topic and level.</span></a>
+</div>
+
+<h2 id="running-examples" data-toc="Running examples">Running examples</h2>
+<p>A few real variants reappear across the pages, so that each new idea is attached to something you have already seen. Positions are on the GRCh38 reference genome.</p>
+<div class="table-wrap">
+<table class="examples compact">
+  <caption>Real variants used as examples throughout the site</caption>
+  <thead><tr><th>Variant</th><th>Gene</th><th>Position (GRCh38), reference &gt; alternative</th><th>Why it is useful</th><th>Pages</th></tr></thead>
+  <tbody>
+  <tr><td><code>rs671</code></td><td><em>ALDH2</em></td><td><code>chr12:111,803,962 G&gt;A</code></td><td>The A allele makes an inactive enzyme that cannot clear acetaldehyde, so carriers flush after drinking alcohol. Common in East Asian samples (about 17% of chromosomes in 1000 Genomes), almost absent elsewhere. Lecture 2 uses it to explain SNP notation (slide 68).</td><td><a href="cells-chromosomes.html">1</a>, <a href="dna.html">2</a>, <a href="genes-expression.html">3</a>, <a href="variation.html">4</a>, <a href="inheritance.html">5</a>, <a href="allele-frequencies.html">6</a>, <a href="ancestry.html">8</a>, <a href="genotype-to-phenotype.html">9</a>, <a href="the-data.html">13</a></td></tr>
+  <tr><td><code>rs1801133</code></td><td><em>MTHFR</em></td><td><code>chr1:11,796,321 G&gt;A</code></td><td>Known as C677T, a name read on the gene's own strand (the opposite strand to the reference). The T allele reduces the activity of an enzyme in folate metabolism. Lecture 2 uses its genotype counts to compute allele frequencies (slides 74, 77).</td><td><a href="dna.html">2</a>, <a href="genes-expression.html">3</a>, <a href="variation.html">4</a>, <a href="allele-frequencies.html">6</a>, <a href="ancestry.html">8</a></td></tr>
+  <tr><td><code>rs334</code></td><td><em>HBB</em></td><td><code>chr11:5,227,002 T&gt;A</code></td><td>Replaces one amino acid of β-globin, making sickle hemoglobin (HbS). Two copies cause sickle cell disease; one copy protects against severe malaria.</td><td><a href="dna.html">2</a>, <a href="genes-expression.html">3</a>, <a href="variation.html">4</a>, <a href="inheritance.html">5</a>, <a href="allele-frequencies.html">6</a>, <a href="ancestry.html">8</a></td></tr>
+  <tr><td><code>rs1427407</code></td><td><em>BCL11A</em></td><td><code>chr2:60,490,908 T&gt;G</code></td><td>Lies in an enhancer, not in a protein-coding sequence. The T allele lowers <em>BCL11A</em> expression in red-cell precursors, which raises fetal hemoglobin (Lecture 2, slide 17).</td><td><a href="genes-expression.html">3</a>, <a href="variation.html">4</a>, <a href="genotype-to-phenotype.html">9</a></td></tr>
+  <tr><td><code>rs4988235</code></td><td><em>MCM6</em> / <em>LCT</em></td><td><code>chr2:135,851,076 G&gt;A</code></td><td>Lies in an intron of <em>MCM6</em> and acts as an enhancer for the neighboring lactase gene <em>LCT</em>. The A allele (the "T" of the older name −13910C&gt;T) is associated with lactase staying active in adults. Its frequency differs greatly between populations.</td><td><a href="genes-expression.html">3</a>, <a href="variation.html">4</a>, <a href="allele-frequencies.html">6</a>, <a href="haplotypes-ld.html">7</a>, <a href="ancestry.html">8</a></td></tr>
+  <tr><td><code>rs11591147</code></td><td><em>PCSK9</em></td><td><code>chr1:55,039,974 G&gt;T</code></td><td>R46L: the T allele lowers LDL cholesterol and the risk of coronary heart disease, the story behind PCSK9-inhibitor drugs (Lecture 2, slides 15–16).</td><td><a href="genes-expression.html">3</a>, <a href="variation.html">4</a>, <a href="ancestry.html">8</a>, <a href="genotype-to-phenotype.html">9</a>, <a href="the-data.html">13</a></td></tr>
+  <tr><td><code>rs429358 + rs7412</code></td><td><em>APOE</em></td><td><code>chr19:44,908,684 T&gt;C; 44,908,822 C&gt;T</code></td><td>Together define the ε2, ε3 and ε4 alleles of <em>APOE</em>, which affect LDL cholesterol and Alzheimer's disease risk; <em>APOE</em> appears in Lecture 2's margarine example (slides 31–33).</td><td><a href="genes-expression.html">3</a>, <a href="variation.html">4</a>, <a href="genotype-to-phenotype.html">9</a>, <a href="the-data.html">13</a></td></tr>
+  <tr><td><code>rs10455872</code></td><td><em>LPA</em></td><td><code>chr6:160,589,086 A&gt;G</code></td><td>The G allele raises lipoprotein(a) levels and coronary disease risk; <em>LPA</em> is the other locus in the margarine example.</td><td><a href="variation.html">4</a>, <a href="genotype-to-phenotype.html">9</a></td></tr>
+  <tr><td><code>rs2814778</code></td><td><em>ACKR1</em></td><td><code>chr1:159,204,893 T&gt;C</code></td><td>The C allele switches off the Duffy antigen on red cells (Duffy-null), which protects against <em>Plasmodium vivax</em> malaria. Near fixation in many African populations and rare elsewhere, so it shows how ancestry and genotype are entangled.</td><td><a href="genes-expression.html">3</a>, <a href="variation.html">4</a>, <a href="allele-frequencies.html">6</a>, <a href="ancestry.html">8</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="two-hour-path" data-toc="A two-hour path">A suggested two-hour path</h2>
+<p>The pages hold about nine hours of material on purpose, so that you can choose. This path fits two hours: each page's mental model plus the Core sections that Lecture 2 relies on most. Everything else is for reading after class.</p>
+<div class="table-wrap">
+<table class="compact">
+  <caption>A suggested two-hour path</caption>
+  <thead><tr><th>Start</th><th>Page</th><th>Min</th><th>Show</th></tr></thead>
+  <tbody>
+  <tr><td>0:00</td><td><a href="index.html">Overview</a></td><td>10</td><td><a href="index.html#mm1">mental model 1</a>, <a href="index.html#mm2">mental model 2</a>. <span class="go">Set up the two pictures that every later page refers back to.</span></td></tr>
+  <tr><td>0:10</td><td><a href="cells-chromosomes.html">1. Cells, chromosomes &amp; the genome</a></td><td>8</td><td><a href="cells-chromosomes.html#mm">mental model</a>, <a href="cells-chromosomes.html#diploid">diploid</a>, <a href="cells-chromosomes.html#karyotype">karyotypes</a></td></tr>
+  <tr><td>0:18</td><td><a href="dna.html">2. DNA, strands &amp; coordinates</a></td><td>10</td><td><a href="dna.html#mm">mental model</a>, <a href="dna.html#reference-genome">builds</a>, <a href="dna.html#coordinates">coordinates</a>, <a href="dna.html#strands-in-snp-data">strands in SNP data</a></td></tr>
+  <tr><td>0:28</td><td><a href="genes-expression.html">3. Genes &amp; gene expression</a></td><td>8</td><td><a href="genes-expression.html#mm">mental model</a>, <a href="genes-expression.html#regulation">regulation</a>. <span class="go">Why most GWAS signals lie outside protein-coding sequence.</span></td></tr>
+  <tr><td>0:36</td><td><a href="variation.html">4. Genetic variation</a></td><td>10</td><td><a href="variation.html#mm">mental model</a>, <a href="variation.html#genotypes">loci, alleles, genotypes</a>, <a href="variation.html#allele-labels">allele labels</a></td></tr>
+  <tr><td>0:46</td><td><a href="inheritance.html">5. Inheritance &amp; relatedness</a></td><td>10</td><td><a href="inheritance.html#mm">mental model</a>, <a href="inheritance.html#linkage">linkage</a>, <a href="inheritance.html#ibd">IBD</a>. <span class="go">A short break fits here.</span></td></tr>
+  <tr><td>0:56</td><td><a href="allele-frequencies.html">6. Allele frequencies &amp; HWE</a></td><td>12</td><td><a href="allele-frequencies.html#mm">mental model</a>, <a href="allele-frequencies.html#counting">counting</a>, <a href="allele-frequencies.html#hwe">HWE</a>, <a href="allele-frequencies.html#hwe-test">testing HWE</a>. <span class="go">Lecture 2, slides 70–83.</span></td></tr>
+  <tr><td>1:08</td><td><a href="haplotypes-ld.html">7. Haplotypes &amp; LD</a></td><td>12</td><td><a href="haplotypes-ld.html#mm">mental model</a>, <a href="haplotypes-ld.html#measuring">D, D′, r²</a>, <a href="haplotypes-ld.html#gwas-peaks">GWAS peaks</a>. <span class="go">Lecture 2, slides 84–86 and the appendix.</span></td></tr>
+  <tr><td>1:20</td><td><a href="ancestry.html">8. Ancestry &amp; structure</a></td><td>10</td><td><a href="ancestry.html#mm">mental model</a>, <a href="ancestry.html#pca">PCA</a>, <a href="ancestry.html#stratification">stratification</a>. <span class="go">Lecture 2, slides 98–105.</span></td></tr>
+  <tr><td>1:30</td><td><a href="genotype-to-phenotype.html">9. Genotype → phenotype</a></td><td>10</td><td><a href="genotype-to-phenotype.html#mm">mental model</a>, <a href="genotype-to-phenotype.html#one-variant">one variant&#x27;s effect</a>, <a href="genotype-to-phenotype.html#gwas">what a GWAS does</a></td></tr>
+  <tr><td>1:40</td><td><a href="uk-biobank.html">10. UK Biobank: recruitment</a></td><td>5</td><td><a href="uk-biobank.html#mm">mental model</a></td></tr>
+  <tr><td>1:45</td><td><a href="samples-to-genotypes.html">11. Samples → genotypes</a></td><td>7</td><td><a href="samples-to-genotypes.html#mm">mental model</a>, <a href="samples-to-genotypes.html#qc">quality control</a>. <span class="go">The checks in the Session 1 practical.</span></td></tr>
+  <tr><td>1:52</td><td><a href="phenotypes.html">12. Measuring phenotypes</a></td><td>3</td><td><a href="phenotypes.html#mm">mental model</a></td></tr>
+  <tr><td>1:55</td><td><a href="the-data.html">13. What the data looks like</a></td><td>5</td><td><a href="the-data.html#mm">mental model</a>, <a href="the-data.html#genotype-files">PLINK files</a>. <span class="go">Back to the data matrix.</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="before-lecture-2" data-toc="Before Lecture 2">What Lecture 2 assumes you know</h2>
+<p>Lecture 2 moves fast through the ideas below. If you can explain each one in your own words, you are ready. The <a href="lecture-2-bridge.html">Lecture 2 decoder</a> maps every slide to the matching explanation here.</p>
+<ul class="checklist">
+  <li>Chromosomes come in pairs: 22 pairs of autosomes plus the sex chromosomes; a cytoband such as 8q24 names a region. <span class="go">Lecture 2 slides 59–60. Read: <a href="cells-chromosomes.html#diploid">Two sets: diploid body cells, haploid eggs and sperm</a> (p. 1); <a href="cells-chromosomes.html#karyotype">Karyotypes and the anatomy of a chromosome</a> (p. 1).</span></li>
+  <li>DNA is two complementary strands of bases; one copy of the genome is about 3.1 billion base pairs, and positions are given on a reference genome build. <span class="go">Lecture 2 slides 57–58. Read: <a href="dna.html#base-pairing">Base pairing and the double helix</a> (p. 2); <a href="cells-chromosomes.html#genome-numbers">The human genome by the numbers</a> (p. 1); <a href="dna.html#reference-genome">The reference genome and genome builds</a> (p. 2).</span></li>
+  <li>Changes in coding and non-coding DNA can alter (or not alter) what a gene does. <span class="go">Lecture 2 slides 61–63. Read: <a href="genes-expression.html#regulation">Gene regulation: when, where and how much</a> (p. 3); <a href="variation.html#consequences">What variants do</a> (p. 4).</span></li>
+  <li>A SNP has (almost always) two alleles; reference, alternative, minor and effect alleles are different labels, and the strand matters. <span class="go">Lecture 2 slides 66–69. Read: <a href="variation.html#allele-labels">Allele labels: which allele is which?</a> (p. 4); <a href="dna.html#strands-in-snp-data">Strands in SNP data</a> (p. 2).</span></li>
+  <li>Genotype counts give genotype and allele frequencies; heterozygosity is the share of heterozygous people. <span class="go">Lecture 2 slides 70–79. Read: <a href="allele-frequencies.html#counting">Counting genotypes and alleles</a> (p. 6); <a href="allele-frequencies.html#heterozygosity">Heterozygosity</a> (p. 6).</span></li>
+  <li>Hardy–Weinberg equilibrium predicts genotype frequencies from allele frequencies and is used to detect genotyping errors. <span class="go">Lecture 2 slides 80–83. Read: <a href="allele-frequencies.html#hwe">Hardy–Weinberg equilibrium</a> (p. 6); <a href="allele-frequencies.html#hwe-test">Testing HWE, and what deviations mean</a> (p. 6).</span></li>
+  <li>Linkage disequilibrium is the correlation between alleles at nearby variants; it is measured by D′ and r² and decays with distance. <span class="go">Lecture 2 slides 84–86, 107–124. Read: <a href="haplotypes-ld.html#origins">How LD arises and how recombination breaks it down</a> (p. 7); <a href="haplotypes-ld.html#measuring">Measuring LD: D, D′ and r²</a> (p. 7).</span></li>
+  <li>Allele frequencies and LD differ between populations, and there is more genetic diversity within African populations than elsewhere. <span class="go">Lecture 2 slides 87–97. Read: <a href="allele-frequencies.html#differences">Why allele frequencies differ between populations</a> (p. 6); <a href="haplotypes-ld.html#patterns">LD varies along the genome and between populations</a> (p. 7); <a href="ancestry.html#history">Human population history in brief</a> (p. 8).</span></li>
+  <li>STRUCTURE and principal components summarize genetic similarity between people; they describe data, not fixed groups. <span class="go">Lecture 2 slides 98–105. Read: <a href="ancestry.html#pca">Measuring genetic similarity with principal component analysis</a> (p. 8); <a href="ancestry.html#admixture-models">Model-based estimates: STRUCTURE, ADMIXTURE and GrafAnc</a> (p. 8).</span></li>
+  <li>Epidemiology studies the distribution and determinants of health in populations, using designs such as cohort and case–control studies. <span class="go">Lecture 2 slide 11. Read: <a href="uk-biobank.html#epidemiology">Epidemiology in five ideas</a> (p. 10).</span></li>
+  <li>The practical's quality-control steps: missingness, Hardy–Weinberg, heterozygosity, relatedness (IBD) and PCA. <span class="go">Lecture 2 slide 8. Read: <a href="samples-to-genotypes.html#qc">Quality control: checking rows and columns against biology</a> (p. 11); <a href="inheritance.html#relatedness-data">Relatives in genotype data: PLINK, KING and UK Biobank</a> (p. 5); <a href="ancestry.html#pca">Measuring genetic similarity with principal component analysis</a> (p. 8).</span></li>
+</ul>
+
+</article>
+</main>
+</div>
+</body>
+</html>
