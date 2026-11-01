@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DNA: the molecule, its strands, and its coordinates · Lecture 0</title>
 <meta name="description" content="How DNA is built from paired, antiparallel strands, how sequences and reverse complements are written, and how a reference genome turns DNA into coordinates: builds, positions, strands and strand-ambiguous SNPs.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/css/site.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/math.js"></script>
 <script defer src="assets/js/pages.js"></script>
 <script defer src="assets/js/glossary-data.js"></script>
 <script defer src="assets/js/glossary-usage.js"></script>
@@ -257,7 +264,18 @@
 
 <h2 id="direction" data-toc="5′ and 3′, reverse complement">Direction: 5′ and 3′ ends, antiparallel strands, and the reverse complement <span class="tag core">Core</span></h2>
 <p>Every strand has a direction, from its 5′ end to its 3′ end. In a double helix the two strands run in opposite directions: they are <dfn>antiparallel</dfn><sup><a href="#src-4">4</a></sup>. If one strand runs 5′→3′ from left to right, its partner runs 5′→3′ from right to left.</p>
-<p>By convention, every sequence is written 5′→3′. To write the partner strand you therefore do two things: replace each base by its pairing partner (the <em>complement</em>: A↔T, C↔G), and reverse the order. The result is the <dfn>reverse complement</dfn>. As a formula, for a sequence <i>s</i> = <i>s</i><sub>1</sub><i>s</i><sub>2</sub>…<i>s</i><sub><i>n</i></sub>, the reverse complement is rc(<i>s</i>)<sub><i>i</i></sub> = comp(<i>s</i><sub><i>n</i>+1−<i>i</i></sub>). Applying it twice returns the original: rc(rc(<i>s</i>)) = <i>s</i>.</p>
+<p>By convention, every sequence is written 5′→3′. To write the partner strand you therefore do two things: replace each base by its pairing partner (the <em>complement</em>: A↔T, C↔G), and reverse the order. The result is the <dfn>reverse complement</dfn>. As a formula, for a sequence \(s = s_1 s_2 \ldots s_n\):</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \operatorname{rc}(s)_i = \operatorname{comp}(s_{n+1-i}) \\[4pt] \operatorname{rc}(\operatorname{rc}(s)) = s \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(s\)</dt><dd>A DNA sequence: the bases (A, C, G, T) of one strand, written 5′→3′.</dd>
+    <dt>\(s_i\)</dt><dd>The base at position \(i\) of \(s\), counted from the 5′ end: \(s_1\) is the base at the 5′ end and \(s_n\) the base at the 3′ end.</dd>
+    <dt>\(n\)</dt><dd>Length of \(s\) in bases; \(i\) runs from 1 to \(n\).</dd>
+    <dt>\(\operatorname{comp}\)</dt><dd>Complement of one base, the base it pairs with: A to T, T to A, C to G and G to C.</dd>
+    <dt>\(\operatorname{rc}(s)\)</dt><dd>Reverse complement of \(s\): the partner strand, also \(n\) bases long and also written 5′→3′. \(\operatorname{rc}(s)_i\) is its base at position \(i\).</dd>
+  </dl>
+  <p class="eq-intuition">As \(i\) counts up from 1 to \(n\), the index \(n + 1 - i\) counts down from \(n\) to 1, so the reverse complement reads \(s\) from its 3′ end and complements each base on the way. In the figure below \(n = 7\): position 1 of CTCAGGT is C, the complement of G, the last base of ACCTGAG. This is the antiparallel pairing written as a rule: the 5′ end of the partner strand pairs with the 3′ end of \(s\). When \(n\) is odd, the middle base, at \(i = (n + 1)/2\), keeps its position and is only complemented. Applying \(\operatorname{rc}\) twice reverses the order twice and complements every base twice. The index returns to \(n + 1 - (n + 1 - i) = i\), and the complement of a complement is the original base, so \(\operatorname{rc}(\operatorname{rc}(s))_i = s_i\) at every position: the partner of the partner strand is the original strand.</p>
+</div>
 
 <figure class="fig scroll-x">
   <div class="fig-body">
@@ -271,7 +289,7 @@
   <p>Only the reverse complement is the partner strand written the standard way. Reversing alone gives a string that does not pair with the original. Complementing alone gives the right bases in 3′→5′ order; software that reads it as a normal 5′→3′ sequence treats it as a different molecule. The two errors are easy to make in code and hard to spot by eye.</p>
 </aside>
 
-<p>Some sequences equal their own reverse complement: <span class="seq"><span class="b-G">G</span><span class="b-A">A</span><span class="b-A">A</span><span class="b-T">T</span><span class="b-T">T</span><span class="b-C">C</span></span> complements to <span class="seq"><span class="b-C">C</span><span class="b-T">T</span><span class="b-T">T</span><span class="b-A">A</span><span class="b-A">A</span><span class="b-G">G</span></span>, which reversed is <span class="seq"><span class="b-G">G</span><span class="b-A">A</span><span class="b-A">A</span><span class="b-T">T</span><span class="b-T">T</span><span class="b-C">C</span></span> again. Such sequences are called <em>palindromic</em>: both strands read the same 5′→3′. Do not confuse this with a “palindromic SNP” (later on this page), which is a SNP whose two alleles are complements of each other.</p>
+<p>Some sequences equal their own reverse complement: <span class="seq"><span class="b-G">G</span><span class="b-A">A</span><span class="b-A">A</span><span class="b-T">T</span><span class="b-T">T</span><span class="b-C">C</span></span> complements to <span class="seq"><span class="b-C">C</span><span class="b-T">T</span><span class="b-T">T</span><span class="b-A">A</span><span class="b-A">A</span><span class="b-G">G</span></span>, which reversed is <span class="seq"><span class="b-G">G</span><span class="b-A">A</span><span class="b-A">A</span><span class="b-T">T</span><span class="b-T">T</span><span class="b-C">C</span></span> again. Such sequences are called <em>palindromic</em>: both strands read the same 5′→3′. In the terms of the formula above, \(s_i = \operatorname{comp}(s_{n+1-i})\) at every position, so \(n\) is even: a middle base would have to be its own complement, and no base is. Do not confuse this with a “palindromic SNP” (later on this page), which is a SNP whose two alleles are complements of each other.</p>
 <p>Which strand is “the” sequence? Biologically, neither strand is special. A <em>gene</em>—a stretch of DNA that the cell copies into RNA, often to make a protein (<a href="genes-expression.html">next page</a>)—lies on one strand or the other, and genes are found on both strands. For data, a convention picks one strand per chromosome: the + strand of the reference genome (next sections).</p>
 
 <div class="widget" id="w-strand-tool">
@@ -504,10 +522,10 @@
 <div class="file-label" data-no-autolink>GRCh38 reference, chr12:111,803,932–111,803,991 (+ strand)</div>
 <pre class="file">&gt;chr12:111803932-111803991
 TTGGGCGAGTACGGGCTGCAGGCATACACT<span class="snpbase">G</span>AAGTGAAAACTGTGAGTGTGGGACCTGCT</pre>
-  <p>Position 111,803,962 is character 111,803,962 − 111,803,931 = 31 of this record: the highlighted G, the reference allele of rs671. Software that checks a variant file compares each REF allele with the reference this way. A REF base that does not match is a sign of the wrong build or the wrong strand.</p>
+  <p>The record starts at position 111,803,932, which is character 1, so position \(x\) is character \(x - 111{,}803{,}931\) of the record. Position 111,803,962 is character \(111{,}803{,}962 - 111{,}803{,}931 = 31\): the highlighted G, the reference allele of rs671. Software that checks a variant file compares each REF allele with the reference this way. A REF base that does not match is a sign of the wrong build or the wrong strand.</p>
 </aside>
 
-<p>A region is written with a start and an end, such as chr12:111,803,912-111,803,962. That means positions 111,803,912 through 111,803,962, both included: 51 bp. This is the <dfn>1-based</dfn>, fully closed convention, used by genome browser position boxes, VCF files and PLINK. Some formats use a different one. BED files, a common tab-separated format for intervals, and UCSC's database tables use a 0-based, half-open convention: the same region is stored as start 111803911, end 111803962, and its length is end − start<sup><a href="#src-13">13</a></sup>. Mixing the two shifts positions by one base—a classic off-by-one bug.</p>
+<p>A region is written with a start and an end, such as chr12:111,803,912-111,803,962. That means positions 111,803,912 through 111,803,962, both included: 51 bp, which is end − start + 1. This is the <dfn>1-based</dfn>, fully closed convention, used by genome browser position boxes, VCF files and PLINK. Some formats use a different one. BED files, a common tab-separated format for intervals, and UCSC's database tables use a 0-based, half-open convention, whose numbers name the boundaries between bases: boundary 0 lies before the first base, and the base at 1-based position \(x\) lies between boundaries \(x - 1\) and \(x\). The same region is therefore stored as start 111803911, end 111803962, and its length is end − start<sup><a href="#src-13">13</a></sup>. The end is the same number in both conventions, and the BED start is one less than the 1-based start: a single base at position \(x\) has BED start \(x - 1\) and BED end \(x\). Mixing the two shifts positions by one base—a classic off-by-one bug.</p>
 
 <figure class="fig scroll-x">
   <div class="fig-body">
@@ -523,7 +541,7 @@ TTGGGCGAGTACGGGCTGCAGGCATACACT<span class="snpbase">G</span>AAGTGAAAACTGTGAGTGTG
   <div class="callout-title" data-no-autolink><span class="badge">In the data</span> Two habits that prevent silent errors</div>
   <ul>
     <li><b>Chromosome names.</b> UCSC-style files say <code>chr12</code>; Ensembl and PLINK files say <code>12</code>; NCBI files may use the sequence accession instead (<code>NC_000012.12</code> is chromosome 12 of GRCh38<sup><a href="#src-7">7</a></sup>); the mitochondrial chromosome may be <code>chrM</code> or <code>MT</code>. A join between files that use different styles matches nothing, without raising an error.</li>
-    <li><b>Interval conventions.</b> Before you intersect a BED file with VCF or PLINK positions, convert one of them (BED start + 1 = 1-based start).</li>
+    <li><b>Interval conventions.</b> Before you intersect a BED file with VCF or PLINK positions, convert one of them (BED start + 1 = 1-based start; the end is the same in both).</li>
   </ul>
 </aside>
 
@@ -571,7 +589,7 @@ TTGGGCGAGTACGGGCTGCAGGCATACACT<span class="snpbase">G</span>AAGTGAAAACTGTGAGTGTG
 <p>Combining datasets requires <dfn>harmonization</dfn>: making sure that the same allele means the same thing in every file. Two different corrections may be needed:</p>
 <ul>
   <li>A <dfn>strand flip</dfn> rewrites both alleles on the other strand (A↔T, C↔G). It changes the letters, not the meaning: effect sizes and frequencies stay as they are.</li>
-  <li>An <dfn>allele swap</dfn> exchanges which allele is the counted (“effect”) allele. In the genotype matrix this replaces the column <i>g</i> by 2 − <i>g</i>. The per-allele effect β changes sign, and the allele frequency <i>p</i> becomes 1 − <i>p</i>.</li>
+  <li>An <dfn>allele swap</dfn> exchanges which allele is the counted (“effect”) allele. A person with \(g\) copies of the old counted allele (0, 1 or 2) has \(2 - g\) copies of the new one, so in the genotype matrix the column \(g\) is replaced by \(2 - g\): 0 and 2 trade places, and 1 stays 1. The per-allele effect \(\beta\), the regression coefficient of \(g\), changes sign, because \(\beta g = 2\beta - \beta(2 - g)\): the constant \(2\beta\) joins the intercept, and the coefficient of \(2 - g\) is \(-\beta\). The allele frequency \(p\) of the counted allele becomes \(1 - p\), because the frequencies of the two alleles add up to 1.</li>
 </ul>
 <p>The two can occur together. For rs671 with target alleles G/A (effect allele A): a file reporting effect allele T, other allele C needs a strand flip only; a file reporting effect allele C, other allele T needs a flip and a swap.</p>
 
@@ -611,7 +629,7 @@ TTGGGCGAGTACGGGCTGCAGGCATACACT<span class="snpbase">G</span>AAGTGAAAACTGTGAGTGTG
 <div class="file-label" data-no-autolink>VCF lines (GRCh38; first five columns)</div>
 <pre class="file tsv"><span class="cm">#CHROM	POS	ID	REF	ALT</span>
 12	111803962	rs671	G	A</pre>
-  <p>GWAS summary statistics (one row per variant: alleles, effect estimate, standard error, p-value) from different studies are harmonized before meta-analysis (combining studies) or before their effect sizes are used, for example in polygenic scores. The logic, per shared variant (D1 = your reference file, D2 = the file to align; <i>a</i> = effect allele, <i>b</i> = other allele, eaf = effect-allele frequency):</p>
+  <p>GWAS summary statistics (one row per variant: alleles, effect estimate, standard error, p-value) from different studies are harmonized before meta-analysis (combining studies) or before their effect sizes are used, for example in polygenic scores. The logic, per shared variant (D1 = your reference file, D2 = the file to align; <code>a</code> = effect allele, <code>b</code> = other allele, <code>eaf</code> = effect-allele frequency, <code>beta</code> = effect estimate; the digit names the file, so <code>a2</code> is the effect allele in D2):</p>
 <pre><span class="cm"># swap: exchange a2 and b2; beta2 = -beta2; eaf2 = 1 - eaf2</span>
 <span class="cm"># flip: replace a2 and b2 by their complements (A&lt;-&gt;T, C&lt;-&gt;G)</span>
 <span class="cm"># Step 1: make D2 use the same allele letters as D1</span>
@@ -644,7 +662,7 @@ if {a1, b1} in ({A, T}, {C, G}):
     <li><b>Direction.</b> Strands are antiparallel, and sequences are written 5′→3′, so the partner strand is the reverse complement: complement every base, then reverse the order.</li>
     <li><b>Coordinates.</b> The reference genome is a coordinate system, not a healthy genome. Positions are 1-based along the + strand of a stated build: rs671 is 112,241,766 on GRCh37 and 111,803,962 on GRCh38. UK Biobank array and original imputed data use GRCh37; its exome and genome sequences use GRCh38. BED files count from 0, half-open.</li>
     <li><b>Strand in SNP data.</b> The same SNP can be written C/T or G/A. Genes on the − strand complement their letters. A/T and C/G SNPs are strand-ambiguous. Harmonize by flipping, swapping, checking frequencies, or dropping.</li>
-    <li><b>In the data matrix.</b> An unnoticed allele swap turns a genotype column <i>g</i> into 2 − <i>g</i> and reverses the sign of its effect estimate.</li>
+    <li><b>In the data matrix.</b> An unnoticed allele swap turns a genotype column \(g\) (copies of the counted allele) into \(2 - g\) and reverses the sign of its effect estimate \(\hat{\beta}\).</li>
   </ul>
 </aside>
 
@@ -653,9 +671,9 @@ if {a1, b1} in ({A, T}, {C, G}):
   <details class="q"><summary>What is the reverse complement of 5′-ACCTGAG-3′?</summary><div class="a"><p>5′-CTCAGGT-3′. Complement each base (TGGACTC), then reverse the order. Check: the reverse complement of CTCAGGT is ACCTGAG again.</p></div></details>
   <details class="q"><summary>A strand reads 5′-GATTC-3′. Written 5′→3′, is its partner CTAAG, GAATC or CTTAG?</summary><div class="a"><p>GAATC. CTAAG is only the complement (the partner's bases listed 3′→5′), and CTTAG is only the reverse. Paste GATTC into the Strand tool to confirm.</p></div></details>
   <details class="q"><summary>A file lists rs671 at position 112,241,766. Which build is it on, and what would the position be on the other build?</summary><div class="a"><p>GRCh37 (hg19), the build of UK Biobank's array data. On GRCh38 the same base pair is 111,803,962. The rsID does not change between builds.</p></div></details>
-  <details class="q"><summary>A BED file contains the line <code>chr12  111803961  111803962</code>. Which base does it describe?</summary><div class="a"><p>BED intervals are 0-based and half-open, so this is one base (length 111803962 − 111803961 = 1): position 111,803,962 in 1-based terms, which is rs671 on GRCh38.</p></div></details>
+  <details class="q"><summary>A BED file contains the line <code>chr12  111803961  111803962</code>. Which base does it describe?</summary><div class="a"><p>BED intervals are 0-based and half-open, so this is one base (length 111803962 − 111803961 = 1). A base at 1-based position \(x\) is stored as start \(x - 1\) and end \(x\), so here \(x = 111{,}803{,}962\): rs671 on GRCh38.</p></div></details>
   <details class="q"><summary>Why can't you tell from the alleles alone whether two studies reported a C/G SNP on the same strand?</summary><div class="a"><p>Because the complement of {C, G} is {G, C}, the same pair: the SNP looks identical from both strands. For a C/T SNP the other strand gives {G, A}, a different pair, so a mismatch is visible. For C/G you need extra information: the allele frequencies (if the minor allele is clearly rarer than 50% and the samples are genetically similar), or each dataset's strand annotation. Otherwise, drop the SNP.</p></div></details>
-  <details class="q"><summary>Your file codes rs671 as effect allele A (other G). A published study reports effect allele C, other allele T, with β = −0.20. What effect does it imply for A?</summary><div class="a"><p>C/T is G/A read from the other strand, so first flip: C→G, T→A. The study's effect allele is then G, with β = −0.20 per copy of G. Then swap to make A the effect allele: β = +0.20 per copy of A. (The number is illustrative.)</p></div></details>
+  <details class="q"><summary>Your file codes rs671 as effect allele A (other G). A published study reports effect allele C, other allele T, with effect estimate \(\hat{\beta} = -0.20\). What effect does it imply for A?</summary><div class="a"><p>C/T is G/A read from the other strand, so first flip: C→G, T→A. The study's effect allele is then G, with \(\hat{\beta} = -0.20\) per copy of G. Then swap to make A the effect allele. A swap replaces the genotype \(g\) (copies of the effect allele) by \(2 - g\), which changes the sign of its coefficient: \(\hat{\beta} = +0.20\) per copy of A. (The number is illustrative.)</p></div></details>
 </section>
 
 <section class="learn-more">

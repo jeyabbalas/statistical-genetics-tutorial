@@ -124,8 +124,10 @@ for key, fname in page_map.items():
         if t not in GL:
             problems.append(f"{fname}: term link to unknown glossary id '{t}'")
     found = set(t for t in p.terms if t in GL)
+    # site.js never links terms inside rendered math, so TeX between \( \) or \[ \] does not count.
+    text = re.sub(r"\\\(.*?\\\)|\\\[.*?\\\]", " ", " ".join(p.text), flags=re.S)
     if MATCH:
-        for mm in MATCH.finditer(" ".join(p.text)):
+        for mm in MATCH.finditer(text):
             found.add(variants[mm.group(1)])
     for t in found:
         usage.setdefault(t, []).append(key)

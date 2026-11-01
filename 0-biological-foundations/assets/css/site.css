@@ -398,8 +398,42 @@ figure.fig:not(.no-zoom) > .fig-body > svg { cursor: zoom-in; }
   details.q:not([open]) > *:not(summary) { display: block; }
 }
 
+/* ---------- Math (KaTeX, rendered by assets/js/math.js) ---------- */
+/* Inline math \( … \) sits in running text; display math \[ … \] gets its own line and scrolls sideways
+   on narrow screens instead of overflowing the page. */
+.katex { font-size: 1.1em; }
+.katex-display { margin: 0.9em 0; padding: 2px 0; overflow-x: auto; overflow-y: hidden; }
+.katex-display > .katex { font-size: 1.2em; }
+.math-glue { white-space: nowrap; } /* a short expression and the punctuation touching it (math.js) */
+/* Equation block: the equation, what each term means, and why the equation has its form.
+   <div class="eq-block">
+     <div class="eq-display">\[ … \]</div>
+     <dl class="eq-terms"><dt>\(p\)</dt><dd>…</dd> …</dl>
+     <p class="eq-intuition">…</p>
+   </div>                                                                                       */
+.eq-block { border: 1px solid var(--border); border-radius: var(--radius); margin: 1.4em 0 1.8em; background: var(--bg); }
+.eq-block > .eq-display { background: var(--bg-alt); border-radius: var(--radius) var(--radius) 0 0; padding: 4px 18px; }
+.eq-block > .eq-display:only-child { border-radius: var(--radius); }
+.eq-block > .eq-display .katex-display { margin: 0.7em 0; }
+.eq-block > .eq-terms, .eq-block > .eq-intuition { margin: 0; padding: 12px 18px 13px; border-top: 1px solid var(--border); font-size: 0.95em; line-height: 1.6; }
+.eq-terms::before, .eq-intuition::before { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); margin-bottom: 6px; line-height: 1.4; }
+.eq-terms::before { content: "Terms"; grid-column: 1 / -1; margin-bottom: 0; }
+.eq-intuition::before { content: "Intuition"; }
+dl.eq-terms { display: grid; grid-template-columns: minmax(2.6em, max-content) minmax(0, 1fr); gap: 5px 18px; align-items: baseline; }
+dl.eq-terms > dt { grid-column: 1; font-weight: 400; white-space: nowrap; }
+dl.eq-terms > dd { grid-column: 2; margin: 0; }
+@media (max-width: 560px) {
+  .katex-display > .katex { font-size: 1.05em; }
+  dl.eq-terms { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  dl.eq-terms > dt { grid-column: 1; margin-top: 8px; }
+  dl.eq-terms > dd { grid-column: 1; padding-left: 14px; }
+  .eq-block > .eq-display { padding: 2px 12px; }
+  .eq-block > .eq-terms, .eq-block > .eq-intuition { padding: 10px 12px 11px; }
+}
+
 /* ---------- Shared small components (added after page drafts) ---------- */
-/* Estimated quantities: <span class="hat">p</span>; add "cap" for capital letters */
+/* Estimated quantities in widget readouts, which are plain HTML: <span class="hat">p</span>; add "cap" for
+   capital letters. Page text writes estimates in TeX instead: \(\hat{p}\). */
 .hat { position: relative; display: inline-block; }
 .hat::after { content: "\02C6"; position: absolute; left: 0; right: 0; top: 0; text-align: center; pointer-events: none; }
 .hat.cap::after { top: -0.2em; }

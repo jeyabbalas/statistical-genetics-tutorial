@@ -469,7 +469,7 @@
       ["Estimated β (true β = " + fmtNum(sim.beta, 2) + ")", fmtNum(fit.beta, 3) + " SD per allele  (SE " + fit.se.toFixed(3) +
         ";  95% CI " + fmtNum(fit.beta - ci, 3) + " to " + fmtNum(fit.beta + ci, 3) + ")"],
       ["Test of β = 0", "t = " + fmtNum(fit.t, 2) + "  (df = " + fmtInt(fit.df) + ")  ·  p = " + fmtSci(lp)],
-      ["Variance explained", "true 2p(1−p)β² = " + fmtPct(q2) + "  ·  this sample R² = " + fmtPct(fit.r2)],
+      ["Variance explained", "population R² = 2p(1−p)β² = " + fmtPct(q2) + "  ·  this sample R² = " + fmtPct(fit.r2)],
       ["Power at this n (p < 5 × 10⁻⁸)", q2 > 0 ? (pow > 0.999 ? "> 99.9%" : pow < 0.001 ? "< 0.1%" : (100 * pow).toFixed(pow < 0.1 ? 1 : 0) + "%") : "— (no true effect)"],
       ["n needed for 80% power at 5 × 10⁻⁸", q2 > 0 ? "≈ " + fmtRound2(nReq) : "no n is enough when β = 0"]
     ];

@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>From genotype to phenotype · Lecture 0</title>
 <meta name="description" content="How genetic variants relate to traits: one variant as a regression slope, many variants as genetic architecture and heritability, why an association need not be causal, Mendelian randomization, forward and reverse genetics, what a GWAS computes, and polygenic scores.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/css/site.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/math.js"></script>
 <script defer src="assets/js/pages.js"></script>
 <script defer src="assets/js/glossary-data.js"></script>
 <script defer src="assets/js/glossary-usage.js"></script>
@@ -14,8 +21,6 @@
 <style>
 body[data-page="genotype-to-phenotype"] sup.cite { font-size: 0.68em; margin-left: 1px; }
 body[data-page="genotype-to-phenotype"] sup.cite a { text-decoration: none; }
-body[data-page="genotype-to-phenotype"] .eq { font-family: var(--mono); font-size: 0.92rem; background: var(--bg-alt); border-radius: 6px; padding: 9px 12px; text-align: center; overflow-x: auto; margin: 0.6em 0 1.1em; }
-body[data-page="genotype-to-phenotype"] .eq .lbl { font-family: var(--font); font-size: 0.82rem; color: var(--fg-muted); margin-left: 10px; }
 body[data-page="genotype-to-phenotype"] .mm-scroll { overflow-x: auto; }
 body[data-page="genotype-to-phenotype"] .mm-scroll svg { display: block; width: 100%; height: auto; }
 body[data-page="genotype-to-phenotype"] .mental-model figcaption { font-size: 0.86rem; color: var(--fg-muted); margin-top: 6px; line-height: 1.45; }
@@ -79,7 +84,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
   <div class="chips">
     <span class="chip core">Core for Lecture 1</span>
     <span class="chip time">≈ 55 min</span>
-    <span class="chip data">Shows up in the data as: the phenotype column y, and BETA, SE and p-value columns in GWAS output</span>
+    <span class="chip data">Shows up in the data as: the phenotype column \(\mathbf{y}\), and BETA, SE and p-value columns in GWAS output</span>
   </div>
 </header>
 
@@ -189,13 +194,13 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
   </figure>
   <p class="mm-statement">A trait is shaped by many genetic variants plus environment, life history and chance. Each variant has a position on a chart of allele frequency against effect size: rare variants with large effects are found in families and by sequencing, common variants with small effects are found by GWAS, and common variants with large effects are few.</p>
   <ul class="mm-hooks">
-    <li>One variant’s effect is a regression slope, β: the change in mean phenotype per copy of the effect allele (<a href="#one-variant">one variant’s effect</a>).</li>
-    <li>Frequency and effect size together set how much of the trait’s variance a variant explains, 2p(1 − p)β², and therefore how many people a study needs to detect it (<a href="#try-it">try it</a>).</li>
+    <li>One variant’s effect is a regression slope, \(\beta\): the change in mean phenotype per copy of the effect allele (<a href="#one-variant">one variant’s effect</a>).</li>
+    <li>Frequency and effect size together set how much of the trait’s variance a variant explains, \(R^2 = 2p(1 - p)\beta^2\) for effect-allele frequency \(p\) and \(\beta\) in SD units, and therefore how many people a study needs to detect it (<a href="#try-it">try it</a>).</li>
     <li>Most traits are polygenic: thousands of small effects add up to a bell-shaped distribution, and heritability measures their combined share of the variance in one population (<a href="#architecture">architecture</a>, <a href="#heritability">heritability</a>).</li>
     <li>An association is not automatically causal. Linkage disequilibrium, ancestry and social pathways can all produce one; Mendelian randomization uses the random inheritance of alleles to ask causal questions (<a href="#causation">causation</a>, <a href="#mendelian-randomization">Mendelian randomization</a>).</li>
     <li>A GWAS fits one regression per variant. Its summary statistics are used in biology, drug-target discovery, Mendelian randomization, TWAS and polygenic scores (<a href="#gwas">GWAS</a>, <a href="#prs">polygenic scores</a>).</li>
   </ul>
-  <p class="mm-matrix">In the genotype–phenotype data matrix from the overview page, each variant is one column of 0/1/2 entries. Its allele frequency is the column mean divided by 2, and its effect size is the slope from regressing the phenotype column y on that column.</p>
+  <p class="mm-matrix">In the genotype–phenotype data matrix from the overview page, each variant is one column of 0/1/2 entries. Its allele frequency is the column mean divided by 2, and its effect size is the slope from regressing the phenotype column \(\mathbf{y}\) on that column.</p>
 </section>
 
 <aside class="callout bridge">
@@ -210,7 +215,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 </aside>
 
 <h2 id="phenotypes">Phenotypes and traits <span class="tag core">Core</span></h2>
-<p>A <dfn>phenotype</dfn> is any observable or measurable characteristic of a person: a blood test result, a body measurement, a diagnosis, a behavior. A <a class="term" href="glossary.html#trait">trait</a> is a characteristic that varies among people; in genetics the two words are used almost interchangeably. Statistical genetics treats a phenotype as a variable y measured on each participant, the phenotype column of the data matrix.</p>
+<p>A <dfn>phenotype</dfn> is any observable or measurable characteristic of a person: a blood test result, a body measurement, a diagnosis, a behavior. A <a class="term" href="glossary.html#trait">trait</a> is a characteristic that varies among people; in genetics the two words are used almost interchangeably. Statistical genetics treats a phenotype as a variable \(y\) measured on each participant; its values form the phenotype column \(\mathbf{y}\) of the data matrix.</p>
 <p>Three kinds of phenotype need different models:</p>
 <ul>
   <li><b>Quantitative traits</b> are measured on a continuous scale, such as height (cm), body mass index (BMI, kg/m²) or LDL cholesterol (mmol/L). The usual model is linear regression.</li>
@@ -235,14 +240,25 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 </div>
 
 <aside class="callout data">
-  <div class="callout-title"><span class="badge">In the data</span> One phenotype = one column y</div>
-  <p>For a genetic analysis, each phenotype becomes one column y with one value per participant, next to the genotype matrix and the covariates. Two decisions come up at once. Statins lower measured LDL cholesterol, so analysts must decide how to treat people taking them (for example, by adjusting their values or adding statin use as a covariate). And a binary trait needs a <a class="term" href="glossary.html#case-definition">case definition</a>, a rule such as “any hospital record with an ICD-10 code from I21”. Both are covered on the phenotypes page, in its sections on <a href="phenotypes.html#statins">statins and LDL</a> and on <a href="phenotypes.html#case-definition">case definitions</a>.</p>
+  <div class="callout-title"><span class="badge">In the data</span> One phenotype = one column \(\mathbf{y}\)</div>
+  <p>For a genetic analysis, each phenotype becomes one column \(\mathbf{y}\) with one value per participant, next to the genotype matrix and the covariates. Two decisions come up at once. Statins lower measured LDL cholesterol, so analysts must decide how to treat people taking them (for example, by adjusting their values or adding statin use as a covariate). And a binary trait needs a <a class="term" href="glossary.html#case-definition">case definition</a>, a rule such as “any hospital record with an ICD-10 code from I21”. Both are covered on the phenotypes page, in its sections on <a href="phenotypes.html#statins">statins and LDL</a> and on <a href="phenotypes.html#case-definition">case definitions</a>.</p>
 </aside>
 
 <h2 id="one-variant" data-toc="One variant’s effect">One variant’s effect is a regression slope <span class="tag core">Core</span></h2>
-<p>Take one biallelic SNP and code each person’s genotype g as the number of copies of the effect allele: 0, 1 or 2 (the allele dosage from the <a href="variation.html#genotypes">variation page</a>). Plot the phenotype against g and draw a line through the three group means. The standard model is the <dfn>additive model</dfn>:</p>
-<div class="eq no-autolink">y = α + β·g + γ·covariates + ε</div>
-<p>Here α is the mean phenotype of people with g = 0, ε is everything the model does not explain (other variants, environment, measurement error), and <a class="term" href="glossary.html#beta">β</a> is the <dfn>per-allele effect</dfn>: the change in mean phenotype for each extra copy of the effect allele. β is an effect size in the units of the trait, such as mmol/L per allele for LDL cholesterol or cm per allele for height. If y is standardized to mean 0 and standard deviation (SD) 1, β is in SD units, which makes effects on different traits comparable. Covariates such as age, sex and genetic principal components enter the same regression, so β is estimated after adjusting for them.</p>
+<p>Take one biallelic SNP and code each person’s genotype \(g\) as the number of copies of the effect allele: 0, 1 or 2 (the allele dosage from the <a href="variation.html#genotypes">variation page</a>). Plot the phenotype against \(g\) and draw a line through the three group means. The standard model is the <dfn>additive model</dfn>:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ y_i = \alpha + \beta g_i + \boldsymbol{\gamma}^\top \mathbf{c}_i + \varepsilon_i \]</div>
+  <dl class="eq-terms">
+    <dt>\(y_i\)</dt><dd>Phenotype of person \(i\), one of the \(n\) people in the study, in the units of the trait.</dd>
+    <dt>\(g_i\)</dt><dd>Genotype of person \(i\): the number of copies of the effect allele, 0, 1 or 2 (an imputed dosage can lie in between).</dd>
+    <dt>\(\alpha\)</dt><dd>Intercept: the expected phenotype when \(g_i = 0\) and every covariate is 0. Without covariates, it is the mean phenotype of people who carry no copy of the effect allele.</dd>
+    <dt><a class="term" href="glossary.html#beta">\(\beta\)</a></dt><dd>The <dfn>per-allele effect</dfn>: the change in mean phenotype for each extra copy of the effect allele. It is an effect size in the units of the trait, such as mmol/L per allele for LDL cholesterol or cm per allele for height. If \(y\) is standardized to mean 0 and standard deviation (SD) 1, \(\beta\) is in SD units, which makes effects on different traits comparable. \(\beta\) is a property of the population; a study estimates it as \(\hat{\beta}\).</dd>
+    <dt>\(\mathbf{c}_i\)</dt><dd>Covariates of person \(i\), as a vector: for example age, sex and genetic principal components.</dd>
+    <dt>\(\boldsymbol{\gamma}\)</dt><dd>Covariate effects, one per covariate. \(\boldsymbol{\gamma}^\top \mathbf{c}_i = \gamma_1 c_{i1} + \gamma_2 c_{i2} + \cdots\) is the part of the phenotype that the model attributes to person \(i\)’s covariates.</dd>
+    <dt>\(\varepsilon_i\)</dt><dd>Residual: everything the model does not explain for person \(i\) (other variants, environment, measurement error). The model assumes that it has mean 0 at every genotype and covariate value.</dd>
+  </dl>
+  <p class="eq-intuition">Averaged over people with the same genotype and covariates, the residual is 0, so the mean phenotype is a straight line in \(g_i\): \(\alpha\), \(\alpha + \beta\) and \(\alpha + 2\beta\) for 0, 1 and 2 copies, plus the same covariate term \(\boldsymbol{\gamma}^\top \mathbf{c}_i\) in all three groups. Every copy adds the same amount \(\beta\); this is what “additive” means, and it places the heterozygotes’ mean exactly halfway between the two homozygotes’ means. Because the covariates are in the same regression, \(\beta\) is estimated after adjusting for them: it compares people with the same covariate values. Without covariates, the least-squares estimate is the slope \(\hat{\beta} = \widehat{\Cov}(g, y)/\widehat{\Var}(g)\), the sample covariance of genotype and phenotype divided by the sample variance of the genotype. If \(\beta = 0\), the three genotype groups have the same mean phenotype, so a test of association is a test of \(\beta = 0\). Counting the other allele replaces \(g_i\) by \(2 - g_i\): the fitted means stay the same, \(\beta\) becomes \(-\beta\) and \(\alpha\) becomes \(\alpha + 2\beta\).</p>
+</div>
 
 <figure class="fig wide scroll-x">
   <div class="fig-body">
@@ -641,24 +657,55 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 <text x="452" y="316" class="t-sm">y = α + β·x + covariates + ε. Additive coding is the default.</text>
 </svg>
   </div>
-  <figcaption><span class="fig-title">One variant, three ways to code it.</span> Panel A shows simulated data for 300 people (effect-allele frequency 0.4, true β = 0.8 SD). The line through the group means has intercept α and slope β; each person’s vertical distance from the line is a residual ε. Panel B: if one copy already has the full effect, the variant acts dominantly and is coded 0, 1, 1; if two copies are needed, it acts recessively and is coded 0, 0, 1. Additive coding (0, 1, 2) is the default test in GWAS software such as REGENIE.<sup class="cite"><a href="#src-10">10</a></sup> Simulated data.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  <figcaption><span class="fig-title">One variant, three ways to code it.</span> Panel A shows simulated data for 300 people (effect-allele frequency \(p = 0.4\), true \(\beta = 0.8\) SD). The line through the group means has intercept \(\alpha\) and slope \(\beta\); each person’s vertical distance from the line is a residual \(\varepsilon_i\). Panel B: if one copy already has the full effect, the variant acts dominantly and is coded 0, 1, 1; if two copies are needed, it acts recessively and is coded 0, 0, 1. Additive coding (0, 1, 2) is the default test in GWAS software such as REGENIE.<sup class="cite"><a href="#src-10">10</a></sup> Simulated data.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
 </figure>
 
-<p>For a binary trait, the same idea uses logistic regression: the log odds of being a case is modeled as α + β·g + covariates, where the odds of an event with probability π are π/(1 − π). Then e<sup>β</sup> is the <dfn>odds ratio</dfn> (OR) per allele, the factor by which each extra copy multiplies the odds; OR = 1 means no effect. For example, in clinic- and autopsy-based studies of white participants (labeled “Caucasian” in the paper, an outdated term), the odds of Alzheimer’s disease were 3.2 times higher with one <i>APOE</i> ε4 allele (genotype ε3/ε4) than with ε3/ε3, and 14.9 times higher with two (ε4/ε4).<sup class="cite"><a href="#src-11">11</a></sup> A purely multiplicative per-allele model would predict 3.2² ≈ 10 for two copies, so real effects need not follow the additive coding exactly.</p>
+<p>For a binary trait, the same idea uses logistic regression, which fits the straight line to the log odds of being a case:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \ln \frac{\pi_i}{1 - \pi_i} = \alpha + \beta g_i + \boldsymbol{\gamma}^\top \mathbf{c}_i \\[6pt] \mathrm{OR} = e^{\beta} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\pi_i\)</dt><dd>Probability that person \(i\) is a case, given their genotype and covariates; between 0 and 1.</dd>
+    <dt>\(\pi_i/(1 - \pi_i)\)</dt><dd>Odds of being a case: the probability of being a case divided by the probability of not being one. Odds run from 0 to infinity; a probability of 0.2 gives odds of 0.25. Their natural logarithm, the log odds or \(\logit(\pi_i)\), can take any real value.</dd>
+    <dt>\(\alpha, \beta, \boldsymbol{\gamma}\)</dt><dd>Intercept, per-allele effect and covariate effects, as in the linear model but on the log-odds scale: \(\beta\) is the change in log odds per extra copy of the effect allele, the log odds ratio.</dd>
+    <dt>\(g_i, \mathbf{c}_i\)</dt><dd>Genotype and covariates of person \(i\), as above.</dd>
+    <dt>\(\mathrm{OR}\)</dt><dd><dfn>Odds ratio</dfn> per allele: the factor by which each extra copy of the effect allele multiplies the odds, for people with the same covariates.</dd>
+  </dl>
+  <p class="eq-intuition">A probability lies between 0 and 1, so a straight line in \(g_i\) could predict impossible values; the log odds can take any real value, so a straight line on that scale never does. Taking the exponential of both sides gives the odds, \(e^{\alpha + \boldsymbol{\gamma}^\top \mathbf{c}_i} (e^{\beta})^{g_i}\): each extra copy multiplies the odds by \(e^{\beta}\), so for people with the same covariates the odds with 0, 1 and 2 copies are in the ratio \(1 : \mathrm{OR} : \mathrm{OR}^2\). \(\beta = 0\) gives \(\mathrm{OR} = 1\), which means no effect; \(\beta &gt; 0\) gives \(\mathrm{OR} &gt; 1\), and \(\beta &lt; 0\) gives \(\mathrm{OR} &lt; 1\). When \(\pi_i\) is small, the odds \(\pi_i/(1 - \pi_i)\) are close to \(\pi_i\) itself, so for a rare disease the odds ratio is close to the ratio of the two probabilities, the relative risk.</p>
+</div>
+<p>For example, in clinic- and autopsy-based studies of white participants (labeled “Caucasian” in the paper, an outdated term), the odds of Alzheimer’s disease were 3.2 times higher with one <i>APOE</i> ε4 allele (genotype ε3/ε4) than with ε3/ε3, and 14.9 times higher with two (ε4/ε4).<sup class="cite"><a href="#src-11">11</a></sup> A purely multiplicative per-allele model would predict \(3.2^2 \approx 10\) for two copies, so real effects need not follow the additive coding exactly.</p>
 
 <h3 id="variance-explained">How much variance one variant explains</h3>
-<p>How much does one variant matter for the whole population? If the effect allele has frequency p and the population is in Hardy–Weinberg equilibrium, the genotype g has variance 2p(1 − p) (<a href="allele-frequencies.html#hwe">allele frequencies page</a>). The <dfn>variance explained</dfn> by the variant is then</p>
-<div class="eq no-autolink">q² = 2p(1 − p)·β² <span class="lbl">(a fraction of Var(y) when y is in SD units)</span></div>
-<p>Two consequences follow. A rare variant can have a large β and still explain little variance, because 2p(1 − p) is small. And a common variant with a small β explains very little: with p = 0.3 and β = 0.02 SD, q² = 2 × 0.3 × 0.7 × 0.02² ≈ 0.017% of the variance.</p>
-<p>Variance explained also sets the sample size a study needs. The test of β = 0 in n people has a chi-square statistic whose noncentrality, its expected value minus 1, is about n·q²/(1 − q²). Reaching p &lt; 5 × 10⁻⁸ (the genome-wide significance threshold, explained in the <a href="#gwas">GWAS section</a>) with 80% power needs a noncentrality of (5.45 + 0.84)² ≈ 39.6, so</p>
-<div class="eq no-autolink">n ≈ 39.6 (1 − q²) / q² ≈ 40 / q²</div>
-<p>The common variant above needs about 236,000 people. <i>PCSK9</i> R46L (rs11591147), a low-frequency variant with a larger effect, needs far fewer. Its T allele has frequency about 1.6% in gnomAD’s non-Finnish European samples,<sup class="cite"><a href="#src-12">12</a></sup> and carriers have about 15% lower LDL cholesterol,<sup class="cite"><a href="#src-13">13</a></sup> roughly 0.5 mmol/L, or a little over half of the SD of LDL cholesterol in UK Biobank (0.87 mmol/L).<sup class="cite"><a href="#src-9">9</a></sup> Large GWAS estimate about 0.4–0.5 SD per copy of the T allele.<sup class="cite"><a href="#src-59">59</a></sup> Taking β ≈ 0.5 SD gives q² ≈ 2 × 0.016 × 0.984 × 0.5² ≈ 0.8% and n ≈ 5,000.</p>
+<p>How much does one variant matter for the whole population? The <dfn>variance explained</dfn> by the variant is the share of the trait’s variance across people that its genotype accounts for:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} R^2 &amp;= \frac{\beta^2 \Var(g)}{\Var(y)} \\[4pt] &amp;= 2p(1 - p)\,\beta^2 \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(R^2\)</dt><dd>Variance explained: the fraction of the variance of \(y\) among the people of a population that the variant’s genotype accounts for, from 0 to 1 (often given as a percentage). It equals the population \(R^2\) of the regression of \(y\) on \(g\), which is also the squared correlation between \(g\) and \(y\). The \(R^2\) of a regression fitted to a sample estimates it.</dd>
+    <dt>\(\beta\)</dt><dd>Per-allele effect from the additive model. On the second line it is in SD units: the effect in trait units divided by the standard deviation of \(y\).</dd>
+    <dt>\(\Var(g)\)</dt><dd>Variance of the genotype \(g_i\) across people. If the effect allele has frequency \(p\) and the population is in Hardy–Weinberg equilibrium, \(g_i\) follows a \(\Binomial(2, p)\) distribution, whose variance is \(2p(1 - p)\) (<a href="allele-frequencies.html#hwe">allele frequencies page</a>).</dd>
+    <dt>\(\Var(y)\)</dt><dd>Variance of the phenotype across people, in squared trait units. It is 1 when \(y\) is in SD units, which gives the second line.</dd>
+    <dt>\(p\)</dt><dd>Frequency of the effect allele in the population.</dd>
+  </dl>
+  <p class="eq-intuition">Without covariates the model is \(y_i = \alpha + \beta g_i + \varepsilon_i\). If the residual is uncorrelated with the genotype, the variance of \(y\) splits into two parts, \(\Var(y) = \beta^2 \Var(g) + \Var(\varepsilon)\): the constant \(\alpha\) adds no variance, and multiplying \(g_i\) by \(\beta\) multiplies its variance by \(\beta^2\). \(R^2\) is the first part’s share. Because \(\Cov(g, y) = \beta \Var(g)\), the same number is the squared correlation \(\Cov(g, y)^2/(\Var(g)\Var(y))\). \(R^2\) grows with the square of the effect, so doubling \(\beta\) quadruples it. The factor \(2p(1 - p)\) is largest, 0.5, at \(p = 0.5\), and falls to 0 as \(p\) approaches 0 or 1, where nearly everyone has the same genotype. Counting the other allele leaves \(R^2\) unchanged, because \(p\) becomes \(1 - p\) and \(\beta\) becomes \(-\beta\).</p>
+</div>
+<p>Two consequences follow. A rare variant can have a large \(\beta\) and still explain little variance, because \(2p(1 - p)\) is small. And a common variant with a small \(\beta\) explains very little: with \(p = 0.3\) and \(\beta = 0.02\) SD, \(R^2 = 2 \times 0.3 \times 0.7 \times 0.02^2 \approx 0.017\%\) of the variance.</p>
+<p>Variance explained also sets the sample size a study needs. The test of \(\beta = 0\) in \(n\) people uses a chi-square statistic with 1 degree of freedom, and a study of a variant with a given \(R^2\) has 80% power if that statistic reaches a p-value below 5 × 10⁻⁸ (the genome-wide significance threshold, explained in the <a href="#gwas">GWAS section</a>) with probability 0.8. The number of people this takes follows from the statistic’s noncentrality \(\lambda\):</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \lambda \approx \frac{nR^2}{1 - R^2} \\[6pt] n \approx \frac{39.6\,(1 - R^2)}{R^2} \approx \frac{40}{R^2} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\lambda\)</dt><dd>Noncentrality of the chi-square statistic for the test of \(\beta = 0\): its expected value minus 1. It is 0 when \(\beta = 0\), because the statistic then follows a chi-square distribution with 1 degree of freedom, whose mean is 1.</dd>
+    <dt>\(n\)</dt><dd>Number of unrelated people in the study.</dd>
+    <dt>\(R^2\)</dt><dd>Variance explained by the variant, as above.</dd>
+    <dt>\(39.6\)</dt><dd>The noncentrality that gives 80% power at 5 × 10⁻⁸: \((5.45 + 0.84)^2\). A standard normal variable exceeds 5.45 in absolute value with probability 5 × 10⁻⁸ (a two-sided test), and it falls below 0.84 with probability 0.8.</dd>
+  </dl>
+  <p class="eq-intuition">Take \(\beta &gt; 0\); the other case is symmetric. The chi-square statistic is the square of \(Z = \hat{\beta}/\SE(\hat{\beta})\), which is approximately normal with standard deviation 1 and mean \(\sqrt{\lambda}\). The least-squares slope has \(\SE(\hat{\beta})^2 \approx \Var(\varepsilon)/(n\Var(g))\), and \(\Var(\varepsilon) = (1 - R^2)\Var(y)\), so \(\lambda = \beta^2/\SE(\hat{\beta})^2 \approx n\beta^2\Var(g)/((1 - R^2)\Var(y)) = nR^2/(1 - R^2)\), the first line: \(\lambda\) grows in proportion to the number of people and to \(R^2/(1 - R^2)\), the variance the variant explains relative to the variance it leaves unexplained. Significance needs \(|Z| &gt; 5.45\), and \(Z\) exceeds 5.45 with probability 0.8 when its mean is \(5.45 + 0.84\) (the chance that \(Z &lt; -5.45\) is negligible), so \(\lambda = 39.6\). Solving the first line for \(n\) at that value gives the second line. A single variant explains a small fraction of the variance, so \(1 - R^2 \approx 1\) and \(n \approx 40/R^2\): the sample size needed is inversely proportional to the variance explained, and halving \(\beta\) quadruples it.</p>
+</div>
+<p>The common variant above needs about 236,000 people. <i>PCSK9</i> R46L (rs11591147), a low-frequency variant with a larger effect, needs far fewer. Its T allele has frequency about 1.6% in gnomAD’s non-Finnish European samples,<sup class="cite"><a href="#src-12">12</a></sup> and carriers have about 15% lower LDL cholesterol,<sup class="cite"><a href="#src-13">13</a></sup> roughly 0.5 mmol/L, or a little over half of the SD of LDL cholesterol in UK Biobank (0.87 mmol/L).<sup class="cite"><a href="#src-9">9</a></sup> Large GWAS estimate about 0.4–0.5 SD per copy of the T allele.<sup class="cite"><a href="#src-59">59</a></sup> Taking \(\beta \approx 0.5\) SD gives \(R^2 \approx 2 \times 0.016 \times 0.984 \times 0.5^2 \approx 0.8\%\) and \(n \approx 5{,}000\).</p>
 
 <figure class="fig scroll-x">
   <div class="fig-body">
 <svg viewBox="0 0 760 400" role="img" aria-labelledby="vx-t vx-d" class="scroll-sm">
 <title id="vx-t">Variance explained by one variant, and the sample size needed to detect it</title>
-<desc id="vx-d">Curves of variance explained, 2p(1-p) times beta squared, against allele frequency p on a log scale from 0.1% to 50%, for per-allele effects beta of 0.02, 0.05, 0.1, 0.3 and 1 standard deviation. The left axis gives variance explained on a log scale; the right axis gives the number of people needed for 80% power at p &lt; 5e-8, which is about 40 divided by the variance explained. A dashed line marks about 500,000 people (UK Biobank).</desc>
+<desc id="vx-d">Curves of variance explained, R squared = 2p(1-p) times beta squared, against allele frequency p on a log scale from 0.1% to 50%, for per-allele effects beta of 0.02, 0.05, 0.1, 0.3 and 1 standard deviation. The left axis gives variance explained on a log scale; the right axis gives the number of people needed for 80% power at p &lt; 5e-8, which is about 40 divided by the variance explained. A dashed line marks about 500,000 people (UK Biobank).</desc>
 <line x1="86" y1="350" x2="600" y2="350" stroke="#eef1f4" stroke-width="1"/>
 <text x="80" y="354" class="t-sm" text-anchor="end">0.0001%</text>
 <line x1="86" y1="296.7" x2="600" y2="296.7" stroke="#eef1f4" stroke-width="1"/>
@@ -691,7 +738,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 <line x1="600" y1="30" x2="600" y2="350" stroke="#5a6370" stroke-width="1.2"/>
 <line x1="86" y1="350" x2="600" y2="350" stroke="#5a6370" stroke-width="1.2"/>
 <text x="343" y="390" class="t" text-anchor="middle">Effect-allele frequency p (log scale)</text>
-<text x="18" y="190" class="t" text-anchor="middle" transform="rotate(-90 18 190)">Variance explained 2p(1 − p)β²</text>
+<text x="18" y="190" class="t" text-anchor="middle" transform="rotate(-90 18 190)">Variance explained R² = 2p(1 − p)β²</text>
 <line x1="600" y1="59.2" x2="605" y2="59.2" stroke="#5a6370" stroke-width="1.2"/>
 <text x="608" y="63.2" class="t-sm">100</text>
 <line x1="600" y1="105.7" x2="605" y2="105.7" stroke="#5a6370" stroke-width="1.2"/>
@@ -720,21 +767,21 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 <text x="94" y="240.7" class="t-sm" style="fill:var(--fg)">≈ 500,000 people (UK Biobank-sized study)</text>
 </svg>
   </div>
-  <figcaption><span class="fig-title">Variance explained by one variant, and the sample size needed to detect it.</span> Each curve is one per-allele effect β in SD units. The right axis converts variance explained into the number of people needed for 80% power at p &lt; 5 × 10⁻⁸ (about 40 divided by the variance explained). Rare variants explain little variance even with large effects; common variants with β around 0.02 SD need hundreds of thousands of people, the scale of UK Biobank. Computed from the formulas above.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  <figcaption><span class="fig-title">Variance explained by one variant, and the sample size needed to detect it.</span> Each curve is one per-allele effect \(\beta\) in SD units. The right axis converts the variance explained \(R^2\) into the number of people needed for 80% power at p &lt; 5 × 10⁻⁸ (about \(40/R^2\)). Rare variants explain little variance even with large effects; common variants with \(\beta\) around 0.02 SD need hundreds of thousands of people, the scale of UK Biobank. Computed from the formulas above.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
 </figure>
 
 <aside class="callout pitfall">
   <div class="callout-title"><span class="badge">Common confusion</span> A tiny p-value is not a large effect</div>
-  <p>In 500,000 people, a variant that explains only 0.02% of the variance has an expected chi-square statistic of about 500,000 × 0.0002 = 100, a p-value around 10⁻²³. Significance says an effect is unlikely to be exactly zero; β and the variance explained say how large it is. Report and read both.</p>
+  <p>In 500,000 people, a variant that explains only 0.02% of the variance has noncentrality \(\lambda \approx nR^2 = 500{,}000 \times 0.0002 = 100\), so its expected chi-square statistic is about 100, a p-value around 10⁻²³. Significance says an effect is unlikely to be exactly zero; \(\beta\) and the variance explained say how large it is. Report and read both.</p>
 </aside>
 
 <aside class="callout data">
   <div class="callout-title"><span class="badge">In the data</span> BETA, SE and p in GWAS output</div>
-  <p>GWAS software writes one row per variant. REGENIE, used in Session 2, writes the columns <code>CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P</code>: ALLELE1 is the allele whose copies are counted, A1FREQ its frequency, BETA its estimated effect “on the original scale” of the trait (mmol/L per allele if y is LDL cholesterol in mmol/L), SE the standard error of BETA, and LOG10P = −log₁₀ p.<sup class="cite"><a href="#src-10">10</a></sup> For binary traits REGENIE fits logistic regression, so BETA is a log odds ratio.<sup class="cite"><a href="#src-14">14</a></sup> The sign of BETA flips if the other allele is counted, so check which allele is the effect allele before comparing studies.</p>
+  <p>GWAS software writes one row per variant. REGENIE, used in Session 2, writes the columns <code>CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P</code>: ALLELE1 is the allele whose copies are counted, A1FREQ its frequency, BETA its estimated effect \(\hat{\beta}\) “on the original scale” of the trait (mmol/L per allele if \(y\) is LDL cholesterol in mmol/L), SE the standard error of BETA, and LOG10P = −log₁₀(p-value).<sup class="cite"><a href="#src-10">10</a></sup> For binary traits REGENIE fits logistic regression, so BETA is a log odds ratio.<sup class="cite"><a href="#src-14">14</a></sup> The sign of BETA flips if the other allele is counted, so check which allele is the effect allele before comparing studies.</p>
 </aside>
 
 <h2 id="try-it" data-toc="Try it: one SNP, one trait">Try it: one SNP, one trait <span class="tag core">Core</span></h2>
-<p>The widget simulates a quantitative trait (in SD units) for n people at one SNP with effect-allele frequency p and true per-allele effect β. Genotypes are drawn under Hardy–Weinberg equilibrium, and the remaining variance is normally distributed noise, so the variant explains exactly 2p(1 − p)β² of the variance in the population. The widget then fits the additive model by least squares, as a GWAS does for each variant, and reports <span class="hat cap">β</span>, its standard error, the exact t-test p-value, and the power of a genome-wide test. All data are simulated.</p>
+<p>The widget simulates a quantitative trait (in SD units) for \(n\) people at one SNP with effect-allele frequency \(p\) and true per-allele effect \(\beta\). Genotypes are drawn under Hardy–Weinberg equilibrium, and the remaining variance is normally distributed noise, so the variant explains exactly \(R^2 = 2p(1 - p)\beta^2\) of the variance in the population. The widget then fits the additive model by least squares, as a GWAS does for each variant, and reports \(\hat{\beta}\), its standard error, the exact t-test p-value, the sample’s \(R^2\) next to the population value, and the power of a genome-wide test. All data are simulated.</p>
 
 <div class="widget" id="w-snp">
   <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">One SNP, one trait</span></div>
@@ -742,7 +789,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
   <noscript><div class="widget-noscript">This interactive figure needs JavaScript. Without it: a SNP with effect-allele frequency p and per-allele effect β (in SD) explains 2p(1 − p)β² of the variance, and a GWAS needs about 40 divided by that number of people for 80% power at p &lt; 5 × 10⁻⁸.</div></noscript>
 </div>
 
-<p class="after-widget"><b>What to notice.</b> (1) At the default setting (p = 0.3, β = 0.1 SD, n = 2,000) the slope is visible and p is about 0.005: significant at 0.05 but far from 5 × 10⁻⁸. (2) Click <i>Re-sample people</i> a few times: <span class="hat cap">β</span> moves around the true β by about one standard error, and the p-value changes by orders of magnitude between samples. (3) Choose <i>Common, small effect</i> and raise n: the “n needed” row says about 100,000, and the bar crosses the genome-wide line only at that scale. (4) Choose <i>Rare, large effect</i>: at n = 2,000 the g = 2 group is almost always empty and only a handful of people carry the allele, yet about 10,000 people are enough, because 2p(1 − p)β² ≈ 0.4%. (5) Set β = 0 and re-sample many times: about 1 sample in 20 gives p &lt; 0.05, which is what a 0.05 threshold allows when there is no effect.</p>
+<p class="after-widget"><b>What to notice.</b> (1) At the default setting (\(p = 0.3\), \(\beta = 0.1\) SD, \(n = 2{,}000\)) the slope is visible and the p-value is about 0.005: significant at 0.05 but far from 5 × 10⁻⁸. (2) Click <i>Re-sample people</i> a few times: \(\hat{\beta}\) moves around the true \(\beta\) by about one standard error, and the p-value changes by orders of magnitude between samples. (3) Choose <i>Common, small effect</i> and raise \(n\): the “n needed” row says about 100,000, and the bar crosses the genome-wide line only at that scale. (4) Choose <i>Rare, large effect</i>: at \(n = 2{,}000\) the \(g = 2\) group is almost always empty and only a handful of people carry the allele, yet about 10,000 people are enough, because \(R^2 = 2p(1 - p)\beta^2 \approx 0.4\%\) and \(40/R^2 \approx 10{,}000\). (5) Set \(\beta = 0\) and re-sample many times: about 1 sample in 20 gives a p-value below 0.05, which is what a 0.05 threshold allows when there is no effect.</p>
 
 <h2 id="architecture" data-toc="Genetic architecture">Genetic architecture: one gene or thousands <span class="tag core">Core</span></h2>
 <p>The <dfn>genetic architecture</dfn> of a trait is the number of variants that affect it, their allele frequencies, their effect sizes and how their effects combine. Traits range from monogenic to polygenic:</p>
@@ -920,8 +967,19 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 </aside>
 
 <h2 id="heritability">Heritability <span class="tag core">Core</span></h2>
-<p><dfn>Heritability</dfn> (h²) is the share of the variance of a trait, in a given population and environment, that is due to genetic differences between people: h² = Var(genetic) / Var(phenotype).<sup class="cite"><a href="#src-20">20</a></sup> Narrow-sense heritability counts only additive genetic effects, the part that a regression on allele counts can capture; broad-sense heritability also counts dominance and interactions between variants. Heritability describes a population, not a person.</p>
-<p>A <dfn>twin study</dfn> estimates heritability by comparing two kinds of twin pairs. Monozygotic (identical) twins carry the same DNA sequence; dizygotic (fraternal) twins inherit the same parental copy at about half of their genome on average, like ordinary siblings (<a href="inheritance.html#twins-trios">inheritance page</a>). If both kinds of pairs share their environments to the same degree, the extra similarity of identical pairs reflects genes, and Falconer’s formula gives h² ≈ 2(r<sub>MZ</sub> − r<sub>DZ</sub>), where r is the correlation of the trait within pairs.</p>
+<p><dfn>Heritability</dfn> (\(h^2\)) is the share of the variance of a trait, in a given population and environment, that is due to genetic differences between people: \(h^2 = \Var(\text{genetic})/\Var(\text{phenotype})\), where \(\Var(\text{phenotype})\) is the variance of the trait among the people of that population and \(\Var(\text{genetic})\) is the variance of the trait values that their genotypes alone would predict.<sup class="cite"><a href="#src-20">20</a></sup> Narrow-sense heritability counts only additive genetic effects, the part that a regression on allele counts can capture; broad-sense heritability, written \(H^2\) when the two are distinguished, also counts dominance and interactions between variants. Heritability describes a population, not a person.</p>
+<p>A <dfn>twin study</dfn> estimates heritability by comparing two kinds of twin pairs. Monozygotic (identical) twins carry the same DNA sequence; dizygotic (fraternal) twins inherit the same parental copy at about half of their genome on average, like ordinary siblings (<a href="inheritance.html#twins-trios">inheritance page</a>). If both kinds of pairs share their environments to the same degree, the extra similarity of identical pairs reflects genes, and Falconer’s formula splits the variance of the trait into three shares:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} h^2 &amp;\approx 2\,(r_{\mathrm{MZ}} - r_{\mathrm{DZ}}) \\ c^2 &amp;\approx r_{\mathrm{MZ}} - h^2 \\ e^2 &amp;\approx 1 - r_{\mathrm{MZ}} \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(r_{\mathrm{MZ}}\)</dt><dd>Correlation of the trait between the two twins of a pair, computed across identical (monozygotic) pairs; from −1 to 1.</dd>
+    <dt>\(r_{\mathrm{DZ}}\)</dt><dd>The same correlation, computed across fraternal (dizygotic) pairs.</dd>
+    <dt>\(h^2\)</dt><dd>Heritability, here narrow-sense: the share of the trait’s variance due to additive genetic effects.</dd>
+    <dt>\(c^2\)</dt><dd>Share of the variance due to environment that the two twins of a pair share, such as their family home.</dd>
+    <dt>\(e^2\)</dt><dd>Share due to environment unique to each twin, plus measurement error.</dd>
+  </dl>
+  <p class="eq-intuition">The model writes the trait as the sum of three uncorrelated parts, additive genetic, shared environment and unique environment, whose variances are the fractions \(h^2\), \(c^2\) and \(e^2\) of the total, so \(h^2 + c^2 + e^2 = 1\). The correlation between the two twins of a pair is the fraction of the variance that comes from the parts they have in common. Identical twins have the whole genetic part and the shared environment in common, so \(r_{\mathrm{MZ}} = h^2 + c^2\). Fraternal twins inherit the same parental copy at half of the genome on average, so they have half of the additive genetic part in common, plus the shared environment: \(r_{\mathrm{DZ}} = \tfrac{1}{2}h^2 + c^2\). Subtracting gives \(r_{\mathrm{MZ}} - r_{\mathrm{DZ}} = \tfrac{1}{2}h^2\), the first line; \(c^2\) is the rest of \(r_{\mathrm{MZ}}\), and \(e^2\) is the share that identical twins do not have in common. If identical pairs are no more alike than fraternal pairs, \(h^2 = 0\); if \(r_{\mathrm{MZ}} = 2r_{\mathrm{DZ}}\), \(c^2 = 0\). In the simulated pairs below, \(r_{\mathrm{MZ}} = 0.80\) and \(r_{\mathrm{DZ}} = 0.45\) give \(h^2 = 0.70\), \(c^2 = 0.10\) and \(e^2 = 0.20\). The \(\approx\) signs mark that the shares hold only under the model’s assumptions: more similar environments in identical than in fraternal pairs, or dominance effects (shared fully by identical twins but on average only a quarter by fraternal twins), make \(2(r_{\mathrm{MZ}} - r_{\mathrm{DZ}})\) larger than \(h^2\).</p>
+</div>
 
 <figure class="fig scroll-x">
   <div class="fig-body">
@@ -1426,7 +1484,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 <text x="740" y="298" class="t-sm" text-anchor="middle">100%</text>
 <text x="520" y="318" class="t-sm" text-anchor="middle">share of the variance in adult height</text>
 <text x="290" y="31" class="t-b" text-anchor="end" style="font-size:12px">Twin studies</text>
-<text x="290" y="45" class="t-sm" text-anchor="end">all genetic effects (h²)</text>
+<text x="290" y="45" class="t-sm" text-anchor="end">all variants (h²)</text>
 <rect x="300" y="24" width="299.2" height="24" rx="3" fill="var(--q1)" stroke="none" stroke-width="0"/>
 <rect x="599.2" y="24" width="110" height="24" rx="0" fill="var(--q1)" stroke="none" stroke-width="0" fill-opacity="0.45"/>
 <text x="715.2" y="41" class="t-b" style="font-size:12px">68–93%</text>
@@ -1471,15 +1529,26 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
   <div class="bridge-grid">
     <figure class="slide-thumb"><img src="assets/img/lecture1/slide-050.jpg" alt="Lecture 1, slide 50: Session 5, post-GWAS analysis: heritability, functional enrichment, integrative analyses"><figcaption>Lecture 1 · slide 50</figcaption></figure>
     <div>
-      <p>In Lecture 1, heritability first appears in slide 29’s “Familial Aggregation / Heritability” box, the evidence that genetic variation influences disease. Session 5 (slide 50: “Post-GWAS Analysis: Heritability, Functional Enrichment, Integrative Analyses”) estimates SNP-heritability with methods such as GCTA, which fits a mixed model to individual-level genotypes, and LD score regression, which works from GWAS summary statistics. Listen for “h²<sub>SNP</sub>” or “SNP-based heritability”: it is the SNP-heritability of this section, not the twin estimate.</p>
+      <p>In Lecture 1, heritability first appears in slide 29’s “Familial Aggregation / Heritability” box, the evidence that genetic variation influences disease. Session 5 (slide 50: “Post-GWAS Analysis: Heritability, Functional Enrichment, Integrative Analyses”) estimates SNP-heritability with methods such as GCTA, which fits a mixed model to individual-level genotypes, and LD score regression, which works from GWAS summary statistics. Listen for “\(h^2_{\mathrm{SNP}}\)” or “SNP-based heritability”: it is the SNP-heritability of this section, not the twin estimate.</p>
     </div>
   </div>
 </aside>
 
 <h2 id="gxe" data-toc="Genes and environment">Genes and environment act together <span class="tag core">Core</span></h2>
 <p>A <dfn>gene–environment interaction</dfn> (G×E) means that the effect of a genotype depends on an environmental exposure, or equivalently that the effect of the exposure depends on the genotype. In a regression it is a product term:</p>
-<div class="eq no-autolink">y = α + β<sub>G</sub>·g + β<sub>E</sub>·E + β<sub>GE</sub>·(g × E) + ε</div>
-<p>and β<sub>GE</sub> ≠ 0 is the interaction. The running example rs671 shows a strong one. Its A allele (<i>ALDH2*2</i>) produces a nearly inactive form of the enzyme ALDH2, so acetaldehyde, a toxic product of alcohol breakdown, builds up after drinking and causes facial flushing.<sup class="cite"><a href="#src-26">26</a></sup> The allele has a frequency of about 17–23% in East Asian reference samples and is nearly absent in European samples.<sup class="cite"><a href="#src-12">12</a></sup> In Japanese and Taiwanese case–control studies, heterozygous carriers who drank had odds ratios of 3.7 to 18.1 for esophageal squamous cell carcinoma, and most studies found odds ratios above 10 for heavy-drinking carriers.<sup class="cite"><a href="#src-26">26</a></sup> The genotype’s effect on this cancer depends on how much a person drinks.</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} y_i = \alpha &amp;+ \beta_{\mathrm{G}}\, g_i + \beta_{\mathrm{E}}\, E_i \\ &amp;+ \beta_{\mathrm{GE}}\, g_i E_i + \varepsilon_i \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(y_i, g_i, \varepsilon_i, \alpha\)</dt><dd>Phenotype, genotype (copies of the effect allele) and residual of person \(i\), and the intercept, as in the additive model; covariates can be added in the same way.</dd>
+    <dt>\(E_i\)</dt><dd>Exposure of person \(i\): 0 or 1 (for example, does not drink or drinks) or an amount (for example, drinks per week).</dd>
+    <dt>\(\beta_{\mathrm{G}}\)</dt><dd>Per-allele effect of the genotype in people with \(E_i = 0\).</dd>
+    <dt>\(\beta_{\mathrm{E}}\)</dt><dd>Effect of one unit of exposure in people with \(g_i = 0\).</dd>
+    <dt>\(g_i E_i\)</dt><dd>The product term, or interaction term: genotype times exposure, entered as one more column of the regression.</dd>
+    <dt>\(\beta_{\mathrm{GE}}\)</dt><dd>Interaction effect: the change in the per-allele effect for each unit of exposure. \(\beta_{\mathrm{GE}} \ne 0\) is the interaction.</dd>
+  </dl>
+  <p class="eq-intuition">Collecting the terms that contain \(g_i\) gives \(y_i = \alpha + \beta_{\mathrm{E}} E_i + (\beta_{\mathrm{G}} + \beta_{\mathrm{GE}} E_i)\, g_i + \varepsilon_i\), so the per-allele effect is \(\beta_{\mathrm{G}} + \beta_{\mathrm{GE}} E_i\): with a 0/1 exposure it is \(\beta_{\mathrm{G}}\) in unexposed people and \(\beta_{\mathrm{G}} + \beta_{\mathrm{GE}}\) in exposed people. Collecting the terms that contain \(E_i\) instead shows that the effect of one unit of exposure, \(\beta_{\mathrm{E}} + \beta_{\mathrm{GE}}\, g_i\), depends on the genotype through the same coefficient, which is why the two descriptions in the definition above are equivalent. If \(\beta_{\mathrm{GE}} = 0\), the genotype has the same effect at every level of exposure, the effects of genotype and exposure add, and the lines of mean phenotype against exposure for the three genotypes are parallel. For a binary trait the same terms make up the log odds of a logistic model, so \(\beta_{\mathrm{GE}}\) is the change in the per-allele log odds ratio per unit of exposure, and \(e^{\beta_{\mathrm{GE}}}\) is the factor by which each unit of exposure multiplies the per-allele odds ratio.</p>
+</div>
+<p>The running example rs671 shows a strong interaction. Its A allele (<i>ALDH2*2</i>) produces a nearly inactive form of the enzyme ALDH2, so acetaldehyde, a toxic product of alcohol breakdown, builds up after drinking and causes facial flushing.<sup class="cite"><a href="#src-26">26</a></sup> The allele has a frequency of about 17–23% in East Asian reference samples and is nearly absent in European samples.<sup class="cite"><a href="#src-12">12</a></sup> In Japanese and Taiwanese case–control studies, heterozygous carriers who drank had odds ratios of 3.7 to 18.1 for esophageal squamous cell carcinoma, and most studies found odds ratios above 10 for heavy-drinking carriers.<sup class="cite"><a href="#src-26">26</a></sup> The genotype’s effect on this cancer depends on how much a person drinks.</p>
 <p>Lesk gives a second example. α1-antitrypsin, the protein made from the gene <i>SERPINA1</i>, inhibits elastase, an enzyme released by white blood cells that damages the lining of the lungs’ air sacs unless it is inhibited. Its Z allele leaves too little working inhibitor, which predisposes to emphysema, lung damage that makes breathing difficult, and smoking makes the effect worse.<sup class="cite"><a href="#src-3">3</a>,<a href="#src-27">27</a></sup></p>
 <p>A different pattern is one variant affecting several traits, called <dfn>pleiotropy</dfn>. <i>APOE</i> is the standard example. Its ε4 allele (marked by the C allele of the SNP rs429358) raises LDL cholesterol; across <i>APOE</i> genotypes, LDL cholesterol rises roughly linearly from ε2/ε2 to ε4/ε4.<sup class="cite"><a href="#src-28">28</a></sup> The same ε4 allele raises the risk of Alzheimer’s disease,<sup class="cite"><a href="#src-11">11</a></sup> while the ε2 allele (marked by the T allele of rs7412) lowers LDL cholesterol. Pleiotropy matters for <a href="#mendelian-randomization">Mendelian randomization</a>: a variant chosen as an instrument for one trait may also affect the outcome through another.</p>
 
@@ -1544,13 +1613,13 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
   <div class="bridge-grid">
     <figure class="slide-thumb"><img src="assets/img/lecture1/slide-011.jpg" alt="Lecture 1, slide 11: definitions of epidemiology and genetic epidemiology"><figcaption>Lecture 1 · slide 11</figcaption></figure>
     <div>
-      <p>In Lecture 1 (slide 11) you will see genetic epidemiology defined as “the study of the role of genetic factors in determining health and disease in families and in populations, and the interplay of such genetic factors with social and environmental factors”. On this page, “genetic factors” are variants, “determining” is modeled with regression effects such as β, and the “interplay” includes gene–environment interaction. Session 3 (slide 48) covers “population descriptors &amp; gene-environment interactions”: listen for “interaction term” (the product g × E above) and “stratified analysis” (the genetic effect estimated separately in exposed and unexposed people).</p>
+      <p>In Lecture 1 (slide 11) you will see genetic epidemiology defined as “the study of the role of genetic factors in determining health and disease in families and in populations, and the interplay of such genetic factors with social and environmental factors”. On this page, “genetic factors” are variants, “determining” is modeled with regression effects such as \(\beta\), and the “interplay” includes gene–environment interaction. Session 3 (slide 48) covers “population descriptors &amp; gene-environment interactions”: listen for “interaction term” (the product \(g_i E_i\) above) and “stratified analysis” (the genetic effect estimated separately in exposed and unexposed people).</p>
     </div>
   </div>
 </aside>
 
 <h2 id="causation">Association is not causation <span class="tag core">Core</span></h2>
-<p>A <dfn>genetic association</dfn> means that the average phenotype differs between genotype groups, β ≠ 0. It does not by itself show that the tested variant causes the difference. Three explanations come up again and again:</p>
+<p>A <dfn>genetic association</dfn> means that the average phenotype differs between genotype groups, \(\beta \ne 0\). It does not by itself show that the tested variant causes the difference. Three explanations come up again and again:</p>
 <ol class="steps">
   <li><b>Linkage disequilibrium.</b> Nearby variants are inherited together, so their genotype columns are correlated (<a href="haplotypes-ld.html#gwas-peaks">haplotypes and LD page</a>). The tested SNP may only be correlated with the causal variant. Finding the causal variant within an associated region is fine-mapping (Session 4).</li>
   <li><b>Confounding by ancestry.</b> If allele frequencies and the trait both differ between ancestry groups for unrelated reasons (diet, healthcare, other environments), SNP and trait are associated without any causal link. This is population stratification (<a href="ancestry.html#stratification">ancestry page</a>); GWAS adjust for genetic principal components or use mixed models.</li>
@@ -1668,7 +1737,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
     <figure class="slide-thumb"><img src="assets/img/lecture1/slide-032.jpg" alt="Lecture 1, slide 32: at APOE, higher LDL levels and statin use; at LPA, higher MI risk; both with more margarine and less butter use"><figcaption>Lecture 1 · slide 32</figcaption></figure>
     <figure class="slide-thumb"><img src="assets/img/lecture1/slide-035.jpg" alt="Lecture 1, slide 35: take-home messages, social context matters and hypothesized mechanisms should be concrete and testable"><figcaption>Lecture 1 · slide 35</figcaption></figure>
   </div>
-  <p>In Lecture 1 (slides 31–35) you will see a Manhattan plot (explained in the <a href="#gwas">GWAS section</a>) for margarine use, with its tallest peak at <i>APOE</i> on chromosome 19. Slide 32 decodes it: “↑ LDL levels, statin use” and “↑ MI risk” mean the alleles that raise LDL cholesterol or heart-attack risk; MI is myocardial infarction. The take-home messages are “social context matters” and “hypothesized biological mechanisms should be concrete &amp; testable”: the cartoon’s “then a miracle occurs” between G and Y is the step this page’s causal chains fill in.</p>
+  <p>In Lecture 1 (slides 31–35) you will see a Manhattan plot (explained in the <a href="#gwas">GWAS section</a>) for margarine use, with its tallest peak at <i>APOE</i> on chromosome 19. Slide 32 decodes it: “↑ LDL levels, statin use” and “↑ MI risk” mean the alleles that raise LDL cholesterol or heart-attack risk; MI is myocardial infarction. The take-home messages are “social context matters” and “hypothesized biological mechanisms should be concrete &amp; testable”: the cartoon’s “then a miracle occurs” between \(G\) and \(Y\) is the step this page’s causal chains fill in.</p>
 </aside>
 
 <p>One problem genetic studies largely avoid is <dfn>reverse causation</dfn>, where the outcome changes the supposed cause. For example, if illness makes some people stop drinking, non-drinkers will include more sick people, and drinking will look protective. A person’s germline genotype is fixed at conception, so a disease cannot change it. That fact is the basis of Mendelian randomization.</p>
@@ -1680,13 +1749,23 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 
 <h2 id="mendelian-randomization">Mendelian randomization <span class="tag core">Core</span></h2>
 <p>Observational studies struggle to tell whether an exposure causes an outcome. People with high HDL cholesterol (the cholesterol carried by high-density lipoprotein particles) have fewer heart attacks, but they also differ in diet, exercise and many other ways. <dfn>Mendelian randomization</dfn> (MR) uses genetic variants as instrumental variables to test such causal questions.<sup class="cite"><a href="#src-33">33</a></sup> An <dfn>instrumental variable</dfn> is a variable that is associated with the exposure and affects the outcome only through the exposure. Genotypes are good candidates: at conception each parent passes on one of their two alleles at random (Mendel’s law of segregation, <a href="inheritance.html#mendel">inheritance page</a>), so which allele a child receives does not depend on the child’s later lifestyle.</p>
-<p>A genetic variant G is a valid instrument for the effect of an exposure X on an outcome Y under three conditions (Lecture 1 slide 22, Assumptions 1–3):<sup class="cite"><a href="#src-33">33</a></sup></p>
+<p>A genetic variant \(G\) is a valid instrument for the effect of an exposure \(X\) on an outcome \(Y\) under three conditions (Lecture 1 slide 22, Assumptions 1–3):<sup class="cite"><a href="#src-33">33</a></sup></p>
 <ol class="steps">
-  <li><b>Relevance:</b> G is associated with X.</li>
-  <li><b>Independence:</b> G shares no common cause with Y. Sanderson et al. call this exchangeability; population stratification can break it.</li>
-  <li><b>Exclusion restriction:</b> G affects Y only through X. Pleiotropy can break it.</li>
+  <li><b>Relevance:</b> \(G\) is associated with \(X\).</li>
+  <li><b>Independence:</b> \(G\) shares no common cause with \(Y\). Sanderson et al. call this exchangeability; population stratification can break it.</li>
+  <li><b>Exclusion restriction:</b> \(G\) affects \(Y\) only through \(X\). Pleiotropy can break it.</li>
 </ol>
-<p>Only the first condition can be tested directly from data.<sup class="cite"><a href="#src-33">33</a></sup> If all three hold, the causal effect of X on Y is the ratio of two regression slopes, the Wald ratio β<sub>XY</sub> = β<sub>GY</sub> / β<sub>GX</sub>. Both slopes can be taken from GWAS summary statistics, which is one reason MR is a major use of GWAS results.</p>
+<p>Only the first condition can be tested directly from data.<sup class="cite"><a href="#src-33">33</a></sup> If all three hold, the causal effect of \(X\) on \(Y\) is the ratio of two regression slopes, the Wald ratio:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \beta_{XY} = \frac{\beta_{GY}}{\beta_{GX}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\beta_{GX}\)</dt><dd>Per-allele effect of the variant \(G\) on the exposure \(X\): the slope of the regression of \(X\) on the genotype, in units of \(X\) per allele (for example mmol/L of HDL cholesterol per allele).</dd>
+    <dt>\(\beta_{GY}\)</dt><dd>Per-allele effect of \(G\) on the outcome \(Y\): the slope of the regression of \(Y\) on the genotype; a log odds ratio when \(Y\) is a disease.</dd>
+    <dt>\(\beta_{XY}\)</dt><dd>Causal effect of \(X\) on \(Y\): the change in \(Y\), or in its log odds, caused by raising \(X\) by one unit.</dd>
+  </dl>
+  <p class="eq-intuition">Under the three conditions, the only path from \(G\) to \(Y\) runs through \(X\). Each extra copy of the allele changes \(X\) by \(\beta_{GX}\), and each unit of \(X\) changes \(Y\) by \(\beta_{XY}\), so each copy changes \(Y\) by \(\beta_{GY} = \beta_{GX}\beta_{XY}\); dividing by \(\beta_{GX}\) gives the ratio. Confounders \(U\), factors that affect both \(X\) and \(Y\), do not enter, because the genotype is unrelated to them (independence), whereas the slope of \(Y\) on \(X\) in observational data also contains their effects. The ratio needs \(\beta_{GX} \ne 0\) (relevance), and when \(\beta_{GX}\) is close to 0, small errors in it change the ratio a lot. If the variant also affects \(Y\) through another path (pleiotropy), \(\beta_{GY}\) includes that path and the ratio is biased. A variant that clearly changes \(X\) but leaves \(Y\) unchanged, \(\beta_{GY} \approx 0\), implies \(\beta_{XY} \approx 0\), which is the logic of the HDL cholesterol example below. With data, the estimates take the place of the slopes: \(\hat{\beta}_{XY} = \hat{\beta}_{GY}/\hat{\beta}_{GX}\).</p>
+</div>
+<p>Both slopes can be taken from GWAS summary statistics, which is one reason MR is a major use of GWAS results.</p>
 
 <figure class="fig scroll-x">
   <div class="fig-body">
@@ -1737,7 +1816,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 <text x="612" y="254" class="t-sm" style="fill:var(--fg)">does not lower MI risk.</text>
 </svg>
   </div>
-  <figcaption><span class="fig-title">Mendelian randomization uses a variant as an instrumental variable.</span> G is a genetic variant, X the exposure, Y the outcome and U the confounders. The three numbered conditions are Assumptions 1–3 of Lecture 1 slide 22. Right: the Wald ratio and the HDL cholesterol example.<sup class="cite"><a href="#src-34">34</a></sup><span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  <figcaption><span class="fig-title">Mendelian randomization uses a variant as an instrumental variable.</span> \(G\) is a genetic variant, \(X\) the exposure, \(Y\) the outcome and \(U\) the confounders. The three numbered conditions are Assumptions 1–3 of Lecture 1 slide 22. Right: the Wald ratio and the HDL cholesterol example.<sup class="cite"><a href="#src-34">34</a></sup><span class="fig-credit">Drawn for this lecture.</span></figcaption>
 </figure>
 
 <p>Two results from Lecture 1 slide 23 show what MR can do. The 396Ser allele of the gene <i>LIPG</i> (frequency 2.6%) raises HDL cholesterol by 0.14 mmol/L. Observational data predict that such a rise should lower the odds of myocardial infarction to about 0.87, yet carriers had an odds ratio of 0.99 (95% CI 0.88–1.11). A score of 14 HDL-raising variants gave the same answer, while a score of LDL-raising variants, used as a positive control, strongly raised risk (odds ratio 2.13 per SD of LDL cholesterol).<sup class="cite"><a href="#src-34">34</a></sup> Similarly, variants that lower C-reactive protein (CRP), a blood marker of inflammation, did not lower the risk of coronary heart disease (odds ratio 1.00 per 20% lower CRP).<sup class="cite"><a href="#src-35">35</a></sup> So raising HDL cholesterol or lowering CRP by themselves is unlikely to prevent heart attacks, in line with clinical trials, as the slide notes.</p>
@@ -1967,7 +2046,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 </aside>
 
 <h2 id="gwas">What a GWAS does <span class="tag core">Core</span></h2>
-<p>A <dfn>genome-wide association study</dfn> (GWAS) repeats the single-variant regression of the <a href="#one-variant">earlier section</a> for every variant in the genome, one at a time. For variant j it fits y = α + β<sub>j</sub>g<sub>j</sub> + γ·covariates + ε and records <span class="hat cap">β</span><sub>j</sub>, its standard error and its p-value. With genotyped plus imputed variants that is millions of regressions; UK Biobank’s imputed data hold about 96 million variants.<sup class="cite"><a href="#src-32">32</a></sup></p>
+<p>A <dfn>genome-wide association study</dfn> (GWAS) repeats the single-variant regression of the <a href="#one-variant">earlier section</a> for every variant in the genome, one at a time. For variant \(j\) it fits \(y_i = \alpha + \beta_j g_{ij} + \boldsymbol{\gamma}^\top \mathbf{c}_i + \varepsilon_i\), where \(g_{ij}\) is the number of copies of variant \(j\)’s effect allele that person \(i\) carries, and records \(\hat{\beta}_j\), its standard error and its p-value; the intercept and the covariate effects are estimated again in each regression. With genotyped plus imputed variants that is millions of regressions; UK Biobank’s imputed data hold about 96 million variants.<sup class="cite"><a href="#src-32">32</a></sup></p>
 
 <figure class="fig wide scroll-x">
   <div class="fig-body">
@@ -2238,11 +2317,11 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 <text x="8" y="318" class="t-sm">Simulated values. Real files also hold allele frequency, sample size and imputation quality.</text>
 </svg>
   </div>
-  <figcaption><span class="fig-title">A GWAS is one regression per column of the genotype matrix.</span> Inputs: the phenotype y, covariates C (age, sex, genetic principal components) and the genotype matrix G. Each column produces one row of summary statistics. The neighboring variants v5 and v6 are both associated with y because they are in linkage disequilibrium. Simulated values.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  <figcaption><span class="fig-title">A GWAS is one regression per column of the genotype matrix.</span> Inputs: the phenotype \(\mathbf{y}\), covariates \(\mathbf{C}\) (age, sex, genetic principal components) and the genotype matrix \(\mathbf{G}\). Each column produces one row of summary statistics. The neighboring variants v5 and v6 are both associated with \(\mathbf{y}\) because they are in linkage disequilibrium. Simulated values.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
 </figure>
 
 <p>Because so many tests are run, a GWAS uses a strict threshold, p &lt; 5 × 10⁻⁸, called genome-wide significance. It is a Bonferroni correction of 0.05 for about one million independent tests, the number estimated for common variants in genomes labeled European ancestry; linkage disequilibrium makes neighboring tests correlated, so the effective number of tests is far below the number of variants. Genomes labeled African ancestry have shorter-range LD and about twice as many independent tests.<sup class="cite"><a href="#src-53">53</a></sup></p>
-<p>The output, one row per variant with its position, alleles, effect-allele frequency, <span class="hat cap">β</span>, standard error, p-value and sample size, is called <a class="term" href="glossary.html#summary-statistics">GWAS summary statistics</a>. Summary statistics contain no individual-level data, so they are widely shared; the GWAS Catalog collects published associations (1,198,394 top associations from 7,845 publications as of October 2026).<sup class="cite"><a href="#src-54">54</a></sup> A <a class="term" href="glossary.html#manhattan-plot">Manhattan plot</a> shows a whole GWAS at once: position along the genome on the x-axis and −log₁₀ p on the y-axis.</p>
+<p>The output, one row per variant with its position, alleles, effect-allele frequency, \(\hat{\beta}\), standard error, p-value and sample size, is called <a class="term" href="glossary.html#summary-statistics">GWAS summary statistics</a>. Summary statistics contain no individual-level data, so they are widely shared; the GWAS Catalog collects published associations (1,198,394 top associations from 7,845 publications as of October 2026).<sup class="cite"><a href="#src-54">54</a></sup> A <a class="term" href="glossary.html#manhattan-plot">Manhattan plot</a> shows a whole GWAS at once: position along the genome on the x-axis and −log₁₀(p-value) on the y-axis.</p>
 
 <figure class="fig wide scroll-x">
   <div class="fig-body">
@@ -2309,7 +2388,7 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 <ul>
   <li><b>Biology.</b> A peak points to a region, not to a gene. About 88% of early GWAS hits were in introns or between genes,<sup class="cite"><a href="#src-17">17</a></sup> and about 93% of disease- and trait-associated variants lie in non-coding sequence,<sup class="cite"><a href="#src-55">55</a></sup> so linking a peak to its gene usually needs functional data such as eQTLs (<a href="genes-expression.html#measuring-expression">genes page</a>; Session 5).</li>
   <li><b>Drug targets.</b> <i>HMGCR</i> and <i>PCSK9</i> both appear in GWAS of LDL cholesterol, and both encode drug targets.</li>
-  <li><b>Mendelian randomization.</b> The GWAS slopes <span class="hat cap">β</span><sub>GX</sub> and <span class="hat cap">β</span><sub>GY</sub> are the inputs of the Wald ratio.</li>
+  <li><b>Mendelian randomization.</b> The GWAS slopes \(\hat{\beta}_{GX}\) and \(\hat{\beta}_{GY}\) are the inputs of the Wald ratio.</li>
   <li><b>TWAS.</b> A transcriptome-wide association study predicts each person’s gene expression from their genotypes, using models trained on eQTL data, and tests the predicted expression against the trait (Lecture 1 slide 25).</li>
   <li><b>Polygenic scores</b>, next.</li>
 </ul>
@@ -2325,13 +2404,21 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 
 <aside class="callout data">
   <div class="callout-title"><span class="badge">In the data</span> A UK Biobank GWAS of LDL cholesterol</div>
-  <p>y = Data-Field 30780 (with a decision about statin users); covariates = age, sex, genotyping array and genetic principal components (Data-Field 22009); genotypes = the imputed data.<sup class="cite"><a href="#src-32">32</a></sup> REGENIE runs in two steps: step 1 fits a whole-genome ridge regression that captures the combined effect of variants across the genome, and step 2 tests each variant, adjusting for the step-1 prediction.<sup class="cite"><a href="#src-14">14</a></sup></p>
+  <p>The phenotype \(\mathbf{y}\) is Data-Field 30780 (with a decision about statin users); the covariates are age, sex, genotyping array and genetic principal components (Data-Field 22009); the genotypes are the imputed data.<sup class="cite"><a href="#src-32">32</a></sup> REGENIE runs in two steps: step 1 fits a whole-genome ridge regression that captures the combined effect of variants across the genome, and step 2 tests each variant, adjusting for the step-1 prediction.<sup class="cite"><a href="#src-14">14</a></sup></p>
 </aside>
 
 <h2 id="prs">Polygenic scores <span class="tag core">Core</span></h2>
 <p>A <dfn>polygenic score</dfn> (PRS, polygenic risk score; also PGS) adds up a person’s effect alleles, weighted by GWAS effect sizes:</p>
-<div class="eq no-autolink">PRS<sub>i</sub> = Σ<sub>j</sub> <span class="hat cap">β</span><sub>j</sub> · g<sub>ij</sub></div>
-<p>summing over a chosen set of variants j. The weights <span class="hat cap">β</span><sub>j</sub> come from a GWAS in other people; the score is then computed for new people from their genotypes alone.</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \mathrm{PRS}_i = \sum_{j=1}^{M} \hat{\beta}_j \, g_{ij} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\mathrm{PRS}_i\)</dt><dd>Polygenic score of person \(i\), in the units of the weights: trait units for a quantitative trait, log odds for a binary trait.</dd>
+    <dt>\(j, M\)</dt><dd>Index of the variants in the score, \(j = 1, \ldots, M\). The \(M\) variants are a chosen set, from hundreds to millions.</dd>
+    <dt>\(\hat{\beta}_j\)</dt><dd>Weight of variant \(j\): its estimated per-allele effect. The weights come from a GWAS in other people; the score is then computed for new people from their genotypes alone.</dd>
+    <dt>\(g_{ij}\)</dt><dd>Number of copies of variant \(j\)’s effect allele that person \(i\) carries: 0, 1 or 2, or an imputed dosage.</dd>
+  </dl>
+  <p class="eq-intuition">Under the additive model each copy of variant \(j\)’s effect allele changes the expected trait by \(\beta_j\), so \(\hat{\beta}_j g_{ij}\) estimates the difference in expected trait between person \(i\) and a person with no copy at variant \(j\), and the score adds these differences over the \(M\) variants. The sum assumes that the variants’ effects add up and that each effect is counted once; variants in strong linkage disequilibrium carry largely the same association, so score methods keep one variant per correlated group or adjust the weights for LD. In the figure below, the eight products add up to 0.35 for person \(i\). Counting the other allele of variant \(j\) turns \(g_{ij}\) into \(2 - g_{ij}\) and \(\hat{\beta}_j\) into \(-\hat{\beta}_j\), which changes every person’s score by the same amount, \(-2\hat{\beta}_j\); only differences between people carry information, so scores are usually standardized across people to mean 0 and SD 1. Weights estimated in the same people would also fit the random noise of that sample, and the score would look more accurate there than in new people.</p>
+</div>
 
 <figure class="fig wide scroll-x">
   <div class="fig-body">
@@ -2465,9 +2552,9 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 <aside class="callout key">
   <div class="callout-title"><span class="badge">Key points</span></div>
   <ul>
-    <li><b>One variant:</b> the additive model y = α + β·g + covariates + ε. β is the per-allele effect in trait units, or a log odds ratio for binary traits.</li>
-    <li><b>Frequency × effect:</b> a variant explains 2p(1 − p)β² of the variance, and a GWAS needs about 40 divided by that many people for 80% power at p &lt; 5 × 10⁻⁸. Common, small effects need hundreds of thousands of people.</li>
-    <li><b>Polygenic traits and heritability:</b> many small effects sum to a near-normal distribution, and diseases are modeled with a liability threshold. Heritability is a population-specific share of variance, estimated from twins (h²) or from SNPs (SNP-heritability).</li>
+    <li><b>One variant:</b> the additive model \(y_i = \alpha + \beta g_i + \boldsymbol{\gamma}^\top \mathbf{c}_i + \varepsilon_i\). \(\beta\) is the per-allele effect in trait units, or a log odds ratio for binary traits.</li>
+    <li><b>Frequency × effect:</b> a variant explains \(R^2 = 2p(1 - p)\beta^2\) of the variance (\(\beta\) in SD units), and a GWAS needs about \(40/R^2\) people for 80% power at p &lt; 5 × 10⁻⁸. Common, small effects need hundreds of thousands of people.</li>
+    <li><b>Polygenic traits and heritability:</b> many small effects sum to a near-normal distribution, and diseases are modeled with a liability threshold. Heritability is a population-specific share of variance, estimated from twins (\(h^2\)) or from SNPs (SNP-heritability).</li>
     <li><b>Causation:</b> associations can come from LD, ancestry confounding or social pathways (margarine). Mendelian randomization uses germline genotype as an instrument under three conditions: relevance, independence and exclusion restriction.</li>
     <li><b>From GWAS to use:</b> a GWAS is one regression per variant. Its summary statistics are used for fine-mapping, drug-target discovery (<i>PCSK9</i>, <i>ANGPTL3</i>, <i>BCL11A</i>), Mendelian randomization, TWAS and polygenic scores, which are less accurate in groups under-represented in GWAS.</li>
   </ul>
@@ -2475,9 +2562,9 @@ body[data-page="genotype-to-phenotype"] table.snp-stats tr:last-child th, body[d
 
 <section class="quiz">
   <h2 id="check">Check your understanding</h2>
-  <details class="q"><summary>A SNP has effect-allele frequency 0.3 and a per-allele effect of 0.05 SD on a quantitative trait. What share of the variance does it explain, and roughly how many people does a GWAS need to detect it at p &lt; 5 × 10⁻⁸ with 80% power?</summary><div class="a"><p>Variance explained = 2 × 0.3 × 0.7 × 0.05² = 0.00105, about 0.1%. The sample size is about 40 / 0.00105 ≈ 38,000 people. Check it in the widget by setting p = 0.3 and β = 0.05.</p></div></details>
+  <details class="q"><summary>A SNP has effect-allele frequency 0.3 and a per-allele effect of 0.05 SD on a quantitative trait. What share of the variance does it explain, and roughly how many people does a GWAS need to detect it at p &lt; 5 × 10⁻⁸ with 80% power?</summary><div class="a"><p>Variance explained: \(R^2 = 2 \times 0.3 \times 0.7 \times 0.05^2 = 0.00105\), about 0.1%. The sample size is about \(40/R^2 = 40/0.00105 \approx 38{,}000\) people. Check it in the widget by setting \(p = 0.3\) and \(\beta = 0.05\).</p></div></details>
   <details class="q"><summary>Why are common variants with large effects on serious diseases so rare?</summary><div class="a"><p>Negative (purifying) selection: alleles that strongly reduce survival or reproduction are removed from the population before they can become common. Large-effect alleles therefore stay rare, and the common variants that remain mostly have small effects.</p></div></details>
-  <details class="q"><summary>Twin correlations for a trait are r<sub>MZ</sub> = 0.6 and r<sub>DZ</sub> = 0.4. Estimate h², the shared-environment share and the unique-environment share, and name the assumptions. Does h² = 0.4 mean that 40% of each person’s trait value comes from their genes?</summary><div class="a"><p>h² ≈ 2 × (0.6 − 0.4) = 0.4; shared environment ≈ 0.6 − 0.4 = 0.2; unique environment plus measurement error ≈ 1 − 0.6 = 0.4. The calculation assumes that identical and fraternal pairs share their environments to the same degree and that genetic effects are additive. No: heritability is a share of the variation among people in one population and environment, not a split of one person’s trait value. It can differ between populations and over time, and it says nothing about how changeable the trait is.</p></div></details>
+  <details class="q"><summary>Twin correlations for a trait are \(r_{\mathrm{MZ}} = 0.6\) and \(r_{\mathrm{DZ}} = 0.4\). Estimate \(h^2\), the shared-environment share and the unique-environment share, and name the assumptions. Does \(h^2 = 0.4\) mean that 40% of each person’s trait value comes from their genes?</summary><div class="a"><p>\(h^2 \approx 2 \times (0.6 - 0.4) = 0.4\); shared environment \(c^2 \approx 0.6 - 0.4 = 0.2\); unique environment plus measurement error \(e^2 \approx 1 - 0.6 = 0.4\). The calculation assumes that identical and fraternal pairs share their environments to the same degree and that genetic effects are additive. No: heritability is a share of the variation among people in one population and environment, not a split of one person’s trait value. It can differ between populations and over time, and it says nothing about how changeable the trait is.</p></div></details>
   <details class="q"><summary>A GWAS of margarine use finds a genome-wide significant peak at <i>APOE</i>. Give three explanations other than “this gene affects taste”, and say which one Lecture 1 favors.</summary><div class="a"><p>(1) The tested SNPs are in LD with a causal variant that affects something else; (2) confounding by ancestry; (3) a real but indirect social pathway: alleles that raise LDL cholesterol lead to diagnoses, statins and dietary advice, which change the spread people buy. Lecture 1 (slides 32–35) favors the social pathway, supported by the matching signals for LDL levels, statin use and heart-attack risk.</p></div></details>
   <details class="q"><summary>Why is an <i>APOE</i> variant a risky instrument for the effect of LDL cholesterol on heart attacks in Mendelian randomization?</summary><div class="a"><p>Because of pleiotropy: <i>APOE</i> variants also affect other traits (for example, the risk of Alzheimer’s disease), so the variant may influence the outcome through paths other than LDL cholesterol. That would break the exclusion restriction (condition 3).</p></div></details>
   <details class="q"><summary>A polygenic score for coronary artery disease was built from a GWAS whose participants were genetically similar to the 1000 Genomes EUR samples. Why might it predict less accurately in people genetically similar to the AFR samples?</summary><div class="a"><p>Allele frequencies and LD patterns differ between groups, so the SNPs in the score tag the causal variants less well, and some causal variants common in that group may be rare or missing in the GWAS. Martin et al. found accuracy about 4.5-fold lower in the group they label African, on average across 17 UK Biobank traits.</p></div></details>

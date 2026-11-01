@@ -1,6 +1,7 @@
 /* ==========================================================================
-   Lecture 0 site script (no dependencies; works from file:// and from a server)
+   Lecture 0 site script (works from file:// and from a server)
    - Builds the sidebar navigation, per-page table of contents and the pager
+   - Renders TeX math with KaTeX through assets/js/math.js (skipped if KaTeX is not loaded)
    - Links glossary terms automatically and shows definition tooltips
    - Renders the glossary page from assets/js/glossary-data.js
    - Opens slide thumbnails and zoomable images in a lightbox
@@ -197,14 +198,14 @@
     return { re: re, map: map };
   }
 
-  var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, CODE: 1, PRE: 1, KBD: 1, SAMP: 1, A: 1, BUTTON: 1, INPUT: 1, TEXTAREA: 1, SELECT: 1, OPTION: 1, LABEL: 1, SVG: 1, svg: 1, MATH: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1, SUMMARY: 1, NAV: 1, TH: 1, DFN: 1, Q: 1 };
+  var SKIP_TAGS = { SCRIPT: 1, STYLE: 1, CODE: 1, PRE: 1, KBD: 1, SAMP: 1, A: 1, BUTTON: 1, INPUT: 1, TEXTAREA: 1, SELECT: 1, OPTION: 1, LABEL: 1, SVG: 1, svg: 1, MATH: 1, math: 1, H1: 1, H2: 1, H3: 1, H4: 1, H5: 1, H6: 1, SUMMARY: 1, NAV: 1, TH: 1, DFN: 1, Q: 1 };
   var BLOCK_SEL = "p, li, td, dd, dt, figcaption, blockquote, caption, .a, .gloss-def, div";
 
   function shouldSkip(node, root) {
     for (var n = node.parentNode; n && n !== root; n = n.parentNode) {
       if (n.nodeType !== 1) continue;
       if (SKIP_TAGS[n.tagName]) return true;
-      if (n.classList && (n.classList.contains("no-autolink") || n.classList.contains("widget") || n.classList.contains("readout") || n.classList.contains("callout-title") || n.classList.contains("fig-title") || n.classList.contains("sources") || n.classList.contains("file-label") || n.classList.contains("chips") || n.classList.contains("learn-more") || n.classList.contains("fig-credit"))) return true;
+      if (n.classList && (n.classList.contains("katex") || n.classList.contains("no-autolink") || n.classList.contains("widget") ||n.classList.contains("readout") || n.classList.contains("callout-title") || n.classList.contains("fig-title") || n.classList.contains("sources") || n.classList.contains("file-label") || n.classList.contains("chips") || n.classList.contains("learn-more") || n.classList.contains("fig-credit"))) return true;
       if (n.hasAttribute && n.hasAttribute("data-no-autolink")) return true;
     }
     return false;
@@ -330,6 +331,7 @@
         (e.l1 ? '<br><span class="tt-l1">Appears in Lecture 1: ' + e.l1 + "</span>" : "") +
         (touch ? '<span class="tt-hint"><a href="' + a.getAttribute("href") + '">Open glossary entry →</a></span>'
                : '<span class="tt-hint">Click for the glossary entry</span>');
+      renderMath(tip);
     }
     tipFor = a;
     tip.classList.add("show");
@@ -422,6 +424,7 @@
       html += "</section>";
     });
     host.innerHTML = html;
+    renderMath(host);
     if (letterNav) letterNav.innerHTML = letters.map(function (L) { return '<a href="#letter-' + (L === "#" ? "num" : L) + '">' + L + "</a>"; }).join("");
     var count = document.getElementById("gloss-count");
     if (count) count.textContent = entries.length;
@@ -544,9 +547,17 @@
     });
   }
 
+  /* ---------------- Math ---------------- */
+  // TeX between \( \) or \[ \] is rendered by KaTeX through assets/js/math.js. The article is rendered
+  // before glossary terms are linked, so a link can never split an expression.
+  function renderMath(root) {
+    if (window.LectureMath) window.LectureMath.render(root);
+  }
+
   /* ---------------- Init ---------------- */
   function init() {
     var article = document.querySelector("main article");
+    if (article) renderMath(article);
     if (article) ensureHeadingIds(article);
     if (article) linkBridgeCallouts(article);
     buildSidebar();
@@ -564,5 +575,5 @@
   else init();
 
   // Expose for widgets that add content dynamically.
-  window.LectureSite = { autolink: function (root) { autolink(root, { scope: "block" }); }, glossary: GL };
+  window.LectureSite = { autolink: function (root) { renderMath(root); autolink(root, { scope: "block" }); }, renderMath: renderMath, glossary: GL };
 })();

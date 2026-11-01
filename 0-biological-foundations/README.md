@@ -17,9 +17,11 @@ and for working with UK Biobank data.
 | `lecture-1-bridge.html` | Lecture 1 decoder: slide-by-slide map to the pages here |
 | `glossary.html` | All definitions (rendered from `assets/js/glossary-data.js`) |
 | `resources.html` | Curated "learn more" links |
-| `assets/css/site.css` | Design system (colors, callouts, figures, widgets) |
+| `assets/css/site.css` | Design system (colors, callouts, figures, widgets, equation blocks) |
 | `assets/js/pages.js` | Navigation order and page titles (edit to add/remove/reorder pages) |
-| `assets/js/site.js` | Sidebar, pager, glossary auto-linking and tooltips, glossary page, lightbox |
+| `assets/js/site.js` | Sidebar, pager, math rendering, glossary auto-linking and tooltips, glossary page, lightbox |
+| `assets/js/math.js` | KaTeX settings and shared macros for the TeX math on every page |
+| `assets/vendor/katex/` | KaTeX 0.19.0, stored locally (see its README) |
 | `assets/js/glossary-data.js` | Glossary entries (one object per term) |
 | `assets/js/glossary-usage.js` | Generated "used on" index for the glossary page |
 | `assets/js/widgets/` | Interactive figures, one file per widget |
@@ -43,9 +45,13 @@ and for working with UK Biobank data.
 - **Figures:** click any drawn figure to enlarge it (Esc closes). Shared helpers in `site.css`: `figure.fig.scroll-x`
   (keeps a minimum width on phones and scrolls sideways), `.only-wide` / `.only-narrow` (swap figure versions on
   phones), `table.stack` (tables become cards on phones; give every `td` a `data-label`).
+- **Equations:** written in TeX (`\( … \)` inline, `\[ … \]` displayed) and rendered by KaTeX. Each displayed
+  equation sits in an equation block that defines its terms and explains it; see "Writing math" in the
+  [repository README](../README.md#writing-math). Check with `node tools/check_math.mjs` from the repository root.
 - **Lecture 1 links:** every "Lecture 1" callout whose title names a slide gets a link to that slide in the decoder
   (added by `site.js`). Link to a slide by hand with `lecture-1-bridge.html#slide-N`.
-- After editing, run `python3 0-biological-foundations/tools/check_site.py` (add `--links` to test external links).
+- After editing, run `python3 0-biological-foundations/tools/check_site.py` (add `--links` to test external links)
+  and `node tools/check_math.mjs`.
 
 ## Content notes
 - Figures marked "Drawn for this lecture" are original inline SVG. Simulated or illustrative data are labeled

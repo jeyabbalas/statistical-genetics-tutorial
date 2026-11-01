@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Genetic variation: how genomes differ · Lecture 0</title>
 <meta name="description" content="How DNA differs between people: where variants come from, the main types of variant, alleles and genotypes coded 0/1/2, the many names for alleles and variants, and what variants do to genes and proteins.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/css/site.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/math.js"></script>
 <script defer src="assets/js/pages.js"></script>
 <script defer src="assets/js/glossary-data.js"></script>
 <script defer src="assets/js/glossary-usage.js"></script>
@@ -346,7 +353,7 @@ body[data-page="variation"] .cw-ps-more { white-space: nowrap; }
 <!-- ===================================================== 1. ORIGIN -->
 <h2 id="origin" data-toc="Where variation comes from">Where variation comes from <span class="tag core">Core</span></h2>
 <p>A <dfn>mutation</dfn> is a change in the DNA sequence. Many new mutations arise when DNA is copied before a cell divides and a copying mistake is not repaired; others come from damage by radiation or chemicals<sup><a href="#src-2">2</a></sup>. A mutation in a somatic cell stays in that cell and its descendants. Only a mutation in the germline, the cells that give rise to eggs and sperm, can pass to children (see <a href="cells-chromosomes.html">page 1</a>).</p>
-<p>A <dfn>de novo mutation</dfn> is a variant present in a child but in neither parent: it arose in a parent's egg or sperm lineage. Sequencing the whole genomes of 1,548 Icelandic families (mother, father and child) found on average 70.3 de novo mutations per child, a rate of about 1.29 × 10⁻⁸ per base pair per generation<sup><a href="#src-3">3</a></sup>. The two numbers agree: a cell carries about 6 billion base pairs (two copies of each chromosome)<sup><a href="#src-20">20</a></sup>, and 1.29 × 10⁻⁸ × 6 × 10⁹ ≈ 77, close to the observed 70 (the rate is estimated only from the parts of the genome where new mutations can be detected reliably).</p>
+<p>A <dfn>de novo mutation</dfn> is a variant present in a child but in neither parent: it arose in a parent's egg or sperm lineage. Sequencing the whole genomes of 1,548 Icelandic families (mother, father and child) found on average 70.3 de novo mutations per child, a rate of about \(\mu = 1.29 \times 10^{-8}\) per base pair per generation<sup><a href="#src-3">3</a></sup>. The two numbers agree. A cell carries about \(L = 6 \times 10^{9}\) base pairs (two copies of each chromosome)<sup><a href="#src-20">20</a></sup>, each with probability \(\mu\) of a new mutation, so a child is expected to carry \(\mu L = 1.29 \times 10^{-8} \times 6 \times 10^{9} \approx 77\) de novo mutations, close to the observed 70 (the rate is estimated only from the parts of the genome where new mutations can be detected reliably).</p>
 <p>About 80% of de novo mutations arise in the father. Their number grows with parental age: each extra year of the father's age at conception adds about 1.5 mutations, and each extra year of the mother's age about 0.4<sup><a href="#src-3">3</a></sup>.</p>
 
 <figure class="fig">
@@ -756,7 +763,7 @@ body[data-page="variation"] .cw-ps-more { white-space: nowrap; }
   <figcaption><span class="fig-title">Genotypes become numbers.</span> At a two-allele variant each person is one of three genotypes. Counting copies of one chosen allele (here the alternative allele A) turns each genotype into 0, 1 or 2, and one variant across many people becomes one column of the genotype matrix. Light to dark shading means 0 to 2.<span class="fig-credit">Drawn for this lecture; matrix entries are simulated.</span></figcaption>
 </figure>
 
-<p>For a variant with two alleles there are three possible genotypes, and analyses code them as the number of copies of one chosen allele: 0, 1 or 2. This <dfn>allele dosage</dfn> (or additive) coding turns genetics into ordinary numeric data: the genotypes of <i>n</i> people at <i>m</i> variants form an <i>n</i> × <i>m</i> matrix of 0s, 1s and 2s. The coding is also a modeling choice. Using the count as a numeric predictor in a regression assumes that each extra copy of the allele shifts the trait by the same amount, the additive model of <a href="genotype-to-phenotype.html">page 9</a>. After genotype imputation, which predicts genotypes that were not measured directly (<a href="samples-to-genotypes.html">page 11</a>), entries become expected counts between 0 and 2, such as 0.97.</p>
+<p>For a variant with two alleles there are three possible genotypes, and analyses code them as the number of copies of one chosen allele: 0, 1 or 2. This <dfn>allele dosage</dfn> (or additive) coding turns genetics into ordinary numeric data: the genotypes of \(n\) people at \(m\) variants form an \(n \times m\) matrix of 0s, 1s and 2s, with one row per person and one column per variant. The coding is also a modeling choice. Using the count as a numeric predictor in a regression assumes that each extra copy of the allele shifts the trait by the same amount, the additive model of <a href="genotype-to-phenotype.html">page 9</a>. After genotype imputation, which predicts genotypes that were not measured directly (<a href="samples-to-genotypes.html">page 11</a>), entries become expected counts: if a person carries 0, 1 or 2 copies with probabilities \(P(0)\), \(P(1)\) and \(P(2)\), the entry is \(P(1) + 2P(2)\), a number between 0 and 2 such as 0.97.</p>
 
 <aside class="callout data">
   <div class="callout-title" data-no-autolink><span class="badge">In the data</span> From genotype calls to 0/1/2</div>
@@ -764,7 +771,7 @@ body[data-page="variation"] .cw-ps-more { white-space: nowrap; }
 </aside>
 
 <h3 id="multiallelic">More than two alleles</h3>
-<p>Most SNVs have exactly two alleles, because a second mutation at the same base is rare; such variants are <dfn>biallelic</dfn> (Lecture 1 says "diallelic"). Loci with three or more alleles are <dfn>multiallelic</dfn>. The <em>ABO</em> blood group gene has three common alleles, A, B and O, so there are six genotypes, which give four blood groups: A and B each produce a different molecule on red blood cells, AB people produce both, and O produces neither. The O allele is itself a variant: most O alleles carry a single-base deletion that shifts the reading frame, so they encode an inactive enzyme<sup><a href="#src-14">14</a></sup>. With <i>K</i> alleles there are <i>K</i>(<i>K</i> + 1)/2 possible genotypes.</p>
+<p>Most SNVs have exactly two alleles, because a second mutation at the same base is rare; such variants are <dfn>biallelic</dfn> (Lecture 1 says "diallelic"). Loci with three or more alleles are <dfn>multiallelic</dfn>. The <em>ABO</em> blood group gene has three common alleles, A, B and O, so there are six genotypes, which give four blood groups: A and B each produce a different molecule on red blood cells, AB people produce both, and O produces neither. The O allele is itself a variant: most O alleles carry a single-base deletion that shifts the reading frame, so they encode an inactive enzyme<sup><a href="#src-14">14</a></sup>. With \(K\) alleles there are \(K(K + 1)/2\) possible genotypes: \(K\) homozygotes plus \(K(K - 1)/2\) heterozygotes, one for each pair of different alleles, because the order of a person's two alleles does not matter. A biallelic SNP (\(K = 2\)) has 3 genotypes and ABO (\(K = 3\)) has 6; for many alleles the number grows roughly as \(K^2/2\).</p>
 
 <div class="table-wrap">
 <table class="compact vt">
@@ -793,7 +800,7 @@ body[data-page="variation"] .cw-ps-more { white-space: nowrap; }
   <div class="bridge-grid">
     <figure class="slide-thumb"><img src="assets/img/lecture1/slide-071.jpg" alt="Lecture 1, slide 71: definitions of allele, locus and genotype, with the ABO blood group as an example"><figcaption>Lecture 1 · slide 71</figcaption></figure>
     <div>
-      <p>In Lecture 1 (slide 71) you will see an allele defined as "the nucleotide sequence at a polymorphic locus (i.e. a small region of the genome, e.g. a single base or a gene) on a chromosome", and a genotype as "the combination of alleles at a locus carried by an individual". These are the definitions above. Slide 73 counts the six ABO genotypes (n<sub>OO</sub> = 1,168 … n<sub>BB</sub> = 44, total 3,117); the subscripts name the two alleles of each genotype.</p>
+      <p>In Lecture 1 (slide 71) you will see an allele defined as "the nucleotide sequence at a polymorphic locus (i.e. a small region of the genome, e.g. a single base or a gene) on a chromosome", and a genotype as "the combination of alleles at a locus carried by an individual". These are the definitions above. Slide 73 counts the six ABO genotypes (from \(n_{\mathrm{OO}} = 1{,}168\) to \(n_{\mathrm{BB}} = 44\), total 3,117): \(n_{\mathrm{OO}}\) is the number of people with genotype O/O, and in general the subscripts name the two alleles of the genotype.</p>
       <p>Listen for "codominant" (A and B are both expressed in AB people; <a href="inheritance.html">page 5</a>) and "diallelic" (exactly two alleles).</p>
     </div>
   </div>
@@ -907,7 +914,7 @@ body[data-page="variation"] .cw-ps-more { white-space: nowrap; }
 
 <aside class="callout pitfall">
   <div class="callout-title" data-no-autolink><span class="badge">Common confusion</span> Always say which allele</div>
-  <p>A frequency, a genotype count or an effect size means nothing without its allele. Write "A allele frequency 0.64" or "β per copy of the A allele", not "MAF 0.64" or "β for rs4988235". Before comparing two results, check that both refer to the same allele, on the same strand (<a href="dna.html">page 2</a>) and the same genome build.</p>
+  <p>A frequency, a genotype count or an effect size means nothing without its allele. Write "A allele frequency 0.64" or "effect \(\beta\) per copy of the A allele", not "MAF 0.64" or "\(\beta\) for rs4988235". Before comparing two results, check that both refer to the same allele, on the same strand (<a href="dna.html">page 2</a>) and the same genome build.</p>
 </aside>
 
 <aside class="callout data">
@@ -922,11 +929,11 @@ body[data-page="variation"] .cw-ps-more { white-space: nowrap; }
 </aside>
 
 <aside class="callout bridge">
-  <div class="callout-title" data-no-autolink><span class="badge">Lecture 1</span> Slide 78 · "We still have to specify to which allele p refers!"</div>
+  <div class="callout-title" data-no-autolink><span class="badge">Lecture 1</span> Slide 78 · "We still have to specify to which allele \(p\) refers!"</div>
   <div class="bridge-grid">
     <figure class="slide-thumb"><img src="assets/img/lecture1/slide-078.jpg" alt="Lecture 1, slide 78: notation for diallelic SNPs, p and q, and the minor allele frequency"><figcaption>Lecture 1 · slide 78</figcaption></figure>
     <div>
-      <p>In Lecture 1 (slide 78) you will see p and q used for the frequencies of the two alleles of a diallelic SNP, with the warning "we still have to specify to which allele p refers! Typically, p refers to the minor allele in the population, so p &lt; 0.5", and "People also often use 'MAF' = minor allele frequency = p".</p>
+      <p>In Lecture 1 (slide 78) you will see \(p\) and \(q = 1 - p\) used for the frequencies of the two alleles of a diallelic SNP, with the warning "we still have to specify to which allele \(p\) refers! Typically, \(p\) refers to the minor allele in the population, so \(p &lt; 0.5\)", and "People also often use 'MAF' = minor allele frequency = \(p\)".</p>
       <p>The figure above shows why the warning matters: "minor" depends on the population, so name the allele as well as the frequency. Slide 69 makes the same point for strand: two studies named the alleles of one SNP on opposite strands (<a href="dna.html">page 2</a>).</p>
     </div>
   </div>

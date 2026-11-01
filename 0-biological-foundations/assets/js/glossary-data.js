@@ -159,7 +159,7 @@ window.GLOSSARY_ENTRIES = [
    "additive model",
    "additive coding"
   ],
-  "short": "The standard association model, y = α + β·g + covariates + ε, with g the number of effect-allele copies (0, 1 or 2): each copy changes the mean phenotype by the same amount β.",
+  "short": "The standard association model, \\(y = \\alpha + \\beta g + \\text{covariates} + \\varepsilon\\): a person’s trait value \\(y\\) is an intercept \\(\\alpha\\), plus \\(\\beta\\) times \\(g\\), their number of effect-allele copies (0, 1 or 2), plus covariate terms and a residual \\(\\varepsilon\\). Each copy changes the mean trait value by the same amount, \\(\\beta\\).",
   "long": "Dominant coding (0, 1, 1) and recessive coding (0, 0, 1) are alternatives; additive coding is the default test in GWAS software.",
   "see": [
    "beta",
@@ -260,8 +260,8 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "allele-count",
   "term": "allele count",
-  "short": "The number of copies of an allele in a sample: 2 for each person homozygous for it plus 1 for each heterozygote. Divided by 2n for n people, it gives the allele frequency.",
-  "long": "At an autosomal locus, n people carry 2n allele copies, so the allele frequency is the allele count divided by 2n. PLINK 2 can write allele counts to an .acount file.",
+  "short": "The number of copies of an allele in a sample: 2 for each person homozygous for it plus 1 for each heterozygote. Divided by \\(2n\\) for \\(n\\) people, it gives the allele frequency.",
+  "long": "At an autosomal locus, \\(n\\) people carry \\(2n\\) allele copies, so the allele frequency is the allele count divided by \\(2n\\). PLINK 2 can write allele counts to an .acount file.",
   "l1": "slide 75",
   "see": [
    "allele-frequency",
@@ -302,8 +302,8 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "allele-frequency",
   "term": "allele frequency",
-  "short": "The fraction of all copies of a locus in a population that carry a given allele: the allele count divided by 2n for n people (at an autosomal locus). A sample only estimates it.",
-  "long": "An estimate from n people has standard error about √(p(1 − p)/2n). For a biallelic SNP, Lecture 1 writes p for allele 1 and q = 1 − p for allele 2. A frequency means nothing until you say which allele, and in which population, it refers to. In a 0/1/2 genotype matrix, a column’s mean divided by 2 is the frequency of the counted allele.",
+  "short": "The fraction of all copies of a locus in a population that carry a given allele: the allele count divided by \\(2n\\) for \\(n\\) people (at an autosomal locus). A sample only estimates it.",
+  "long": "An estimate \\(\\hat{p}\\) from \\(n\\) unrelated people counts \\(2n\\) allele copies; under Hardy–Weinberg proportions its standard error is \\(\\sqrt{p(1 - p)/(2n)}\\), where \\(p\\) is the frequency in the population. For a biallelic SNP, Lecture 1 writes \\(p\\) for the frequency of allele 1 and \\(q = 1 - p\\) for that of allele 2. A frequency means nothing until you say which allele, and in which population, it refers to. In a 0/1/2 genotype matrix, a column’s mean divided by 2 is the frequency of the counted allele.",
   "l1": "slides 75–78",
   "see": [
    "maf",
@@ -359,7 +359,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "allele switch"
   ],
-  "short": "Changing which of a SNP’s two alleles is counted as the effect allele: genotypes g become 2 − g, effects β change sign and the frequency p becomes 1 − p. Not a strand flip.",
+  "short": "Changing which of a SNP’s two alleles is counted as the effect allele: each genotype dosage \\(g\\) (copies of the counted allele) becomes \\(2 - g\\), the per-allele effect \\(\\beta\\) becomes \\(-\\beta\\) and the counted allele’s frequency \\(p\\) becomes \\(1 - p\\). Not a strand flip.",
   "long": "A strand flip rewrites the letters of both alleles without changing which allele is counted; an allele swap changes which allele is counted. Harmonizing two files can need either or both.",
   "see": [
    "strand-flip",
@@ -659,7 +659,7 @@ window.GLOSSARY_ENTRIES = [
    "BAF"
   ],
   "short": "The share of the array signal at a SNP that comes from allele B, scaled so AA, AB and BB fall at 0, 0.5 and 1. A split or missing heterozygote band reveals copy-number changes.",
-  "long": "Despite its name, BAF is not a population allele frequency, and it is unrelated to the “B allele frequency” of the ABO blood-group maps on Lecture 1 slide 90. Loss of one copy in a fraction c of cells moves the heterozygote band from 0.5 to (1 − c)/(2 − c) and its mirror image.",
+  "long": "Despite its name, BAF is not a population allele frequency, and it is unrelated to the “B allele frequency” of the ABO blood-group maps on Lecture 1 slide 90. Loss of one copy in a fraction \\(c\\) of cells moves the heterozygote band from 0.5 to \\((1 - c)/(2 - c)\\) and its mirror image \\(1/(2 - c)\\): averaged over cells, the allele that is lost is present in \\(1 - c\\) copies and both alleles together in \\(2 - c\\). At \\(c = 1\\) the bands reach 0 and 1.",
   "see": [
    "log-r-ratio",
    "mosaicism",
@@ -997,7 +997,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "bonferroni-correction",
   "term": "Bonferroni correction",
-  "short": "Requiring p &lt; 0.05/m when m tests are run, which limits the chance of any false positive to 0.05. The genome-wide threshold, 5 × 10<sup>−8</sup>, is 0.05 divided by about one million independent tests.",
+  "short": "Requiring a p-value below \\(0.05/m\\) when \\(m\\) tests are run. Each test of a true null hypothesis then gives a false positive with probability at most \\(0.05/m\\), so the probability of at least one false positive among the \\(m\\) tests is at most \\(m \\times 0.05/m = 0.05\\), whatever the correlation between the tests. The genome-wide threshold, 5 × 10<sup>−8</sup>, is 0.05 divided by about one million independent tests.",
   "long": "It is conservative when tests are correlated, as tests of nearby SNPs in LD are; GWAS therefore divide by the effective number of independent tests rather than by the number of variants tested.",
   "see": [
    "multiple-testing",
@@ -1070,7 +1070,7 @@ window.GLOSSARY_ENTRIES = [
   "id": "call-rate",
   "term": "call rate",
   "short": "The fraction of genotypes called: for a SNP, the share of people with a call; for a person, the share of SNPs called. QC removes people and SNPs with low call rates, typically below 95–98%.",
-  "long": "Call rate = 1 − missingness. In PLINK, <code>--missing</code> reports it, <code>--mind</code> filters people and <code>--geno</code> filters SNPs. A low call rate for a person usually means little or degraded DNA; for a SNP, poorly separated clusters.",
+  "long": "The call rate is 1 minus the missingness. In PLINK, <code>--missing</code> reports it, <code>--mind</code> filters people and <code>--geno</code> filters SNPs. A low call rate for a person usually means little or degraded DNA; for a SNP, poorly separated clusters.",
   "see": [
    "missingness",
    "no-call",
@@ -2298,12 +2298,11 @@ window.GLOSSARY_ENTRIES = [
   "id": "ld-d",
   "term": "D (LD coefficient)",
   "aka": [
-   "d",
    "δ",
    "LD coefficient"
   ],
-  "short": "The LD measure for two SNPs: D = p<sub>AG</sub> − p<sub>A</sub>p<sub>G</sub>, a haplotype frequency minus its value under independence. D = 0 means no LD; its sign and range depend on allele labels and frequencies.",
-  "long": "Equivalent forms: D = p<sub>AG</sub>p<sub>ag</sub> − p<sub>Ag</sub>p<sub>aG</sub> = p<sub>A</sub>p<sub>a</sub>[P(G | A) − P(G | a)]. Under random mating, D shrinks by a factor (1 − θ) per generation.",
+  "short": "The basic measure of LD between two SNPs, one with alleles A and a, the other with alleles G and g: \\(D = p_{\\mathrm{AG}} - p_{\\mathrm{A}} p_{\\mathrm{G}}\\), the frequency of haplotypes carrying both A and G minus the product of the two allele frequencies, which is what that frequency would be if the alleles at the two SNPs were independent. \\(D = 0\\) means no LD; its sign and range depend on allele labels and frequencies.",
+  "long": "Equivalent forms: \\(D = p_{\\mathrm{AG}} p_{\\mathrm{ag}} - p_{\\mathrm{Ag}} p_{\\mathrm{aG}} = p_{\\mathrm{A}} p_{\\mathrm{a}} [P(\\mathrm{G} \\mid \\mathrm{A}) - P(\\mathrm{G} \\mid \\mathrm{a})]\\). The last form shows that \\(D\\) is zero when allele G is equally common on haplotypes carrying A and on haplotypes carrying a, and that its sign says which of the two carries G more often. Under random mating, \\(D\\) is multiplied by \\(1 - \\theta\\) each generation, where \\(\\theta\\) is the recombination fraction between the SNPs.",
   "l1": "slides 118–120, 123–124",
   "see": [
    "d-prime",
@@ -2779,7 +2778,7 @@ window.GLOSSARY_ENTRIES = [
    "imputed dosage",
    "expected allele count"
   ],
-  "short": "The expected number of copies of an allele given the genotype probabilities: P(1) + 2·P(2), a number between 0 and 2. Imputed genotypes are usually analyzed as dosages, which keep the imputation uncertainty.",
+  "short": "The expected number of copies of an allele given the genotype probabilities: \\(0 \\cdot P(0) + 1 \\cdot P(1) + 2 \\cdot P(2) = P(1) + 2P(2)\\), a number between 0 and 2. Imputed genotypes are usually analyzed as dosages, which keep the imputation uncertainty.",
   "long": "A dosage is an expected value, not a measurement: every person carries 0, 1 or 2 copies. Association tests can use it in a regression in place of a 0/1/2 count. A hard call keeps only the most probable genotype instead.",
   "see": [
    "genotype-probability",
@@ -2866,8 +2865,8 @@ window.GLOSSARY_ENTRIES = [
    "D prime",
    "|D′|"
   ],
-  "short": "D divided by its largest possible value given the allele frequencies; |D′| lies between 0 and 1. It equals 1 when one of the four two-SNP haplotypes is absent, which is common for rare alleles.",
-  "long": "Estimates are inflated in small samples and for rare alleles. D′ = D / D<sub>max</sub>, with D<sub>max</sub> = min(p<sub>A</sub>p<sub>g</sub>, p<sub>a</sub>p<sub>G</sub>) if D &gt; 0 and min(p<sub>A</sub>p<sub>G</sub>, p<sub>a</sub>p<sub>g</sub>) if D &lt; 0. |D′| = 1 is read as no evidence of historical recombination; it says nothing about how well one SNP predicts the other (that is <a href=\"glossary.html#r-squared\">r²</a>).",
+  "short": "\\(D\\) divided by its largest possible value given the allele frequencies; \\(|D'|\\) lies between 0 and 1. It equals 1 when one of the four two-SNP haplotypes is absent, which is common for rare alleles.",
+  "long": "\\(D' = D/D_{\\max}\\), where \\(D_{\\max}\\) is the largest \\(|D|\\) that the allele frequencies allow for a \\(D\\) of that sign: \\(\\min(p_{\\mathrm{A}} p_{\\mathrm{g}}, p_{\\mathrm{a}} p_{\\mathrm{G}})\\) if \\(D &gt; 0\\) and \\(\\min(p_{\\mathrm{A}} p_{\\mathrm{G}}, p_{\\mathrm{a}} p_{\\mathrm{g}})\\) if \\(D &lt; 0\\). \\(|D'| = 1\\) means that at least one of the four haplotypes is absent, which is read as no evidence of historical recombination between the SNPs; it says nothing about how well one SNP predicts the other (that is <a href=\\\"glossary.html#r-squared\\\">\\(r^2\\)</a>). Estimates of \\(|D'|\\) are inflated in small samples and for rare alleles.",
   "l1": "slides 95, 120–124",
   "see": [
    "ld-d",
@@ -2912,7 +2911,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "effect-size",
   "term": "effect size",
-  "short": "How much a genetic variant changes a trait. For a quantitative trait it is usually the per-allele slope β, in trait units or SD units; for a binary trait, the odds ratio or its logarithm.",
+  "short": "How much a genetic variant changes a trait. For a quantitative trait it is usually the per-allele slope \\(\\beta\\), in trait units or standard-deviation units; for a binary trait, the odds ratio or its logarithm.",
   "see": [
    "beta",
    "odds-ratio",
@@ -2957,7 +2956,7 @@ window.GLOSSARY_ENTRIES = [
    "Ne",
    "N_e"
   ],
-  "short": "The size of an idealized, randomly mating population that would show as much drift as the real one. A smaller N<sub>e</sub> means more drift and longer-range LD: expected r² ≈ 1 / (1 + 4N<sub>e</sub>c).",
+  "short": "The size of an idealized, randomly mating population that would show as much drift as the real one. A smaller \\(N_{\\mathrm{e}}\\) means more drift and longer-range LD: for two loci with recombination fraction \\(\\theta\\), the expected \\(r^2\\) is about \\(1/(1 + 4N_{\\mathrm{e}}\\theta)\\), which depends only on the product \\(N_{\\mathrm{e}}\\theta\\).",
   "long": "c is the recombination fraction between the two loci; the approximation is due to Sved (1971).",
   "see": [
    "genetic-drift",
@@ -3562,7 +3561,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "fixed-random-effects",
   "term": "fixed-effect and random-effects meta-analysis",
-  "short": "Two ways to combine studies in a meta-analysis. A fixed-effect model assumes every study estimates the same true effect and weights each by 1/SE². A random-effects model lets the true effect differ between studies.",
+  "short": "Two ways to combine studies in a meta-analysis. A fixed-effect model assumes every study estimates the same true effect and weights each study’s estimate by \\(1/\\SE^2\\), the inverse of its squared standard error. A random-effects model lets the true effect differ between studies.",
   "long": "The conventional random-effects model adds the between-study variance to each study’s variance, which widens the confidence interval and usually lowers the power to find associations. Han and Eskin’s RE2 model (2011) can have more power than the fixed-effect model when effects differ between studies. The Session 2 practical compares all three in METASOFT.",
   "see": [
    "meta-analysis",
@@ -3755,7 +3754,7 @@ window.GLOSSARY_ENTRIES = [
   "id": "fst",
   "term": "F<sub>ST</sub> (fixation index)",
   "short": "The fraction of variation that lies between populations rather than within them: 0 if allele frequencies are identical, 1 if populations are fixed for different alleles. Human values are small; most variation lies within populations.",
-  "long": "One common definition: F<sub>ST</sub> = 1 − H<sub>within</sub>/H<sub>between</sub>, where H is the probability that two allele copies differ when drawn from the same population or from two different ones. Values depend on the estimator and the SNPs used. Rosenberg et al. (2002) found 93–95% of human genetic variation within populations and 3–5% between major geographic groups; F<sub>ST</sub> between two European populations is about 0.004.",
+  "long": "One common definition: \\(F_{\\mathrm{ST}} = 1 - H_{\\mathrm{within}}/H_{\\mathrm{between}}\\), where \\(H_{\\mathrm{within}}\\) is the probability that two allele copies drawn from the same population differ (averaged over the populations) and \\(H_{\\mathrm{between}}\\) the probability that two copies drawn from two different populations differ. It is 0 when the populations have the same allele frequencies and 1 when each population carries only one allele and they carry different ones. Values depend on the estimator and the SNPs used. Rosenberg et al. (2002) found 93–95% of human genetic variation within populations and 3–5% between major geographic groups; \\(F_{\\mathrm{ST}}\\) between two European populations is about 0.004.",
   "see": [
    "population-structure",
    "allele-frequency"
@@ -4117,7 +4116,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "association"
   ],
-  "short": "A statistical relationship between a genetic variant and a trait: the trait differs on average between genotype groups (β ≠ 0). An association need not be causal; linkage disequilibrium and confounding can produce one.",
+  "short": "A statistical relationship between a genetic variant and a trait: the trait differs on average between genotype groups (per-allele effect \\(\\beta \\ne 0\\)). An association need not be causal; linkage disequilibrium and confounding can produce one.",
   "l1": "slides 29, 48",
   "see": [
    "gwas",
@@ -4165,7 +4164,7 @@ window.GLOSSARY_ENTRIES = [
   "id": "genetic-drift",
   "term": "genetic drift",
   "short": "Random change in allele frequencies between generations, because each generation passes on only a finite sample of its parents’ alleles. It is fastest in small populations; eventually one allele reaches frequency 1.",
-  "long": "Left to drift alone, an allele is eventually lost (frequency 0) or fixed (frequency 1); a new neutral allele becomes fixed with probability equal to its current frequency. In the Wright–Fisher model the 2N allele copies of the next generation are a binomial sample from the current frequency p, so p changes by about √(pq/2N) per generation (one standard deviation).",
+  "long": "Left to drift alone, an allele is eventually lost (frequency 0) or fixed (frequency 1); a new neutral allele becomes fixed with probability equal to its current frequency. In the Wright–Fisher model a population of \\(N\\) diploid people passes on \\(2N\\) allele copies, each drawn independently and carrying the allele with probability \\(p\\), its current frequency. The count in the next generation is then \\(\\Binomial(2N, p)\\), so the next frequency has mean \\(p\\) and standard deviation \\(\\sqrt{pq/(2N)}\\), with \\(q = 1 - p\\): no direction is favored, and the typical change grows as \\(N\\) shrinks.",
   "l1": "slide 97",
   "see": [
    "founder-effect",
@@ -4295,8 +4294,8 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "genetic-relationship-matrix",
   "term": "genetic relationship matrix (GRM)",
-  "short": "An n × n matrix of genetic similarity between all pairs of people in a sample, computed from standardized genotypes. Its top eigenvectors are the principal components; mixed models use it as a covariance matrix.",
-  "long": "With Z the n × m matrix of genotypes at m SNPs, each column standardized, K = ZZ<sup>T</sup>/m. Off-diagonal entries are near 0 for unrelated people and approach twice the kinship coefficient for relatives (about 0.5 for first-degree relatives).",
+  "short": "An \\(n \\times n\\) matrix of genetic similarity between all pairs of the \\(n\\) people in a sample, computed from standardized genotypes. Its top eigenvectors are the principal components; mixed models use it as a covariance matrix.",
+  "long": "With \\(\\mathbf{Z}\\) the \\(n \\times m\\) matrix of the people’s genotypes at \\(m\\) SNPs, each column standardized to mean 0 and variance 1, \\(\\mathbf{K} = \\mathbf{Z}\\mathbf{Z}^{\\top}/m\\). The entry for two people is the average, over SNPs, of the product of their standardized genotypes: it is near 0 for unrelated people and near twice their kinship coefficient for relatives (about 0.5 for first-degree relatives). Diagonal entries are near 1.",
   "see": [
    "pca",
    "principal-component",
@@ -4394,7 +4393,7 @@ window.GLOSSARY_ENTRIES = [
    "predicted gene expression"
   ],
   "short": "A gene’s expression level predicted from a person’s genotypes with weights learned in a dataset with measured expression, such as GTEx; the input to a TWAS. Unlike genotype imputation, it predicts a trait, not genotypes.",
-  "long": "Predicted expression is a weighted sum of a person’s genotypes near the gene, ê = Gw, with weights from models such as PrediXcan or FUSION trained in one tissue. It captures only the genetically determined part of expression, and it is less accurate in people less genetically similar to the training samples.",
+  "long": "Predicted expression is a weighted sum of a person’s genotypes near the gene, \\(\\hat{\\mathbf{e}} = \\mathbf{G}\\mathbf{w}\\): \\(\\mathbf{G}\\) holds genotype dosages (one row per person, one column per variant), \\(\\mathbf{w}\\) the per-variant weights from a model such as PrediXcan or FUSION trained in one tissue, and \\(\\hat{\\mathbf{e}}\\) the predicted expression of each person. It captures only the genetically determined part of expression, and it is less accurate in people less genetically similar to the training samples.",
   "l1": "slide 25",
   "see": [
    "twas",
@@ -4422,7 +4421,7 @@ window.GLOSSARY_ENTRIES = [
    "G×E",
    "GxE"
   ],
-  "short": "When the effect of a genotype on a trait depends on an environmental exposure; modeled with a product term g × E. Example: the rs671 A allele raises esophageal cancer risk mainly in alcohol drinkers.",
+  "short": "When the effect of a genotype on a trait depends on an environmental exposure; modeled with a product term \\(g \\times E\\) of the genotype dosage \\(g\\) and the exposure \\(E\\). Example: the rs671 A allele raises esophageal cancer risk mainly in alcohol drinkers.",
   "l1": "slide 48 (Session 3)",
   "see": [
    "complex-trait",
@@ -4622,8 +4621,8 @@ window.GLOSSARY_ENTRIES = [
    "λGC",
    "inflation factor"
   ],
-  "short": "The median of a GWAS’s chi-square statistics divided by 0.455, the median expected under no association. Near 1 means no inflation; above 1 can mean confounding, such as population stratification, or many small true effects.",
-  "long": "Devlin and Roeder (1999) proposed genomic control: dividing every statistic by λ to remove uniform inflation. In large samples of polygenic traits λ grows with sample size even without confounding (Yang et al. 2011); the intercept of LD score regression separates the two sources (Bulik-Sullivan et al. 2015).",
+  "short": "The median of a GWAS’s 1-df \\(\\chi^2\\) statistics divided by 0.455, the median of the \\(\\chi^2_1\\) distribution that they follow when no variant is associated. Near 1 means no inflation; above 1 can mean confounding, such as population stratification, or many small true effects.",
+  "long": "Devlin and Roeder (1999) proposed genomic control: dividing every \\(\\chi^2\\) statistic by \\(\\lambda\\) to remove uniform inflation. In large samples of polygenic traits \\(\\lambda\\) grows with sample size even without confounding (Yang et al. 2011); the intercept of LD score regression separates the two sources (Bulik-Sullivan et al. 2015).",
   "see": [
    "qq-plot",
    "population-stratification",
@@ -4702,8 +4701,8 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "genotype-frequency",
   "term": "genotype frequency",
-  "short": "The fraction of people in a population or sample who have a given genotype: P<sub>ij</sub> = n<sub>ij</sub> / n, where n<sub>ij</sub> is the number of people with genotype ij and n the number of people.",
-  "long": "Under Hardy–Weinberg equilibrium the genotype frequencies of a biallelic SNP follow from the allele frequency alone: p², 2pq and q².",
+  "short": "The fraction of people in a population or sample who have a given genotype: \\(P_{ij} = n_{ij}/n\\), where \\(n_{ij}\\) is the number of people with genotype \\(ij\\) (alleles \\(i\\) and \\(j\\)) and \\(n\\) the number of people.",
+  "long": "Under Hardy–Weinberg equilibrium the genotype frequencies of a biallelic SNP follow from the allele frequencies \\(p\\) and \\(q = 1 - p\\) alone: \\(p^2\\), \\(2pq\\) and \\(q^2\\).",
   "l1": "slides 72–74",
   "see": [
    "allele-frequency",
@@ -4784,8 +4783,8 @@ window.GLOSSARY_ENTRIES = [
    "genotype probabilities",
    "posterior genotype probability"
   ],
-  "short": "For one person at one imputed variant, the probabilities P(0), P(1) and P(2) of carrying 0, 1 or 2 copies of the counted allele; they sum to 1. BGEN and VCF files store them.",
-  "long": "They are usually summarized as a dosage, P(1) + 2·P(2), or as a hard call, the most probable genotype. Not to be confused with the genotype frequencies p², 2pq and q² expected under Hardy–Weinberg equilibrium, which some texts also call genotype probabilities.",
+  "short": "For one person at one imputed variant, the probabilities \\(P(0)\\), \\(P(1)\\) and \\(P(2)\\) of carrying 0, 1 or 2 copies of the counted allele; they sum to 1. BGEN and VCF files store them.",
+  "long": "They are usually summarized as a dosage, \\(P(1) + 2P(2)\\), the expected number of copies of the counted allele, or as a hard call, the most probable genotype. Not to be confused with the genotype frequencies \\(p^2\\), \\(2pq\\) and \\(q^2\\) expected under Hardy–Weinberg equilibrium, which some texts also call genotype probabilities.",
   "see": [
    "dosage",
    "hard-call",
@@ -5167,7 +5166,7 @@ window.GLOSSARY_ENTRIES = [
    "HRC"
   ],
   "short": "An imputation reference panel: 64,976 haplotypes from 32,488 people in 20 studies, mostly labeled European ancestry, at about 39 million SNPs. UK Biobank imputed with it, plus UK10K and 1000 Genomes for other variants.",
-  "long": "At minor allele frequency 0.1%, imputation from an array of about 1 million SNPs reached R² = 0.64 with the HRC, against 0.36 with 1000 Genomes.",
+  "long": "At minor allele frequency 0.1%, imputation from an array of about 1 million SNPs reached \\(r^2 = 0.64\\) (squared correlation between imputed dosages and true genotypes) with the HRC, against 0.36 with 1000 Genomes.",
   "see": [
    "reference-panel",
    "genotype-imputation",
@@ -5195,7 +5194,7 @@ window.GLOSSARY_ENTRIES = [
    "best-guess genotype"
   ],
   "short": "The single most probable genotype (0, 1 or 2) at an imputed variant. It discards the uncertainty that a dosage keeps; calls whose top probability is too low are often set to missing.",
-  "long": "Example: P(0) = 0.30, P(1) = 0.55, P(2) = 0.15 gives the hard call 1 but the dosage 0.85.",
+  "long": "Example: \\(P(0) = 0.30\\), \\(P(1) = 0.55\\), \\(P(2) = 0.15\\) gives the hard call 1 but the dosage \\(0.55 + 2 \\times 0.15 = 0.85\\).",
   "see": [
    "dosage",
    "genotype-probability",
@@ -5221,7 +5220,7 @@ window.GLOSSARY_ENTRIES = [
    "HWE",
    "Hardy–Weinberg proportions"
   ],
-  "short": "The state in which genotype frequencies follow from allele frequencies as if each person’s two alleles were independent draws: p², 2pq and q² for a biallelic SNP. Random mating restores it in one generation.",
+  "short": "The state in which genotype frequencies follow from allele frequencies as if each person’s two alleles were independent draws: \\(p^2\\), \\(2pq\\) and \\(q^2\\) for a biallelic SNP with allele frequencies \\(p\\) and \\(q = 1 - p\\). Random mating restores it in one generation.",
   "long": "Formal assumptions (slide 81): random mating, a very large population, discrete generations, equal allele frequencies in males and females, and no mutation, migration or selection. QC tests every SNP for HWE (chi-square with 1 degree of freedom, or the exact test PLINK uses); strong deviations point to genotyping error, duplicated sequence or pooled populations.",
   "l1": "slides 81–83",
   "see": [
@@ -5483,7 +5482,7 @@ window.GLOSSARY_ENTRIES = [
    "broad-sense heritability"
   ],
   "short": "The share of a trait’s variance, in a given population and environment, that is due to genetic differences between people. It describes variation in a population, not how genetic one person’s trait is.",
-  "long": "Narrow-sense heritability (h²) counts only additive genetic effects; broad-sense heritability (H²) also counts dominance and interactions. It is estimated from relatives (for example twin studies) or from SNPs (SNP-heritability).",
+  "long": "Narrow-sense heritability, \\(h^2 = V_{\\mathrm{A}}/V_{\\mathrm{P}}\\), counts only the additive genetic variance \\(V_{\\mathrm{A}}\\); broad-sense heritability, \\(H^2 = V_{\\mathrm{G}}/V_{\\mathrm{P}}\\), counts all genetic variance \\(V_{\\mathrm{G}}\\), including dominance and interactions. \\(V_{\\mathrm{P}}\\) is the variance of the trait in the population. It is estimated from relatives (for example twin studies) or from SNPs (SNP-heritability).",
   "l1": "slides 29, 30, 50",
   "see": [
    "snp-heritability",
@@ -5510,7 +5509,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "between-study heterogeneity"
   ],
-  "short": "In a meta-analysis, variation in the true effect between studies, seen as estimates that differ more than sampling error explains. Cochran’s Q tests for it; I² is the share of the variation it accounts for.",
+  "short": "In a meta-analysis, variation in the true effect between studies, seen as estimates that differ more than sampling error explains. Cochran’s \\(Q\\) tests for it; \\(I^2\\) estimates the share of the variation between the estimates that it accounts for.",
   "long": "It can arise from differences between studies in LD with the causal variant, in environments or in how the phenotype was measured. Random-effects models allow for it.",
   "see": [
    "meta-analysis",
@@ -5934,7 +5933,7 @@ window.GLOSSARY_ENTRIES = [
   "id": "inbreeding-coefficient",
   "term": "inbreeding coefficient (F)",
   "short": "The probability that a person’s two alleles at a locus are identical by descent from an ancestor shared by both parents: 1/16 for a child of first cousins. PLINK --het estimates it from excess homozygosity.",
-  "long": "A person’s inbreeding coefficient equals the kinship coefficient of their two parents. PLINK computes F = (O(HOM) − E(HOM)) / (N(NM) − E(HOM)) from observed and expected homozygous genotype counts. F < 0 means more heterozygous genotypes than expected, a sign of sample contamination. At one SNP across people, F = 1 − (observed heterozygotes)/(2pq) measures the departure from HWE.",
+  "long": "A person’s inbreeding coefficient equals the kinship coefficient of their two parents. PLINK estimates it as \\(\\hat{F} = (O(\\mathrm{HOM}) - E(\\mathrm{HOM}))/(N(\\mathrm{NM}) - E(\\mathrm{HOM}))\\), where \\(O(\\mathrm{HOM})\\) is the person’s number of homozygous genotypes, \\(E(\\mathrm{HOM})\\) the number expected under Hardy–Weinberg equilibrium and \\(N(\\mathrm{NM})\\) the number of non-missing genotypes: the fraction of the expected heterozygous genotypes that are missing. \\(\\hat{F} &lt; 0\\) means more heterozygous genotypes than expected, a sign of sample contamination. At one SNP across \\(n\\) people, \\(\\hat{F} = 1 - (n_{12}/n)/(2\\hat{p}\\hat{q})\\), with \\(n_{12}\\) the number of heterozygous people, measures the departure from HWE.",
   "see": [
    "heterozygosity",
    "kinship-coefficient",
@@ -5959,7 +5958,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "incidence",
   "term": "incidence",
-  "short": "How often new cases arise among people who did not have the condition. Incidence rate = new cases ÷ person-time at risk; cumulative incidence (risk) = new cases ÷ people at risk at the start.",
+  "short": "How often new cases arise among people who did not have the condition. The incidence rate is the number of new cases divided by the person-time at risk; the cumulative incidence (risk) over a period is the number of new cases divided by the number of people at risk at its start.",
   "long": "Cases that arise after a participant's baseline visit are incident cases; conditions already present at baseline are prevalent.",
   "see": [
    "prevalence",
@@ -6053,7 +6052,7 @@ window.GLOSSARY_ENTRIES = [
    "imputation quality score"
   ],
   "short": "A per-variant measure of imputation quality from 0 to 1 that approximates the squared correlation between imputed dosages and true genotypes. IMPUTE reports INFO, minimac an estimated R²; filters at 0.3 or 0.5 are common.",
-  "long": "A variant imputed with quality r² needs about 1/r² times as many people for the same power as a measured one. UK Biobank distributes per-variant INFO scores and allele frequencies in a separate file (Resource 1967).",
+  "long": "A variant imputed with quality \\(r^2\\) (the squared correlation between its imputed dosages and the true genotypes) needs about \\(1/r^2\\) times as many people for the same power as a measured one: testing the dosage instead of the true genotype multiplies the expected association test statistic by about \\(r^2\\). UK Biobank distributes per-variant INFO scores and allele frequencies in a separate file (Resource 1967).",
   "see": [
    "genotype-imputation",
    "dosage",
@@ -6332,7 +6331,7 @@ window.GLOSSARY_ENTRIES = [
    "Mendelian segregation"
   ],
   "short": "Mendel's first law: the two alleles a person carries at a locus separate during meiosis, so each sperm or egg receives exactly one of them, each with probability ½, independently for every child.",
-  "long": "For a child of two heterozygous parents, the number of copies of an allele is the sum of two independent Bernoulli(½) draws, so it follows Binomial(2, ½): 0, 1 or 2 copies with probabilities ¼, ½ and ¼.",
+  "long": "For a child of two heterozygous parents, the number of copies of an allele is the sum of two independent \\(\\Bernoulli(\\tfrac{1}{2})\\) draws, one per parent (1 if that parent transmits the allele), so it follows \\(\\Binomial(2, \\tfrac{1}{2})\\): 0, 1 or 2 copies with probabilities \\(\\tfrac{1}{4}\\), \\(\\tfrac{1}{2}\\) and \\(\\tfrac{1}{4}\\).",
   "see": [
    "mendels-laws",
    "meiosis",
@@ -6361,7 +6360,7 @@ window.GLOSSARY_ENTRIES = [
    "haplotype block"
   ],
   "short": "A stretch of the genome in which SNPs are in strong LD with each other and only a few common haplotypes occur, typically bounded by recombination hotspots. Blocks are shorter in samples from African populations.",
-  "long": "In early studies, three to five common haplotypes captured about 90% of chromosomes in a typical block (Gabriel et al. 2002). On an r² heatmap, blocks appear as dark triangles along the diagonal.",
+  "long": "In early studies, three to five common haplotypes captured about 90% of chromosomes in a typical block (Gabriel et al. 2002). On an \\(r^2\\) heatmap, blocks appear as dark triangles along the diagonal.",
   "see": [
    "ld",
    "recombination-hotspot",
@@ -6383,7 +6382,7 @@ window.GLOSSARY_ENTRIES = [
    "clumping"
   ],
   "short": "Grouping associated SNPs: take the SNP with the smallest p value, assign nearby SNPs in LD with it to its clump, and repeat. This gives one index SNP per association signal (PLINK <code>--clump</code>).",
-  "long": "PLINK 1.9 defaults: index SNPs with p ≤ 10<sup>−4</sup>; clump members within 250 kb with r² &gt; 0.5. Clumping and p-value thresholding is a classic way to build polygenic scores.",
+  "long": "PLINK 1.9 defaults: index SNPs with p ≤ 10<sup>−4</sup>; clump members within 250 kb of the index SNP with \\(r^2 &gt; 0.5\\) to it. Clumping and p-value thresholding is a classic way to build polygenic scores.",
   "see": [
    "ld-pruning",
    "lead-variant",
@@ -6404,7 +6403,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "decay of LD"
   ],
-  "short": "The decline of LD with growing distance between two loci, and over generations, as recombination breaks up ancestral haplotypes. Plots of average r² against distance show it; it is fastest in samples from African populations.",
+  "short": "The decline of LD with growing distance between two loci, and over generations, as recombination breaks up ancestral haplotypes. Plots of average \\(r^2\\) against distance show it; it is fastest in samples from African populations.",
   "l1": "slides 86, 95–96",
   "see": [
    "ld",
@@ -6427,7 +6426,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "pruning"
   ],
-  "short": "Thinning a set of SNPs so that no two nearby SNPs have r² above a threshold, without looking at association results, for example with PLINK <code>--indep-pairwise 50 5 0.2</code>. Used before PCA and relatedness estimation.",
+  "short": "Thinning a set of SNPs so that no two nearby SNPs have \\(r^2\\) above a threshold, without looking at association results, for example with PLINK <code>--indep-pairwise 50 5 0.2</code>. Used before PCA and relatedness estimation.",
   "long": "Regions of long-range LD, such as the MHC, are usually removed as well. Compare <a href=\"glossary.html#ld-clumping\">LD clumping</a>, which uses p values.",
   "see": [
    "ld-clumping",
@@ -6473,7 +6472,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "LD Score"
   ],
-  "short": "For a SNP j, the sum of its r² with every SNP within 1 cM, itself included: ℓ<sub>j</sub> = Σ<sub>k</sub> r²<sub>jk</sub>. It measures how much nearby variation the SNP tags. Used in LD score regression.",
+  "short": "For a SNP \\(j\\), the sum of its \\(r^2\\) with every SNP \\(k\\) within 1 cM, itself included: \\(\\ell_j = \\sum_k r^2_{jk}\\), where the term for \\(k = j\\) is 1. It measures how much nearby variation the SNP tags. Used in LD score regression.",
   "see": [
    "ld-score-regression",
    "r-squared"
@@ -6492,8 +6491,8 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "LDSC"
   ],
-  "short": "Regressing GWAS χ² values on LD scores. Polygenic signal rises with LD score, so the slope estimates SNP-heritability; population stratification raises χ² roughly equally whatever a SNP’s LD score, giving an intercept above 1.",
-  "long": "Model: E[χ²<sub>j</sub>] = N h² ℓ<sub>j</sub> / M + N a + 1 (Bulik-Sullivan et al. 2015); the term N a measures confounding such as population stratification and cryptic relatedness. Covered in Session 5 of the course.",
+  "short": "Regressing GWAS \\(\\chi^2\\) statistics on LD scores. Polygenic signal rises with LD score, so the slope estimates SNP-heritability; population stratification raises \\(\\chi^2\\) roughly equally whatever a SNP’s LD score, giving an intercept above 1.",
+  "long": "Model: \\(\\E[\\chi^2_j] = N h^2 \\ell_j / M + N a + 1\\) (Bulik-Sullivan et al. 2015), where \\(\\chi^2_j\\) is SNP \\(j\\)’s association statistic, \\(N\\) the sample size, \\(h^2\\) the SNP-heritability, \\(\\ell_j\\) the LD score, \\(M\\) the number of SNPs, and \\(N a\\) the contribution of confounding such as population stratification and cryptic relatedness. Each SNP explains on average \\(h^2/M\\) of the trait variance, and a SNP’s statistic picks up the effects of all the SNPs it tags, so its expected excess over 1 (the mean of \\(\\chi^2_1\\) under no association) grows in proportion to \\(\\ell_j\\). Covered in Session 5 of the course.",
   "see": [
    "ld-score",
    "snp-heritability",
@@ -6677,7 +6676,7 @@ window.GLOSSARY_ENTRIES = [
    "LMM"
   ],
   "short": "A regression model with fixed effects (the tested variant and covariates) plus a random effect whose correlation between two people follows their genetic similarity. In GWAS it handles relatedness and population structure.",
-  "long": "The model is y = Cα + g<sub>j</sub>β<sub>j</sub> + u + ε, where u has covariance proportional to the genetic relationship matrix. Programs include BOLT-LMM, SAIGE (a generalized mixed model, often used for binary traits) and fastGWA. REGENIE reaches a similar result with ridge regression.",
+  "long": "The model is \\(\\mathbf{y} = \\mathbf{C}\\boldsymbol{\\alpha} + \\mathbf{g}_j\\beta_j + \\mathbf{u} + \\boldsymbol{\\varepsilon}\\), where \\(\\mathbf{y}\\) holds the people’s trait values, \\(\\mathbf{C}\\) their covariates (with a column of 1s for the intercept) with effects \\(\\boldsymbol{\\alpha}\\), \\(\\mathbf{g}_j\\) their genotype dosages at the tested variant \\(j\\) with effect \\(\\beta_j\\), \\(\\mathbf{u}\\) a random polygenic effect whose covariance between people is proportional to the genetic relationship matrix, and \\(\\boldsymbol{\\varepsilon}\\) independent noise. Modeling \\(\\mathbf{u}\\) accounts for the trait similarity that relatedness and population structure create, which would otherwise inflate the test statistics. Programs include BOLT-LMM, SAIGE (a generalized mixed model, often used for binary traits) and fastGWA. REGENIE reaches a similar result with ridge regression.",
   "see": [
    "genetic-relationship-matrix",
    "regenie",
@@ -6771,7 +6770,7 @@ window.GLOSSARY_ENTRIES = [
    "LD"
   ],
   "short": "Non-random association of alleles at two loci across a population’s chromosome copies, so the allele at one locus helps predict the other. In a genotype matrix it is correlation between columns, strongest for nearby variants.",
-  "long": "LD arises when a new mutation occurs on one haplotype and is broken down by recombination, by a factor (1 − θ) per generation; drift, bottlenecks, selection and admixture also shape it. Common measures are <a href=\"glossary.html#ld-d\">D</a>, <a href=\"glossary.html#d-prime\">D′</a> and <a href=\"glossary.html#r-squared\">r²</a>. LD is not the same as genetic linkage.",
+  "long": "LD arises when a new mutation occurs on one haplotype and is broken down by recombination: \\(D\\) is multiplied by \\(1 - \\theta\\) each generation, where \\(\\theta\\) is the recombination fraction; drift, bottlenecks, selection and admixture also shape it. Common measures are <a href=\\\"glossary.html#ld-d\\\">\\(D\\)</a>, <a href=\\\"glossary.html#d-prime\\\">\\(D'\\)</a> and <a href=\\\"glossary.html#r-squared\\\">\\(r^2\\)</a>. LD is not the same as genetic linkage.",
   "l1": "slides 65, 85–86, 94–97, 107–124",
   "see": [
    "haplotype",
@@ -6929,8 +6928,8 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "LRR"
   ],
-  "short": "For one SNP in one sample, log₂ of the observed total array intensity divided by the intensity expected for its genotype. Values near 0 mean two copies; deletions give negative values and duplications positive ones.",
-  "long": "Expected values: about −1 for one copy (log₂ ½), about +0.58 for three (log₂ 1.5); a change carried by only part of the cells shifts LRR less. Read together with the B allele frequency along a chromosome, it reveals copy-number changes and mosaicism.",
+  "short": "For one SNP in one sample, \\(\\log_2(R_{\\mathrm{obs}}/R_{\\mathrm{exp}})\\), where \\(R_{\\mathrm{obs}}\\) is the observed total array intensity and \\(R_{\\mathrm{exp}}\\) the intensity expected for its genotype. Values near 0 mean two copies; deletions give negative values and duplications positive ones.",
+  "long": "The expected intensity is proportional to the number of copies, so the expected values are about \\(\\log_2(1/2) = -1\\) for one copy and \\(\\log_2(3/2) \\approx 0.58\\) for three; a change carried by only part of the cells shifts LRR less. Read together with the B allele frequency along a chromosome, it reveals copy-number changes and mosaicism.",
   "see": [
    "b-allele-frequency",
    "copy-number-variant",
@@ -7120,7 +7119,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "manhattan-plot",
   "term": "Manhattan plot",
-  "short": "The plot of GWAS results: one point per variant, with position on x (chromosomes laid end to end) and −log<sub>10</sub>(p) on y. Associated regions appear as columns of points rising above a genome-wide significance line.",
+  "short": "The plot of GWAS results: one point per variant, with position on the x-axis (chromosomes laid end to end) and −log<sub>10</sub> of its p-value on the y-axis. Associated regions appear as columns of points rising above a genome-wide significance line.",
   "long": "Each column is a group of correlated variants (linkage disequilibrium) around a signal, so the highest point, the lead variant, is not necessarily the causal one. A regional association plot shows one column in detail.",
   "l1": "slide 31",
   "see": [
@@ -7323,7 +7322,7 @@ window.GLOSSARY_ENTRIES = [
    "MR"
   ],
   "short": "Using genetic variants as instrumental variables to test whether an exposure, such as HDL cholesterol, causes an outcome, such as heart attack. Valid only if the variants meet three conditions: relevance, independence and exclusion restriction.",
-  "long": "Relevance: the variants are associated with the exposure. Independence: they share no common cause with the outcome. Exclusion restriction: they affect the outcome only through the exposure (no pleiotropic path). The causal effect can be estimated by the Wald ratio β<sub>GY</sub>/β<sub>GX</sub>, using slopes from GWAS summary statistics.",
+  "long": "Relevance: the variants are associated with the exposure. Independence: they share no common cause with the outcome. Exclusion restriction: they affect the outcome only through the exposure (no pleiotropic path). The causal effect can be estimated by the Wald ratio \\(\\hat{\\beta}_{GY}/\\hat{\\beta}_{GX}\\): the estimated effect of the variant \\(G\\) on the outcome \\(Y\\) divided by its estimated effect on the exposure \\(X\\), both slopes from GWAS summary statistics. If the variant changes \\(Y\\) only through \\(X\\), its effect on \\(Y\\) is its effect on \\(X\\) times the causal effect of \\(X\\) on \\(Y\\), so the ratio recovers the causal effect.",
   "l1": "slides 22–24",
   "see": [
    "instrumental-variable",
@@ -7376,7 +7375,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "meta-analysis",
   "term": "meta-analysis",
-  "short": "Combining results of several studies of the same question into one estimate. In GWAS each study shares summary statistics, and each variant’s effect estimates are averaged with weights 1/SE², so no individual-level data are shared.",
+  "short": "Combining results of several studies of the same question into one estimate. In GWAS each study shares summary statistics, and each variant’s effect estimates are averaged with weights \\(1/\\SE^2\\) (the inverse of each estimate’s squared standard error), so no individual-level data are shared.",
   "long": "That weighting is the fixed-effect (inverse-variance) model; random-effects models allow the true effect to differ between studies. Before combining, every study's effect must refer to the same allele. Tools include METAL and METASOFT.",
   "l1": "slide 47",
   "see": [
@@ -7448,7 +7447,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "MAF"
   ],
-  "short": "The frequency of the less common allele of a biallelic SNP in a given sample or population: MAF = min(p, q), so it is never above 0.5. Which allele is minor can differ between populations.",
+  "short": "The frequency of the less common allele of a biallelic SNP in a given sample or population: \\(\\mathrm{MAF} = \\min(p, q)\\), where \\(p\\) and \\(q = 1 - p\\) are the two allele frequencies, so it is never above 0.5. Which allele is minor can differ between populations.",
   "long": "MAF is not the same as the alternative-allele frequency or the effect-allele frequency. PLINK 1.9 --freq reports the frequency of A1 (usually the minor allele); PLINK 2 reports the ALT allele frequency. QC filters such as --maf 0.01 remove variants below a MAF threshold.",
   "l1": "slides 78, 85, 88",
   "see": [
@@ -8167,8 +8166,8 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "OR"
   ],
-  "short": "The factor by which the odds of disease are multiplied, usually per copy of the effect allele. Odds are π/(1 − π) for probability π. OR = 1 means no association.",
-  "long": "Logistic regression estimates the log odds ratio as its slope β, so OR = e<sup>β</sup>.",
+  "short": "The factor by which the odds of disease are multiplied, usually per copy of the effect allele. The odds of an event with probability \\(\\pi\\) are \\(\\pi/(1 - \\pi)\\); \\(\\mathrm{OR} = 1\\) means no association.",
+  "long": "Logistic regression models the log odds as \\(\\ln(\\pi/(1 - \\pi)) = \\alpha + \\beta g\\), with \\(g\\) the number of effect-allele copies. One more copy adds \\(\\beta\\) to the log odds, which multiplies the odds by \\(\\mathrm{OR} = e^{\\beta}\\); the slope \\(\\beta\\) is the log odds ratio.",
   "see": [
    "binary-trait",
    "beta",
@@ -8495,7 +8494,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "phenotypic trait"
   ],
-  "short": "Any observable or measurable characteristic of a person, such as a blood test result, body measurement, diagnosis or behavior. In a data set, a phenotype is a column y with one value per person.",
+  "short": "Any observable or measurable characteristic of a person, such as a blood test result, body measurement, diagnosis or behavior. In a data set, a phenotype is a column \\(y\\) with one value per person.",
   "l1": "slides 15, 16, 71",
   "see": [
    "trait",
@@ -8541,7 +8540,7 @@ window.GLOSSARY_ENTRIES = [
    "proportion IBD",
    "π̂"
   ],
-  "short": "PLINK’s estimate of the proportion of the genome two people share identical by descent: P(IBD=2) + ½P(IBD=1), twice the kinship coefficient. About 1 for duplicates, 0.5 for first-degree and 0.25 for second-degree relatives.",
+  "short": "PLINK’s estimate of the proportion of the genome two people share identical by descent: \\(P(\\mathrm{IBD} = 2) + \\tfrac{1}{2} P(\\mathrm{IBD} = 1)\\), where \\(P(\\mathrm{IBD} = k)\\) is the estimated fraction of the genome at which they share \\(k\\) of their two allele copies IBD; sharing one copy counts one half. It is twice the kinship coefficient. About 1 for duplicates, 0.5 for first-degree and 0.25 for second-degree relatives.",
   "long": "Identical twins also give values near 1. PLINK <code>--genome</code> reports it with Z0, Z1 and Z2, the estimated probabilities of sharing 0, 1 or 2 alleles IBD. Estimates are biased when the sample mixes genetically different groups.",
   "see": [
    "ibd",
@@ -8778,7 +8777,7 @@ window.GLOSSARY_ENTRIES = [
    "PGS",
    "genetic risk score"
   ],
-  "short": "A weighted sum of a person’s effect-allele counts across many variants, with weights from a GWAS: PRS<sub>i</sub> = Σ<sub>j</sub> <span class='hat cap'>β</span><sub>j</sub> g<sub>ij</sub>. It is less accurate in people less genetically similar to the GWAS participants.",
+  "short": "A weighted sum of a person’s effect-allele counts across many variants, with weights from a GWAS: \\(\\mathrm{PRS}_i = \\sum_j \\hat{\\beta}_j g_{ij}\\), where \\(g_{ij}\\) is person \\(i\\)’s number of effect-allele copies at variant \\(j\\) and \\(\\hat{\\beta}_j\\) the GWAS estimate of that variant’s per-allele effect. It is less accurate in people less genetically similar to the GWAS participants.",
   "long": "It ranks people by genetic predisposition; it does not predict any one person’s outcome with certainty. Accuracy falls with genetic distance from the GWAS sample, and most participants of large GWAS so far have been genetically similar to European reference samples.",
   "l1": "slides 20, 37, 51 (Session 6)",
   "see": [
@@ -8918,7 +8917,7 @@ window.GLOSSARY_ENTRIES = [
   "id": "population-stratification",
   "term": "population stratification",
   "short": "Confounding by ancestry in an association study: when allele frequencies and the trait both vary with genetic ancestry, SNPs with no effect appear associated. It is controlled with principal components, mixed models or family designs.",
-  "long": "Detected as an excess of small p-values across the genome (QQ plot, genomic inflation factor λ). Classic example: among people described as European American, an <em>LCT</em> variant appeared associated with height because both its frequency and average height vary across Europe (Campbell et al. 2005).",
+  "long": "Detected as an excess of small p-values across the genome (QQ plot, genomic inflation factor \\(\\lambda\\)). Classic example: among people described as European American, an <em>LCT</em> variant appeared associated with height because both its frequency and average height vary across Europe (Campbell et al. 2005).",
   "see": [
    "confounding",
    "population-structure",
@@ -9080,7 +9079,7 @@ window.GLOSSARY_ENTRIES = [
   "id": "pca",
   "term": "principal component analysis (PCA)",
   "short": "A method that finds the directions of largest variance in a data matrix. Applied to standardized genotypes, its top components (eigenvectors of the genetic relationship matrix) summarize genetic similarity between the people in a sample.",
-  "long": "Steps: LD-prune common SNPs, standardize each SNP column, form the n × n matrix K = ZZ<sup>T</sup>/m, take its top eigenvectors. PCs describe the sample analyzed; who is included changes the picture.",
+  "long": "Steps: LD-prune common SNPs; standardize each SNP column of the \\(n \\times m\\) genotype matrix (\\(n\\) people, \\(m\\) SNPs) to get \\(\\mathbf{Z}\\); form the \\(n \\times n\\) matrix \\(\\mathbf{K} = \\mathbf{Z}\\mathbf{Z}^{\\top}/m\\); take its top eigenvectors. PCs describe the sample analyzed; who is included changes the picture.",
   "l1": "slides 98, 102–105",
   "see": [
    "principal-component",
@@ -9356,7 +9355,7 @@ window.GLOSSARY_ENTRIES = [
   "id": "punnett-square",
   "term": "Punnett square",
   "short": "A table pairing each possible sperm allele with each egg allele to list a child’s possible genotypes and their probabilities. For two heterozygous parents it gives 0, 1 and 2 copies in the ratio 1:2:1.",
-  "long": "Each parent’s transmitted allele is a Bernoulli(½) draw, so for two heterozygous parents the child’s number of copies of a given allele is Binomial(2, ½): 0, 1 or 2 with probabilities ¼, ½ and ¼.",
+  "long": "A heterozygous parent transmits a given allele with probability \\(\\tfrac{1}{2}\\), a \\(\\Bernoulli(\\tfrac{1}{2})\\) draw, independently of the other parent. For two heterozygous parents the child’s number of copies of the allele is the sum of the two draws, \\(\\Binomial(2, \\tfrac{1}{2})\\): 0, 1 or 2 with probabilities \\(\\tfrac{1}{4}\\), \\(\\tfrac{1}{2}\\) and \\(\\tfrac{1}{4}\\).",
   "see": [
    "segregation",
    "mendels-laws",
@@ -9476,7 +9475,7 @@ window.GLOSSARY_ENTRIES = [
   "aka": [
    "Q–Q plot"
   ],
-  "short": "A plot of a GWAS’s sorted −log<sub>10</sub>(p) values against those expected if no variant were associated. Points on the diagonal fit no association; a curve leaving the diagonal early suggests inflation.",
+  "short": "A plot of a GWAS’s sorted p-values, on a −log<sub>10</sub> scale, against those expected if no variant were associated. Points on the diagonal fit no association; a curve leaving the diagonal early suggests inflation.",
   "long": "A few points leaving the diagonal only at the top end are what true associations look like. A lift of the whole curve can come from confounding such as population stratification, but in large studies of polygenic traits many small true effects also lift it; LD score regression helps separate the two.",
   "see": [
    "genomic-inflation",
@@ -9572,7 +9571,7 @@ window.GLOSSARY_ENTRIES = [
    "inverse normal transformation"
   ],
   "short": "Replacing each phenotype value by the standard normal quantile of its rank, making the column normally distributed. It removes skew and outlier influence; effects are then in SD units of the transformed trait.",
-  "long": "A common formula is Φ<sup>−1</sup>((r − 3/8)/(n + 1/4)) for rank r among n values (Blom’s offset).",
+  "long": "A common formula is \\(\\Phi^{-1}((r - 3/8)/(n + 1/4))\\) for the value with rank \\(r\\) among \\(n\\) values (Blom’s offset), where \\(\\Phi^{-1}\\) is the inverse of the standard normal cumulative distribution function. The ranks become evenly spaced probabilities strictly between 0 and 1, so the smallest and largest values map to finite normal quantiles.",
   "see": [
    "quantitative-trait",
    "regenie"
@@ -9724,7 +9723,7 @@ window.GLOSSARY_ENTRIES = [
    "depth of coverage"
   ],
   "short": "The number of aligned reads covering a position; averaged over the genome, the total number of bases sequenced divided by the genome length (written, for example, 30×). Heterozygotes need enough depth to show both alleles.",
-  "long": "With d reads, the chance that all come from the same chromosome copy is 2 × (½)<sup>d</sup>: 1/8 at 4×. UK Biobank genomes average 32.5× (at least 23.5× in every person); 95.8% of targeted exome bases were read at least 20 times.",
+  "long": "At a heterozygous site covered by \\(d\\) reads, each read comes from either chromosome copy with probability \\(\\tfrac{1}{2}\\), independently, so the chance that all come from the same copy, and the site looks homozygous, is \\(2 \\times (\\tfrac{1}{2})^d\\): \\(\\tfrac{1}{8}\\) at \\(d = 4\\). UK Biobank genomes average 32.5× (at least 23.5× in every person); 95.8% of targeted exome bases were read at least 20 times.",
   "see": [
    "variant-calling",
    "wgs",
@@ -9862,7 +9861,7 @@ window.GLOSSARY_ENTRIES = [
    "theta"
   ],
   "short": "The probability that a gamete carries a new combination of a parent’s alleles at two loci (a recombinant). It is near 0 for close loci and 0.5 for unlinked loci.",
-  "long": "A recombinant results from an odd number of crossovers between the two loci. If crossovers occur as a Poisson process (Haldane's model), loci <i>d</i> morgans apart have θ = ½(1 − e<sup>−2<i>d</i></sup>). For small distances θ ≈ <i>d</i>.",
+  "long": "A recombinant results from an odd number of crossovers between the two loci. If crossovers occur as a Poisson process (Haldane's model), the number between loci \\(d\\) morgans apart is \\(\\Poisson(d)\\), and the probability that it is odd is \\(\\theta = \\tfrac{1}{2}(1 - e^{-2d})\\). For small distances \\(\\theta \\approx d\\); as \\(d\\) grows, \\(\\theta\\) approaches \\(\\tfrac{1}{2}\\), the value for unlinked loci.",
   "l1": "slides 115, 122",
   "see": [
    "genetic-linkage",
@@ -10100,7 +10099,7 @@ window.GLOSSARY_ENTRIES = [
    "regional plot",
    "LocusZoom plot"
   ],
-  "short": "A plot of −log<sub>10</sub> p against position for the variants in one region, each point colored by its r² with the lead variant, plus recombination rate and genes. Made with tools such as LocusZoom.",
+  "short": "A plot of −log<sub>10</sub> of the p-value against position for the variants in one region, each point colored by its \\(r^2\\) with the lead variant, plus recombination rate and genes. Made with tools such as LocusZoom.",
   "see": [
    "lead-variant",
    "r-squared",
@@ -10207,7 +10206,7 @@ window.GLOSSARY_ENTRIES = [
   "id": "reverse-complement",
   "term": "reverse complement",
   "short": "A DNA sequence with every base replaced by its pairing partner (A↔T, C↔G) and the order reversed. It is the partner strand written in the standard 5′→3′ direction: the reverse complement of ACCTGAG is CTCAGGT.",
-  "long": "Formally, for s = s<sub>1</sub>…s<sub>n</sub>, rc(s)<sub>i</sub> = comp(s<sub>n+1−i</sub>), and rc(rc(s)) = s. Reversing alone, or complementing alone, does not give the partner strand.",
+  "long": "Formally, for a sequence \\(s = s_1 s_2 \\ldots s_n\\), \\(\\operatorname{rc}(s)_i = \\operatorname{comp}(s_{n+1-i})\\), where \\(\\operatorname{comp}\\) swaps A with T and C with G: position \\(i\\) of the result is the complement of the base at position \\(i\\) counted from the 3′ end of \\(s\\). Applying it twice returns the original, \\(\\operatorname{rc}(\\operatorname{rc}(s)) = s\\). Reversing alone, or complementing alone, does not give the partner strand.",
   "l1": "slides 57, 68–69",
   "see": [
    "complementary",
@@ -10420,8 +10419,8 @@ window.GLOSSARY_ENTRIES = [
    "r2",
    "squared correlation"
   ],
-  "short": "The squared correlation between the alleles at two SNPs across chromosome copies: r² = D² / (p<sub>A</sub>p<sub>a</sub>p<sub>G</sub>p<sub>g</sub>). Testing a marker instead of the causal variant needs about 1/r² times as many people for equal power.",
-  "long": "r² can reach 1 only when the two SNPs have equal allele frequencies. r is the Pearson correlation between two 0/1 columns of the haplotype matrix. Under random mating, the correlation between two SNPs’ genotype dosages across people equals the haplotype r in the population, so r² can be estimated from unphased genotypes; this genotype correlation is what PLINK <code>--r2</code> computes. For minor allele frequencies m<sub>1</sub> ≤ m<sub>2</sub>, r² cannot exceed m<sub>1</sub>(1 − m<sub>2</sub>) / [(1 − m<sub>1</sub>)m<sub>2</sub>].",
+  "short": "The squared correlation between the alleles at two SNPs across chromosome copies: \\(r^2 = D^2/(p_{\\mathrm{A}} p_{\\mathrm{a}} p_{\\mathrm{G}} p_{\\mathrm{g}})\\), with \\(D\\) the LD coefficient, \\(p_{\\mathrm{A}}\\) and \\(p_{\\mathrm{a}}\\) the allele frequencies at the first SNP and \\(p_{\\mathrm{G}}\\) and \\(p_{\\mathrm{g}}\\) those at the second. Testing a marker instead of the causal variant needs about \\(1/r^2\\) times as many people for equal power.",
+  "long": "\\(r\\) is the Pearson correlation between two 0/1 columns of the haplotype matrix, one per SNP: their covariance is \\(D\\) and their variances are \\(p_{\\mathrm{A}} p_{\\mathrm{a}}\\) and \\(p_{\\mathrm{G}} p_{\\mathrm{g}}\\), which gives the formula above. \\(r^2\\) can reach 1 only when the two SNPs have equal minor allele frequencies. Under random mating, the correlation between two SNPs’ genotype dosages across people equals the haplotype \\(r\\) in the population, so \\(r^2\\) can be estimated from unphased genotypes; this genotype correlation is what PLINK <code>--r2</code> computes. For minor allele frequencies \\(m_1 \\le m_2\\), \\(r^2\\) cannot exceed \\(m_1(1 - m_2)/[(1 - m_1) m_2]\\), which equals 1 only when \\(m_1 = m_2\\).",
   "l1": "slides 85–86, 95–96, 120–124",
   "see": [
    "d-prime",
@@ -11341,7 +11340,7 @@ window.GLOSSARY_ENTRIES = [
    "proxy SNP",
    "tagging"
   ],
-  "short": "A genotyped SNP chosen because it is in high LD (often r² ≥ 0.8) with nearby SNPs that are not genotyped, so testing it also tests them indirectly. Genotyping arrays are designed around tag SNPs.",
+  "short": "A genotyped SNP chosen because it is in high LD (often \\(r^2 \\ge 0.8\\)) with nearby SNPs that are not genotyped, so testing it also tests them indirectly. Genotyping arrays are designed around tag SNPs.",
   "l1": "slide 85",
   "see": [
    "ld",
@@ -11494,7 +11493,7 @@ window.GLOSSARY_ENTRIES = [
    "Trans-Omics for Precision Medicine"
   ],
   "short": "A US National Heart, Lung, and Blood Institute program of deep whole-genome sequencing in people of diverse ancestries. Its imputation reference panel improves imputation of rare variants, especially in genomes labeled African ancestry.",
-  "long": "The published panel has 97,256 genomes with 308 million variants; the TOPMed Imputation Server's release r3 has 133,597 samples. With it, imputation r² for variants of frequency 0.1% rose from about 0.17 to 0.96 in genomes labeled African ancestry (Taliun et al. 2021). UK Biobank offers a TOPMed imputation on GRCh38 (Field 21007).",
+  "long": "The published panel has 97,256 genomes with 308 million variants; the TOPMed Imputation Server's release r3 has 133,597 samples. With it, imputation \\(r^2\\) for variants of frequency 0.1% rose from about 0.17 to 0.96 in genomes labeled African ancestry (Taliun et al. 2021). UK Biobank offers a TOPMed imputation on GRCh38 (Field 21007).",
   "see": [
    "reference-panel",
    "genotype-imputation",
@@ -11711,7 +11710,7 @@ window.GLOSSARY_ENTRIES = [
    "TWAS"
   ],
   "short": "A gene-level test of whether genetically predicted expression of a gene is associated with a trait. Weights learned in a dataset with measured expression, such as GTEx, predict expression from genotypes in a GWAS sample.",
-  "long": "Predicted expression is a weighted sum of genotypes, ê = Gw. A TWAS association does not prove that the gene is causal: nearby genes can share eQTLs or have correlated eQTLs.",
+  "long": "Predicted expression is a weighted sum of genotypes, \\(\\hat{\\mathbf{e}} = \\mathbf{G}\\mathbf{w}\\), with \\(\\mathbf{G}\\) the genotype dosages and \\(\\mathbf{w}\\) the per-variant weights of an expression model. A TWAS association does not prove that the gene is causal: nearby genes can share eQTLs or have correlated eQTLs.",
   "l1": "slide 25",
   "see": [
    "transcriptome-imputation",
@@ -11925,7 +11924,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "twin-study",
   "term": "twin study",
-  "short": "A study that compares how similar identical (monozygotic) and fraternal (dizygotic) twin pairs are for a trait to estimate heritability, for example with Falconer’s formula h² ≈ 2(r<sub>MZ</sub> − r<sub>DZ</sub>).",
+  "short": "A study that compares how similar identical (monozygotic) and fraternal (dizygotic) twin pairs are for a trait to estimate heritability, for example with Falconer’s formula \\(h^2 \\approx 2(r_{\\mathrm{MZ}} - r_{\\mathrm{DZ}})\\), where \\(r_{\\mathrm{MZ}}\\) and \\(r_{\\mathrm{DZ}}\\) are the trait correlations within identical and within fraternal pairs. Identical twins share all their genetic variation and fraternal twins on average half of its additive part, so if genetic effects are additive and both kinds of pair share their environment equally, \\(r_{\\mathrm{MZ}} - r_{\\mathrm{DZ}} = h^2/2\\).",
   "long": "It assumes that both kinds of twin pairs share their environments to the same degree.",
   "see": [
    "heritability",
@@ -12124,8 +12123,8 @@ window.GLOSSARY_ENTRIES = [
    "proportion of variance explained",
    "R²"
   ],
-  "short": "The fraction of a trait’s variance accounted for by a variant or a model. For one variant with effect-allele frequency p and per-allele effect β (trait in SD units), it is 2p(1 − p)β².",
-  "long": "A GWAS needs roughly 40 divided by this fraction people for 80% power at p &lt; 5 × 10⁻⁸.",
+  "short": "The fraction of a trait’s variance accounted for by a variant or a model, written \\(R^2\\). For one variant with effect-allele frequency \\(p\\) and per-allele effect \\(\\beta\\) (trait in standard-deviation units), it is \\(2p(1 - p)\\beta^2\\): the variance of the genotype dosage, \\(2p(1 - p)\\) under Hardy–Weinberg equilibrium, times the squared effect of one copy.",
+  "long": "A GWAS needs roughly \\(40/R^2\\) people for 80% power at a p-value threshold of 5 × 10⁻⁸. With \\(n\\) people the noncentrality of the test statistic is about \\(nR^2\\), and 80% power at that threshold needs it to reach \\((5.45 + 0.84)^2 \\approx 40\\), where 5.45 and 0.84 are the standard normal quantiles for the two-sided threshold and for 80% power.",
   "see": [
    "beta",
    "effect-size",
@@ -12281,8 +12280,8 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "wahlund-effect",
   "term": "Wahlund effect",
-  "short": "The shortfall of heterozygotes in a sample that pools groups with different allele frequencies, even when each group is in Hardy–Weinberg equilibrium. The shortfall equals 2·Var(q), the variance of the allele frequency across groups.",
-  "long": "The resulting F equals Var(q) / (m(1 − m)), where m is the average allele frequency across the groups: the quantity population geneticists call F<sub>ST</sub>. It is one reason QC is run within groups of genetically similar people.",
+  "short": "The shortfall of heterozygotes in a sample that pools groups with different allele frequencies, even when each group is in Hardy–Weinberg equilibrium. The shortfall equals \\(2\\Var(q)\\), twice the variance of the allele frequency \\(q\\) across the groups.",
+  "long": "The resulting \\(F\\), the shortfall divided by the expected heterozygote fraction \\(2\\bar{q}(1 - \\bar{q})\\), equals \\(\\Var(q)/(\\bar{q}(1 - \\bar{q}))\\), where \\(\\bar{q}\\) is the average allele frequency across the groups: the quantity population geneticists call \\(F_{\\mathrm{ST}}\\). It is one reason QC is run within groups of genetically similar people.",
   "see": [
    "hwe",
    "fst",
@@ -12568,7 +12567,7 @@ window.GLOSSARY_ENTRIES = [
    "per-allele effect"
   ],
   "short": "The slope from regressing a phenotype on genotype coded 0/1/2: the change in mean phenotype per copy of the effect allele (column BETA in GWAS output). Its sign depends on which allele is counted.",
-  "long": "For a binary trait analyzed with logistic regression, β is the log of the per-allele odds ratio. The estimate from data is written <span class='hat cap'>β</span> (beta-hat).",
+  "long": "For a binary trait analyzed with logistic regression, \\(\\beta\\) is the log of the per-allele odds ratio. The estimate from data is written \\(\\hat{\\beta}\\) (beta-hat).",
   "see": [
    "effect-size",
    "effect-allele",

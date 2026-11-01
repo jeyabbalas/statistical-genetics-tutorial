@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UK Biobank: who is in it and how they were recruited · Lecture 0</title>
 <meta name="description" content="How UK Biobank recruited half a million adults in 2006–2010, what happened at the assessment-centre visit, how the samples were stored, how participants are followed through health records, and who is (and is not) in the cohort.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/css/site.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/math.js"></script>
 <script defer src="assets/js/pages.js"></script>
 <script defer src="assets/js/glossary-data.js"></script>
 <script defer src="assets/js/glossary-usage.js"></script>
@@ -16,7 +23,6 @@ body[data-page="uk-biobank"] sup.cite a { text-decoration: none; }
 body[data-page="uk-biobank"] .mental-model figure { margin: 0.6em 0 0.4em; overflow-x: auto; }
 body[data-page="uk-biobank"] .mental-model figure svg { display: block; width: 100%; height: auto; margin: 0 auto; }
 body[data-page="uk-biobank"] .mental-model figcaption { font-size: 0.84rem; color: var(--fg-muted); margin-top: 6px; line-height: 1.45; }
-body[data-page="uk-biobank"] .ukb-eq { font-family: var(--mono); font-size: 0.86rem; background: var(--bg-alt); border-radius: 6px; padding: 9px 12px; margin: 0.5em 0 1em; overflow-x: auto; line-height: 1.75; }
 body[data-page="uk-biobank"] .ukb-two { display: grid; grid-template-columns: 340fr 480fr; gap: 14px; align-items: start; }
 body[data-page="uk-biobank"] .ukb-hv { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 20px; align-items: start; }
 body[data-page="uk-biobank"] .ukb-two > .pane, body[data-page="uk-biobank"] .ukb-hv > .pane { min-width: 0; }
@@ -377,9 +383,22 @@ body[data-page="uk-biobank"] .status { border-top: 1px solid var(--border); marg
 </aside>
 
 <h3><span class="num">4.</span> Prevalence and incidence</h3>
-<p><dfn>Prevalence</dfn> is the proportion of people who have a condition at a given time. <dfn>Incidence</dfn> counts new cases among people who did not have the condition. The incidence rate divides new cases by <dfn>person-time</dfn>, the total time people were followed while at risk; cumulative incidence (risk) divides new cases by the number of people at risk at the start of a period.</p>
-<div class="ukb-eq">prevalence = people with the condition now ÷ people in the group now<br>incidence rate = new cases ÷ person-years at risk<br>risk over t years = new cases within t years ÷ people at risk at the start</div>
-<p><span class="illustrative">Illustrative numbers</span> If 1,000 people without heart disease are followed for 10 years and 30 have a first heart attack, the 10-year risk is 30 / 1,000 = 3%. Each of the 30 stops contributing person-time at their event, and so does anyone who dies of something else or leaves the study, so the person-time is a little under 10,000 person-years and the rate a little over 3 per 1,000 person-years.</p>
+<p><dfn>Prevalence</dfn> and <dfn>incidence</dfn> measure in two different ways how common a condition is, and incidence itself is reported either as a rate or as a risk (cumulative incidence):</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \text{prevalence} = \frac{\text{existing cases}}{\text{people}} \\[10pt] \text{incidence rate} = \frac{\text{new cases}}{\text{person-time}} \\[10pt] \text{risk over } t = \frac{\text{new cases}}{\text{people at risk}} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\text{prevalence}\)</dt><dd>Proportion of a group that has the condition at a given time.</dd>
+    <dt>\(\text{existing cases}\)</dt><dd>People in the group who have the condition at that time, however long ago it started.</dd>
+    <dt>\(\text{people}\)</dt><dd>Everyone in the group at that time, with or without the condition.</dd>
+    <dt>\(\text{incidence rate}\)</dt><dd>New cases per unit of person-time, for example 3 per 1,000 person-years.</dd>
+    <dt>\(\text{new cases}\)</dt><dd>People who develop the condition for the first time during the follow-up period, among those who did not have it at the start.</dd>
+    <dt>\(\text{person-time}\)</dt><dd><dfn>Person-time</dfn>: the total time people were followed while at risk, added up over people and usually counted in person-years. Each person contributes from the start of follow-up until their first event, death, loss to follow-up or the end of the study, whichever comes first.</dd>
+    <dt>\(\text{risk over } t\)</dt><dd>Cumulative incidence: the proportion of the people at risk who become new cases within a period of length \(t\), such as 10 years.</dd>
+    <dt>\(\text{people at risk}\)</dt><dd>Number of people without the condition at the start of the period, who could therefore become new cases.</dd>
+  </dl>
+  <p class="eq-intuition">The three measures differ in what their denominators count. Prevalence divides by everyone in the group, so it is a proportion between 0 and 1, and it grows both with how often the condition starts and with how long people live with it. Both incidence measures count only new cases, among people who could still become one: someone who already has the condition, or has died, is no longer at risk. The risk divides by a number of people, so it is also a proportion between 0 and 1, and it has a meaning only together with its period: a 10-year risk is at least as large as a 1-year risk. The rate divides by time at risk, so its unit is cases per person-year, and it can combine people followed for different lengths of time. When the risk is small and the rate is roughly constant over the period, \(\text{risk} \approx \text{rate} \times t\).</p>
+</div>
+<p><span class="illustrative">Illustrative numbers</span> If 1,000 people without heart disease are followed for 10 years and 30 have a first heart attack, the 10-year risk is 30 / 1,000 = 3%. Each of the 30 stops contributing person-time at their event, and so does anyone who dies of something else or leaves the study, so the person-time is a little under 10,000 person-years and the rate a little over 3 per 1,000 person-years. If, for example, the heart attacks are spread evenly over the 10 years and nobody else leaves, the cases contribute 5 years each on average: 970 × 10 + 30 × 5 = 9,850 person-years, and the rate is 30 / 9,850 ≈ 0.00305 per person-year, or 3.05 per 1,000 person-years. Multiplied by 10 years, this gives 3.05%, close to the risk of 3%.</p>
 <p>In UK Biobank, conditions recorded before a participant’s baseline visit are prevalent; conditions first recorded after it are incident. Most of the cohort’s diseases had not yet started at baseline, so for incident cases the exposures were measured before the disease began. The <a href="#follow-up">follow-up section</a> shows where these records come from; <a href="phenotypes.html#case-definition">Measuring phenotypes</a> shows how to turn them into case definitions.</p>
 
 <h3><span class="num">5.</span> Confounding and selection bias</h3>
@@ -1206,7 +1225,7 @@ body[data-page="uk-biobank"] .status { border-top: 1px solid var(--border); marg
 
 <h2 id="who" data-toc="Who is (and is not) in it">Who is (and is not) in UK Biobank <span class="tag core">Core</span></h2>
 <p>People who volunteer differ from people who decline. Fry and colleagues compared UK Biobank participants with everyone who was invited, using the age, sex, deprivation and region known for 94.8% of invitees, and with national surveys and the census.<sup class="cite"><a href="#src-2">2</a></sup> Women, older people and people living in less deprived areas were more likely to take part (panel A below).</p>
-<p>Deprivation here is the <dfn>Townsend deprivation index</dfn> of a person’s home area. It combines four census measures: unemployment, households without a car, households not owner-occupied, and overcrowded households. Each measure (two of them after a log transform) is converted to a z-score across areas and the four z-scores are added, so higher scores mean more deprivation.<sup class="cite"><a href="#src-30">30</a></sup> In UK Biobank the median score is −2.14 and the mean −1.29 (Field 22189).<sup class="cite"><a href="#src-17">17</a></sup> According to UK Biobank, 86,000 participants live in the most deprived third of the country; an even spread would put about 168,000 there.<sup class="cite"><a href="#src-12">12</a></sup></p>
+<p>Deprivation here is the <dfn>Townsend deprivation index</dfn> of a person’s home area. It combines four census measures: unemployment, households without a car, households not owner-occupied, and overcrowded households. Each measure (two of them after a log transform) is converted to a z-score across areas, \(z = (x - \bar{x})/s\), where \(x\) is the area’s value of the measure and \(\bar{x}\) and \(s\) are its mean and standard deviation over all areas, and the four z-scores are added. Each measure therefore enters with equal weight, in standard deviations from its mean; the index averages 0 over all areas, and higher scores mean more deprivation.<sup class="cite"><a href="#src-30">30</a></sup> In UK Biobank the median score is −2.14 and the mean −1.29 (Field 22189).<sup class="cite"><a href="#src-17">17</a></sup> According to UK Biobank, 86,000 participants live in the most deprived third of the country; an even spread would put about 168,000 there.<sup class="cite"><a href="#src-12">12</a></sup></p>
 <p>Participants were also healthier and wealthier than the general population of the same age: fewer were obese or smoked, fewer reported cardiovascular disease, and more owned their home outright (panel B). By ages 70–74, all-cause mortality was 46.2% lower than in the general population for men and 55.5% lower for women, and total cancer incidence 11.8% and 18.1% lower.<sup class="cite"><a href="#src-2">2</a></sup> This pattern is called <dfn>healthy volunteer bias</dfn>. Fry and colleagues concluded that “UK Biobank is not representative of the sampling <span class="no-autolink">population</span>”.<sup class="cite"><a href="#src-2">2</a></sup></p>
 <p>By self-reported ethnic background, the cohort is close to the census for its age range: 94.6% of participants reported a White background, against 94.5% of people of the same ages in the 2001 census (and 91.3% in the 2011 census).<sup class="cite"><a href="#src-2">2</a></sup> As a result, relatively few participants reported other backgrounds: about 22,000 reported an ethnic background originating outside Europe.<sup class="cite"><a href="#src-4">4</a></sup> <a href="ancestry.html#uk-biobank">Ancestry and descriptors in UK Biobank</a> explains the self-reported and genetic descriptors in the data.</p>
 
@@ -1353,8 +1372,8 @@ body[data-page="uk-biobank"] .status { border-top: 1px solid var(--border); marg
 </ul>
 
 <aside class="callout pitfall">
-  <div class="callout-title"><span class="badge">Common confusion</span> A large n does not fix selection</div>
-  <p>With 500,000 people, confidence intervals are very narrow. A narrow interval around a biased estimate is still biased: neither selection bias nor confounding shrinks as the sample grows.</p>
+  <div class="callout-title"><span class="badge">Common confusion</span> A large \(n\) does not fix selection</div>
+  <p>With \(n = 500{,}000\) people, confidence intervals are very narrow: their width shrinks in proportion to \(1/\sqrt{n}\). A narrow interval around a biased estimate is still biased: neither selection bias nor confounding shrinks as the sample grows.</p>
 </aside>
 
 <aside class="callout bridge">

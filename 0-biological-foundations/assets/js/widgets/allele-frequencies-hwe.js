@@ -397,19 +397,19 @@
         out2.innerHTML = html; verdict.innerHTML = ""; return;
       }
       html += "<div>heterozygosity: observed " + fmt(r.Hobs, 3) + " · expected 2<span class=\"hat\">p</span><span class=\"hat\">q</span> = " + fmt(r.Hexp, 3) + "</div>" +
-        "<div>F = 1 − observed / expected = " + signed(r.F, 3) + "</div>" +
-        "<div>χ² = " + (r.x2 < 100 ? r.x2.toFixed(2) : r.x2.toFixed(0)) + " (df = 1) → p" + pEq(formatP(r.pval, r.log10p)) +
-        " · exact test p" + pEq(formatP(ex, NaN)) + "</div>" +
-        "<div class=\"hwe-dim\">With n = " + thousands(r.n) + ", |F| must exceed 1.96/√n = " + (1.959964 / Math.sqrt(r.n)).toFixed(3) + " to reach p &lt; 0.05.</div>";
+        "<div><span class=\"hat cap\">F</span> = 1 − observed / expected = " + signed(r.F, 3) + "</div>" +
+        "<div>X² = " + (r.x2 < 100 ? r.x2.toFixed(2) : r.x2.toFixed(0)) + " (df = 1) → p-value" + pEq(formatP(r.pval, r.log10p)) +
+        " · exact-test p-value" + pEq(formatP(ex, NaN)) + "</div>" +
+        "<div class=\"hwe-dim\">With n = " + thousands(r.n) + ", |<span class=\"hat cap\">F</span>| must exceed 1.96/√n = " + (1.959964 / Math.sqrt(r.n)).toFixed(3) + " to reach a p-value below 0.05 (because X² = n<span class=\"hat cap\">F</span>²).</div>";
       out2.innerHTML = html;
       var dir = r.F > 0 ? "fewer heterozygotes than expected" : "more heterozygotes than expected";
       var pv = isFinite(ex) ? ex : r.pval;
       var v, cls;
       if (pv >= 0.05) { cls = "ok"; } else if (pv >= 1e-6) { cls = "warn"; } else { cls = "bad"; }
       verdict.className = "hwe-verdict " + cls;
-      if (pv >= 0.05) v = "<strong>Consistent with HWE</strong> (exact p ≥ 0.05): the counts are what random mating predicts, up to sampling noise.";
+      if (pv >= 0.05) v = "<strong>Consistent with HWE</strong> (exact-test p-value ≥ 0.05): the counts are what random mating predicts, up to sampling noise.";
       else if (pv >= 1e-6) v = "<strong>Some evidence of deviation</strong> (" + dir + "), but this SNP would pass a typical QC filter that removes SNPs with p &lt; 10<sup>−6</sup>.";
-      else v = "<strong>Strong deviation</strong>: " + dir + " (F = " + signed(r.F, 2) + "). A typical QC filter (p &lt; 10<sup>−6</sup>) would remove this SNP.";
+      else v = "<strong>Strong deviation</strong>: " + dir + " (<span class=\"hat cap\">F</span> = " + signed(r.F, 2) + "). A typical QC filter (p &lt; 10<sup>−6</sup>) would remove this SNP.";
       verdict.innerHTML = v;
     }
 

@@ -5,7 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Measuring phenotypes · Lecture 0</title>
 <meta name="description" content="How UK Biobank turns questionnaires, physical measurements, sample assays, health records and imaging into phenotype columns, and which errors, gaps and selection each process adds.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
 <link rel="stylesheet" href="assets/css/site.css">
+<script defer src="assets/vendor/katex/katex.min.js"></script>
+<script defer src="assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="assets/js/math.js"></script>
 <script defer src="assets/js/pages.js"></script>
 <script defer src="assets/js/glossary-data.js"></script>
 <script defer src="assets/js/glossary-usage.js"></script>
@@ -93,7 +100,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
 <header class="page-head">
   <p class="eyebrow">Part B · Measuring the system · Page 12 of 13</p>
   <h1>Measuring phenotypes</h1>
-  <p class="lede">In an analysis, a phenotype is one column <var>y</var> with one value per participant. Every value in that column was produced by a measurement process: a question on a touchscreen, a blood pressure monitor, a laboratory analyzer running on a sample frozen years earlier, or a diagnosis code entered in a hospital record. This page follows those processes in UK Biobank and shows what each one does to the numbers you analyze.</p>
+  <p class="lede">In an analysis, a phenotype is one column \(\mathbf{y}\) with one value per participant. Every value in that column was produced by a measurement process: a question on a touchscreen, a blood pressure monitor, a laboratory analyzer running on a sample frozen years earlier, or a diagnosis code entered in a hospital record. This page follows those processes in UK Biobank and shows what each one does to the numbers you analyze.</p>
   <div class="chips">
     <span class="chip core">Core for Lecture 1</span>
     <span class="chip time">≈ 45 min</span>
@@ -430,7 +437,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
   </ul>
 </section>
 
-<p>On the <a href="index.html#mm2">overview page</a>, the genotype–phenotype data matrix has a phenotype column <var>y</var> and covariate columns next to the genotype matrix. The <a href="samples-to-genotypes.html">previous page</a> showed how the genotype columns are made from DNA. This page shows how the phenotype columns are made, and the <a href="the-data.html">next page</a> shows the files and tables that hold them.</p>
+<p>On the <a href="index.html#mm2">overview page</a>, the genotype–phenotype data matrix has a phenotype column \(\mathbf{y}\) and covariate columns next to the genotype matrix. The <a href="samples-to-genotypes.html">previous page</a> showed how the genotype columns are made from DNA. This page shows how the phenotype columns are made, and the <a href="the-data.html">next page</a> shows the files and tables that hold them.</p>
 
 <h2 id="variable-types" data-toc="Kinds of variables">Kinds of phenotype variables <span class="tag core">Core</span></h2>
 
@@ -834,12 +841,12 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
 <text x="12" y="186" class="t-sm">Model:</text>
 <text x="56" y="186" class="t-b" style="fill:var(--data)">one model per protein</text>
 </svg></div></div>
-  <figcaption><span class="fig-title">Six kinds of phenotype variables.</span> Each panel shows the shape of the data, how the column <var>y</var> looks, and the usual model. Note the code −3 in the ordinal example: it is not a point on the scale. Distributions are simulated or illustrative; field numbers are real.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  <figcaption><span class="fig-title">Six kinds of phenotype variables.</span> Each panel shows the shape of the data, how the column \(\mathbf{y}\) looks, and the usual model. Note the code −3 in the ordinal example: it is not a point on the scale. Distributions are simulated or illustrative; field numbers are real.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
 </figure>
 
 <aside class="callout data">
   <div class="callout-title"><span class="badge">In the data</span> Declaring the phenotype type in REGENIE</div>
-  <p>REGENIE, the association program used in Session 2, asks you to declare the type of <var>y</var>: <code>--qt</code> for quantitative traits (the default), <code>--bt</code> for binary traits coded 0 = control, 1 = case, NA = missing, and <code>--t2e</code> for time-to-event traits with an event column coded 0 = censored, 1 = event. With <code>--apply-rint</code> it applies a rank-based inverse normal transformation to quantitative traits: each value is replaced by the standard normal quantile of its rank, which removes skew and limits the pull of outliers<sup class="cite"><a href="#src-1">1</a></sup>. Large lipid and protein studies used this kind of transformation<sup class="cite"><a href="#src-2">2</a>,<a href="#src-3">3</a></sup>.</p>
+  <p>REGENIE, the association program used in Session 2, asks you to declare the type of \(\mathbf{y}\): <code>--qt</code> for quantitative traits (the default), <code>--bt</code> for binary traits coded 0 = control, 1 = case, NA = missing, and <code>--t2e</code> for time-to-event traits with an event column coded 0 = censored, 1 = event. With <code>--apply-rint</code> it applies a rank-based inverse normal transformation to quantitative traits: each value is replaced by the standard normal quantile of its rank, which removes skew and limits the pull of outliers<sup class="cite"><a href="#src-1">1</a></sup>. REGENIE computes it as \(\Phi^{-1}\big((r - 3/8)/(n + 1/4)\big)\) for the value of rank \(r\) among \(n\) values (tied values share their average rank), where \(\Phi^{-1}\) is the standard normal quantile function<sup class="cite"><a href="#src-1">1</a></sup>. The fraction spreads the ranks evenly between 0 and 1 (the offsets 3/8 and 1/4, Blom’s, keep it away from 0 and 1), and \(\Phi^{-1}\) returns the value below which a standard normal variable falls with that probability. The new column keeps the order of the values, but its distribution is close to standard normal whatever the original shape: with \(n = 500{,}000\), the largest value becomes about 4.7, however extreme it was. Large lipid and protein studies used this kind of transformation<sup class="cite"><a href="#src-2">2</a>,<a href="#src-3">3</a></sup>.</p>
 </aside>
 
 <aside class="callout bridge">
@@ -847,7 +854,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
   <div class="bridge-grid">
     <figure class="slide-thumb"><img src="assets/img/lecture1/slide-047.jpg" alt="Lecture 1, slide 47: Session 2 on genome-wide association studies"><figcaption>Lecture 1 · slide 47</figcaption></figure>
     <div>
-      <p>In Lecture 1 (slide 47) you will see Session 2, “Genome-Wide Association Studies”. Its lecture covers association models for quantitative, binary and time-to-event outcomes, and its practical analyzes a simulated quantitative trait and coronary artery disease status in the PennCATH study data with REGENIE<sup class="cite"><a href="#src-4">4</a></sup>. It means that the first decision in a GWAS is the type of <var>y</var>, because the type picks the model. Listen for which model goes with which type, for how covariates enter each model, and for the lecture’s warning about bias from inappropriate adjustment; the statin example below is one such case.</p>
+      <p>In Lecture 1 (slide 47) you will see Session 2, “Genome-Wide Association Studies”. Its lecture covers association models for quantitative, binary and time-to-event outcomes, and its practical analyzes a simulated quantitative trait and coronary artery disease status in the PennCATH study data with REGENIE<sup class="cite"><a href="#src-4">4</a></sup>. It means that the first decision in a GWAS is the type of \(\mathbf{y}\), because the type picks the model. Listen for which model goes with which type, for how covariates enter each model, and for the lecture’s warning about bias from inappropriate adjustment; the statin example below is one such case.</p>
     </div>
   </div>
 </aside>
@@ -1009,7 +1016,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
 
 <h2 id="physical" data-toc="Physical measurements">Physical measurements <span class="tag core">Core</span></h2>
 
-<p>Physical measurements are taken by staff with instruments, following a written protocol. At the baseline visit everyone had, among other measurements, standing height (Field 50, measured with a Seca 202 device), weight (Field 21002) and two automated blood pressure readings<sup class="cite"><a href="#src-5">5</a>,<a href="#src-13">13</a></sup>. Body mass index, BMI = weight (kg) / height (m)², is a derived field (21001), and it is empty if either input was omitted<sup class="cite"><a href="#src-13">13</a></sup>.</p>
+<p>Physical measurements are taken by staff with instruments, following a written protocol. At the baseline visit everyone had, among other measurements, standing height (Field 50, measured with a Seca 202 device), weight (Field 21002) and two automated blood pressure readings<sup class="cite"><a href="#src-5">5</a>,<a href="#src-13">13</a></sup>. Body mass index, \(\mathrm{BMI} = \text{weight}/\text{height}^2\) with weight in kilograms and height in meters, is a derived field (21001), and it is empty if either input was omitted<sup class="cite"><a href="#src-13">13</a></sup>. Its unit is kg/m²: a person who weighs 70 kg and is 1.75 m tall has \(\mathrm{BMI} = 70/1.75^2 \approx 22.9\). Dividing by the square of height adjusts weight for body size: among adults, weight tends to rise roughly with the square of height, so BMI depends much less on height than weight does.</p>
 
 <p>Blood pressure shows several measurement issues at once. Field 4080 (systolic blood pressure, automated reading) holds two readings taken a few moments apart with an Omron device, stored as array index 0 and 1 of the same instance. A manual sphygmomanometer was used if the automated device could not be used, and those readings are in a separate field (93)<sup class="cite"><a href="#src-13">13</a></sup>. A common approach averages the available readings and then adds a fixed amount for people who report taking blood pressure medication, because treatment lowers the measured value. A blood pressure GWAS of over one million people, including UK Biobank, averaged the two readings and added 15 mmHg to systolic and 10 mmHg to diastolic pressure for the 94,289 UK Biobank participants taking such medication<sup class="cite"><a href="#src-14">14</a></sup>. A simulation study of this problem found that adding a sensible constant to treated people’s values works well, whereas the common alternatives (ignoring treatment, adding treatment as a covariate, or excluding treated people) are flawed<sup class="cite"><a href="#src-15">15</a></sup>.</p>
 
@@ -1246,7 +1253,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
 
 <p>Statins lower LDL cholesterol. People with high LDL are the ones most likely to be prescribed a statin, so the measured LDL of statin users is lower than their untreated LDL would be, and the reduction is concentrated among people with high values. Statin use can be found in Fields 6177 and 6153 (code 1, “Cholesterol lowering medication”) or in the medicine codes of Field 20003, for example 1140861958 simvastatin and 1141146234 atorvastatin<sup class="cite"><a href="#src-9">9</a></sup>.</p>
 
-<p>The figure below simulates 40,000 people and one LDL-raising allele with a true effect of 0.15 mmol/L per copy; about 19% of the people take a statin that lowers LDL by 30% on average. It compares five ways of handling statin users. Ignoring treatment shrinks the estimate by more than a third. Dropping statin users, or adding statin use as a covariate, also gives a biased answer, because who takes a statin depends on LDL itself. Dividing statin users’ measured LDL by 0.7, the approach of a large global lipid GWAS<sup class="cite"><a href="#src-2">2</a></sup>, nearly recovers the true effect. It works so well here partly because the simulated statins lower LDL by 30% on average; real effects differ by drug, dose and adherence.</p>
+<p>The figure below simulates 40,000 people and one LDL-raising allele with a true effect of 0.15 mmol/L per copy; about 19% of the people take a statin that lowers LDL by 30% on average. It compares five ways of handling statin users. Ignoring treatment shrinks the estimate by more than a third. Dropping statin users, or adding statin use as a covariate, also gives a biased answer, because who takes a statin depends on LDL itself. Dividing statin users’ measured LDL by 0.7, the approach of a large global lipid GWAS<sup class="cite"><a href="#src-2">2</a></sup>, nearly recovers the true effect. It works so well here partly because the simulated statins lower LDL by 30% on average: a user’s measured LDL is then on average 0.7 times their untreated LDL, and dividing by 0.7 restores it on average. Real effects differ by drug, dose and adherence.</p>
 
 <figure class="fig">
   <div class="fig-body"><div class="ph-panels two"><svg viewBox="0 0 400 290" role="img" aria-labelledby="sta-a-t sta-a-d"><title id="sta-a-t">Simulated LDL distributions with and without statins</title><desc id="sta-a-d">Density curves of simulated LDL cholesterol. People not taking statins center near 3.7 mmol/L. Statin users would center near 4.6 without treatment, but their measured values center near 3.2, below the non-users. Dividing their measured values by 0.7 moves their curve back to about 4.6.</desc>
@@ -1325,7 +1332,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
 <text x="384" y="268" class="t-sm" text-anchor="middle">0.18</text>
 <text x="202" y="284" class="t-sm" text-anchor="middle">mmol/L per allele (dashed: true 0.15)</text>
 </svg></div></div>
-  <figcaption><span class="fig-title">Statins and LDL in a simulation.</span> A: the measured LDL of statin users sits below that of non-users, although their untreated LDL is higher; dividing by 0.7 moves their values back. B: per-allele estimates with 95% confidence intervals under five choices; the dashed line is the true simulated effect. Simulated data, N = 40,000.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  <figcaption><span class="fig-title">Statins and LDL in a simulation.</span> A: the measured LDL of statin users sits below that of non-users, although their untreated LDL is higher; dividing by 0.7 moves their values back. B: per-allele estimates with 95% confidence intervals under five choices; the dashed line is the true simulated effect. Simulated data, \(n = 40{,}000\).<span class="fig-credit">Drawn for this lecture.</span></figcaption>
 </figure>
 
 <aside class="callout bridge">
@@ -1941,7 +1948,20 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
 
 <p>Measurement error is the difference between a recorded value and the true value. Random error changes from one measurement to the next: two blood pressure readings taken moments apart differ. Systematic error shifts values in one direction: an analyzer that reads high, or the measured LDL of statin users. For a binary phenotype, error is called misclassification: a true case recorded as a control, or the reverse.</p>
 
-<p>Where the error sits decides what it does. Random error in the outcome <var>y</var> leaves a regression slope unbiased but widens its confidence interval; random error in a predictor <var>x</var> flattens the slope toward zero, which is called regression dilution<sup class="cite"><a href="#src-38">38</a></sup>. In a GWAS the predictor is the genotype, which is measured with little error, so random error in a quantitative phenotype mainly costs power. When a phenotype serves as an exposure, as in observational epidemiology, its error biases the estimate. UK Biobank’s repeat visit in 2012–2013 was designed in part to measure this within-person variation so that analyses can correct for regression dilution<sup class="cite"><a href="#src-5">5</a></sup>.</p>
+<p>Where the error sits decides what it does. Random error in the outcome \(y\) leaves a regression slope unbiased but widens its confidence interval; random error in a predictor \(x\) flattens the slope toward zero, which is called regression dilution<sup class="cite"><a href="#src-38">38</a></sup>. If the predictor is recorded as \(x + u\), where \(u\) is random error, the slope that a large sample gives is</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \beta_{\mathrm{obs}} = \beta \times \frac{\Var(x)}{\Var(x) + \Var(u)} \]</div>
+  <dl class="eq-terms">
+    <dt>\(x\)</dt><dd>True value of the predictor for a person, for example their usual systolic blood pressure.</dd>
+    <dt>\(u\)</dt><dd>Random measurement error, so that \(x + u\) is the recorded value: mean 0, unrelated to \(x\) and to the outcome \(y\).</dd>
+    <dt>\(\beta\)</dt><dd>True slope: the change in the expected value of \(y\) per unit of \(x\).</dd>
+    <dt>\(\beta_{\mathrm{obs}}\)</dt><dd>Slope of \(y\) on the recorded values \(x + u\): the value that the fitted slope approaches as the sample grows.</dd>
+    <dt>\(\Var(x)\)</dt><dd>Variance of the true values across people.</dd>
+    <dt>\(\Var(u)\)</dt><dd>Variance of the measurement error, the within-person variation of the recorded values.</dd>
+  </dl>
+  <p class="eq-intuition">A regression slope is the covariance of outcome and predictor divided by the variance of the predictor. Because \(u\) is unrelated to \(x\) and to \(y\), the covariance of \(y\) with \(x + u\) is the same as with \(x\), \(\beta\Var(x)\), but the variance of the recorded values grows to \(\Var(x) + \Var(u)\). The fraction is the share of the variance of the recorded values that is true variation between people: 1 without error, 1/2 when the error variance equals the true variance, and toward 0 as the error grows. The slope therefore shrinks toward zero but keeps its sign. Error in \(y\) instead leaves both the covariance and \(\Var(x)\) unchanged, so the slope stays unbiased; it adds only to the residual variance, which widens the standard error.</p>
+</div>
+<p>In a GWAS the predictor is the genotype, which is measured with little error, so random error in a quantitative phenotype mainly costs power. When a phenotype serves as an exposure, as in observational epidemiology, its error biases the estimate. Two measurements of the same true values \(x\), with independent errors of equal variance, correlate at exactly \(\Var(x)/\big(\Var(x) + \Var(u)\big)\), so repeat measurements estimate the fraction, and dividing an observed slope by it corrects the dilution. UK Biobank’s repeat visit in 2012–2013 was designed in part to measure this within-person variation so that analyses can correct for regression dilution<sup class="cite"><a href="#src-5">5</a></sup>.</p>
 
 <figure class="fig">
   <div class="fig-body"><div class="ph-panels"><svg viewBox="0 0 270 262" role="img" aria-labelledby="err-a-t err-a-d"><title id="err-a-t">Little error</title><desc id="err-a-d">Scatter plot of 120 simulated points. Little error. Fitted slope 0.62 with standard error 0.06; the true slope is 0.6, shown dashed.</desc>
@@ -2362,7 +2382,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
 <text x="47" y="65" class="t-b">slope 0.36</text>
 <text x="47" y="80" class="t-sm" style="fill:var(--fg)">SE 0.045</text>
 </svg></div></div>
-  <figcaption><span class="fig-title">Random error in <var>y</var> versus random error in <var>x</var>.</span> Simulated, n = 120, true slope 0.6 (dashed). B: noise added to <var>y</var> leaves the slope unchanged (the added noise was made exactly uncorrelated with <var>x</var> in this sample) but raises its standard error by about 70%. C: the same amount of noise added to <var>x</var> shrinks the slope to 0.36. In large samples the shrinkage factor is var(<var>x</var>) / (var(<var>x</var>) + var(error)) = 1 / 1.81 ≈ 0.55.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  <figcaption><span class="fig-title">Random error in \(y\) versus random error in \(x\).</span> Simulated, \(n = 120\), true slope 0.6 (dashed). B: noise added to \(y\) leaves the slope unchanged (the added noise was made exactly uncorrelated with \(x\) in this sample) but raises its standard error by about 70%. C: the same amount of noise added to \(x\) shrinks the slope to 0.36. Here \(\Var(u) = 0.81 \Var(x)\), so in large samples the slope is multiplied by \(\Var(x)/\big(\Var(x) + \Var(u)\big) = 1/1.81 \approx 0.55\), from 0.6 to about 0.33.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
 </figure>
 
 <p>Misclassification of a binary outcome that is equally likely in all genotype groups (non-differential) biases the odds ratio toward 1. Misclassification that differs between the groups compared (differential), such as cases recalling past exposures more completely than controls, can bias it in either direction<sup class="cite"><a href="#src-32">32</a></sup>. The case-definition widget above shows the non-differential pattern.</p>
@@ -2951,10 +2971,10 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
   <div class="callout-title"><span class="badge">Key points</span></div>
   <ul>
     <li><strong>Five channels, one question.</strong> Every phenotype column is the output of a measurement process. Ask who was measured, when, how, and with which errors, gaps and selection.</li>
-    <li><strong>Decode before you analyze.</strong> Recode special values such as −1, −3 and −7, respect skip logic, read the rule behind derived fields, and handle medication with a principled adjustment (for example LDL ÷ 0.7 for statin users, +15 mmHg systolic pressure for blood pressure drugs) rather than ignoring treatment, excluding treated people or adding treatment as a covariate.</li>
+    <li><strong>Decode before you analyze.</strong> Recode special values such as −1, −3 and −7, respect skip logic, read the rule behind derived fields, and handle medication with a principled adjustment (for example \(\mathrm{LDL}/0.7\) for statin users, +15 mmHg systolic pressure for blood pressure drugs) rather than ignoring treatment, excluding treated people or adding treatment as a covariate.</li>
     <li><strong>A case definition is a set of choices.</strong> Codes, sources, time window and control rule decide the positive predictive value, the number of hidden cases among controls, and the estimate.</li>
     <li><strong>Time matters.</strong> Prevalent and incident cases answer different questions; incident disease is a (time, event) pair, with censoring at death, loss to follow-up or the source’s censoring date.</li>
-    <li><strong>Errors, gaps and selection have predictable effects.</strong> Random error in <var>y</var> costs power, random error in <var>x</var> biases slopes toward zero, non-differential misclassification pulls odds ratios toward 1, and missing data and selection can bias results unless you know why values are missing and who was measured.</li>
+    <li><strong>Errors, gaps and selection have predictable effects.</strong> Random error in \(y\) costs power, random error in \(x\) biases slopes toward zero, non-differential misclassification pulls odds ratios toward 1, and missing data and selection can bias results unless you know why values are missing and who was measured.</li>
   </ul>
 </aside>
 
@@ -2964,7 +2984,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
   <details class="q"><summary>Field 1249 (past tobacco smoking) is empty for everyone who said they smoke on most or all days (39,207 people at baseline). Is that a data error?</summary><div class="a"><p>No. Because of skip logic, the question was not asked of people who said they smoke on most or all days now. The empty value means “not asked”. The derived Field 20116 already classifies these people as current smokers.</p></div></details>
   <details class="q"><summary>You regress measured LDL cholesterol on genotype and ignore statins. In which direction is the estimate biased, and what is one standard fix?</summary><div class="a"><p>Toward zero. Statins are given mainly to people with high LDL, including carriers of LDL-raising alleles, and they lower measured LDL, so the difference between genotype groups shrinks. A standard fix is to estimate untreated LDL, for example by dividing statin users’ LDL by 0.7. Excluding statin users or adding statin use as a covariate does not fix the bias.</p></div></details>
   <details class="q"><summary>In the widget, why does “self-report only, incident only” give no cases at all?</summary><div class="a"><p>Self-report was collected at the baseline visit and asks about past illness, so every self-reported MI happened before baseline: all are prevalent. An incident-only definition excludes them, and self-report cannot find events after the visit.</p></div></details>
-  <details class="q"><summary>A quantitative phenotype is measured with random error. Is the per-allele effect estimate in a GWAS biased?</summary><div class="a"><p>Not by random error in <var>y</var>: the slope stays unbiased, but its standard error grows, so power falls. Random error in the predictor <var>x</var> would bias the slope toward zero (regression dilution); in a GWAS the predictor is the genotype, which is measured with little error.</p></div></details>
+  <details class="q"><summary>A quantitative phenotype is measured with random error. Is the per-allele effect estimate in a GWAS biased?</summary><div class="a"><p>Not by random error in \(y\): the slope stays unbiased, but its standard error grows, so power falls. Random error in the predictor \(x\) would bias the slope toward zero (regression dilution); in a GWAS the predictor is the genotype, which is measured with little error.</p></div></details>
   <details class="q"><summary>Field 131298 (Date I21 first reported) and the ADO Field 42000 (Date of myocardial infarction) give different numbers of people with MI. Give two reasons.</summary><div class="a"><p>They use different code lists: the ADO adds I22, I23, I24.1 and I25.2 (with the matching ICD-9 codes), while the first-occurrence field covers I21 and the codes mapped to it. They also use different sources: the first-occurrence field includes primary care, the ADO does not.</p></div></details>
 </section>
 
@@ -2987,7 +3007,7 @@ body[data-page="phenotypes"] article code { white-space: nowrap; }
 <section class="sources">
   <h2 id="sources">Sources for this page</h2>
   <ol>
-    <li id="src-1">REGENIE documentation: options <a href="https://rgcgithub.github.io/regenie/options/" target="_blank" rel="noopener">rgcgithub.github.io/regenie/options</a> (<code>--qt</code>, <code>--bt</code>, <code>--t2e</code>, <code>--apply-rint</code>).</li>
+    <li id="src-1">REGENIE documentation: options <a href="https://rgcgithub.github.io/regenie/options/" target="_blank" rel="noopener">rgcgithub.github.io/regenie/options</a> (<code>--qt</code>, <code>--bt</code>, <code>--t2e</code>, <code>--apply-rint</code>); the transformation’s formula is in the function <code>rint_pheno</code> of REGENIE’s source file <a href="https://github.com/rgcgithub/regenie/blob/master/src/Pheno.cpp" target="_blank" rel="noopener">src/Pheno.cpp</a> (offset 3/8, average ranks for ties; accessed 1 November 2026).</li>
     <li id="src-2">Graham SE, Clarke SL, Wu KH, et al. (2021). The power of genetic diversity in genome-wide association studies of lipids. <em>Nature</em> 600:675–679. <a href="https://doi.org/10.1038/s41586-021-04064-3" target="_blank" rel="noopener">doi</a> (Methods: statin users’ LDL cholesterol divided by 0.7; inverse normalization of residuals).</li>
     <li id="src-3">Sun BB, Chiou J, Traylor M, et al. (2023). Plasma proteomic associations with genetics and health in the UK Biobank. <em>Nature</em> 622:329–338. <a href="https://doi.org/10.1038/s41586-023-06592-6" target="_blank" rel="noopener">doi</a></li>
     <li id="src-4">DCEG Statistical Genetics Workshop, Session 2: Basic GWAS Analyses (16 September 2026). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_2" target="_blank" rel="noopener">session page</a></li>

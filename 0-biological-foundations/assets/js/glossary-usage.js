@@ -14,6 +14,7 @@ window.GLOSSARY_USAGE = {
 "variation",
 "inheritance",
 "genotype-to-phenotype",
+"samples-to-genotypes",
 "the-data"
 ],
 "admixture": [
@@ -460,6 +461,7 @@ window.GLOSSARY_USAGE = {
 "ancestry",
 "genotype-to-phenotype",
 "samples-to-genotypes",
+"the-data",
 "lecture-1-bridge"
 ],
 "complementary": [
@@ -549,6 +551,7 @@ window.GLOSSARY_USAGE = {
 ],
 "cryptic-relatedness": [
 "inheritance",
+"haplotypes-ld",
 "the-data"
 ],
 "cytogenetic-band": [
@@ -669,6 +672,7 @@ window.GLOSSARY_USAGE = {
 "dosage": [
 "index",
 "haplotypes-ld",
+"genotype-to-phenotype",
 "samples-to-genotypes",
 "the-data"
 ],
@@ -689,7 +693,9 @@ window.GLOSSARY_USAGE = {
 "variation",
 "allele-frequencies",
 "haplotypes-ld",
+"ancestry",
 "genotype-to-phenotype",
+"samples-to-genotypes",
 "the-data",
 "lecture-1-bridge"
 ],
@@ -1070,6 +1076,7 @@ window.GLOSSARY_USAGE = {
 ],
 "genomic-inflation": [
 "ancestry",
+"the-data",
 "lecture-1-bridge"
 ],
 "genotype": [
@@ -1099,6 +1106,7 @@ window.GLOSSARY_USAGE = {
 "genotype-frequency": [
 "index",
 "allele-frequencies",
+"samples-to-genotypes",
 "lecture-1-bridge"
 ],
 "genotype-imputation": [
@@ -1131,7 +1139,9 @@ window.GLOSSARY_USAGE = {
 "lecture-1-bridge"
 ],
 "genotype-probability": [
-"the-data"
+"samples-to-genotypes",
+"the-data",
+"lecture-1-bridge"
 ],
 "genotyping": [
 "index",
@@ -1237,6 +1247,7 @@ window.GLOSSARY_USAGE = {
 "inheritance"
 ],
 "haplotype": [
+"index",
 "inheritance",
 "haplotypes-ld",
 "samples-to-genotypes",
@@ -1353,6 +1364,7 @@ window.GLOSSARY_USAGE = {
 "genotype-to-phenotype",
 "samples-to-genotypes",
 "phenotypes",
+"the-data",
 "lecture-1-bridge"
 ],
 "hrc": [
@@ -1362,11 +1374,13 @@ window.GLOSSARY_USAGE = {
 ],
 "hwe": [
 "index",
+"cells-chromosomes",
 "allele-frequencies",
 "haplotypes-ld",
 "ancestry",
 "genotype-to-phenotype",
 "samples-to-genotypes",
+"the-data",
 "lecture-1-bridge",
 "resources"
 ],
@@ -1412,6 +1426,7 @@ window.GLOSSARY_USAGE = {
 ],
 "inbreeding-coefficient": [
 "cells-chromosomes",
+"allele-frequencies",
 "samples-to-genotypes",
 "lecture-1-bridge"
 ],
@@ -1521,6 +1536,7 @@ window.GLOSSARY_USAGE = {
 "ld-pruning": [
 "inheritance",
 "haplotypes-ld",
+"ancestry",
 "the-data",
 "lecture-1-bridge"
 ],
@@ -1898,6 +1914,7 @@ window.GLOSSARY_USAGE = {
 "genes-expression",
 "variation",
 "inheritance",
+"haplotypes-ld",
 "ancestry",
 "genotype-to-phenotype",
 "uk-biobank",
@@ -2041,6 +2058,7 @@ window.GLOSSARY_USAGE = {
 "polymorphic": [
 "variation",
 "allele-frequencies",
+"haplotypes-ld",
 "lecture-1-bridge"
 ],
 "polymorphism": [
@@ -2209,8 +2227,6 @@ window.GLOSSARY_USAGE = {
 "r-squared": [
 "index",
 "haplotypes-ld",
-"samples-to-genotypes",
-"the-data",
 "lecture-1-bridge",
 "resources"
 ],
@@ -2763,9 +2779,9 @@ window.GLOSSARY_USAGE = {
 "lecture-1-bridge"
 ],
 "variance-explained": [
+"haplotypes-ld",
 "ancestry",
-"genotype-to-phenotype",
-"lecture-1-bridge"
+"genotype-to-phenotype"
 ],
 "variant-allele-fraction": [
 "cells-chromosomes"
