@@ -1,0 +1,1374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genetic variation: how genomes differ · Lecture 0</title>
+<meta name="description" content="How DNA differs between people: where variants come from, the main types of variant, alleles and genotypes coded 0/1/2, the many names for alleles and variants, and what variants do to genes and proteins.">
+<link rel="stylesheet" href="assets/css/site.css">
+<script defer src="assets/js/pages.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/widgets/variation-codon.js"></script>
+<style>
+/* ---- page-only styles (variation) ---- */
+body[data-page="variation"] svg .t-inv { fill: var(--bg); }
+body[data-page="variation"] svg .t-mmc { fill: var(--mm); }
+body[data-page="variation"] svg .t-mut { fill: var(--fg-muted); }
+body[data-page="variation"] svg .t-red { fill: var(--pitfall); }
+body[data-page="variation"] svg .t-acc { fill: var(--accent); }
+body[data-page="variation"] svg .t-ms { font-family: var(--mono); font-size: 11px; fill: var(--fg); }
+body[data-page="variation"] svg .t-ms.t-mut { fill: var(--fg-muted); }
+body[data-page="variation"] svg .t-it { font-style: italic; }
+/* mental model: a wide drawing for desktop, a stacked one for phones */
+body[data-page="variation"] .mm-narrow { display: none; }
+body[data-page="variation"] svg.zoo-narrow, body[data-page="variation"] svg.inv-narrow, body[data-page="variation"] svg.gt-narrow,
+body[data-page="variation"] svg.sc-narrow, body[data-page="variation"] svg.nm-narrow, body[data-page="variation"] svg.vt-narrow { display: none; }
+/* two-panel figure that stacks on phones */
+body[data-page="variation"] .dn-panels { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 36px; }
+body[data-page="variation"] .dn-panels svg { flex: 1 1 300px; max-width: 350px; margin: 0; }
+@media (max-width: 640px) {
+  body[data-page="variation"] .mm-wide { display: none; }
+  body[data-page="variation"] svg.zoo-wide, body[data-page="variation"] svg.inv-wide, body[data-page="variation"] svg.gt-wide,
+  body[data-page="variation"] svg.sc-wide, body[data-page="variation"] svg.nm-wide, body[data-page="variation"] svg.vt-wide { display: none; }
+  body[data-page="variation"] svg.zoo-narrow, body[data-page="variation"] svg.inv-narrow, body[data-page="variation"] svg.gt-narrow,
+  body[data-page="variation"] svg.sc-narrow, body[data-page="variation"] svg.nm-narrow, body[data-page="variation"] svg.vt-narrow { display: block; max-width: 420px; }
+  body[data-page="variation"] .mm-narrow { display: block; max-width: 420px; margin: 0 auto; }
+  /* wide figures keep a legible size and scroll sideways inside their frame */
+  body[data-page="variation"] figure.fig .fig-body svg.minw { min-width: 640px; }
+  body[data-page="variation"] figure.fig .fig-body svg.minw-s { min-width: 560px; }
+}
+@media (max-width: 640px) {
+  body[data-page="variation"] table.stack caption { display: block; width: auto; text-align: left; }
+  body[data-page="variation"] table.stack td, body[data-page="variation"] table.vt.stack td.c, body[data-page="variation"] table.stack td.num { text-align: left; }
+  body[data-page="variation"] table.stack td.num, body[data-page="variation"] table.stack td.c { display: inline-block; width: auto; min-width: 5.5em; vertical-align: top; }
+}
+/* small tables */
+body[data-page="variation"] .tok { display: inline-block; min-width: 1.5em; text-align: center; font-family: var(--mono); font-weight: 700; border-radius: 999px; padding: 0 .35em; border: 1.5px solid var(--fg); line-height: 1.35; }
+body[data-page="variation"] .tok.alt { background: var(--fg); color: #fff; }
+body[data-page="variation"] table.vt td.c, body[data-page="variation"] table.vt th.c { text-align: center; }
+body[data-page="variation"] table.vt td { line-height: 1.45; }
+body[data-page="variation"] table .sm { font-size: .82rem; color: var(--fg-muted); }
+body[data-page="variation"] table.rx .role { display: block; font-size: .8rem; color: var(--fg-muted); line-height: 1.3; }
+body[data-page="variation"] table .nw { white-space: nowrap; }
+body[data-page="variation"] table.rx td { vertical-align: top; }
+body[data-page="variation"] table.rx .pos { display: block; font-family: var(--mono); font-size: .84em; font-weight: 400; white-space: nowrap; margin-top: 3px; }
+body[data-page="variation"] table.rx .role { font-weight: 400; }
+@media (min-width: 641px) {
+  body[data-page="variation"] table.rx td:nth-child(4) { min-width: 9em; }
+  body[data-page="variation"] table.rx td:nth-child(2) { max-width: 7.5em; }
+  body[data-page="variation"] table.rx { font-size: .86rem; }
+  body[data-page="variation"] table.rx td.num, body[data-page="variation"] table.rx th.num { padding-left: 6px; padding-right: 7px; }
+}
+body[data-page="variation"] p.sm { font-size: .86rem; color: var(--fg-muted); }
+body[data-page="variation"] .what-to-notice { font-size: .93rem; background: var(--bg-alt); border-radius: var(--radius-sm); padding: 10px 14px; margin-top: -0.8em; }
+/* ---- widget: Mutate a codon ---- */
+body[data-page="variation"] .cw-controls { margin-bottom: 6px; }
+body[data-page="variation"] .cw-modes { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+body[data-page="variation"] .cw-mode { font-size: .86rem; padding: 5px 11px; }
+body[data-page="variation"] .cw-inslabel { font-size: .86rem; }
+body[data-page="variation"] .cw-presets { gap: 6px 8px; margin-bottom: 8px; }
+body[data-page="variation"] .cw-presets-label { font-size: .82rem; font-weight: 700; color: var(--fg-muted); }
+body[data-page="variation"] .cw-preset { font-size: .82rem; padding: 4px 9px; }
+body[data-page="variation"] .cw-hint { font-family: var(--mono); font-size: .72rem; font-weight: 500; color: var(--fg-muted); }
+body[data-page="variation"] .cw-preset:hover .cw-hint { color: inherit; }
+body[data-page="variation"] .cw-legend { margin: 2px 0 8px; }
+body[data-page="variation"] .cw-key { display: inline-block; border-radius: 4px; padding: 0 6px; margin-right: 4px; border: 1px solid var(--border); }
+body[data-page="variation"] .cw-k-changed { background: #fff3cd; }
+body[data-page="variation"] .cw-k-stop { background: var(--pitfall-soft); color: var(--pitfall); }
+body[data-page="variation"] .cw-k-after { background: repeating-linear-gradient(45deg, #fff, #fff 4px, #eceff3 4px, #eceff3 8px); }
+body[data-page="variation"] .cw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 6px; margin: 4px 0 12px; }
+body[data-page="variation"] .cw-col { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg); }
+body[data-page="variation"] .cw-idx { font-size: .68rem; color: var(--fg-muted); text-align: center; background: var(--bg-sunk); padding: 1px 0; font-variant-numeric: tabular-nums; }
+body[data-page="variation"] .cw-ref, body[data-page="variation"] .cw-mut { padding: 4px 2px 3px; text-align: center; }
+body[data-page="variation"] .cw-ref { background: var(--bg-alt); border-bottom: 1px dashed var(--border-strong); }
+body[data-page="variation"] .cw-bases { display: flex; justify-content: center; gap: 1px; }
+body[data-page="variation"] .cw-b { display: inline-block; width: 18px; text-align: center; font-family: var(--mono); font-weight: 700; font-size: .95rem; line-height: 1.55; }
+body[data-page="variation"] .cw-ref .cw-b { font-size: .8rem; line-height: 1.4; }
+body[data-page="variation"] .cw-btn { border: 1px solid var(--border-strong); background: var(--bg); border-radius: 4px; padding: 0; cursor: pointer; }
+body[data-page="variation"] .cw-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+body[data-page="variation"] .cw-btn.cw-edited { background: #ffe58a; border-color: var(--bridge); }
+body[data-page="variation"] .cw-btn.cw-inserted { box-shadow: inset 0 0 0 2px var(--bridge); }
+body[data-page="variation"] .cw-pulled { opacity: .45; }
+body[data-page="variation"] .cw-aa { font-size: .76rem; font-weight: 650; margin-top: 2px; color: var(--fg); }
+body[data-page="variation"] .cw-ref .cw-aa { color: var(--fg-muted); }
+body[data-page="variation"] .cw-mut.cw-changed { background: #fff3cd; }
+body[data-page="variation"] .cw-mut.cw-stop { background: var(--pitfall-soft); }
+body[data-page="variation"] .cw-mut.cw-stop .cw-aa { color: var(--pitfall); }
+body[data-page="variation"] .cw-mut.cw-after { background: repeating-linear-gradient(45deg, #fff, #fff 4px, #eceff3 4px, #eceff3 8px); }
+body[data-page="variation"] .cw-mut.cw-after .cw-aa { color: var(--fg-faint); }
+body[data-page="variation"] .cw-outside { opacity: .55; }
+body[data-page="variation"] .cw-readout { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg); }
+body[data-page="variation"] .cw-class { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-bottom: 4px; }
+body[data-page="variation"] .cw-badge { font-weight: 800; font-size: .86rem; border-radius: 999px; padding: 2px 10px; color: #fff; background: var(--note); }
+body[data-page="variation"] .cw-c-synonymous .cw-badge { background: var(--key); }
+body[data-page="variation"] .cw-c-missense .cw-badge { background: var(--bridge); }
+body[data-page="variation"] .cw-c-nonsense .cw-badge, body[data-page="variation"] .cw-c-frameshift .cw-badge, body[data-page="variation"] .cw-c-start-lost .cw-badge { background: var(--pitfall); }
+body[data-page="variation"] .cw-c-inframe-deletion .cw-badge, body[data-page="variation"] .cw-c-inframe-insertion .cw-badge { background: var(--data); }
+body[data-page="variation"] .cw-vep { font-family: var(--mono); font-size: .76rem; color: var(--fg-muted); }
+body[data-page="variation"] .cw-text { font-size: .88rem; margin: 4px 0 6px; }
+body[data-page="variation"] .cw-hgvs { white-space: pre-wrap; margin: 6px 0; overflow-wrap: anywhere; }
+body[data-page="variation"] .cw-prot { font-family: var(--mono); font-size: .8rem; margin: 6px 0 4px; }
+body[data-page="variation"] .cw-pline { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+body[data-page="variation"] .cw-plabel { font-family: var(--font); font-size: .74rem; color: var(--fg-muted); flex: 0 0 9.6em; }
+body[data-page="variation"] .cw-pseq { letter-spacing: .04em; overflow-wrap: anywhere; }
+body[data-page="variation"] .cw-ps-diff { background: #ffe58a; }
+body[data-page="variation"] .cw-ps-stop { background: var(--pitfall); color: #fff; }
+body[data-page="variation"] .cw-ps-gap { color: var(--pitfall); font-weight: 800; margin: 0 1px; }
+body[data-page="variation"] .cw-ps-more { color: var(--fg-faint); }
+body[data-page="variation"] .cw-pnote { font-family: var(--font); font-size: .74rem; color: var(--fg-muted); margin-top: 4px; }
+body[data-page="variation"] .cw-known { font-size: .86rem; margin: 6px 0 0; padding: 6px 10px; background: var(--key-soft); border-left: 3px solid var(--key); border-radius: 0 6px 6px 0; }
+body[data-page="variation"] .cw-msg { font-size: .84rem; color: var(--pitfall); margin: 6px 0 0; }
+body[data-page="variation"] .cw-ps-more { white-space: nowrap; }
+@media (max-width: 560px) {
+  body[data-page="variation"] .cw-grid { grid-template-columns: repeat(4, 1fr); }
+  body[data-page="variation"] .cw-pline { display: block; margin-bottom: 4px; }
+  body[data-page="variation"] .cw-plabel { display: block; }
+}
+</style>
+</head>
+<body data-page="variation">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 0</span><span class="title">Biological foundations for statistical genetics</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="lecture-1-bridge.html" class="optional">Lecture 1 decoder</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part A · The biological system · Page 4 of 13</p>
+  <h1>Genetic variation: how genomes differ</h1>
+  <p class="lede">Two people's genomes are about 99.9% identical. The remaining differences, a few million positions per person, are what genetic studies measure. This page defines a variant, an allele and a genotype precisely, shows how a genotype becomes the number 0, 1 or 2 in a data matrix, and explains what variants can do to genes and proteins.</p>
+  <div class="chips" data-no-autolink>
+    <span class="chip core">Core for Lecture 1</span>
+    <span class="chip time">≈ 40 min</span>
+    <span class="chip data">Shows up in the data as: VCF REF/ALT, .bim A1/A2, genotype entries 0/1/2</span>
+  </div>
+</header>
+
+<!-- ===================================================== MENTAL MODEL -->
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">A variant is an address plus alleles; a genotype is a count</h2>
+  <figure>
+    <svg class="mm-wide" viewBox="0 0 800 332" role="img" aria-labelledby="mmw-t mmw-d">
+      <title id="mmw-t">A variant is an address plus alleles, and a genotype is a count</title>
+      <desc id="mmw-d">Left: nine bases of chromosome 12 around position 111,803,962 in the reference genome and in one person's two chromosome copies. Both copies match the reference except at position 111,803,962, where the copy from the father carries A instead of G. Middle: the variant written as a VCF-style record: CHROM 12, POS 111803962, ID rs671, REF G, ALT A; as one ID it is chr12:111803962:G:A. Right: the three possible genotypes G/G, G/A and A/A are coded as 0, 1 and 2 copies of A. This person is G/A, coded 1, which becomes one entry of the genotype matrix.</desc>
+      <defs>
+        <marker id="mm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--mm)"/></marker>
+      </defs>
+      <!-- panel 1 -->
+      <circle cx="22" cy="20" r="11" fill="var(--mm)"/><text x="22" y="24.5" text-anchor="middle" class="t-b t-inv">1</text>
+      <text x="40" y="25" class="t-b">Compare the two copies with the reference</text>
+      <rect x="236" y="56" width="26" height="152" rx="6" fill="var(--mm-soft)" stroke="var(--mm)" stroke-dasharray="4 3"/>
+      <text x="249" y="50" text-anchor="middle" class="t-ms t-mmc">111,803,962</text>
+      <text x="12" y="84" class="t">reference</text><text x="12" y="98" class="t-sm">GRCh38, + strand</text>
+      <rect x="132" y="72" width="234" height="28" rx="6" fill="var(--bg-sunk)" stroke="var(--border-strong)"/>
+      <text x="12" y="136" class="t">maternal copy</text><text x="12" y="150" class="t-sm">from the mother</text>
+      <rect x="132" y="124" width="234" height="28" rx="6" fill="var(--mat-fill)" stroke="var(--mat)"/>
+      <text x="12" y="188" class="t">paternal copy</text><text x="12" y="202" class="t-sm">from the father</text>
+      <rect x="132" y="176" width="234" height="28" rx="6" fill="var(--pat-fill)" stroke="var(--pat)"/>
+      <g class="t-mono" text-anchor="middle">
+        <text x="145" y="91" class="base-C">C</text><text x="171" y="91" class="base-A">A</text><text x="197" y="91" class="base-C">C</text><text x="223" y="91" class="base-T">T</text><text x="249" y="91" class="base-G">G</text><text x="275" y="91" class="base-A">A</text><text x="301" y="91" class="base-A">A</text><text x="327" y="91" class="base-G">G</text><text x="353" y="91" class="base-T">T</text>
+        <text x="145" y="143" class="base-C">C</text><text x="171" y="143" class="base-A">A</text><text x="197" y="143" class="base-C">C</text><text x="223" y="143" class="base-T">T</text><text x="275" y="143" class="base-A">A</text><text x="301" y="143" class="base-A">A</text><text x="327" y="143" class="base-G">G</text><text x="353" y="143" class="base-T">T</text>
+        <text x="145" y="195" class="base-C">C</text><text x="171" y="195" class="base-A">A</text><text x="197" y="195" class="base-C">C</text><text x="223" y="195" class="base-T">T</text><text x="275" y="195" class="base-A">A</text><text x="301" y="195" class="base-A">A</text><text x="327" y="195" class="base-G">G</text><text x="353" y="195" class="base-T">T</text>
+      </g>
+      <circle cx="249" cy="138" r="11" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5"/>
+      <text x="249" y="143" text-anchor="middle" class="t-mono base-G">G</text>
+      <circle cx="249" cy="190" r="11" fill="var(--fg)"/>
+      <text x="249" y="195" text-anchor="middle" class="t-mono t-inv" font-weight="700">A</text>
+      <text x="132" y="228" class="t-sm">↑ the only difference in this window</text>
+      <circle cx="18" cy="258" r="5.5" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.3"/>
+      <text x="30" y="262" class="t-sm">open circle = reference allele (G)</text>
+      <circle cx="18" cy="276" r="5.5" fill="var(--fg)"/>
+      <text x="30" y="280" class="t-sm">filled circle = alternative allele (A)</text>
+      <line x1="372" y1="138" x2="404" y2="138" stroke="var(--mm)" stroke-width="1.6" marker-end="url(#mm-arr)"/>
+      <!-- panel 2 -->
+      <circle cx="430" cy="20" r="11" fill="var(--mm)"/><text x="430" y="24.5" text-anchor="middle" class="t-b t-inv">2</text>
+      <text x="448" y="25" class="t-b">Write it as a record</text>
+      <rect x="412" y="46" width="186" height="160" rx="8" fill="var(--bg)" stroke="var(--mm)" stroke-width="1.5"/>
+      <path d="M412,70 V54 a8,8 0 0 1 8,-8 H590 a8,8 0 0 1 8,8 V70 Z" fill="var(--mm-soft)"/>
+      <text x="424" y="63" class="t-sm">VCF-style record (GRCh38)</text>
+      <text x="424" y="94" class="t-ms t-mut">CHROM</text><text x="486" y="95" class="t-mono">12</text>
+      <text x="424" y="118" class="t-ms t-mut">POS</text><text x="486" y="119" class="t-mono">111803962</text>
+      <text x="424" y="142" class="t-ms t-mut">ID</text><text x="486" y="143" class="t-mono">rs671</text>
+      <text x="424" y="166" class="t-ms t-mut">REF</text><text x="486" y="167" class="t-mono base-G">G</text><text x="506" y="166" class="t-sm">reference allele</text>
+      <text x="424" y="190" class="t-ms t-mut">ALT</text><text x="486" y="191" class="t-mono base-A">A</text><text x="506" y="190" class="t-sm">alternative allele</text>
+      <text x="505" y="224" text-anchor="middle" class="t-sm">address = build + CHROM + POS</text>
+      <text x="505" y="252" text-anchor="middle" class="t-sm">the same variant as one ID:</text>
+      <text x="505" y="272" text-anchor="middle" class="t-mono">chr12:111803962:G:A</text>
+      <line x1="598" y1="132" x2="626" y2="132" stroke="var(--mm)" stroke-width="1.6" marker-end="url(#mm-arr)"/>
+      <!-- panel 3 -->
+      <circle cx="648" cy="20" r="11" fill="var(--mm)"/><text x="648" y="24.5" text-anchor="middle" class="t-b t-inv">3</text>
+      <text x="666" y="25" class="t-b">Count copies of A</text>
+      <rect x="636" y="96" width="156" height="40" rx="7" fill="none" stroke="var(--mm)" stroke-width="2"/>
+      <rect x="640" y="89" width="66" height="13" rx="3" fill="var(--mm)"/><text x="673" y="99" text-anchor="middle" class="t-xs t-inv">this person</text>
+      <!-- G/G -->
+      <circle cx="652" cy="64" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="652" y="68.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <circle cx="676" cy="64" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="676" y="68.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <text x="696" y="69" class="t-mono">G/G</text><text x="728" y="68" class="t-sm">→</text>
+      <rect x="748" y="51" width="36" height="26" rx="5" fill="var(--g0)" stroke="var(--border-strong)"/><text x="766" y="69" text-anchor="middle" class="t-b">0</text>
+      <!-- G/A -->
+      <circle cx="652" cy="116" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="652" y="120.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <circle cx="676" cy="116" r="10" fill="var(--fg)"/><text x="676" y="120.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <text x="696" y="121" class="t-mono">G/A</text><text x="728" y="120" class="t-sm">→</text>
+      <rect x="748" y="103" width="36" height="26" rx="5" fill="var(--g1)" stroke="var(--border-strong)"/><text x="766" y="121" text-anchor="middle" class="t-b">1</text>
+      <!-- A/A -->
+      <circle cx="652" cy="166" r="10" fill="var(--fg)"/><text x="652" y="170.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <circle cx="676" cy="166" r="10" fill="var(--fg)"/><text x="676" y="170.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <text x="696" y="171" class="t-mono">A/A</text><text x="728" y="170" class="t-sm">→</text>
+      <rect x="748" y="153" width="36" height="26" rx="5" fill="var(--g2)"/><text x="766" y="171" text-anchor="middle" class="t-b t-inv">2</text>
+      <!-- matrix -->
+      <text x="636" y="195" class="t-sm">…which is one entry of</text>
+      <text x="636" y="208" class="t-sm">the genotype matrix</text>
+      <text x="706" y="227" text-anchor="middle" class="t-ms t-mmc">rs671</text>
+      <g class="t-sm" text-anchor="middle">
+        <rect x="664" y="230" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="678" y="244">0</text>
+        <rect x="692" y="230" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="706" y="244">0</text>
+        <rect x="720" y="230" width="28" height="20" fill="var(--g2)" stroke="var(--bg)"/><text x="734" y="244" class="t-inv">2</text>
+        <rect x="748" y="230" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="762" y="244">1</text>
+        <rect x="664" y="250" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="678" y="264">1</text>
+        <rect x="692" y="250" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="706" y="264">0</text>
+        <rect x="720" y="250" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="734" y="264">1</text>
+        <rect x="748" y="250" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="762" y="264">0</text>
+        <rect x="664" y="270" width="28" height="20" fill="var(--g2)" stroke="var(--bg)"/><text x="678" y="284" class="t-inv">2</text>
+        <rect x="692" y="270" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="706" y="284">1</text>
+        <rect x="720" y="270" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="734" y="284">0</text>
+        <rect x="748" y="270" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="762" y="284">1</text>
+        <rect x="664" y="290" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="678" y="304">0</text>
+        <rect x="692" y="290" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="706" y="304">0</text>
+        <rect x="720" y="290" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="734" y="304">1</text>
+        <rect x="748" y="290" width="28" height="20" fill="var(--g2)" stroke="var(--bg)"/><text x="762" y="304" class="t-inv">2</text>
+      </g>
+      <rect x="692" y="230" width="28" height="80" fill="none" stroke="var(--mm)" stroke-dasharray="3 2"/>
+      <rect x="692" y="270" width="28" height="20" fill="none" stroke="var(--mm)" stroke-width="2.5"/>
+      <path d="M650,274 L660,280 L650,286 Z" fill="var(--mm)"/>
+      <text x="636" y="326" class="t-xs">rows: people · columns: variants</text>
+    </svg>
+
+    <svg class="mm-narrow" viewBox="0 0 360 600" role="img" aria-labelledby="mmn-t mmn-d">
+      <title id="mmn-t">A variant is an address plus alleles, and a genotype is a count (compact drawing)</title>
+      <desc id="mmn-d">Seven bases of chromosome 12 around position 111,803,962 in the reference and in one person's two copies; only the paternal copy differs, with A instead of G. The variant as a VCF line: CHROM 12, POS 111803962, ID rs671, REF G, ALT A. Genotypes G/G, G/A, A/A are coded 0, 1, 2; this person is G/A, coded 1, one entry of the genotype matrix.</desc>
+      <defs>
+        <marker id="mmn-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--mm)"/></marker>
+      </defs>
+      <circle cx="18" cy="18" r="11" fill="var(--mm)"/><text x="18" y="22.5" text-anchor="middle" class="t-b t-inv">1</text>
+      <text x="36" y="23" class="t-b">Compare the copies with the reference</text>
+      <rect x="208" y="52" width="30" height="150" rx="6" fill="var(--mm-soft)" stroke="var(--mm)" stroke-dasharray="4 3"/>
+      <text x="223" y="46" text-anchor="middle" class="t-ms t-mmc">111,803,962</text>
+      <text x="8" y="80" class="t">reference</text><text x="8" y="94" class="t-sm">GRCh38, + strand</text>
+      <rect x="118" y="68" width="210" height="28" rx="6" fill="var(--bg-sunk)" stroke="var(--border-strong)"/>
+      <text x="8" y="132" class="t">maternal copy</text><text x="8" y="146" class="t-sm">from the mother</text>
+      <rect x="118" y="120" width="210" height="28" rx="6" fill="var(--mat-fill)" stroke="var(--mat)"/>
+      <text x="8" y="184" class="t">paternal copy</text><text x="8" y="198" class="t-sm">from the father</text>
+      <rect x="118" y="172" width="210" height="28" rx="6" fill="var(--pat-fill)" stroke="var(--pat)"/>
+      <g class="t-mono" text-anchor="middle">
+        <text x="133" y="87" class="base-A">A</text><text x="163" y="87" class="base-C">C</text><text x="193" y="87" class="base-T">T</text><text x="223" y="87" class="base-G">G</text><text x="253" y="87" class="base-A">A</text><text x="283" y="87" class="base-A">A</text><text x="313" y="87" class="base-G">G</text>
+        <text x="133" y="139" class="base-A">A</text><text x="163" y="139" class="base-C">C</text><text x="193" y="139" class="base-T">T</text><text x="253" y="139" class="base-A">A</text><text x="283" y="139" class="base-A">A</text><text x="313" y="139" class="base-G">G</text>
+        <text x="133" y="191" class="base-A">A</text><text x="163" y="191" class="base-C">C</text><text x="193" y="191" class="base-T">T</text><text x="253" y="191" class="base-A">A</text><text x="283" y="191" class="base-A">A</text><text x="313" y="191" class="base-G">G</text>
+      </g>
+      <circle cx="223" cy="134" r="11" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5"/><text x="223" y="139" text-anchor="middle" class="t-mono base-G">G</text>
+      <circle cx="223" cy="186" r="11" fill="var(--fg)"/><text x="223" y="191" text-anchor="middle" class="t-mono t-inv" font-weight="700">A</text>
+      <text x="118" y="222" class="t-sm">↑ the only difference in this window</text>
+      <line x1="180" y1="230" x2="180" y2="248" stroke="var(--mm)" stroke-width="1.6" marker-end="url(#mmn-arr)"/>
+      <circle cx="18" cy="262" r="11" fill="var(--mm)"/><text x="18" y="266.5" text-anchor="middle" class="t-b t-inv">2</text>
+      <text x="36" y="267" class="t-b">Write it as a record</text>
+      <rect x="10" y="280" width="340" height="54" rx="8" fill="var(--bg)" stroke="var(--mm)" stroke-width="1.5"/>
+      <g class="t-ms t-mut"><text x="22" y="300">#CHROM</text><text x="84" y="300">POS</text><text x="184" y="300">ID</text><text x="250" y="300">REF</text><text x="300" y="300">ALT</text></g>
+      <text x="22" y="323" class="t-mono">12</text><text x="84" y="323" class="t-mono">111803962</text><text x="184" y="323" class="t-mono">rs671</text><text x="250" y="323" class="t-mono base-G">G</text><text x="300" y="323" class="t-mono base-A">A</text>
+      <text x="180" y="356" text-anchor="middle" class="t-mono">chr12:111803962:G:A</text>
+      <text x="180" y="372" text-anchor="middle" class="t-xs">the same variant as one ID (GRCh38)</text>
+      <line x1="180" y1="380" x2="180" y2="396" stroke="var(--mm)" stroke-width="1.6" marker-end="url(#mmn-arr)"/>
+      <circle cx="18" cy="410" r="11" fill="var(--mm)"/><text x="18" y="414.5" text-anchor="middle" class="t-b t-inv">3</text>
+      <text x="36" y="415" class="t-b">Count copies of A</text>
+      <rect x="12" y="476" width="166" height="40" rx="7" fill="none" stroke="var(--mm)" stroke-width="2"/>
+      <rect x="16" y="469" width="66" height="13" rx="3" fill="var(--mm)"/><text x="49" y="479" text-anchor="middle" class="t-xs t-inv">this person</text>
+      <circle cx="28" cy="446" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="28" y="450.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <circle cx="52" cy="446" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="52" y="450.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <text x="72" y="451" class="t-mono">G/G</text><text x="104" y="450" class="t-sm">→</text>
+      <rect x="124" y="433" width="36" height="26" rx="5" fill="var(--g0)" stroke="var(--border-strong)"/><text x="142" y="451" text-anchor="middle" class="t-b">0</text>
+      <circle cx="28" cy="496" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="28" y="500.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <circle cx="52" cy="496" r="10" fill="var(--fg)"/><text x="52" y="500.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <text x="72" y="501" class="t-mono">G/A</text><text x="104" y="500" class="t-sm">→</text>
+      <rect x="124" y="483" width="36" height="26" rx="5" fill="var(--g1)" stroke="var(--border-strong)"/><text x="142" y="501" text-anchor="middle" class="t-b">1</text>
+      <circle cx="28" cy="546" r="10" fill="var(--fg)"/><text x="28" y="550.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <circle cx="52" cy="546" r="10" fill="var(--fg)"/><text x="52" y="550.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <text x="72" y="551" class="t-mono">A/A</text><text x="104" y="550" class="t-sm">→</text>
+      <rect x="124" y="533" width="36" height="26" rx="5" fill="var(--g2)"/><text x="142" y="551" text-anchor="middle" class="t-b t-inv">2</text>
+      <text x="200" y="440" class="t-sm">…one entry of the</text>
+      <text x="200" y="454" class="t-sm">genotype matrix</text>
+      <text x="254" y="472" text-anchor="middle" class="t-ms t-mmc">rs671</text>
+      <g class="t-sm" text-anchor="middle">
+        <rect x="212" y="478" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="226" y="492">0</text>
+        <rect x="240" y="478" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="254" y="492">0</text>
+        <rect x="268" y="478" width="28" height="20" fill="var(--g2)" stroke="var(--bg)"/><text x="282" y="492" class="t-inv">2</text>
+        <rect x="296" y="478" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="310" y="492">1</text>
+        <rect x="212" y="498" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="226" y="512">1</text>
+        <rect x="240" y="498" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="254" y="512">0</text>
+        <rect x="268" y="498" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="282" y="512">1</text>
+        <rect x="296" y="498" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="310" y="512">0</text>
+        <rect x="212" y="518" width="28" height="20" fill="var(--g2)" stroke="var(--bg)"/><text x="226" y="532" class="t-inv">2</text>
+        <rect x="240" y="518" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="254" y="532">1</text>
+        <rect x="268" y="518" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="282" y="532">0</text>
+        <rect x="296" y="518" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="310" y="532">1</text>
+        <rect x="212" y="538" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="226" y="552">0</text>
+        <rect x="240" y="538" width="28" height="20" fill="var(--g0)" stroke="var(--bg)"/><text x="254" y="552">0</text>
+        <rect x="268" y="538" width="28" height="20" fill="var(--g1)" stroke="var(--bg)"/><text x="282" y="552">1</text>
+        <rect x="296" y="538" width="28" height="20" fill="var(--g2)" stroke="var(--bg)"/><text x="310" y="552" class="t-inv">2</text>
+      </g>
+      <rect x="240" y="478" width="28" height="80" fill="none" stroke="var(--mm)" stroke-dasharray="3 2"/>
+      <rect x="240" y="518" width="28" height="20" fill="none" stroke="var(--mm)" stroke-width="2.5"/>
+      <path d="M198,522 L208,528 L198,534 Z" fill="var(--mm)"/>
+      <text x="200" y="580" class="t-xs">rows: people · columns: variants</text>
+    </svg>
+  </figure>
+  <p class="mm-statement">A variant is a position where DNA differs between people, written as an address plus alleles: (build, chromosome, position, reference allele, alternative allele). Each person has two copies of every autosomal address, so their genotype is a pair of alleles, which analyses record as 0, 1 or 2 copies of one chosen allele.</p>
+  <ul class="mm-hooks">
+    <li><strong>Variants begin as mutations.</strong> A child carries about 70 new ones; the other 4–5 million sites where a person differs from the reference were inherited from ancestors.</li>
+    <li><strong>Variants come in all sizes</strong>, from one base (SNVs) to whole chromosomes. Single-base variants are by far the most numerous and are what genotyping arrays measure.</li>
+    <li><strong>Two copies give three genotypes</strong> at a two-allele variant: homozygous (0 or 2) or heterozygous (1). This count is the entry of the genotype matrix.</li>
+    <li><strong>Allele labels answer different questions</strong> (reference genome, evolution, population frequency, the analysis, the trait). Always state which allele a frequency or an effect refers to.</li>
+    <li><strong>What a variant does depends on where it falls.</strong> Coding changes alter the protein (synonymous, missense, nonsense, frameshift); most trait-associated variants lie outside coding sequence.</li>
+  </ul>
+</section>
+
+<!-- ===================================================== 1. ORIGIN -->
+<h2 id="origin" data-toc="Where variation comes from">Where variation comes from <span class="tag core">Core</span></h2>
+<p>A <dfn>mutation</dfn> is a change in the DNA sequence. Many new mutations arise when DNA is copied before a cell divides and a copying mistake is not repaired; others come from damage by radiation or chemicals<sup><a href="#src-2">2</a></sup>. A mutation in a somatic cell stays in that cell and its descendants. Only a mutation in the germline, the cells that give rise to eggs and sperm, can pass to children (see <a href="cells-chromosomes.html">page 1</a>).</p>
+<p>A <dfn>de novo mutation</dfn> is a variant present in a child but in neither parent: it arose in a parent's egg or sperm lineage. Sequencing the whole genomes of 1,548 Icelandic families (mother, father and child) found on average 70.3 de novo mutations per child, a rate of about 1.29 × 10⁻⁸ per base pair per generation<sup><a href="#src-3">3</a></sup>. The two numbers agree: a cell carries about 6 billion base pairs (two copies of each chromosome)<sup><a href="#src-20">20</a></sup>, and 1.29 × 10⁻⁸ × 6 × 10⁹ ≈ 77, close to the observed 70 (the rate is estimated only from the parts of the genome where new mutations can be detected reliably).</p>
+<p>About 80% of de novo mutations arise in the father. Their number grows with parental age: each extra year of the father's age at conception adds about 1.5 mutations, and each extra year of the mother's age about 0.4<sup><a href="#src-3">3</a></sup>.</p>
+
+<figure class="fig">
+  <div class="fig-body">
+    <div class="dn-panels">
+    <svg viewBox="0 0 350 214" role="img" aria-labelledby="dna-t dna-d">
+      <title id="dna-t">De novo mutations in one child, by the parent they came from</title>
+      <desc id="dna-d">70 dots represent the roughly 70 new mutations in one child: 56 blue dots arose in the father and 14 pink dots in the mother.</desc>
+      <text x="20" y="22" class="t-b">About 70 new mutations per child</text>
+      <text x="20" y="40" class="t-sm">1,548 Icelandic trios · one dot = one new mutation</text>
+      <g>
+        <!-- 56 paternal (rows 1-4) -->
+        <g fill="var(--pat)">
+          <circle cx="30" cy="64" r="7"/><circle cx="50" cy="64" r="7"/><circle cx="70" cy="64" r="7"/><circle cx="90" cy="64" r="7"/><circle cx="110" cy="64" r="7"/><circle cx="130" cy="64" r="7"/><circle cx="150" cy="64" r="7"/><circle cx="170" cy="64" r="7"/><circle cx="190" cy="64" r="7"/><circle cx="210" cy="64" r="7"/><circle cx="230" cy="64" r="7"/><circle cx="250" cy="64" r="7"/><circle cx="270" cy="64" r="7"/><circle cx="290" cy="64" r="7"/>
+          <circle cx="30" cy="84" r="7"/><circle cx="50" cy="84" r="7"/><circle cx="70" cy="84" r="7"/><circle cx="90" cy="84" r="7"/><circle cx="110" cy="84" r="7"/><circle cx="130" cy="84" r="7"/><circle cx="150" cy="84" r="7"/><circle cx="170" cy="84" r="7"/><circle cx="190" cy="84" r="7"/><circle cx="210" cy="84" r="7"/><circle cx="230" cy="84" r="7"/><circle cx="250" cy="84" r="7"/><circle cx="270" cy="84" r="7"/><circle cx="290" cy="84" r="7"/>
+          <circle cx="30" cy="104" r="7"/><circle cx="50" cy="104" r="7"/><circle cx="70" cy="104" r="7"/><circle cx="90" cy="104" r="7"/><circle cx="110" cy="104" r="7"/><circle cx="130" cy="104" r="7"/><circle cx="150" cy="104" r="7"/><circle cx="170" cy="104" r="7"/><circle cx="190" cy="104" r="7"/><circle cx="210" cy="104" r="7"/><circle cx="230" cy="104" r="7"/><circle cx="250" cy="104" r="7"/><circle cx="270" cy="104" r="7"/><circle cx="290" cy="104" r="7"/>
+          <circle cx="30" cy="124" r="7"/><circle cx="50" cy="124" r="7"/><circle cx="70" cy="124" r="7"/><circle cx="90" cy="124" r="7"/><circle cx="110" cy="124" r="7"/><circle cx="130" cy="124" r="7"/><circle cx="150" cy="124" r="7"/><circle cx="170" cy="124" r="7"/><circle cx="190" cy="124" r="7"/><circle cx="210" cy="124" r="7"/><circle cx="230" cy="124" r="7"/><circle cx="250" cy="124" r="7"/><circle cx="270" cy="124" r="7"/><circle cx="290" cy="124" r="7"/>
+        </g>
+        <!-- 14 maternal (row 5) -->
+        <g fill="var(--mat)">
+          <circle cx="30" cy="144" r="7"/><circle cx="50" cy="144" r="7"/><circle cx="70" cy="144" r="7"/><circle cx="90" cy="144" r="7"/><circle cx="110" cy="144" r="7"/><circle cx="130" cy="144" r="7"/><circle cx="150" cy="144" r="7"/><circle cx="170" cy="144" r="7"/><circle cx="190" cy="144" r="7"/><circle cx="210" cy="144" r="7"/><circle cx="230" cy="144" r="7"/><circle cx="250" cy="144" r="7"/><circle cx="270" cy="144" r="7"/><circle cx="290" cy="144" r="7"/>
+        </g>
+      </g>
+      <circle cx="30" cy="176" r="6" fill="var(--pat)"/><text x="42" y="180" class="t-sm">arose in the father: 56 of 70 (≈ 80%)</text>
+      <circle cx="30" cy="196" r="6" fill="var(--mat)"/><text x="42" y="200" class="t-sm">arose in the mother: 14 of 70 (≈ 20%)</text>
+    </svg>
+    <svg viewBox="0 0 350 214" role="img" aria-labelledby="dnb-t dnb-d">
+      <title id="dnb-t">Effect of parental age on the number of de novo mutations</title>
+      <desc id="dnb-d">Bars show that each extra year of the father's age at conception adds 1.51 new mutations and each extra year of the mother's age adds 0.37.</desc>
+      <text x="20" y="22" class="t-b">Each extra year of parental age adds</text>
+      <text x="20" y="40" class="t-sm">more new mutations (age at conception)</text>
+      <line x1="90" y1="58" x2="90" y2="150" stroke="var(--border-strong)"/>
+      <text x="20" y="87" class="t">father</text>
+      <rect x="90" y="70" width="211" height="24" rx="3" fill="var(--pat)"/>
+      <text x="308" y="87" class="t-b">+1.51</text>
+      <text x="20" y="131" class="t">mother</text>
+      <rect x="90" y="114" width="52" height="24" rx="3" fill="var(--mat)"/>
+      <text x="149" y="131" class="t-b">+0.37</text>
+      <line x1="90" y1="158" x2="300" y2="158" stroke="var(--fg-muted)"/>
+      <g stroke="var(--fg-muted)"><line x1="90" y1="158" x2="90" y2="163"/><line x1="160" y1="158" x2="160" y2="163"/><line x1="230" y1="158" x2="230" y2="163"/><line x1="300" y1="158" x2="300" y2="163"/></g>
+      <g class="t-xs" text-anchor="middle"><text x="90" y="175">0</text><text x="160" y="175">0.5</text><text x="230" y="175">1.0</text><text x="300" y="175">1.5</text></g>
+      <text x="195" y="196" text-anchor="middle" class="t-sm">new mutations added per year of age</text>
+    </svg>
+    </div>
+  </div>
+  <figcaption><span class="fig-title">New mutations in one generation.</span> Each child carries about 70 mutations that neither parent had, roughly four in five from the father, and the count rises with the father's age much faster than with the mother's. Dots are rounded from the published averages (70.3 per child; 80.4% paternal).<span class="fig-credit">Drawn for this lecture from Jónsson et al., <em>Nature</em> 2017<sup><a href="#src-3">3</a></sup>.</span></figcaption>
+</figure>
+
+<p>Compare those 70 new mutations with the 4–5 million positions at which a typical genome differs from the reference genome (next section). Almost every variant you carry was inherited, most of them from ancestors who lived many generations ago. A variant that is common today arose once as a mutation in one person and spread through that person's descendants. This shared history is why nearby variants are correlated in a population (linkage disequilibrium, <a href="haplotypes-ld.html">page 7</a>) and why allele frequencies differ between populations (<a href="allele-frequencies.html">page 6</a>, <a href="ancestry.html">page 8</a>).</p>
+
+<!-- ===================================================== 2. HOW DIFFERENT -->
+<h2 id="how-different" data-toc="How different are two genomes?">How different are two genomes? <span class="tag core">Core</span></h2>
+<p>Take one copy of each chromosome from each of two people, line them up base by base, and they differ at roughly 1 position in every 1,250–1,330<sup><a href="#src-5">5</a></sup>. That is about 0.1% (more precisely about 0.08%), the source of the familiar statement that humans are "99.9% identical", a figure that counts single-base differences only. Measured against the reference genome, a typical person's genome differs at 4.1–5.0 million sites<sup><a href="#src-4">4</a></sup>.</p>
+<p>More than 99.9% of those variant sites are single-base differences and short insertions or deletions. Larger structural variants are far fewer, about 2,100–2,500 per genome, but because each one is long, together they cover about 20 million bases, more than all the single-base differences combined<sup><a href="#src-4">4</a></sup>. Genomes in the 1000 Genomes African (AFR) group carry the most variant sites (about 4.3 million single-base variants, against about 3.5–3.6 million in each of the other four groups), because genetic diversity is highest in African populations (<a href="ancestry.html">page 8</a>).</p>
+
+<figure class="fig">
+  <div class="fig-body">
+    <svg class="minw inv-wide" viewBox="0 0 760 360" role="img" aria-labelledby="inv-t inv-d">
+      <title id="inv-t">Variant sites in one typical genome, by type, on a log scale</title>
+      <desc id="inv-d">Horizontal bars on a logarithmic axis from 1 to 10 million. Per genome: single-nucleotide variants 3.5 to 4.3 million; short indels 546 to 625 thousand; large deletions about 940 to 1,100; mobile-element insertions about 1,000 to 1,200; copy-number variants 153 to 170; inversions 9 to 12. Structural variants total about 2,100 to 2,500 per genome and cover about 20 million bases. For comparison, a child has about 70 new mutations.</desc>
+      <!-- grid -->
+      <g stroke="var(--border)">
+        <line x1="250" y1="24" x2="250" y2="306"/><line x1="316" y1="24" x2="316" y2="306"/><line x1="382" y1="24" x2="382" y2="306"/><line x1="448" y1="24" x2="448" y2="306"/><line x1="514" y1="24" x2="514" y2="306"/><line x1="580" y1="24" x2="580" y2="306"/><line x1="646" y1="24" x2="646" y2="306"/><line x1="712" y1="24" x2="712" y2="306"/>
+      </g>
+      <line x1="250" y1="306" x2="712" y2="306" stroke="var(--fg-muted)"/>
+      <g class="t-sm" text-anchor="middle"><text x="250" y="324">1</text><text x="316" y="324">10</text><text x="382" y="324">100</text><text x="448" y="324">1,000</text><text x="514" y="324">10,000</text><text x="580" y="324">100,000</text><text x="646" y="324">1 million</text><text x="712" y="324">10 million</text></g>
+      <text x="481" y="348" text-anchor="middle" class="t-sm">sites per genome (log scale)</text>
+      <!-- rows -->
+      <text x="16" y="44" class="t">single-nucleotide variants</text><text x="16" y="58" class="t-sm">3.5–4.3 million</text>
+      <rect x="250" y="38" width="432" height="16" rx="2" fill="var(--q1)"/>
+      <text x="16" y="82" class="t">short indels (&lt; 50 bp)</text><text x="16" y="96" class="t-sm">546,000–625,000</text>
+      <rect x="250" y="76" width="379" height="16" rx="2" fill="var(--q1)"/>
+      <text x="16" y="120" class="t">large deletions</text><text x="16" y="134" class="t-sm">≈ 940–1,100</text>
+      <rect x="250" y="114" width="196" height="16" rx="2" fill="var(--q2)"/>
+      <text x="16" y="158" class="t">mobile-element insertions</text><text x="16" y="172" class="t-sm">≈ 1,000–1,200</text>
+      <rect x="250" y="152" width="198" height="16" rx="2" fill="var(--q2)"/>
+      <text x="16" y="196" class="t">copy-number variants</text><text x="16" y="210" class="t-sm">153–170</text>
+      <rect x="250" y="190" width="144" height="16" rx="2" fill="var(--q2)"/>
+      <text x="16" y="234" class="t">inversions</text><text x="16" y="248" class="t-sm">9–12</text>
+      <rect x="250" y="228" width="63" height="16" rx="2" fill="var(--q2)"/>
+      <!-- whiskers: min to max across the five 1000 Genomes super-populations -->
+      <g stroke="var(--fg)" stroke-width="2">
+        <line x1="682" y1="46" x2="688" y2="46"/><line x1="682" y1="40" x2="682" y2="52"/><line x1="688" y1="40" x2="688" y2="52"/>
+        <line x1="629" y1="84" x2="633" y2="84"/><line x1="629" y1="78" x2="629" y2="90"/><line x1="633" y1="78" x2="633" y2="90"/>
+        <line x1="446" y1="122" x2="451" y2="122"/><line x1="446" y1="116" x2="446" y2="128"/><line x1="451" y1="116" x2="451" y2="128"/>
+        <line x1="448" y1="160" x2="454" y2="160"/><line x1="448" y1="154" x2="448" y2="166"/><line x1="454" y1="154" x2="454" y2="166"/>
+        <line x1="394" y1="198" x2="397" y2="198"/><line x1="394" y1="192" x2="394" y2="204"/><line x1="397" y1="192" x2="397" y2="204"/>
+        <line x1="313" y1="236" x2="321" y2="236"/><line x1="313" y1="230" x2="313" y2="242"/><line x1="321" y1="230" x2="321" y2="242"/>
+      </g>
+      <!-- bracket for structural variants -->
+      <path d="M472,114 H480 V244 H472" fill="none" stroke="var(--fg-muted)" stroke-width="1.5"/>
+      <text x="490" y="166" class="t-sm">structural variants (≥ 50 bp):</text>
+      <text x="490" y="182" class="t-sm">≈ 2,100–2,500 per genome,</text>
+      <text x="490" y="198" class="t-sm">together ≈ 20 million bases</text>
+      <!-- de novo -->
+      <line x1="16" y1="264" x2="744" y2="264" stroke="var(--border-strong)" stroke-dasharray="4 4"/>
+      <text x="16" y="284" class="t">new (de novo) mutations</text><text x="16" y="298" class="t-sm">≈ 70 per child, not inherited</text>
+      <rect x="250" y="278" width="122" height="16" rx="2" fill="var(--q4)"/>
+      <text x="380" y="291" class="t-sm">for comparison: one generation's new mutations</text>
+    </svg>
+    <svg class="inv-narrow" viewBox="0 0 360 412" role="img" aria-labelledby="invn-t invn-d">
+      <title id="invn-t">Variant sites in one typical genome, by type, on a log scale (compact drawing)</title>
+      <desc id="invn-d">Per genome: single-nucleotide variants 3.5 to 4.3 million; short indels 546 to 625 thousand; large deletions about 940 to 1,100; mobile-element insertions about 1,000 to 1,200; copy-number variants 153 to 170; inversions 9 to 12. Structural variants total about 2,100 to 2,500 per genome and cover about 20 million bases. For comparison, a child has about 70 new mutations.</desc>
+      <g stroke="var(--border)"><line x1="20.0" y1="8" x2="20.0" y2="372"/><line x1="65.7" y1="8" x2="65.7" y2="372"/><line x1="111.4" y1="8" x2="111.4" y2="372"/><line x1="157.1" y1="8" x2="157.1" y2="372"/><line x1="202.9" y1="8" x2="202.9" y2="372"/><line x1="248.6" y1="8" x2="248.6" y2="372"/><line x1="294.3" y1="8" x2="294.3" y2="372"/><line x1="340.0" y1="8" x2="340.0" y2="372"/></g>
+      <text x="20" y="18" class="t">single-nucleotide variants</text><text x="340" y="18" text-anchor="end" class="t-sm">3.5–4.3 million</text>
+      <rect x="20" y="26" width="299.3" height="14" rx="2" fill="var(--q1)"/>
+      <g stroke="var(--fg)" stroke-width="2"><line x1="319.3" y1="33" x2="323.3" y2="33"/><line x1="319.3" y1="27" x2="319.3" y2="39"/><line x1="323.3" y1="27" x2="323.3" y2="39"/></g>
+      <text x="20" y="62" class="t">short indels (&lt; 50 bp)</text><text x="340" y="62" text-anchor="end" class="t-sm">546,000–625,000</text>
+      <rect x="20" y="70" width="262.3" height="14" rx="2" fill="var(--q1)"/>
+      <g stroke="var(--fg)" stroke-width="2"><line x1="282.3" y1="77" x2="285.0" y2="77"/><line x1="282.3" y1="71" x2="282.3" y2="83"/><line x1="285.0" y1="71" x2="285.0" y2="83"/></g>
+      <text x="20" y="106" class="t">large deletions</text><text x="340" y="106" text-anchor="end" class="t-sm">≈ 940–1,100</text>
+      <rect x="20" y="114" width="135.9" height="14" rx="2" fill="var(--q2)"/>
+      <g stroke="var(--fg)" stroke-width="2"><line x1="155.9" y1="121" x2="159.0" y2="121"/><line x1="155.9" y1="115" x2="155.9" y2="127"/><line x1="159.0" y1="115" x2="159.0" y2="127"/></g>
+      <text x="20" y="150" class="t">mobile-element insertions</text><text x="340" y="150" text-anchor="end" class="t-sm">≈ 1,000–1,200</text>
+      <rect x="20" y="158" width="137.4" height="14" rx="2" fill="var(--q2)"/>
+      <g stroke="var(--fg)" stroke-width="2"><line x1="157.4" y1="165" x2="161.2" y2="165"/><line x1="157.4" y1="159" x2="157.4" y2="171"/><line x1="161.2" y1="159" x2="161.2" y2="171"/></g>
+      <text x="20" y="194" class="t">copy-number variants</text><text x="340" y="194" text-anchor="end" class="t-sm">153–170</text>
+      <rect x="20" y="202" width="99.9" height="14" rx="2" fill="var(--q2)"/>
+      <g stroke="var(--fg)" stroke-width="2"><line x1="119.9" y1="209" x2="122.0" y2="209"/><line x1="119.9" y1="203" x2="119.9" y2="215"/><line x1="122.0" y1="203" x2="122.0" y2="215"/></g>
+      <text x="20" y="238" class="t">inversions</text><text x="340" y="238" text-anchor="end" class="t-sm">9–12</text>
+      <rect x="20" y="246" width="43.6" height="14" rx="2" fill="var(--q2)"/>
+      <g stroke="var(--fg)" stroke-width="2"><line x1="63.6" y1="253" x2="69.3" y2="253"/><line x1="63.6" y1="247" x2="63.6" y2="259"/><line x1="69.3" y1="247" x2="69.3" y2="259"/></g>
+      <text x="20" y="284" class="t-sm">Rows 3–6 are structural variants (≥ 50 bp): ≈ 2,100–2,500</text>
+      <text x="20" y="298" class="t-sm">per genome, together covering ≈ 20 million bases.</text>
+      <line x1="8" y1="310" x2="352" y2="310" stroke="var(--border-strong)" stroke-dasharray="4 4"/>
+      <text x="20" y="330" class="t">new (de novo) mutations</text><text x="340" y="330" text-anchor="end" class="t-sm">≈ 70 per child</text>
+      <rect x="20" y="338" width="84.3" height="14" rx="2" fill="var(--q4)"/>
+      <line x1="20" y1="372" x2="340" y2="372" stroke="var(--fg-muted)"/>
+      <g class="t-sm" text-anchor="middle"><text x="20.0" y="387">1</text><text x="65.7" y="387">10</text><text x="111.4" y="387">100</text><text x="157.1" y="387">1k</text><text x="202.9" y="387">10k</text><text x="248.6" y="387">100k</text><text x="294.3" y="387">1M</text><text x="340.0" y="387">10M</text></g>
+      <text x="180" y="404" text-anchor="middle" class="t-sm">sites per genome (log scale; k = thousand, M = million)</text>
+    </svg>
+  </div>
+  <figcaption><span class="fig-title">What one genome carries.</span> Counts of sites where a typical genome differs from the reference, by variant type (median per person; the bar ends at the lowest of the five 1000 Genomes super-populations and the black bracket spans to the highest, usually the African group). Each grid step is ten times larger, so small-looking gaps are large ratios.<span class="fig-credit">Drawn for this lecture from 1000 Genomes Project Consortium, <em>Nature</em> 2015, Table 1<sup><a href="#src-4">4</a></sup>; de novo count from Jónsson et al. 2017<sup><a href="#src-3">3</a></sup>.</span></figcaption>
+</figure>
+
+<p>Across many people the catalog of known variants is enormous. The 1000 Genomes Project found 88 million variants in 2,504 people<sup><a href="#src-4">4</a></sup>; gnomAD v4 lists about 787 million single-nucleotide variants and 123 million indels from 807,162 people, including 416,555 UK Biobank exomes<sup><a href="#src-7">7</a></sup>; and the dbSNP database has issued about 1.2 billion variant identifiers<sup><a href="#src-6">6</a></sup>. Most of these variants are rare, so each person carries only a small fraction of them (<a href="allele-frequencies.html">page 6</a>).</p>
+
+<aside class="callout bridge">
+  <div class="callout-title" data-no-autolink><span class="badge">Lecture 1</span> Slide 58 · "Two humans share on average over 99.9% of their sequence"</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="assets/img/lecture1/slide-058.jpg" alt="Lecture 1, slide 58: the human genome is about 3.3 billion base pairs; 1.5% is protein-coding; two humans share on average over 99.9% of their sequence"><figcaption>Lecture 1 · slide 58</figcaption></figure>
+    <div>
+      <p>In Lecture 1 (slide 58) you will see "Two humans share on average over 99.9% of their sequence." It means that two people differ at fewer than 1 base in 1,000; studies that compare single bases give about 1 in 1,250–1,330<sup><a href="#src-5">5</a></sup>. The small percentage still adds up to millions of positions per genome, and those positions are the variants that genetic studies test. The slide's other two numbers are discussed on earlier pages: "ca. 3.3 billion base-pairs" (GRCh38 has about 3.1 billion; <a href="cells-chromosomes.html#l1-slides-58-59">page 1</a>) and "1.5% of the genome is protein-coding sequence" (current annotation gives 1.1–1.2%; <a href="genes-expression.html#l1-slide-58">page 3</a>).</p>
+      <p>Listen for "SNP", "variant" and "differences between individuals": all three refer to these positions.</p>
+    </div>
+  </div>
+</aside>
+
+<!-- ===================================================== 3. TYPES -->
+<h2 id="types" data-toc="Types of variants">Types of variants <span class="tag core">Core</span></h2>
+<p>Variants are classified by what changed and by how many bases are involved.</p>
+<ul>
+  <li><strong>Single nucleotide variant (SNV):</strong> one base replaced by another, for example G → A. An SNV whose less common allele is not rare in a population (by convention, at least 1%) is called a <strong>single nucleotide polymorphism (SNP)</strong>, pronounced "snip"<sup><a href="#src-12">12</a>,<a href="#src-13">13</a></sup>. In practice "SNP" is often used for any SNV, including on genotyping arrays.</li>
+  <li><strong>Indel:</strong> a short insertion or deletion of one or more bases (by convention fewer than 50)<sup><a href="#src-8">8</a></sup>. In a gene's coding sequence, an indel whose length is not a multiple of 3 shifts the reading frame (see <a href="#consequences">What variants do</a>).</li>
+  <li><strong>Short tandem repeat (STR, microsatellite):</strong> a motif of about 1–6 bases repeated back to back, such as CAGCAGCAG; alleles differ in the number of repeats<sup><a href="#src-2">2</a></sup>. In the <em>HTT</em> gene a CAG repeat is normally present 10–35 times; people with Huntington's disease have 36 to more than 120 copies (36–39 copies may or may not cause disease, 40 or more almost always do)<sup><a href="#src-9">9</a></sup>.</li>
+  <li><strong>Copy number variant (CNV):</strong> a segment of DNA that is deleted or duplicated, so people carry different numbers of copies of it (usually defined as longer than 50 bp; classically at least 1 kb)<sup><a href="#src-8">8</a></sup>. Example: in the <em>LPA</em> gene a protein-coding segment called the kringle IV type 2 repeat varies so much in copy number that it produces more than 40 sizes of the apolipoprotein(a) protein; people with small sizes have median lipoprotein(a) concentrations up to five times higher<sup><a href="#src-10">10</a></sup>.</li>
+  <li><strong>Structural variant (SV):</strong> any rearrangement affecting more than about 50 bp: large deletions, duplications and insertions (the CNVs), <strong>inversions</strong> (a segment flipped end to end) and <strong>translocations</strong> (a segment moved to another chromosome)<sup><a href="#src-8">8</a></sup>.</li>
+  <li><strong>Aneuploidy:</strong> a whole chromosome gained or lost, so cells have a number of chromosomes other than 46<sup><a href="#src-2">2</a></sup>. Most cases of Down syndrome are caused by trisomy 21: three copies of chromosome 21 instead of two<sup><a href="#src-11">11</a></sup>.</li>
+</ul>
+
+<figure class="fig">
+  <div class="fig-body">
+    <svg class="minw vt-wide" viewBox="0 0 800 424" role="img" aria-labelledby="vt-t vt-d">
+      <title id="vt-t">Types of genetic variant arranged by size</title>
+      <desc id="vt-d">Six rows, each with a sketch and a size bar on a log scale from 1 base pair to 1 gigabase. SNV: one base differs, size 1 bp. Indel: a few bases inserted or deleted, 1 to 49 bp. Short tandem repeat: a short motif repeated a variable number of times; the HTT CAG repeat spans about 30 to 105 bp normally and more in Huntington's disease. Copy number variant: a segment present in one, two or three copies, from about 50 bp to megabases. Inversion or translocation: a segment flipped or moved, from about 50 bp to tens of megabases. Aneuploidy: a whole chromosome gained or lost, 46.7 Mb (chromosome 21) to 248.9 Mb (chromosome 1). A dashed line at 50 bp marks the conventional boundary between indels and structural variants.</desc>
+      <defs>
+        <linearGradient id="vt-fade2" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="var(--q2)"/><stop offset="0.75" stop-color="var(--q2)"/><stop offset="1" stop-color="var(--q2)" stop-opacity="0.1"/></linearGradient>
+        <linearGradient id="vt-fade3" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="var(--q3)"/><stop offset="0.75" stop-color="var(--q3)"/><stop offset="1" stop-color="var(--q3)" stop-opacity="0.1"/></linearGradient>
+        <linearGradient id="vt-fade5" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="var(--q5)" stop-opacity="0.55"/><stop offset="0.7" stop-color="var(--q5)" stop-opacity="0.4"/><stop offset="1" stop-color="var(--q5)" stop-opacity="0.05"/></linearGradient>
+      </defs>
+      <!-- axis + grid -->
+      <g stroke="var(--border)">
+        <line x1="360" y1="34" x2="360" y2="362"/><line x1="406.7" y1="34" x2="406.7" y2="362"/><line x1="453.3" y1="34" x2="453.3" y2="362"/><line x1="500" y1="34" x2="500" y2="362"/><line x1="546.7" y1="34" x2="546.7" y2="362"/><line x1="593.3" y1="34" x2="593.3" y2="362"/><line x1="640" y1="34" x2="640" y2="362"/><line x1="686.7" y1="34" x2="686.7" y2="362"/><line x1="733.3" y1="34" x2="733.3" y2="362"/><line x1="780" y1="34" x2="780" y2="362"/>
+      </g>
+      <line x1="360" y1="362" x2="780" y2="362" stroke="var(--fg-muted)"/>
+      <g class="t-xs" text-anchor="middle"><text x="360" y="378">1 bp</text><text x="406.7" y="378">10</text><text x="453.3" y="378">100</text><text x="500" y="378">1 kb</text><text x="546.7" y="378">10 kb</text><text x="593.3" y="378">100 kb</text><text x="640" y="378">1 Mb</text><text x="686.7" y="378">10 Mb</text><text x="733.3" y="378">100 Mb</text><text x="780" y="378">1 Gb</text></g>
+      <text x="570" y="400" text-anchor="middle" class="t-sm">size of the variant (log scale: each step is 10× larger)</text>
+      <line x1="439.3" y1="34" x2="439.3" y2="362" stroke="var(--fg-muted)" stroke-dasharray="5 4"/>
+      <text x="439.3" y="26" text-anchor="middle" class="t-xs">50 bp</text>
+      <!-- 1 SNV -->
+      <text x="16" y="56" class="t-b">SNV</text><text x="16" y="72" class="t-sm">one base replaced</text>
+      <rect x="216" y="38" width="16" height="44" rx="3" fill="var(--bridge-soft)" stroke="var(--bridge)"/>
+      <g class="t-mono" text-anchor="middle">
+        <text x="196" y="55" class="base-A">A</text><text x="210" y="55" class="base-C">C</text><text x="224" y="55" class="base-G">G</text><text x="238" y="55" class="base-T">T</text><text x="252" y="55" class="base-A">A</text>
+        <text x="196" y="76" class="base-A">A</text><text x="210" y="76" class="base-C">C</text><text x="224" y="76" class="base-A">A</text><text x="238" y="76" class="base-T">T</text><text x="252" y="76" class="base-A">A</text>
+      </g>
+      <circle cx="360" cy="60" r="5" fill="var(--q1)"/>
+      <!-- 2 indel -->
+      <text x="16" y="110" class="t-b">Indel</text><text x="16" y="126" class="t-sm">bases inserted or deleted</text>
+      <rect x="217" y="92" width="30" height="44" rx="3" fill="var(--bridge-soft)" stroke="var(--bridge)"/>
+      <g class="t-mono" text-anchor="middle">
+        <text x="196" y="109" class="base-A">A</text><text x="210" y="109" class="base-C">C</text><text x="224" y="109" class="base-G">G</text><text x="238" y="109" class="base-G">G</text><text x="252" y="109" class="base-T">T</text><text x="266" y="109" class="base-A">A</text>
+        <text x="196" y="130" class="base-A">A</text><text x="210" y="130" class="base-C">C</text><text x="224" y="130" class="t-mut">–</text><text x="238" y="130" class="t-mut">–</text><text x="252" y="130" class="base-T">T</text><text x="266" y="130" class="base-A">A</text>
+      </g>
+      <rect x="360" y="108" width="79" height="12" rx="2" fill="var(--q1)"/>
+      <text x="446" y="118" class="t-xs">1–49 bp</text>
+      <!-- 3 STR -->
+      <text x="16" y="158" class="t-b">Short tandem repeat</text><text x="16" y="174" class="t-sm">motif of 1–6 bases; the</text><text x="16" y="187" class="t-sm">number of repeats varies</text>
+      <g class="t-xs" text-anchor="middle">
+        <rect x="184" y="148" width="26" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="197" y="158.5">CAG</text>
+        <rect x="212" y="148" width="26" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="225" y="158.5">CAG</text>
+        <rect x="240" y="148" width="26" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="253" y="158.5">CAG</text>
+        <rect x="184" y="170" width="26" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="197" y="180.5">CAG</text>
+        <rect x="212" y="170" width="26" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="225" y="180.5">CAG</text>
+        <rect x="240" y="170" width="26" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="253" y="180.5">CAG</text>
+        <rect x="268" y="170" width="26" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="281" y="180.5">CAG</text>
+        <rect x="296" y="170" width="26" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="309" y="180.5">CAG</text>
+      </g>
+      <rect x="428.9" y="162" width="25.4" height="12" rx="2" fill="var(--q5)"/>
+      <rect x="454.9" y="162" width="42" height="12" rx="2" fill="url(#vt-fade5)"/>
+      <text x="506" y="160" class="t-sm"><tspan class="t-it">HTT</tspan> CAG repeat: 10–35 copies usual (dark);</text>
+      <text x="506" y="174" class="t-sm">36 to more than 120 in Huntington's disease (light)</text>
+      <!-- 4 CNV -->
+      <text x="16" y="212" class="t-b">Copy number variant</text><text x="16" y="228" class="t-sm">segment deleted or</text><text x="16" y="241" class="t-sm">duplicated (≥ 50 bp)</text>
+      <g class="t-xs" text-anchor="middle">
+        <rect x="184" y="202" width="30" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><text x="199" y="212.5">A</text>
+        <rect x="214" y="202" width="30" height="14" fill="var(--q2)" fill-opacity="0.45" stroke="var(--q2)"/><text x="229" y="212.5">B</text>
+        <rect x="244" y="202" width="30" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><text x="259" y="212.5">C</text>
+        <rect x="184" y="224" width="30" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><text x="199" y="234.5">A</text>
+        <rect x="214" y="224" width="30" height="14" fill="var(--q2)" fill-opacity="0.45" stroke="var(--q2)"/><text x="229" y="234.5">B</text>
+        <rect x="244" y="224" width="30" height="14" fill="var(--q2)" fill-opacity="0.45" stroke="var(--q2)"/><text x="259" y="234.5">B</text>
+        <rect x="274" y="224" width="30" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><text x="289" y="234.5">C</text>
+      </g>
+      <rect x="439.3" y="216" width="247.4" height="12" rx="2" fill="url(#vt-fade2)"/>
+      <!-- 5 inversion / translocation -->
+      <text x="16" y="266" class="t-b">Inversion, translocation</text><text x="16" y="282" class="t-sm">segment flipped, or moved</text><text x="16" y="295" class="t-sm">to another chromosome</text>
+      <rect x="184" y="256" width="30" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/>
+      <rect x="214" y="256" width="50" height="14" fill="var(--q3)" fill-opacity="0.35" stroke="var(--q3)"/>
+      <path d="M222,263 H252 M246,259 L254,263 L246,267" fill="none" stroke="var(--q3)" stroke-width="2"/>
+      <rect x="264" y="256" width="30" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/>
+      <rect x="184" y="278" width="30" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/>
+      <rect x="214" y="278" width="50" height="14" fill="var(--q3)" fill-opacity="0.35" stroke="var(--q3)"/>
+      <path d="M256,285 H226 M232,281 L224,285 L232,289" fill="none" stroke="var(--q3)" stroke-width="2"/>
+      <rect x="264" y="278" width="30" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/>
+      <rect x="439.3" y="270" width="294" height="12" rx="2" fill="url(#vt-fade3)"/>
+      <!-- 6 aneuploidy -->
+      <text x="16" y="320" class="t-b">Aneuploidy</text><text x="16" y="336" class="t-sm">whole chromosome gained</text><text x="16" y="349" class="t-sm">or lost (e.g., trisomy 21)</text>
+      <g fill="var(--q7)" fill-opacity="0.45" stroke="var(--q7)">
+        <path d="M188,312 a5,5 0 0 1 10,0 v6 l-2,3 l2,3 v12 a5,5 0 0 1 -10,0 v-12 l2,-3 l-2,-3 z"/>
+        <path d="M204,312 a5,5 0 0 1 10,0 v6 l-2,3 l2,3 v12 a5,5 0 0 1 -10,0 v-12 l2,-3 l-2,-3 z"/>
+        <path d="M254,312 a5,5 0 0 1 10,0 v6 l-2,3 l2,3 v12 a5,5 0 0 1 -10,0 v-12 l2,-3 l-2,-3 z"/>
+        <path d="M270,312 a5,5 0 0 1 10,0 v6 l-2,3 l2,3 v12 a5,5 0 0 1 -10,0 v-12 l2,-3 l-2,-3 z"/>
+        <path d="M286,312 a5,5 0 0 1 10,0 v6 l-2,3 l2,3 v12 a5,5 0 0 1 -10,0 v-12 l2,-3 l-2,-3 z"/>
+      </g>
+      <text x="201" y="352" text-anchor="middle" class="t-xs">2 copies</text>
+      <text x="275" y="352" text-anchor="middle" class="t-xs">3 copies</text>
+      <rect x="717.9" y="324" width="34" height="12" rx="2" fill="var(--q7)"/>
+      <text x="710" y="320" text-anchor="end" class="t-xs">chr21 (46.7 Mb) to chr1 (248.9 Mb)</text>
+    </svg>
+    <svg class="vt-narrow" viewBox="0 0 360 516" role="img" aria-labelledby="vtn-t vtn-d">
+      <title id="vtn-t">Types of genetic variant arranged by size (compact drawing)</title>
+      <desc id="vtn-d">Six variant types, each with a sketch and a size bar on a log scale from 1 base pair to 1 gigabase. SNV: 1 bp. Indel: 1 to 49 bp. Short tandem repeat: the HTT CAG repeat spans about 30 to 105 bp normally and more in Huntington's disease. Copy number variant: about 50 bp to megabases. Inversion or translocation: about 50 bp to tens of megabases. Aneuploidy: a whole chromosome, 46.7 Mb (chromosome 21) to 248.9 Mb (chromosome 1). A dashed line at 50 bp separates indels from structural variants.</desc>
+      <defs>
+        <linearGradient id="vtn-fade2" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="var(--q2)"/><stop offset="0.75" stop-color="var(--q2)"/><stop offset="1" stop-color="var(--q2)" stop-opacity="0.1"/></linearGradient>
+        <linearGradient id="vtn-fade3" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="var(--q3)"/><stop offset="0.75" stop-color="var(--q3)"/><stop offset="1" stop-color="var(--q3)" stop-opacity="0.1"/></linearGradient>
+        <linearGradient id="vtn-fade5" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="var(--q5)" stop-opacity="0.55"/><stop offset="0.7" stop-color="var(--q5)" stop-opacity="0.4"/><stop offset="1" stop-color="var(--q5)" stop-opacity="0.05"/></linearGradient>
+      </defs>
+      <g stroke="var(--border)"><line x1="20.0" y1="64" x2="20.0" y2="82"/><line x1="55.6" y1="64" x2="55.6" y2="82"/><line x1="91.1" y1="64" x2="91.1" y2="82"/><line x1="126.7" y1="64" x2="126.7" y2="82"/><line x1="162.2" y1="64" x2="162.2" y2="82"/><line x1="197.8" y1="64" x2="197.8" y2="82"/><line x1="233.3" y1="64" x2="233.3" y2="82"/><line x1="268.9" y1="64" x2="268.9" y2="82"/><line x1="304.4" y1="64" x2="304.4" y2="82"/><line x1="340.0" y1="64" x2="340.0" y2="82"/><line x1="20.0" y1="142" x2="20.0" y2="160"/><line x1="55.6" y1="142" x2="55.6" y2="160"/><line x1="91.1" y1="142" x2="91.1" y2="160"/><line x1="126.7" y1="142" x2="126.7" y2="160"/><line x1="162.2" y1="142" x2="162.2" y2="160"/><line x1="197.8" y1="142" x2="197.8" y2="160"/><line x1="233.3" y1="142" x2="233.3" y2="160"/><line x1="268.9" y1="142" x2="268.9" y2="160"/><line x1="304.4" y1="142" x2="304.4" y2="160"/><line x1="340.0" y1="142" x2="340.0" y2="160"/><line x1="20.0" y1="220" x2="20.0" y2="238"/><line x1="55.6" y1="220" x2="55.6" y2="238"/><line x1="91.1" y1="220" x2="91.1" y2="238"/><line x1="126.7" y1="220" x2="126.7" y2="238"/><line x1="162.2" y1="220" x2="162.2" y2="238"/><line x1="197.8" y1="220" x2="197.8" y2="238"/><line x1="233.3" y1="220" x2="233.3" y2="238"/><line x1="268.9" y1="220" x2="268.9" y2="238"/><line x1="304.4" y1="220" x2="304.4" y2="238"/><line x1="340.0" y1="220" x2="340.0" y2="238"/><line x1="20.0" y1="298" x2="20.0" y2="316"/><line x1="55.6" y1="298" x2="55.6" y2="316"/><line x1="91.1" y1="298" x2="91.1" y2="316"/><line x1="126.7" y1="298" x2="126.7" y2="316"/><line x1="162.2" y1="298" x2="162.2" y2="316"/><line x1="197.8" y1="298" x2="197.8" y2="316"/><line x1="233.3" y1="298" x2="233.3" y2="316"/><line x1="268.9" y1="298" x2="268.9" y2="316"/><line x1="304.4" y1="298" x2="304.4" y2="316"/><line x1="340.0" y1="298" x2="340.0" y2="316"/><line x1="20.0" y1="376" x2="20.0" y2="394"/><line x1="55.6" y1="376" x2="55.6" y2="394"/><line x1="91.1" y1="376" x2="91.1" y2="394"/><line x1="126.7" y1="376" x2="126.7" y2="394"/><line x1="162.2" y1="376" x2="162.2" y2="394"/><line x1="197.8" y1="376" x2="197.8" y2="394"/><line x1="233.3" y1="376" x2="233.3" y2="394"/><line x1="268.9" y1="376" x2="268.9" y2="394"/><line x1="304.4" y1="376" x2="304.4" y2="394"/><line x1="340.0" y1="376" x2="340.0" y2="394"/><line x1="20.0" y1="454" x2="20.0" y2="472"/><line x1="55.6" y1="454" x2="55.6" y2="472"/><line x1="91.1" y1="454" x2="91.1" y2="472"/><line x1="126.7" y1="454" x2="126.7" y2="472"/><line x1="162.2" y1="454" x2="162.2" y2="472"/><line x1="197.8" y1="454" x2="197.8" y2="472"/><line x1="233.3" y1="454" x2="233.3" y2="472"/><line x1="268.9" y1="454" x2="268.9" y2="472"/><line x1="304.4" y1="454" x2="304.4" y2="472"/><line x1="340.0" y1="454" x2="340.0" y2="472"/></g>
+      <g stroke="var(--fg-muted)" stroke-dasharray="4 3"><line x1="80.4" y1="62" x2="80.4" y2="84"/><line x1="80.4" y1="140" x2="80.4" y2="162"/><line x1="80.4" y1="218" x2="80.4" y2="240"/><line x1="80.4" y1="296" x2="80.4" y2="318"/><line x1="80.4" y1="374" x2="80.4" y2="396"/><line x1="80.4" y1="452" x2="80.4" y2="474"/><line x1="80.4" y1="470" x2="80.4" y2="478"/></g><text x="84.4" y="64" class="t-xs">50 bp</text>
+      <text x="12" y="30" class="t-b">SNV</text><text x="12" y="46" class="t-sm">one base replaced</text>
+      <text x="12" y="108" class="t-b">Indel</text><text x="12" y="124" class="t-sm">short insertion or deletion</text>
+      <text x="12" y="186" class="t-b">Short tandem repeat</text><text x="12" y="202" class="t-sm">motif of 1–6 bases, repeated</text>
+      <text x="12" y="264" class="t-b">Copy number variant</text><text x="12" y="280" class="t-sm">segment deleted or duplicated</text>
+      <text x="12" y="342" class="t-b">Inversion, translocation</text><text x="12" y="358" class="t-sm">segment flipped or moved</text>
+      <text x="12" y="420" class="t-b">Aneuploidy</text><text x="12" y="436" class="t-sm">whole chromosome gained or lost</text>
+      <rect x="253" y="18" width="14" height="38" rx="3" fill="var(--bridge-soft)" stroke="var(--bridge)"/>
+      <g class="t-mono" text-anchor="middle"><text x="232" y="33" class="base-A">A</text><text x="246" y="33" class="base-C">C</text><text x="260" y="33" class="base-G">G</text><text x="274" y="33" class="base-T">T</text><text x="288" y="33" class="base-A">A</text><text x="232" y="52" class="base-A">A</text><text x="246" y="52" class="base-C">C</text><text x="260" y="52" class="base-A">A</text><text x="274" y="52" class="base-T">T</text><text x="288" y="52" class="base-A">A</text></g>
+      <circle cx="20" cy="73" r="4.5" fill="var(--q1)"/><text x="30" y="77" class="t-sm">1 bp</text>
+      <rect x="250" y="96" width="28" height="38" rx="3" fill="var(--bridge-soft)" stroke="var(--bridge)"/>
+      <g class="t-mono" text-anchor="middle"><text x="229" y="111" class="base-A">A</text><text x="243" y="111" class="base-C">C</text><text x="257" y="111" class="base-G">G</text><text x="271" y="111" class="base-G">G</text><text x="285" y="111" class="base-T">T</text><text x="299" y="111" class="base-A">A</text><text x="229" y="130" class="base-A">A</text><text x="243" y="130" class="base-C">C</text><text x="257" y="130" class="t-mut">–</text><text x="271" y="130" class="t-mut">–</text><text x="285" y="130" class="base-T">T</text><text x="299" y="130" class="base-A">A</text></g>
+      <rect x="20" y="146" width="60.1" height="10" rx="2" fill="var(--q1)"/><text x="86.1" y="155" class="t-sm">1–49 bp</text>
+      <rect x="212" y="176" width="24" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="224" y="186.5" text-anchor="middle" class="t-xs">CAG</text><rect x="238" y="176" width="24" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="250" y="186.5" text-anchor="middle" class="t-xs">CAG</text><rect x="264" y="176" width="24" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="276" y="186.5" text-anchor="middle" class="t-xs">CAG</text><rect x="212" y="194" width="24" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="224" y="204.5" text-anchor="middle" class="t-xs">CAG</text><rect x="238" y="194" width="24" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="250" y="204.5" text-anchor="middle" class="t-xs">CAG</text><rect x="264" y="194" width="24" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="276" y="204.5" text-anchor="middle" class="t-xs">CAG</text><rect x="290" y="194" width="24" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="302" y="204.5" text-anchor="middle" class="t-xs">CAG</text><rect x="316" y="194" width="24" height="14" rx="3" fill="var(--q5)" fill-opacity="0.35" stroke="var(--q5)"/><text x="328" y="204.5" text-anchor="middle" class="t-xs">CAG</text>
+      <rect x="72.5" y="224" width="19.4" height="10" rx="2" fill="var(--q5)"/><rect x="92.3" y="224" width="26" height="10" rx="2" fill="url(#vtn-fade5)"/>
+      <text x="124.3" y="233" class="t-sm"><tspan class="t-it">HTT</tspan>: usual (dark), disease (light)</text>
+      <rect x="220" y="254" width="26" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><text x="233" y="264.5" text-anchor="middle" class="t-xs">A</text><rect x="246" y="254" width="26" height="14" fill="var(--q2)" fill-opacity="0.45" stroke="var(--q2)"/><text x="259" y="264.5" text-anchor="middle" class="t-xs">B</text><rect x="272" y="254" width="26" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><text x="285" y="264.5" text-anchor="middle" class="t-xs">C</text><rect x="220" y="272" width="26" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><text x="233" y="282.5" text-anchor="middle" class="t-xs">A</text><rect x="246" y="272" width="26" height="14" fill="var(--q2)" fill-opacity="0.45" stroke="var(--q2)"/><text x="259" y="282.5" text-anchor="middle" class="t-xs">B</text><rect x="272" y="272" width="26" height="14" fill="var(--q2)" fill-opacity="0.45" stroke="var(--q2)"/><text x="285" y="282.5" text-anchor="middle" class="t-xs">B</text><rect x="298" y="272" width="26" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><text x="311" y="282.5" text-anchor="middle" class="t-xs">C</text>
+      <rect x="80.4" y="302" width="188.5" height="10" rx="2" fill="url(#vtn-fade2)"/>
+      <rect x="212" y="332" width="26" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><rect x="238" y="332" width="50" height="14" fill="var(--q3)" fill-opacity="0.35" stroke="var(--q3)"/><path d="M246,339 H276 M270,335 L278,339 L270,343" fill="none" stroke="var(--q3)" stroke-width="2"/><rect x="288" y="332" width="26" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/>
+      <rect x="212" y="350" width="26" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/><rect x="238" y="350" width="50" height="14" fill="var(--q3)" fill-opacity="0.35" stroke="var(--q3)"/><path d="M280,357 H250 M256,353 L248,357 L256,361" fill="none" stroke="var(--q3)" stroke-width="2"/><rect x="288" y="350" width="26" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/>
+      <rect x="80.4" y="380" width="224.0" height="10" rx="2" fill="url(#vtn-fade3)"/>
+      <g fill="var(--q7)" fill-opacity="0.45" stroke="var(--q7)"><path d="M214,413 a5,5 0 0 1 10,0 v5 l-2,3 l2,3 v11 a5,5 0 0 1 -10,0 v-11 l2,-3 l-2,-3 z"/><path d="M228,413 a5,5 0 0 1 10,0 v5 l-2,3 l2,3 v11 a5,5 0 0 1 -10,0 v-11 l2,-3 l-2,-3 z"/><path d="M262,413 a5,5 0 0 1 10,0 v5 l-2,3 l2,3 v11 a5,5 0 0 1 -10,0 v-11 l2,-3 l-2,-3 z"/><path d="M276,413 a5,5 0 0 1 10,0 v5 l-2,3 l2,3 v11 a5,5 0 0 1 -10,0 v-11 l2,-3 l-2,-3 z"/><path d="M290,413 a5,5 0 0 1 10,0 v5 l-2,3 l2,3 v11 a5,5 0 0 1 -10,0 v-11 l2,-3 l-2,-3 z"/></g>
+      <text x="226" y="452" text-anchor="middle" class="t-xs">2 copies</text><text x="281" y="452" text-anchor="middle" class="t-xs">3 copies</text>
+      <rect x="292.7" y="458" width="25.8" height="10" rx="2" fill="var(--q7)"/><text x="286.7" y="467" text-anchor="end" class="t-sm">chr21 (46.7 Mb) to chr1 (248.9 Mb)</text>
+      <line x1="20" y1="478" x2="340" y2="478" stroke="var(--fg-muted)"/>
+      <g class="t-sm" text-anchor="middle"><text x="20.0" y="492">1</text><text x="55.6" y="492">10</text><text x="91.1" y="492">100</text><text x="126.7" y="492">1k</text><text x="162.2" y="492">10k</text><text x="197.8" y="492">100k</text><text x="233.3" y="492">1M</text><text x="268.9" y="492">10M</text><text x="304.4" y="492">100M</text><text x="340.0" y="492">1G</text></g>
+      <text x="180" y="510" text-anchor="middle" class="t-sm">size in base pairs, log scale (k = 10³, M = 10⁶, G = 10⁹)</text>
+    </svg>
+  </div>
+  <figcaption><span class="fig-title">Variant types by size.</span> Each row shows a sketch (reference above, variant below) and the range of sizes on a log axis. The 50 bp line is a convention that separates indels from structural variants. Ranges for CNVs and rearrangements are approximate and fade out because the largest events are rare; chromosome lengths are from GRCh38.<span class="fig-credit">Drawn for this lecture. Sources: Alkan et al. 2011<sup><a href="#src-8">8</a></sup>; MedlinePlus Genetics (<em>HTT</em>)<sup><a href="#src-9">9</a></sup>; GRCh38 chromosome lengths<sup><a href="#src-20">20</a></sup>.</span></figcaption>
+</figure>
+
+<p>Which technology sees which type matters for analysis. Genotyping arrays measure pre-chosen SNVs and some short indels. Short-read sequencing finds SNVs and short indels well, but misses many larger, repetitive or complex variants; structural variants and long repeats often need long reads or specialized methods<sup><a href="#src-8">8</a>,<a href="#src-10">10</a></sup>. For example, several functional SNVs lie inside the repeated <em>LPA</em> segment, where conventional sequencing and genotyping cannot reach them<sup><a href="#src-10">10</a></sup>. The GWAS you will run on UK Biobank array and imputed data test SNVs and short indels almost exclusively (see <a href="samples-to-genotypes.html">From a blood sample to genotypes</a>).</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title" data-no-autolink><span class="badge">Common confusion</span> Mutation, variant, polymorphism, SNP, SNV</div>
+  <p><strong>Mutation</strong> is the event (a change in DNA) and, in older usage, a rare and often harmful variant. <strong>Variant</strong> is the neutral word for any difference from a reference sequence, whatever its frequency or effect. <strong>Polymorphism</strong> traditionally means a variant with a frequency above 1%; <strong>SNP</strong> is the single-base case, and <strong>SNV</strong> covers single-base variants of any frequency. Because "mutation" suggested harm and "polymorphism" suggested harmlessness, clinical guidelines recommend "variant" plus a classification (pathogenic, likely pathogenic, uncertain significance, likely benign, benign)<sup><a href="#src-12">12</a></sup>. Lecture 1 uses "SNP" for any single-base variant on an array.</p>
+</aside>
+
+<!-- ===================================================== 4. GENOTYPES -->
+<h2 id="genotypes" data-toc="Loci, alleles and genotypes">Loci, alleles and genotypes <span class="tag core">Core</span></h2>
+<p>A <dfn>locus</dfn> (plural loci) is a specific position or stretch of the genome, identified by its chromosome and coordinates. It can be a single base or a whole gene. An <dfn>allele</dfn> is one of the alternative versions of the DNA sequence at a locus: at rs671 the alleles are the bases G and A; at an STR they are different repeat counts; at the <em>ABO</em> gene they are the A, B and O versions of the gene.</p>
+<p>Autosomes come in pairs, one copy from each parent, so each person has two alleles at every autosomal locus. The pair is the person's <dfn>genotype</dfn> at that locus. If the two alleles are the same, the person is <dfn>homozygous</dfn> (G/G or A/A); if they differ, <dfn>heterozygous</dfn> (G/A). Genotype data usually record the pair without saying which copy came from which parent, so G/A and A/G are the same genotype (which allele sits on which copy is called phase; see <a href="haplotypes-ld.html">page 7</a>). On the X chromosome, males have a single copy outside the pseudoautosomal regions and are hemizygous (<a href="cells-chromosomes.html">page 1</a>).</p>
+
+<figure class="fig">
+  <div class="fig-body">
+    <svg class="minw gt-wide" viewBox="0 0 760 300" role="img" aria-labelledby="gt-t gt-d">
+      <title id="gt-t">Three genotypes at rs671 and their 0, 1, 2 coding</title>
+      <desc id="gt-d">Three people, each with a maternal and a paternal copy of chromosome 12 at rs671. Person 1 has G on both copies: genotype G/G, homozygous, 0 copies of A. Person 2 has G on the maternal copy and A on the paternal copy: G/A, heterozygous, 1 copy of A. Person 3 has A on both: A/A, homozygous, 2 copies of A. On the right, one column of a genotype matrix lists these counts for seven people (simulated), with one missing entry shown as NA.</desc>
+      <defs>
+        <pattern id="gt-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--bg)"/><line x1="0" y1="0" x2="0" y2="6" stroke="var(--border-strong)" stroke-width="3"/></pattern>
+      </defs>
+      <!-- person 1 -->
+      <text x="105" y="24" text-anchor="middle" class="t-b">Person 1</text>
+      <rect x="30" y="44" width="150" height="18" rx="9" fill="var(--mat-fill)" stroke="var(--mat)"/>
+      <rect x="30" y="84" width="150" height="18" rx="9" fill="var(--pat-fill)" stroke="var(--pat)"/>
+      <circle cx="105" cy="53" r="12" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5"/><text x="105" y="58" text-anchor="middle" class="t-mono base-G">G</text>
+      <circle cx="105" cy="93" r="12" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5"/><text x="105" y="98" text-anchor="middle" class="t-mono base-G">G</text>
+      <text x="105" y="136" text-anchor="middle" class="t-h">G/G</text>
+      <text x="105" y="156" text-anchor="middle" class="t">homozygous</text>
+      <text x="105" y="172" text-anchor="middle" class="t-sm">two reference alleles</text>
+      <rect x="81" y="186" width="48" height="36" rx="7" fill="var(--g0)" stroke="var(--border-strong)"/><text x="105" y="210" text-anchor="middle" class="t-h">0</text>
+      <!-- person 2 -->
+      <text x="290" y="24" text-anchor="middle" class="t-b">Person 2</text>
+      <rect x="215" y="44" width="150" height="18" rx="9" fill="var(--mat-fill)" stroke="var(--mat)"/>
+      <rect x="215" y="84" width="150" height="18" rx="9" fill="var(--pat-fill)" stroke="var(--pat)"/>
+      <circle cx="290" cy="53" r="12" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5"/><text x="290" y="58" text-anchor="middle" class="t-mono base-G">G</text>
+      <circle cx="290" cy="93" r="12" fill="var(--fg)"/><text x="290" y="98" text-anchor="middle" class="t-mono t-inv" font-weight="700">A</text>
+      <text x="290" y="136" text-anchor="middle" class="t-h">G/A</text>
+      <text x="290" y="156" text-anchor="middle" class="t">heterozygous</text>
+      <text x="290" y="172" text-anchor="middle" class="t-sm">one allele of each</text>
+      <rect x="266" y="186" width="48" height="36" rx="7" fill="var(--g1)" stroke="var(--border-strong)"/><text x="290" y="210" text-anchor="middle" class="t-h">1</text>
+      <!-- person 3 -->
+      <text x="475" y="24" text-anchor="middle" class="t-b">Person 3</text>
+      <rect x="400" y="44" width="150" height="18" rx="9" fill="var(--mat-fill)" stroke="var(--mat)"/>
+      <rect x="400" y="84" width="150" height="18" rx="9" fill="var(--pat-fill)" stroke="var(--pat)"/>
+      <circle cx="475" cy="53" r="12" fill="var(--fg)"/><text x="475" y="58" text-anchor="middle" class="t-mono t-inv" font-weight="700">A</text>
+      <circle cx="475" cy="93" r="12" fill="var(--fg)"/><text x="475" y="98" text-anchor="middle" class="t-mono t-inv" font-weight="700">A</text>
+      <text x="475" y="136" text-anchor="middle" class="t-h">A/A</text>
+      <text x="475" y="156" text-anchor="middle" class="t">homozygous</text>
+      <text x="475" y="172" text-anchor="middle" class="t-sm">two alternative alleles</text>
+      <rect x="451" y="186" width="48" height="36" rx="7" fill="var(--g2)"/><text x="475" y="210" text-anchor="middle" class="t-h t-inv">2</text>
+      <text x="290" y="244" text-anchor="middle" class="t-sm">number of copies of A (the alternative allele): the 0/1/2 coding</text>
+      <!-- matrix column -->
+      <text x="696" y="24" text-anchor="middle" class="t-b">Genotype matrix</text>
+      <text x="696" y="40" text-anchor="middle" class="t-sm">one column (simulated)</text>
+      <rect x="664" y="50" width="64" height="22" fill="var(--bg-sunk)" stroke="var(--border)"/><text x="696" y="65" text-anchor="middle" class="t-ms">rs671</text>
+      <g class="t-sm">
+        <text x="656" y="88" text-anchor="end">person 1</text><text x="656" y="112" text-anchor="end">person 2</text><text x="656" y="136" text-anchor="end">person 3</text><text x="656" y="160" text-anchor="end">person 4</text><text x="656" y="184" text-anchor="end">person 5</text><text x="656" y="208" text-anchor="end">person 6</text><text x="656" y="232" text-anchor="end">person 7</text>
+      </g>
+      <g class="t" text-anchor="middle">
+        <rect x="664" y="72" width="64" height="24" fill="var(--g0)" stroke="var(--bg)"/><text x="696" y="89">0</text>
+        <rect x="664" y="96" width="64" height="24" fill="var(--g1)" stroke="var(--bg)"/><text x="696" y="113">1</text>
+        <rect x="664" y="120" width="64" height="24" fill="var(--g2)" stroke="var(--bg)"/><text x="696" y="137" class="t-inv">2</text>
+        <rect x="664" y="144" width="64" height="24" fill="var(--g0)" stroke="var(--bg)"/><text x="696" y="161">0</text>
+        <rect x="664" y="168" width="64" height="24" fill="var(--g1)" stroke="var(--bg)"/><text x="696" y="185">1</text>
+        <rect x="664" y="192" width="64" height="24" fill="var(--g0)" stroke="var(--bg)"/><text x="696" y="209">0</text>
+        <rect x="664" y="216" width="64" height="24" fill="url(#gt-hatch)" stroke="var(--border-strong)"/><text x="696" y="233" class="t-mut">NA</text>
+      </g>
+      <text x="612" y="260" class="t-xs">NA = missing (failed) call</text>
+      <!-- legend -->
+      <rect x="30" y="270" width="18" height="10" rx="5" fill="var(--mat-fill)" stroke="var(--mat)"/><text x="54" y="279" class="t-sm">copy from the mother</text>
+      <rect x="196" y="270" width="18" height="10" rx="5" fill="var(--pat-fill)" stroke="var(--pat)"/><text x="220" y="279" class="t-sm">copy from the father</text>
+      <circle cx="364" cy="275" r="6" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.3"/><text x="376" y="279" class="t-sm">G, reference allele</text>
+      <circle cx="502" cy="275" r="6" fill="var(--fg)"/><text x="514" y="279" class="t-sm">A, alternative allele</text>
+    </svg>
+    <svg class="gt-narrow" viewBox="0 0 360 560" role="img" aria-labelledby="gtn-t gtn-d">
+      <title id="gtn-t">Three genotypes at rs671 and their 0, 1, 2 coding (compact drawing)</title>
+      <desc id="gtn-d">Person 1 has G on both chromosome copies: G/G, homozygous, coded 0. Person 2 has G on the maternal copy and A on the paternal copy: G/A, heterozygous, coded 1. Person 3 has A on both: A/A, homozygous, coded 2. Below, one column of a genotype matrix lists these counts for seven people (simulated), with one missing entry shown as NA.</desc>
+      <defs><pattern id="gtn-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--bg)"/><line x1="0" y1="0" x2="0" y2="6" stroke="var(--border-strong)" stroke-width="3"/></pattern></defs>
+      <text x="12" y="24" class="t-b">Person 1</text>
+      <rect x="12" y="34" width="110" height="16" rx="8" fill="var(--mat-fill)" stroke="var(--mat)"/><circle cx="67" cy="42" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="67" y="46.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <rect x="12" y="60" width="110" height="16" rx="8" fill="var(--pat-fill)" stroke="var(--pat)"/><circle cx="67" cy="68" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="67" y="72.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <text x="142" y="56" class="t-h">G/G</text><text x="186" y="56" class="t">homozygous</text><text x="142" y="74" class="t-sm">two reference alleles</text>
+      <rect x="300" y="38" width="44" height="34" rx="7" fill="var(--g0)" stroke="var(--border-strong)"/><text x="322" y="61" text-anchor="middle" class="t-h">0</text>
+      <text x="12" y="112" class="t-b">Person 2</text>
+      <rect x="12" y="122" width="110" height="16" rx="8" fill="var(--mat-fill)" stroke="var(--mat)"/><circle cx="67" cy="130" r="10" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.4"/><text x="67" y="134.5" text-anchor="middle" class="t-ms base-G">G</text>
+      <rect x="12" y="148" width="110" height="16" rx="8" fill="var(--pat-fill)" stroke="var(--pat)"/><circle cx="67" cy="156" r="10" fill="var(--fg)"/><text x="67" y="160.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <text x="142" y="144" class="t-h">G/A</text><text x="186" y="144" class="t">heterozygous</text><text x="142" y="162" class="t-sm">one allele of each</text>
+      <rect x="300" y="126" width="44" height="34" rx="7" fill="var(--g1)" stroke="var(--border-strong)"/><text x="322" y="149" text-anchor="middle" class="t-h">1</text>
+      <text x="12" y="200" class="t-b">Person 3</text>
+      <rect x="12" y="210" width="110" height="16" rx="8" fill="var(--mat-fill)" stroke="var(--mat)"/><circle cx="67" cy="218" r="10" fill="var(--fg)"/><text x="67" y="222.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <rect x="12" y="236" width="110" height="16" rx="8" fill="var(--pat-fill)" stroke="var(--pat)"/><circle cx="67" cy="244" r="10" fill="var(--fg)"/><text x="67" y="248.5" text-anchor="middle" class="t-ms t-inv" font-weight="700">A</text>
+      <text x="142" y="232" class="t-h">A/A</text><text x="186" y="232" class="t">homozygous</text><text x="142" y="250" class="t-sm">two alternative alleles</text>
+      <rect x="300" y="214" width="44" height="34" rx="7" fill="var(--g2)"/><text x="322" y="237" text-anchor="middle" class="t-h t-inv">2</text>
+      <text x="12" y="282" class="t-sm">0/1/2 = number of copies of A, the alternative allele</text>
+      <line x1="8" y1="294" x2="352" y2="294" stroke="var(--border)"/>
+      <text x="12" y="316" class="t-b">Genotype matrix</text><text x="12" y="332" class="t-sm">one column (simulated)</text>
+      <rect x="170" y="306" width="80" height="22" fill="var(--bg-sunk)" stroke="var(--border)"/><text x="210" y="321" text-anchor="middle" class="t-ms">rs671</text>
+      <text x="160" y="344" text-anchor="end" class="t-sm">person 1</text>
+      <rect x="170" y="328" width="80" height="24" fill="var(--g0)" stroke="var(--bg)"/><text x="210" y="345" text-anchor="middle" class="t">0</text>
+      <text x="160" y="368" text-anchor="end" class="t-sm">person 2</text>
+      <rect x="170" y="352" width="80" height="24" fill="var(--g1)" stroke="var(--bg)"/><text x="210" y="369" text-anchor="middle" class="t">1</text>
+      <text x="160" y="392" text-anchor="end" class="t-sm">person 3</text>
+      <rect x="170" y="376" width="80" height="24" fill="var(--g2)" stroke="var(--bg)"/><text x="210" y="393" text-anchor="middle" class="t t-inv">2</text>
+      <text x="160" y="416" text-anchor="end" class="t-sm">person 4</text>
+      <rect x="170" y="400" width="80" height="24" fill="var(--g0)" stroke="var(--bg)"/><text x="210" y="417" text-anchor="middle" class="t">0</text>
+      <text x="160" y="440" text-anchor="end" class="t-sm">person 5</text>
+      <rect x="170" y="424" width="80" height="24" fill="var(--g1)" stroke="var(--bg)"/><text x="210" y="441" text-anchor="middle" class="t">1</text>
+      <text x="160" y="464" text-anchor="end" class="t-sm">person 6</text>
+      <rect x="170" y="448" width="80" height="24" fill="var(--g0)" stroke="var(--bg)"/><text x="210" y="465" text-anchor="middle" class="t">0</text>
+      <text x="160" y="488" text-anchor="end" class="t-sm">person 7</text>
+      <rect x="170" y="472" width="80" height="24" fill="url(#gtn-hatch)" stroke="var(--border-strong)"/><text x="210" y="489" text-anchor="middle" class="t t-mut">NA</text>
+      <text x="12" y="514" class="t-sm">NA = missing (failed) call. Pink bar = copy from the mother;</text>
+      <text x="12" y="530" class="t-sm">blue bar = copy from the father. Open circle = G, the</text>
+      <text x="12" y="546" class="t-sm">reference allele; filled circle = A, the alternative allele.</text>
+    </svg>
+  </div>
+  <figcaption><span class="fig-title">Genotypes become numbers.</span> At a two-allele variant each person is one of three genotypes. Counting copies of one chosen allele (here the alternative allele A) turns each genotype into 0, 1 or 2, and one variant across many people becomes one column of the genotype matrix. Light to dark shading means 0 to 2.<span class="fig-credit">Drawn for this lecture; matrix entries are simulated.</span></figcaption>
+</figure>
+
+<p>For a variant with two alleles there are three possible genotypes, and analyses code them as the number of copies of one chosen allele: 0, 1 or 2. This <dfn>allele dosage</dfn> (or additive) coding turns genetics into ordinary numeric data: the genotypes of <i>n</i> people at <i>m</i> variants form an <i>n</i> × <i>m</i> matrix of 0s, 1s and 2s. The coding is also a modeling choice. Using the count as a numeric predictor in a regression assumes that each extra copy of the allele shifts the trait by the same amount, the additive model of <a href="genotype-to-phenotype.html">page 9</a>. After genotype imputation, which predicts genotypes that were not measured directly (<a href="samples-to-genotypes.html">page 11</a>), entries become expected counts between 0 and 2, such as 0.97.</p>
+
+<aside class="callout data">
+  <div class="callout-title" data-no-autolink><span class="badge">In the data</span> From genotype calls to 0/1/2</div>
+  <p>In a VCF file each genotype is written as a pair of allele indices: 0 is the REF allele and 1 the first ALT allele, so <code>0/0</code>, <code>0/1</code> and <code>1/1</code> mean 0, 1 and 2 copies of ALT, and <code>./.</code> is a missing call<sup><a href="#src-16">16</a></sup>. PLINK 1.9's <code>--recode A</code> writes one column per variant named after the allele it counts (for example <code>rs671_A</code>), with values 0, 1, 2 or NA; by default it counts the A1 allele<sup><a href="#src-15">15</a></sup>. Before using any genotype column, find out which allele it counts (next section).</p>
+</aside>
+
+<h3 id="multiallelic">More than two alleles</h3>
+<p>Most SNVs have exactly two alleles, because a second mutation at the same base is rare; such variants are <dfn>biallelic</dfn> (Lecture 1 says "diallelic"). Loci with three or more alleles are <dfn>multiallelic</dfn>. The <em>ABO</em> blood group gene has three common alleles, A, B and O, so there are six genotypes, which give four blood groups: A and B each produce a different molecule on red blood cells, AB people produce both, and O produces neither. The O allele is itself a variant: most O alleles carry a single-base deletion that shifts the reading frame, so they encode an inactive enzyme<sup><a href="#src-14">14</a></sup>. With <i>K</i> alleles there are <i>K</i>(<i>K</i> + 1)/2 possible genotypes.</p>
+
+<div class="table-wrap">
+<table class="compact vt">
+  <caption>ABO genotypes, blood groups and counts in one study (Lecture 1, slide 73<sup><a href="#src-1">1</a></sup>), with one possible 0/1/2 column: copies of O</caption>
+  <thead><tr><th>Genotype</th><th>Blood group</th><th class="num">Count</th><th class="num">Frequency</th><th class="c">Copies of O</th></tr></thead>
+  <tbody>
+    <tr><td>O/O</td><td>O</td><td class="num">1,168</td><td class="num">0.37</td><td class="c">2</td></tr>
+    <tr><td>O/A</td><td>A</td><td class="num">1,080</td><td class="num">0.35</td><td class="c">1</td></tr>
+    <tr><td>O/B</td><td>B</td><td class="num">377</td><td class="num">0.12</td><td class="c">1</td></tr>
+    <tr><td>A/A</td><td>A</td><td class="num">262</td><td class="num">0.08</td><td class="c">0</td></tr>
+    <tr><td>A/B</td><td>AB</td><td class="num">186</td><td class="num">0.06</td><td class="c">0</td></tr>
+    <tr><td>B/B</td><td>B</td><td class="num">44</td><td class="num">0.01</td><td class="c">0</td></tr>
+    <tr><td><strong>Total</strong></td><td></td><td class="num"><strong>3,117</strong></td><td class="num">1.00</td><td></td></tr>
+  </tbody>
+</table>
+</div>
+<p>One 0/1/2 column cannot hold a three-allele genotype: counting O alleles gives 0 for both A/A and A/B. Analyses therefore split a multiallelic site into several biallelic records, each with its own 0/1/2 column. Genotype files already store ABO this way, because its alleles are defined by several separate variants: the A and B alleles differ by a few single-base substitutions that change four amino acids, and the O allele carries a single-base deletion<sup><a href="#src-14">14</a></sup>. The GRCh38 reference sequence itself carries the O deletion (rs8176719), so in a VCF the A and B alleles appear at that site as an "insertion", the ALT allele<sup><a href="#src-14">14</a>,<a href="#src-20">20</a></sup>.</p>
+
+<aside class="callout data">
+  <div class="callout-title" data-no-autolink><span class="badge">In the data</span> Multiallelic records</div>
+  <p>A VCF line can list several ALT alleles (<code>ALT = G,T</code>), and a genotype such as <code>1/2</code> then carries one copy of each<sup><a href="#src-16">16</a></sup>. Most association software expects biallelic records, so pipelines usually split such sites first, for example with <code>bcftools norm -m -</code>, and each resulting record gets its own 0/1/2 column<sup><a href="#src-18">18</a></sup>.</p>
+</aside>
+
+<aside class="callout bridge">
+  <div class="callout-title" data-no-autolink><span class="badge">Lecture 1</span> Slides 71 and 73 · Allele, locus, genotype, and ABO</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="assets/img/lecture1/slide-071.jpg" alt="Lecture 1, slide 71: definitions of allele, locus and genotype, with the ABO blood group as an example"><figcaption>Lecture 1 · slide 71</figcaption></figure>
+    <div>
+      <p>In Lecture 1 (slide 71) you will see an allele defined as "the nucleotide sequence at a polymorphic locus (i.e. a small region of the genome, e.g. a single base or a gene) on a chromosome", and a genotype as "the combination of alleles at a locus carried by an individual". These are the definitions above. Slide 73 counts the six ABO genotypes (n<sub>OO</sub> = 1,168 … n<sub>BB</sub> = 44, total 3,117); the subscripts name the two alleles of each genotype.</p>
+      <p>Listen for "codominant" (A and B are both expressed in AB people; <a href="inheritance.html">page 5</a>) and "diallelic" (exactly two alleles).</p>
+    </div>
+  </div>
+</aside>
+
+<!-- ===================================================== 5. ALLELE LABELS -->
+<h2 id="allele-labels" data-toc="Allele labels">Allele labels: which allele is which? <span class="tag core">Core</span></h2>
+<p>The two alleles of a SNP get different names depending on the question being asked. The same allele can be the alternative, derived, minor, effect and risk allele, or none of these. Mixing up the labels flips the sign of an effect estimate, and it is one of the most common errors when results from different studies or files are combined.</p>
+<ul>
+  <li><strong>Reference / alternative (REF / ALT).</strong> The <dfn>reference allele</dfn> is the base found in the reference genome at that position, on its + strand; any other allele is an <dfn>alternative allele</dfn>. REF does not mean normal or healthy: the reference sequence came from a few anonymous donors, so at many sites it carries the less common allele (<a href="dna.html">page 2</a>).</li>
+  <li><strong>Ancestral / derived.</strong> The <dfn>ancestral allele</dfn> is the state before the mutation, inferred by comparing human DNA with other primates such as the chimpanzee; the <dfn>derived allele</dfn> is the one that arose by mutation.</li>
+  <li><strong>Major / minor.</strong> The more and less frequent allele in a particular sample or population. The frequency of the <dfn>minor allele</dfn> is the minor allele frequency, MAF (<a href="allele-frequencies.html">page 6</a>). Which allele is minor can change from one population to another.</li>
+  <li><strong>Effect / other.</strong> The <dfn>effect allele</dfn> (also called the tested, coded or counted allele) is the allele whose copies are counted as 0, 1, 2 in an analysis; the reported effect size is the change in the trait per copy of it. It is chosen by the analyst or by a software default.</li>
+  <li><strong>Risk / protective.</strong> For a disease, the <dfn>risk allele</dfn> is the one associated with higher risk and the protective allele the one associated with lower risk. This depends on the outcome studied: the same allele can raise the risk of one disease and lower another.</li>
+</ul>
+
+<figure class="fig">
+  <div class="fig-body">
+    <svg class="minw zoo-wide" viewBox="0 0 780 336" role="img" aria-labelledby="zoo-t zoo-d">
+      <title id="zoo-t">Five naming systems applied to the two alleles of rs4988235</title>
+      <desc id="zoo-d">A table-like figure for rs4988235, the lactase-persistence SNP, with alleles G and A. Reference genome: G is REF, A is ALT. Comparison with other primates: G is ancestral, A is derived. In the gnomAD non-Finnish European (NFE) group, A has frequency 0.64, so G is the minor allele (0.36). In the gnomAD African/African American (AFR) group, A has frequency 0.12, so A is the minor allele. PLINK 1.9 by default counts the minor allele in your data, so in data like the NFE group the effect allele would be G. In association studies of lactase persistence, the A allele is the associated allele. The dark label moves between the G and A columns from row to row.</desc>
+      <text x="16" y="22" class="t-b">rs4988235, near the lactase gene <tspan class="t-it">LCT</tspan>: one SNP, two alleles</text>
+      <text x="16" y="54" class="t-sm t-mut">label pair</text>
+      <text x="196" y="54" class="t-sm t-mut">decided by</text>
+      <circle cx="575" cy="46" r="12" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.6"/><text x="575" y="51" text-anchor="middle" class="t-mono base-G">G</text>
+      <circle cx="690" cy="46" r="12" fill="var(--fg)"/><text x="690" y="51" text-anchor="middle" class="t-mono t-inv" font-weight="700">A</text>
+      <g stroke="var(--border)"><line x1="16" y1="66" x2="764" y2="66"/><line x1="16" y1="106" x2="764" y2="106"/><line x1="16" y1="146" x2="764" y2="146"/><line x1="16" y1="186" x2="764" y2="186"/><line x1="16" y1="226" x2="764" y2="226"/><line x1="16" y1="266" x2="764" y2="266"/><line x1="16" y1="306" x2="764" y2="306"/></g>
+      <!-- row 1 -->
+      <text x="16" y="91" class="t-b">REF / ALT</text>
+      <text x="196" y="84" class="t-sm">the reference genome</text><text x="196" y="98" class="t-sm">(GRCh38, + strand)</text>
+      <rect x="532" y="74" width="86" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="575" y="90" text-anchor="middle" class="t-sm">REF</text>
+      <rect x="647" y="74" width="86" height="24" rx="12" fill="var(--fg)"/><text x="690" y="90" text-anchor="middle" class="t-sm t-inv">ALT</text>
+      <!-- row 2 -->
+      <text x="16" y="131" class="t-b">ancestral / derived</text>
+      <text x="196" y="124" class="t-sm">comparison with other primates</text><text x="196" y="138" class="t-sm">(the state before the mutation)</text>
+      <rect x="532" y="114" width="86" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="575" y="130" text-anchor="middle" class="t-sm">ancestral</text>
+      <rect x="647" y="114" width="86" height="24" rx="12" fill="var(--fg)"/><text x="690" y="130" text-anchor="middle" class="t-sm t-inv">derived</text>
+      <!-- row 3 -->
+      <text x="16" y="164" class="t-b">minor / major</text><text x="16" y="178" class="t-sm">gnomAD NFE group</text>
+      <text x="196" y="164" class="t-sm">allele frequencies in the sample</text><text x="196" y="178" class="t-sm">(gnomAD non-Finnish European)</text>
+      <rect x="527" y="154" width="96" height="24" rx="12" fill="var(--fg)"/><text x="575" y="170" text-anchor="middle" class="t-sm t-inv">minor · 0.36</text>
+      <rect x="642" y="154" width="96" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="690" y="170" text-anchor="middle" class="t-sm">major · 0.64</text>
+      <!-- row 4 -->
+      <text x="16" y="204" class="t-b">minor / major</text><text x="16" y="218" class="t-sm">gnomAD AFR group</text>
+      <text x="196" y="204" class="t-sm">allele frequencies in the sample</text><text x="196" y="218" class="t-sm">(gnomAD African/African American)</text>
+      <rect x="527" y="194" width="96" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="575" y="210" text-anchor="middle" class="t-sm">major · 0.88</text>
+      <rect x="642" y="194" width="96" height="24" rx="12" fill="var(--fg)"/><text x="690" y="210" text-anchor="middle" class="t-sm t-inv">minor · 0.12</text>
+      <!-- row 5 -->
+      <text x="16" y="244" class="t-b">effect / other</text><text x="16" y="258" class="t-sm">gnomAD NFE group</text>
+      <text x="196" y="244" class="t-sm">the software or analyst: PLINK 1.9 counts</text><text x="196" y="258" class="t-sm">its A1 allele, by default the minor allele</text>
+      <rect x="532" y="234" width="86" height="24" rx="12" fill="var(--fg)"/><text x="575" y="250" text-anchor="middle" class="t-sm t-inv">effect</text>
+      <rect x="647" y="234" width="86" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="690" y="250" text-anchor="middle" class="t-sm">other</text>
+      <!-- row 6 -->
+      <text x="16" y="284" class="t-b">trait association</text><text x="16" y="298" class="t-sm">lactase persistence</text>
+      <text x="196" y="284" class="t-sm">a study of the trait (adults who</text><text x="196" y="298" class="t-sm">keep digesting milk sugar)</text>
+      <text x="575" y="290" text-anchor="middle" class="t-sm t-mut">—</text>
+      <rect x="637" y="274" width="106" height="24" rx="12" fill="var(--fg)"/><text x="690" y="290" text-anchor="middle" class="t-sm t-inv">associated</text>
+      <text x="16" y="326" class="t-sm">Dark label = the allele that analyses usually count or report. It switches between G and A from row to row.</text>
+    </svg>
+    <svg class="zoo-narrow" viewBox="0 0 360 404" role="img" aria-labelledby="zoon-t zoon-d">
+      <title id="zoon-t">Five naming systems applied to the two alleles of rs4988235 (compact drawing)</title>
+      <desc id="zoon-d">For rs4988235, with alleles G and A: G is REF and ancestral; A is ALT and derived. In the gnomAD non-Finnish European (NFE) group G is the minor allele (0.36) and A the major allele (0.64); in the gnomAD African/African American (AFR) group A is the minor allele (0.12). PLINK 1.9 counts the minor allele by default, so in data like the NFE group the effect allele is G. In studies of lactase persistence, A is the associated allele.</desc>
+      <text x="12" y="20" class="t-b">rs4988235 (<tspan class="t-it">LCT</tspan>): one SNP, two alleles</text>
+      <circle cx="232" cy="46" r="12" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.6"/><text x="232" y="51" text-anchor="middle" class="t-mono base-G">G</text>
+      <circle cx="312" cy="46" r="12" fill="var(--fg)"/><text x="312" y="51" text-anchor="middle" class="t-mono t-inv" font-weight="700">A</text>
+      <g stroke="var(--border)"><line x1="8" y1="66" x2="352" y2="66"/><line x1="8" y1="114" x2="352" y2="114"/><line x1="8" y1="162" x2="352" y2="162"/><line x1="8" y1="210" x2="352" y2="210"/><line x1="8" y1="258" x2="352" y2="258"/><line x1="8" y1="306" x2="352" y2="306"/><line x1="8" y1="354" x2="352" y2="354"/></g>
+      <text x="12" y="86" class="t-b">REF / ALT</text><text x="12" y="102" class="t-sm">the reference genome</text>
+      <rect x="194" y="78" width="76" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="232" y="94" text-anchor="middle" class="t-sm">REF</text>
+      <rect x="274" y="78" width="76" height="24" rx="12" fill="var(--fg)"/><text x="312" y="94" text-anchor="middle" class="t-sm t-inv">ALT</text>
+      <text x="12" y="134" class="t-b">ancestral / derived</text><text x="12" y="150" class="t-sm">comparison with other primates</text>
+      <rect x="194" y="126" width="76" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="232" y="142" text-anchor="middle" class="t-sm">ancestral</text>
+      <rect x="274" y="126" width="76" height="24" rx="12" fill="var(--fg)"/><text x="312" y="142" text-anchor="middle" class="t-sm t-inv">derived</text>
+      <text x="12" y="182" class="t-b">minor / major</text><text x="12" y="198" class="t-sm">gnomAD NFE group</text>
+      <rect x="194" y="174" width="76" height="24" rx="12" fill="var(--fg)"/><text x="232" y="190" text-anchor="middle" class="t-sm t-inv">minor · 0.36</text>
+      <rect x="274" y="174" width="76" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="312" y="190" text-anchor="middle" class="t-sm">major · 0.64</text>
+      <text x="12" y="230" class="t-b">minor / major</text><text x="12" y="246" class="t-sm">gnomAD AFR group</text>
+      <rect x="194" y="222" width="76" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="232" y="238" text-anchor="middle" class="t-sm">major · 0.88</text>
+      <rect x="274" y="222" width="76" height="24" rx="12" fill="var(--fg)"/><text x="312" y="238" text-anchor="middle" class="t-sm t-inv">minor · 0.12</text>
+      <text x="12" y="278" class="t-b">effect / other</text><text x="12" y="294" class="t-sm">PLINK default, NFE group</text>
+      <rect x="194" y="270" width="76" height="24" rx="12" fill="var(--fg)"/><text x="232" y="286" text-anchor="middle" class="t-sm t-inv">effect</text>
+      <rect x="274" y="270" width="76" height="24" rx="12" fill="var(--bg)" stroke="var(--fg)"/><text x="312" y="286" text-anchor="middle" class="t-sm">other</text>
+      <text x="12" y="326" class="t-b">trait association</text><text x="12" y="342" class="t-sm">lactase persistence</text>
+      <text x="232" y="334" text-anchor="middle" class="t-sm t-mut">—</text>
+      <rect x="274" y="318" width="76" height="24" rx="12" fill="var(--fg)"/><text x="312" y="334" text-anchor="middle" class="t-sm t-inv">associated</text>
+      <text x="12" y="378" class="t-sm">Dark label = the allele that analyses usually count</text>
+      <text x="12" y="394" class="t-sm">or report. It switches between G and A.</text>
+    </svg>
+  </div>
+  <figcaption><span class="fig-title">One SNP, five naming systems.</span> For rs4988235 the ALT allele (A) is derived and associated with lactase persistence, but in the gnomAD non-Finnish European (NFE) group it is the <em>major</em> allele, so a minor-allele convention would count G instead. Frequencies are gnomAD v4.1 genomes.<span class="fig-credit">Drawn for this lecture. Data: Ensembl release 116 / gnomAD v4.1<sup><a href="#src-20">20</a></sup>; PLINK 1.9 documentation<sup><a href="#src-15">15</a></sup>; Enattah et al. 2002<sup><a href="#src-26">26</a></sup>.</span></figcaption>
+</figure>
+
+<p>The running examples show that every combination occurs. Never assume that REF is major, ancestral or harmless, or that ALT is the minor or the effect allele.</p>
+
+<div class="table-wrap">
+<table class="compact vt stack">
+  <caption>Allele labels for some running examples (alleles on the GRCh38 + strand)</caption>
+  <thead>
+    <tr><th rowspan="2">Variant</th><th rowspan="2" class="c">REF</th><th rowspan="2" class="c">ALT</th><th rowspan="2" class="c">Ancestral</th><th colspan="3" class="c">ALT frequency (gnomAD v4.1)</th><th rowspan="2">What it shows</th></tr>
+    <tr><th class="num">AFR</th><th class="num">EAS</th><th class="num">NFE</th></tr>
+  </thead>
+  <tbody>
+    <tr><td data-label="Variant">rs671 (<em>ALDH2</em>)</td><td class="c" data-label="REF"><span class="tok">G</span></td><td class="c" data-label="ALT"><span class="tok alt">A</span></td><td class="c" data-label="Ancestral">G</td><td class="num" data-label="ALT freq. AFR">0.0002</td><td class="num" data-label="EAS">0.22</td><td class="num" data-label="NFE">0.00003</td><td data-label="What it shows">The labels line up (ALT = derived = minor), but the ALT allele is almost absent outside the EAS group.</td></tr>
+    <tr><td data-label="Variant">rs4988235 (<em>LCT</em>)</td><td class="c" data-label="REF"><span class="tok">G</span></td><td class="c" data-label="ALT"><span class="tok alt">A</span></td><td class="c" data-label="Ancestral">G</td><td class="num" data-label="ALT freq. AFR">0.12</td><td class="num" data-label="EAS">0.002</td><td class="num" data-label="NFE">0.64</td><td data-label="What it shows">ALT is the major allele in the NFE group and the minor allele in the others.</td></tr>
+    <tr><td data-label="Variant">rs2814778 (<em>ACKR1</em>)</td><td class="c" data-label="REF"><span class="tok">T</span></td><td class="c" data-label="ALT"><span class="tok alt">C</span></td><td class="c" data-label="Ancestral">T</td><td class="num" data-label="ALT freq. AFR">0.82</td><td class="num" data-label="EAS">0</td><td class="num" data-label="NFE">0.004</td><td data-label="What it shows">ALT is the major allele in the AFR group and rare or absent in the others.</td></tr>
+    <tr><td data-label="Variant">rs429358 (<em>APOE</em>)</td><td class="c" data-label="REF"><span class="tok">T</span></td><td class="c" data-label="ALT"><span class="tok alt">C</span></td><td class="c" data-label="Ancestral">C</td><td class="num" data-label="ALT freq. AFR">0.22</td><td class="num" data-label="EAS">0.10</td><td class="num" data-label="NFE">0.14</td><td data-label="What it shows">ALT (the ε4 allele) is the ancestral allele.</td></tr>
+    <tr><td data-label="Variant">rs1427407 (<em>BCL11A</em>)</td><td class="c" data-label="REF"><span class="tok">T</span></td><td class="c" data-label="ALT"><span class="tok alt">G</span></td><td class="c" data-label="Ancestral">G</td><td class="num" data-label="ALT freq. AFR">0.77</td><td class="num" data-label="EAS">0.79</td><td class="num" data-label="NFE">0.84</td><td data-label="What it shows">REF is the minor, derived allele, and the one that raises fetal hemoglobin.</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="sm">gnomAD genetic-ancestry groups: AFR = African/African American, EAS = East Asian, NFE = non-Finnish European. Open token = REF, filled token = ALT<sup><a href="#src-20">20</a></sup>.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title" data-no-autolink><span class="badge">Common confusion</span> Always say which allele</div>
+  <p>A frequency, a genotype count or an effect size means nothing without its allele. Write "A allele frequency 0.64" or "β per copy of the A allele", not "MAF 0.64" or "β for rs4988235". Before comparing two results, check that both refer to the same allele, on the same strand (<a href="dna.html">page 2</a>) and the same genome build.</p>
+</aside>
+
+<aside class="callout data">
+  <div class="callout-title" data-no-autolink><span class="badge">In the data</span> Which allele does this file count?</div>
+  <ul>
+    <li><strong>VCF</strong>: REF and ALT are always given on the + strand of the stated build<sup><a href="#src-16">16</a></sup>.</li>
+    <li><strong>PLINK 1.9 <code>.bim</code></strong>: column 5 is A1 ("usually minor") and column 6 is A2 ("usually major"). Unless you use <code>--keep-allele-order</code>, PLINK 1.9 makes the major allele in your data A2, so A1 may be REF or ALT and can differ between two datasets<sup><a href="#src-15">15</a></sup>.</li>
+    <li><strong>PLINK 2</strong> reads <code>.bim</code> column 5 as ALT and column 6 as REF, so a file written by PLINK 1.9 may have them swapped (<code>--ref-allele</code> sets them back). Its <code>--glm</code> regression still counts the minor allele unless you add <code>omit-ref</code>, and the A1 column of its output names the counted allele<sup><a href="#src-15">15</a></sup>.</li>
+    <li><strong>REGENIE</strong> treats the last allele listed in a <code>.bim</code> or BGEN file as the reference unless you add <code>--ref-first</code><sup><a href="#src-17">17</a></sup>.</li>
+    <li>Before meta-analysis or computing polygenic scores, align every input to the same effect allele (<a href="the-data.html">page 13</a>).</li>
+  </ul>
+</aside>
+
+<aside class="callout bridge">
+  <div class="callout-title" data-no-autolink><span class="badge">Lecture 1</span> Slide 78 · "We still have to specify to which allele p refers!"</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="assets/img/lecture1/slide-078.jpg" alt="Lecture 1, slide 78: notation for diallelic SNPs, p and q, and the minor allele frequency"><figcaption>Lecture 1 · slide 78</figcaption></figure>
+    <div>
+      <p>In Lecture 1 (slide 78) you will see p and q used for the frequencies of the two alleles of a diallelic SNP, with the warning "we still have to specify to which allele p refers! Typically, p refers to the minor allele in the population, so p &lt; 0.5", and "People also often use 'MAF' = minor allele frequency = p".</p>
+      <p>The figure above shows why the warning matters: "minor" depends on the population, so name the allele as well as the frequency. Slide 69 makes the same point for strand: two studies named the alleles of one SNP on opposite strands (<a href="dna.html">page 2</a>).</p>
+    </div>
+  </div>
+</aside>
+
+<!-- ===================================================== 6. NAMING -->
+<h2 id="naming" data-toc="Naming variants">Naming variants <span class="tag core">Core</span></h2>
+<p>The same variant has several names, each tied to a different coordinate system. The sickle cell variant shows all of them.</p>
+<ul>
+  <li><strong>rsID.</strong> The dbSNP database gives each known variant a reference SNP identifier (<dfn>rsID</dfn>), such as rs334. The rsID does not change between genome builds, so it is the most portable name. It does not say which allele is meant: dbSNP lists several possible ALT alleles at rs334 (T&gt;A, T&gt;C, T&gt;G), so write the allele too, for example rs334:T&gt;A<sup><a href="#src-20">20</a></sup>.</li>
+  <li><strong>chromosome:position:REF:ALT.</strong> Precise but build-specific: rs334 is <code>chr11:5227002:T:A</code> on GRCh38 and <code>chr11:5248232:T:A</code> on GRCh37. Alleles are on the + strand. Many files use IDs of this form.</li>
+  <li><strong>HGVS nomenclature.</strong> The Human Genome Variation Society (<dfn>HGVS</dfn>) format describes a change relative to a named reference sequence: <code>g.</code> for genomic, <code>c.</code> for coding DNA, numbered along one of the gene's transcripts (the RNA versions a gene can produce; <a href="genes-expression.html">page 3</a>) with c.1 the A of the ATG start codon, and <code>p.</code> for protein (three-letter amino acid codes; parentheses mean "predicted from DNA"; <code>Ter</code> or <code>*</code> is a stop codon)<sup><a href="#src-19">19</a></sup>.</li>
+  <li><strong>Legacy names.</strong> Older names often use other numbering systems; see the table below.</li>
+</ul>
+
+<figure class="fig">
+  <div class="fig-body">
+    <svg class="minw nm-wide" viewBox="0 0 800 280" role="img" aria-labelledby="nm-t nm-d">
+      <title id="nm-t">Why the sickle cell variant is T&gt;A on the genome but c.20A&gt;T in the gene</title>
+      <desc id="nm-d">Nine positions of chromosome 11, 5,226,998 to 5,227,006 on GRCh38. The + strand reads C T C C T C A G G from left to right; the − strand reads the complementary bases G A G G A G T C C. The HBB gene lies on the − strand and is read from right to left, so its coding positions c.16 to c.24 run from right to left: codon 6 is CCT (proline), codon 7 GAG (glutamic acid) and codon 8 GAG (glutamic acid). The sickle variant at 5,227,002 is T to A on the + strand, which is A to T at c.20 of the coding sequence; codon 7 changes from GAG to GTG and glutamic acid 7 becomes valine.</desc>
+      <defs>
+        <marker id="nm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--fg-muted)"/></marker>
+      </defs>
+      <!-- coordinates -->
+      <g class="t-ms t-mut" text-anchor="middle"><text x="216" y="30">5,226,998</text><text x="376" y="30">5,227,002</text><text x="536" y="30">5,227,006</text></g>
+      <g stroke="var(--fg-muted)"><line x1="216" y1="36" x2="216" y2="44"/><line x1="256" y1="38" x2="256" y2="44"/><line x1="296" y1="38" x2="296" y2="44"/><line x1="336" y1="38" x2="336" y2="44"/><line x1="376" y1="36" x2="376" y2="44"/><line x1="416" y1="38" x2="416" y2="44"/><line x1="456" y1="38" x2="456" y2="44"/><line x1="496" y1="38" x2="496" y2="44"/><line x1="536" y1="36" x2="536" y2="44"/></g>
+      <!-- strands -->
+      <text x="16" y="70" class="t-b">+ strand (GRCh38)</text><text x="16" y="84" class="t-sm">read 5′ → 3′, left to right</text>
+      <rect x="196" y="54" width="360" height="28" rx="6" fill="var(--bg-sunk)" stroke="var(--border-strong)"/>
+      <text x="184" y="73" text-anchor="end" class="t-sm">5′</text><text x="566" y="73" class="t-sm">3′</text>
+      <text x="16" y="122" class="t-b">− strand</text><text x="16" y="136" class="t-sm"><tspan class="t-it">HBB</tspan> is read right to left</text>
+      <rect x="196" y="106" width="360" height="28" rx="6" fill="var(--bg-sunk)" stroke="var(--border-strong)"/>
+      <text x="184" y="125" text-anchor="end" class="t-sm">3′</text><text x="566" y="125" class="t-sm">5′</text>
+      <rect x="358" y="50" width="36" height="88" rx="6" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <g class="t-mono" text-anchor="middle">
+        <text x="216" y="73" class="base-C">C</text><text x="256" y="73" class="base-T">T</text><text x="296" y="73" class="base-C">C</text><text x="336" y="73" class="base-C">C</text><text x="376" y="73" class="base-T">T</text><text x="416" y="73" class="base-C">C</text><text x="456" y="73" class="base-A">A</text><text x="496" y="73" class="base-G">G</text><text x="536" y="73" class="base-G">G</text>
+        <text x="216" y="125" class="base-G">G</text><text x="256" y="125" class="base-A">A</text><text x="296" y="125" class="base-G">G</text><text x="336" y="125" class="base-G">G</text><text x="376" y="125" class="base-A">A</text><text x="416" y="125" class="base-G">G</text><text x="456" y="125" class="base-T">T</text><text x="496" y="125" class="base-C">C</text><text x="536" y="125" class="base-C">C</text>
+      </g>
+      <!-- c. numbering -->
+      <g class="t-ms t-mut" text-anchor="middle"><text x="216" y="156">c.24</text><text x="256" y="156">c.23</text><text x="296" y="156">c.22</text><text x="336" y="156">c.21</text><text x="376" y="156" class="t-acc">c.20</text><text x="416" y="156">c.19</text><text x="456" y="156">c.18</text><text x="496" y="156">c.17</text><text x="536" y="156">c.16</text></g>
+      <!-- codon brackets -->
+      <g fill="none" stroke="var(--fg-muted)" stroke-width="1.3"><path d="M200,166 V172 H312 V166"/><path d="M320,166 V172 H432 V166"/><path d="M440,166 V172 H552 V166"/></g>
+      <g class="t-sm" text-anchor="middle"><text x="256" y="190">codon 8: GAG</text><text x="376" y="190">codon 7: GAG</text><text x="496" y="190">codon 6: CCT</text></g>
+      <g class="t" text-anchor="middle"><text x="256" y="206">Glu</text><text x="376" y="206">Glu</text><text x="496" y="206">Pro</text></g>
+      <line x1="552" y1="228" x2="202" y2="228" stroke="var(--fg-muted)" stroke-width="3" marker-end="url(#nm-arr)"/>
+      <text x="376" y="250" text-anchor="middle" class="t-sm">direction of <tspan class="t-it">HBB</tspan>: coding positions c.1 → c.444 increase from right to left</text>
+      <!-- right panel -->
+      <rect x="588" y="46" width="196" height="200" rx="8" fill="var(--bg-alt)" stroke="var(--border)"/>
+      <text x="600" y="68" class="t-b">The sickle cell change</text>
+      <text x="600" y="92" class="t-sm">+ strand, chr11:5,227,002</text><text x="600" y="108" class="t-mono">T → A</text>
+      <text x="600" y="132" class="t-sm">coding strand of <tspan class="t-it">HBB</tspan></text><text x="600" y="148" class="t-mono">c.20A&gt;T</text>
+      <text x="600" y="172" class="t-sm">codon 7</text><text x="600" y="188" class="t-mono">GAG → GTG</text>
+      <text x="600" y="212" class="t-sm">amino acid 7</text><text x="600" y="228" class="t-mono">Glu → Val</text>
+    </svg>
+    <svg class="nm-narrow" viewBox="0 0 360 386" role="img" aria-labelledby="nmn-t nmn-d">
+      <title id="nmn-t">Why the sickle cell variant is T&gt;A on the genome but c.20A&gt;T in the gene (compact drawing)</title>
+      <desc id="nmn-d">Positions 5,226,998 to 5,227,006 of chromosome 11 (GRCh38). The + strand reads C T C C T C A G G; the − strand reads G A G G A G T C C. HBB is read from right to left on the − strand, so coding positions c.24 to c.16 run from left to right in the drawing: codon 8 GAG (Glu), codon 7 GAG (Glu), codon 6 CCT (Pro). The sickle change at 5,227,002 is T to A on the + strand, c.20A&gt;T in HBB, codon 7 GAG to GTG, amino acid 7 Glu to Val.</desc>
+      <defs><marker id="nmn-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="3.5" markerHeight="3.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--fg-muted)"/></marker></defs>
+      <text x="12" y="14" class="t-sm">+ strand (GRCh38), read 5′ → 3′, left to right</text>
+      <g class="t-ms t-mut" text-anchor="middle"><text x="36" y="32">5,226,998</text><text x="180" y="32">5,227,002</text><text x="324" y="32">5,227,006</text></g>
+      <g stroke="var(--fg-muted)"><line x1="36" y1="36" x2="36" y2="44"/><line x1="72" y1="38" x2="72" y2="44"/><line x1="108" y1="38" x2="108" y2="44"/><line x1="144" y1="38" x2="144" y2="44"/><line x1="180" y1="36" x2="180" y2="44"/><line x1="216" y1="38" x2="216" y2="44"/><line x1="252" y1="38" x2="252" y2="44"/><line x1="288" y1="38" x2="288" y2="44"/><line x1="324" y1="36" x2="324" y2="44"/></g>
+      <rect x="16" y="46" width="328" height="28" rx="6" fill="var(--bg-sunk)" stroke="var(--border-strong)"/>
+      <text x="12" y="90" class="t-sm">− strand: <tspan class="t-it">HBB</tspan> is read right to left (its 5′ end is on the right)</text>
+      <rect x="16" y="98" width="328" height="28" rx="6" fill="var(--bg-sunk)" stroke="var(--border-strong)"/>
+      <g class="t-mono" text-anchor="middle"><text x="36" y="65" class="base-C">C</text><text x="72" y="65" class="base-T">T</text><text x="108" y="65" class="base-C">C</text><text x="144" y="65" class="base-C">C</text><text x="180" y="65" class="base-T">T</text><text x="216" y="65" class="base-C">C</text><text x="252" y="65" class="base-A">A</text><text x="288" y="65" class="base-G">G</text><text x="324" y="65" class="base-G">G</text><text x="36" y="117" class="base-G">G</text><text x="72" y="117" class="base-A">A</text><text x="108" y="117" class="base-G">G</text><text x="144" y="117" class="base-G">G</text><text x="180" y="117" class="base-A">A</text><text x="216" y="117" class="base-G">G</text><text x="252" y="117" class="base-T">T</text><text x="288" y="117" class="base-C">C</text><text x="324" y="117" class="base-C">C</text></g>
+      <rect x="164" y="44" width="32" height="32" rx="6" fill="none" stroke="var(--accent)" stroke-width="2"/><rect x="164" y="96" width="32" height="32" rx="6" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <g class="t-ms t-mut" text-anchor="middle"><text x="36" y="146">c.24</text><text x="72" y="146">c.23</text><text x="108" y="146">c.22</text><text x="144" y="146">c.21</text><text x="180" y="146" class="t-acc">c.20</text><text x="216" y="146">c.19</text><text x="252" y="146">c.18</text><text x="288" y="146">c.17</text><text x="324" y="146">c.16</text></g>
+      <g fill="none" stroke="var(--fg-muted)" stroke-width="1.3"><path d="M20,152 V158 H124 V152"/><path d="M128,152 V158 H232 V152"/><path d="M236,152 V158 H340 V152"/></g>
+      <g class="t-sm" text-anchor="middle"><text x="72" y="174">codon 8: GAG</text><text x="180" y="174">codon 7: GAG</text><text x="288" y="174">codon 6: CCT</text></g>
+      <g class="t" text-anchor="middle"><text x="72" y="191">Glu</text><text x="180" y="191">Glu</text><text x="288" y="191">Pro</text></g>
+      <line x1="340" y1="208" x2="22" y2="208" stroke="var(--fg-muted)" stroke-width="3" marker-end="url(#nmn-arr)"/>
+      <text x="180" y="226" text-anchor="middle" class="t-sm"><tspan class="t-it">HBB</tspan> coding positions increase from right to left</text>
+      <rect x="8" y="240" width="344" height="138" rx="8" fill="var(--bg-alt)" stroke="var(--border)"/>
+      <text x="20" y="262" class="t-b">The sickle cell change</text>
+      <text x="20" y="288" class="t-sm">+ strand, chr11:5,227,002</text><text x="340" y="288" text-anchor="end" class="t-mono">T → A</text>
+      <text x="20" y="312" class="t-sm">coding strand of <tspan class="t-it">HBB</tspan></text><text x="340" y="312" text-anchor="end" class="t-mono">c.20A&gt;T</text>
+      <text x="20" y="336" class="t-sm">codon 7</text><text x="340" y="336" text-anchor="end" class="t-mono">GAG → GTG</text>
+      <text x="20" y="360" class="t-sm">amino acid 7</text><text x="340" y="360" text-anchor="end" class="t-mono">Glu → Val</text>
+    </svg>
+  </div>
+  <figcaption><span class="fig-title">One change, two strands, three numbering systems.</span> Genome coordinates run along the + strand; <em>HBB</em> is encoded on the − strand, so its coding positions (c.) run the other way and its bases are the complements. The same base change is T&gt;A in a VCF but A&gt;T in the HGVS coding name. Note also that rs334 is an A/T SNP, so its alleles alone cannot reveal the strand (<a href="dna.html">page 2</a>).<span class="fig-credit">Drawn for this lecture from the GRCh38 sequence and the <em>HBB</em> transcript NM_000518.5 (Ensembl release 116)<sup><a href="#src-20">20</a></sup>.</span></figcaption>
+</figure>
+
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Names for the sickle cell variant</caption>
+  <thead><tr><th>Name</th><th>System</th><th>Changes with genome build?</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Name"><code>rs334</code> (allele A)</td><td data-label="System">dbSNP reference SNP ID</td><td data-label="Changes with genome build?">No</td></tr>
+    <tr><td data-label="Name"><code>chr11:5227002:T:A</code></td><td data-label="System">chromosome:position:REF:ALT on GRCh38, + strand</td><td data-label="Changes with genome build?">Yes (GRCh37: <code>chr11:5248232:T:A</code>)</td></tr>
+    <tr><td data-label="Name"><code>NC_000011.10:g.5227002T&gt;A</code></td><td data-label="System">HGVS genomic; the accession NC_000011.10 is chromosome 11 of GRCh38</td><td data-label="Changes with genome build?">Yes (GRCh37: <code>NC_000011.9:g.5248232T&gt;A</code>)</td></tr>
+    <tr><td data-label="Name"><code>NM_000518.5:c.20A&gt;T</code></td><td data-label="System">HGVS coding DNA: base 20 of the <em>HBB</em> coding sequence</td><td data-label="Changes with genome build?">No, but it depends on the transcript chosen</td></tr>
+    <tr><td data-label="Name"><code>NP_000509.1:p.Glu7Val</code></td><td data-label="System">HGVS protein: amino acid 7, counting the first methionine as 1</td><td data-label="Changes with genome build?">No</td></tr>
+    <tr><td data-label="Name">HbS, "β6 Glu→Val", "Glu6Val"</td><td data-label="System">legacy: numbers the mature β-globin chain, which has lost its first methionine</td><td data-label="Changes with genome build?">No</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Legacy numbers are common in papers and on slides, so it helps to know why they differ. HbS is "Glu6Val" because the mature protein lacks the initial methionine. The <em>MTHFR</em> variant "C677T" (Lecture 1, slide 74) is c.665C&gt;T, p.Ala222Val on the current transcript, and G&gt;A on the + strand because <em>MTHFR</em> lies on the − strand. <em>ALDH2</em>*2 is "Glu487Lys" in the mature enzyme but p.Glu504Lys in HGVS, and the <em>APOE</em> positions 112 and 158 become 130 and 176<sup><a href="#src-20">20</a></sup>. Protein changes are also written with one-letter amino acid codes: <em>PCSK9</em> R46L is p.Arg46Leu.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title" data-no-autolink><span class="badge">Lecture 1</span> Slides 67–68 and 74 · rsIDs, chr:pos:ref:alt, and "C677T"</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="assets/img/lecture1/slide-068.jpg" alt="Lecture 1, slide 68: SNP alleles written as C/T or G/A depending on strand; rs671 and chr12:111803962:G:A refer to the same variant"><figcaption>Lecture 1 · slide 68</figcaption></figure>
+    <div>
+      <p>In Lecture 1 (slide 68) you will see "rs671 and chr12:111803962:G:A refer to the same variant": an rsID and a GRCh38 chromosome:position:REF:ALT name, the record in this page's mental model. The same slide notes that a SNP "is sometimes written as 'a C/T SNP' … and sometimes written as 'a G/A SNP'": the same base pair read on its two strands (<a href="dna.html">page 2</a>).</p>
+      <p>Slide 74's "<em>MTHFR</em> C677T" is a legacy name; the slide's "nucleotide position 677 in the gene" corresponds to c.665 on the current transcript, and the amino acid change (alanine 222 to valine) is the same.</p>
+    </div>
+  </div>
+</aside>
+
+<!-- ===================================================== 7. CONSEQUENCES -->
+<h2 id="consequences" data-toc="What variants do">What variants do <span class="tag core">Core</span></h2>
+<p>A variant's possible effect depends on where it falls relative to genes. Annotation tools such as Ensembl's Variant Effect Predictor (<dfn>VEP</dfn>) assign each variant a consequence for each transcript it overlaps, using standard terms such as <code>missense_variant</code><sup><a href="#src-20">20</a></sup>. Most variants have no detectable effect on any trait, and whether a particular one matters has to be shown with data.</p>
+
+<figure class="fig">
+  <div class="fig-body">
+    <svg class="minw" viewBox="0 0 800 448" role="img" aria-labelledby="cq-t cq-d">
+      <title id="cq-t">Where a variant can fall relative to a gene, and how many such sites one genome carries</title>
+      <desc id="cq-d">Panel A: a gene with an upstream enhancer, a promoter, three exons with 5′ and 3′ untranslated regions, and two introns, between stretches of intergenic DNA. Pins mark consequence classes: regulatory (enhancer, promoter), intergenic, 5′ UTR, coding, splice site, intronic, 3′ UTR. Coding changes include synonymous, missense, nonsense, frameshift, start-lost and in-frame indels. Coding exons make up about 1.1 to 1.2% of the genome. Panel B: variant sites per typical genome on a log scale: intronic 1.7 to 2.1 million, enhancer 288 to 354 thousand, promoter 82 to 102 thousand, UTR 30 to 37 thousand, synonymous 11 to 14 thousand, missense 10 to 12 thousand, protein-truncating 149 to 182.</desc>
+      <defs>
+        <marker id="cq-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--fg)"/></marker>
+      </defs>
+      <text x="16" y="18" class="t-b">A · where a variant can fall</text>
+      <!-- backbone -->
+      <line x1="16" y1="150" x2="148" y2="150" stroke="var(--border-strong)" stroke-width="2"/>
+      <line x1="650" y1="150" x2="784" y2="150" stroke="var(--border-strong)" stroke-width="2"/>
+      <rect x="44" y="143" width="40" height="14" rx="3" fill="var(--q1)"/>
+      <rect x="118" y="144" width="30" height="12" rx="2" fill="var(--q1)" fill-opacity="0.55" stroke="var(--q1)"/>
+      <path d="M148,143 V126 H166" fill="none" stroke="var(--fg)" stroke-width="1.6" marker-end="url(#cq-arr)"/>
+      <rect x="148" y="143" width="24" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/>
+      <rect x="172" y="137" width="54" height="26" rx="2" fill="var(--fg-muted)"/>
+      <line x1="226" y1="150" x2="380" y2="150" stroke="var(--fg-muted)" stroke-width="2"/>
+      <path d="M268,146 l5,4 l-5,4 M308,146 l5,4 l-5,4 M348,146 l5,4 l-5,4 M486,146 l5,4 l-5,4 M526,146 l5,4 l-5,4" fill="none" stroke="var(--fg-muted)" stroke-width="1.3"/>
+      <rect x="380" y="137" width="60" height="26" rx="2" fill="var(--fg-muted)"/>
+      <line x1="440" y1="150" x2="560" y2="150" stroke="var(--fg-muted)" stroke-width="2"/>
+      <rect x="560" y="137" width="46" height="26" rx="2" fill="var(--fg-muted)"/>
+      <rect x="606" y="143" width="44" height="14" fill="var(--bg-sunk)" stroke="var(--fg-muted)"/>
+      <g class="t-xs" text-anchor="middle"><text x="64" y="176">enhancer</text><text x="133" y="176">promoter</text><text x="199" y="180">exon 1</text><text x="303" y="172">intron 1</text><text x="410" y="180">exon 2</text><text x="500" y="172">intron 2</text><text x="583" y="180">exon 3</text></g>
+      <!-- pins: high labels at y≈44/56, low labels at y≈92 -->
+      <g stroke-width="1.5">
+        <line x1="64" y1="141" x2="64" y2="64" stroke="var(--q1)"/><circle cx="64" cy="64" r="6" fill="var(--q1)"/>
+        <line x1="104" y1="148" x2="104" y2="104" stroke="var(--fg-faint)"/><circle cx="104" cy="104" r="6" fill="var(--fg-faint)"/>
+        <line x1="133" y1="142" x2="133" y2="64" stroke="var(--q1)"/><circle cx="133" cy="64" r="6" fill="var(--q1)"/>
+        <line x1="160" y1="141" x2="160" y2="104" stroke="var(--q6)"/><circle cx="160" cy="104" r="6" fill="var(--q6)"/>
+        <line x1="199" y1="135" x2="199" y2="64" stroke="var(--q4)"/><circle cx="199" cy="64" r="6" fill="var(--q4)"/>
+        <line x1="228" y1="148" x2="228" y2="104" stroke="var(--q2)"/><circle cx="228" cy="104" r="6" fill="var(--q2)"/>
+        <line x1="520" y1="148" x2="520" y2="64" stroke="var(--q5)"/><circle cx="520" cy="64" r="6" fill="var(--q5)"/>
+        <line x1="628" y1="141" x2="628" y2="64" stroke="var(--q6)"/><circle cx="628" cy="64" r="6" fill="var(--q6)"/>
+        <line x1="720" y1="148" x2="720" y2="104" stroke="var(--fg-faint)"/><circle cx="720" cy="104" r="6" fill="var(--fg-faint)"/>
+      </g>
+      <g class="t-sm" text-anchor="middle">
+        <text x="64" y="40">regulatory</text><text x="64" y="54">(enhancer)</text>
+        <text x="104" y="92">intergenic</text>
+        <text x="138" y="40">regulatory</text><text x="138" y="54">(promoter)</text>
+        <text x="160" y="92">5′ UTR</text>
+        <text x="203" y="54">coding</text>
+        <text x="240" y="92">splice site</text>
+        <text x="520" y="54">intronic</text>
+        <text x="628" y="54">3′ UTR</text>
+        <text x="720" y="92">intergenic</text>
+      </g>
+      <!-- coding classes box -->
+      <line x1="205" y1="64" x2="300" y2="64" stroke="var(--q4)" stroke-width="1.3" stroke-dasharray="3 2"/>
+      <rect x="300" y="32" width="180" height="74" rx="7" fill="var(--pitfall-soft)" stroke="var(--q4)"/>
+      <text x="312" y="50" class="t-b">coding changes</text>
+      <text x="312" y="67" class="t-sm">synonymous · missense</text>
+      <text x="312" y="82" class="t-sm">nonsense · frameshift</text>
+      <text x="312" y="97" class="t-sm">start-lost · in-frame indel</text>
+      <text x="400" y="204" text-anchor="middle" class="t-sm">protein-coding sequence ≈ 1.1–1.2% of the genome; everything else is non-coding</text>
+      <!-- panel B -->
+      <text x="16" y="240" class="t-b">B · variant sites in one typical genome, by annotation (1000 Genomes)</text>
+      <g stroke="var(--border)"><line x1="300" y1="252" x2="300" y2="420"/><line x1="385" y1="252" x2="385" y2="420"/><line x1="470" y1="252" x2="470" y2="420"/><line x1="555" y1="252" x2="555" y2="420"/><line x1="640" y1="252" x2="640" y2="420"/><line x1="725" y1="252" x2="725" y2="420"/></g>
+      <line x1="300" y1="420" x2="725" y2="420" stroke="var(--fg-muted)"/>
+      <g class="t-xs" text-anchor="middle"><text x="300" y="434">100</text><text x="385" y="434">1,000</text><text x="470" y="434">10,000</text><text x="555" y="434">100,000</text><text x="640" y="434">1 million</text><text x="725" y="434">10 million</text></g>
+      <g class="t"><text x="16" y="268">intronic</text><text x="16" y="292">enhancer</text><text x="16" y="316">promoter</text><text x="16" y="340">UTR (5′ and 3′)</text><text x="16" y="364">synonymous</text><text x="16" y="388">missense</text><text x="16" y="412">protein-truncating</text></g>
+      <g class="t-sm" text-anchor="end"><text x="288" y="268">1.7–2.1 million</text><text x="288" y="292">288,000–354,000</text><text x="288" y="316">82,000–102,000</text><text x="288" y="340">30,000–37,000</text><text x="288" y="364">11,000–14,000</text><text x="288" y="388">10,000–12,000</text><text x="288" y="412">149–182</text></g>
+      <rect x="300" y="257" width="359" height="14" rx="2" fill="var(--q5)"/>
+      <rect x="300" y="281" width="294" height="14" rx="2" fill="var(--q1)"/>
+      <rect x="300" y="305" width="247" height="14" rx="2" fill="var(--q1)" fill-opacity="0.6"/>
+      <rect x="300" y="329" width="211" height="14" rx="2" fill="var(--q6)"/>
+      <rect x="300" y="353" width="174" height="14" rx="2" fill="var(--q4)" fill-opacity="0.55"/>
+      <rect x="300" y="377" width="171" height="14" rx="2" fill="var(--q4)"/>
+      <rect x="300" y="401" width="15" height="14" rx="2" fill="var(--q4)"/>
+      <g stroke="var(--fg)" stroke-width="2">
+        <line x1="659" y1="264" x2="666" y2="264"/><line x1="594" y1="288" x2="602" y2="288"/><line x1="547" y1="312" x2="556" y2="312"/><line x1="511" y1="336" x2="519" y2="336"/><line x1="474" y1="360" x2="482" y2="360"/><line x1="471" y1="384" x2="477" y2="384"/><line x1="315" y1="408" x2="322" y2="408"/>
+      </g>
+    </svg>
+  </div>
+  <figcaption><span class="fig-title">Most variants are non-coding.</span> Panel A shows where a variant can fall relative to a gene; colors mark the consequence classes. Panel B counts, for one typical genome, the variant sites in each class (median per person; bars end at the lowest and black marks at the highest of the five 1000 Genomes super-populations). Categories overlap: an intronic site can also be in an enhancer. Protein-truncating = stop-gained, frameshift or essential splice-site variants that passed filters.<span class="fig-credit">Drawn for this lecture. Counts: 1000 Genomes Project Consortium 2015, Table 1<sup><a href="#src-4">4</a></sup>; coding fraction from GENCODE release 50<sup><a href="#src-35">35</a></sup>.</span></figcaption>
+</figure>
+
+<h3 id="coding">Changes in coding sequence</h3>
+<p>Inside the coding sequence, the genetic code (<a href="genes-expression.html">page 3</a>) decides the effect of a change.</p>
+<ul>
+  <li><dfn>Synonymous</dfn>: the codon changes but still encodes the same amino acid (CAT and CAC both encode histidine). The protein is unchanged, although a few synonymous variants alter splicing.</li>
+  <li><dfn>Missense</dfn> (non-synonymous): one amino acid is replaced by another (GAG to GTG turns glutamic acid into valine in sickle cell disease). The effect ranges from none to severe, depending on the amino acid and its place in the protein.</li>
+  <li><dfn>Nonsense</dfn> (stop-gained): a codon becomes a stop codon (GAG to TAG), so the protein is cut short.</li>
+  <li><dfn>Frameshift</dfn>: an insertion or deletion whose length is not a multiple of 3 shifts the reading frame, so every codon after it is read differently until a new stop codon appears by chance.</li>
+  <li><dfn>Start-lost</dfn>: the ATG start codon is changed, so translation cannot begin there.</li>
+  <li><dfn>In-frame insertion or deletion</dfn>: a multiple of 3 bases added or removed, which adds or removes amino acids but keeps the rest of the protein.</li>
+  <li><dfn>Splice-site</dfn>: a change in the short sequences at exon–intron boundaries (usually GT at the start of an intron and AG at its end) that mark where introns are cut out. It can make the cell skip an exon or keep an intron.</li>
+</ul>
+<p>A typical genome carries 10,000–12,000 sites with amino-acid-changing variants and 149–182 with protein-truncating variants<sup><a href="#src-4">4</a></sup>. The example below follows one missense change from DNA to disease.</p>
+
+<figure class="fig">
+  <div class="fig-body">
+    <svg class="minw-s sc-wide" viewBox="0 0 760 366" role="img" aria-labelledby="sc-t sc-d">
+      <title id="sc-t">The sickle cell variant from DNA to red blood cell</title>
+      <desc id="sc-d">Two columns compare the usual HBB allele and the sickle allele (rs334). DNA coding strand, codons 6 to 8: CCT GAG GAG versus CCT GTG GAG; the change is c.20A&gt;T. mRNA: CCU GAG GAG versus CCU GUG GAG. Protein (beta-globin) residues 6 to 8: Pro Glu Glu versus Pro Val Glu. When oxygen is low, usual hemoglobin molecules stay separate, while sickle hemoglobin molecules stick together into long fibers. Red blood cells stay disc-shaped with usual hemoglobin and deform into a sickle shape with sickle hemoglobin.</desc>
+      <defs>
+        <marker id="sc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--fg-muted)"/></marker>
+      </defs>
+      <text x="330" y="24" text-anchor="middle" class="t-b">usual allele</text>
+      <text x="600" y="24" text-anchor="middle" class="t-b">sickle allele (rs334)</text>
+      <g stroke="var(--border)"><line x1="16" y1="38" x2="744" y2="38"/><line x1="16" y1="88" x2="744" y2="88"/><line x1="16" y1="130" x2="744" y2="130"/><line x1="16" y1="176" x2="744" y2="176"/><line x1="16" y1="268" x2="744" y2="268"/></g>
+      <!-- DNA -->
+      <text x="16" y="60" class="t">DNA, coding strand</text><text x="16" y="76" class="t-sm">codons 6–8 of <tspan class="t-it">HBB</tspan></text>
+      <text x="330" y="69" text-anchor="middle" class="t-mono">CCT GAG GAG</text>
+      <text x="600" y="69" text-anchor="middle" class="t-mono">CCT G<tspan class="t-red" font-weight="700">T</tspan>G GAG</text>
+      <line x1="410" y1="64" x2="512" y2="64" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#sc-arr)"/>
+      <text x="461" y="56" text-anchor="middle" class="t-ms">c.20A&gt;T</text>
+      <!-- mRNA -->
+      <text x="16" y="114" class="t">mRNA</text>
+      <text x="330" y="114" text-anchor="middle" class="t-mono">CCU GAG GAG</text>
+      <text x="600" y="114" text-anchor="middle" class="t-mono">CCU G<tspan class="t-red" font-weight="700">U</tspan>G GAG</text>
+      <!-- protein -->
+      <text x="16" y="152" class="t">protein (β-globin)</text><text x="16" y="168" class="t-sm">amino acids 6–8</text>
+      <text x="330" y="158" text-anchor="middle" class="t">Pro6 – Glu7 – Glu8</text>
+      <text x="600" y="158" text-anchor="middle" class="t">Pro6 – <tspan class="t-red" font-weight="700">Val7</tspan> – Glu8</text>
+      <!-- hemoglobin -->
+      <text x="16" y="216" class="t">hemoglobin,</text><text x="16" y="232" class="t">low oxygen</text>
+      <g fill="var(--q4)" fill-opacity="0.25" stroke="var(--q4)" stroke-width="1.3">
+        <circle cx="272" cy="202" r="10"/><circle cx="305" cy="229" r="10"/><circle cx="338" cy="199" r="10"/><circle cx="370" cy="227" r="10"/><circle cx="400" cy="205" r="10"/>
+        <circle cx="530" cy="212" r="9"/><circle cx="548" cy="212" r="9"/><circle cx="566" cy="212" r="9"/><circle cx="584" cy="212" r="9"/><circle cx="602" cy="212" r="9"/><circle cx="620" cy="212" r="9"/><circle cx="638" cy="212" r="9"/><circle cx="656" cy="212" r="9"/>
+        <circle cx="539" cy="229" r="9"/><circle cx="557" cy="229" r="9"/><circle cx="575" cy="229" r="9"/><circle cx="593" cy="229" r="9"/><circle cx="611" cy="229" r="9"/><circle cx="629" cy="229" r="9"/><circle cx="647" cy="229" r="9"/><circle cx="665" cy="229" r="9"/>
+      </g>
+      <text x="336" y="258" text-anchor="middle" class="t-sm">molecules stay separate</text>
+      <text x="600" y="256" text-anchor="middle" class="t-sm">molecules stick together into fibers</text>
+      <!-- red cell -->
+      <text x="16" y="314" class="t">red blood cell</text>
+      <ellipse cx="330" cy="312" rx="48" ry="26" fill="var(--q4)" fill-opacity="0.22" stroke="var(--q4)" stroke-width="1.5"/>
+      <ellipse cx="330" cy="312" rx="22" ry="10" fill="none" stroke="var(--q4)" stroke-opacity="0.55" stroke-width="1.3"/>
+      <path d="M548,330 C566,280 636,276 660,322 C630,300 584,302 548,330 Z" fill="var(--q4)" fill-opacity="0.22" stroke="var(--q4)" stroke-width="1.5"/>
+      <text x="330" y="356" text-anchor="middle" class="t-sm">flexible disc</text>
+      <text x="600" y="356" text-anchor="middle" class="t-sm">rigid sickle shape; breaks down early</text>
+    </svg>
+    <svg class="sc-narrow" viewBox="0 0 360 386" role="img" aria-labelledby="scn-t scn-d">
+      <title id="scn-t">The sickle cell variant from DNA to red blood cell (compact drawing)</title>
+      <desc id="scn-d">Usual HBB allele versus sickle allele (rs334). DNA coding strand, codons 6 to 8: CCT GAG GAG versus CCT GTG GAG (c.20A&gt;T). mRNA: CCU GAG GAG versus CCU GUG GAG. Protein residues 6 to 8: Pro Glu Glu versus Pro Val Glu. When oxygen is low, usual hemoglobin molecules stay separate while sickle hemoglobin molecules form fibers. Red blood cells stay disc-shaped with usual hemoglobin and become rigid sickle shapes with sickle hemoglobin.</desc>
+      <defs><marker id="scn-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--fg-muted)"/></marker></defs>
+      <text x="100" y="18" text-anchor="middle" class="t-b">usual allele</text><text x="268" y="18" text-anchor="middle" class="t-b">sickle allele (rs334)</text>
+      <g stroke="var(--border)"><line x1="8" y1="28" x2="352" y2="28"/><line x1="8" y1="80" x2="352" y2="80"/><line x1="8" y1="130" x2="352" y2="130"/><line x1="8" y1="182" x2="352" y2="182"/><line x1="8" y1="282" x2="352" y2="282"/></g>
+      <text x="12" y="44" class="t-sm">DNA, coding strand (codons 6–8 of <tspan class="t-it">HBB</tspan>)</text>
+      <text x="100" y="70" text-anchor="middle" class="t-mono">CCT GAG GAG</text><text x="268" y="70" text-anchor="middle" class="t-mono">CCT G<tspan class="t-red" font-weight="700">T</tspan>G GAG</text>
+      <text x="184" y="58" text-anchor="middle" class="t-ms">c.20A&gt;T</text><line x1="160" y1="66" x2="210" y2="66" stroke="var(--fg-muted)" stroke-width="1.5" marker-end="url(#scn-arr)"/>
+      <text x="12" y="96" class="t-sm">mRNA</text>
+      <text x="100" y="120" text-anchor="middle" class="t-mono">CCU GAG GAG</text><text x="268" y="120" text-anchor="middle" class="t-mono">CCU G<tspan class="t-red" font-weight="700">U</tspan>G GAG</text>
+      <text x="12" y="148" class="t-sm">protein (β-globin), amino acids 6–8</text>
+      <text x="100" y="170" text-anchor="middle" class="t">Pro6 – Glu7 – Glu8</text><text x="268" y="170" text-anchor="middle" class="t">Pro6 – <tspan class="t-red" font-weight="700">Val7</tspan> – Glu8</text>
+      <text x="12" y="200" class="t-sm">hemoglobin when oxygen is low</text>
+      <g fill="var(--q4)" fill-opacity="0.25" stroke="var(--q4)" stroke-width="1.3"><circle cx="56" cy="222" r="9"/><circle cx="80" cy="246" r="9"/><circle cx="104" cy="220" r="9"/><circle cx="128" cy="244" r="9"/><circle cx="152" cy="222" r="9"/><circle cx="220" cy="226" r="8"/><circle cx="236" cy="226" r="8"/><circle cx="252" cy="226" r="8"/><circle cx="268" cy="226" r="8"/><circle cx="284" cy="226" r="8"/><circle cx="300" cy="226" r="8"/><circle cx="316" cy="226" r="8"/><circle cx="228" cy="241" r="8"/><circle cx="244" cy="241" r="8"/><circle cx="260" cy="241" r="8"/><circle cx="276" cy="241" r="8"/><circle cx="292" cy="241" r="8"/><circle cx="308" cy="241" r="8"/><circle cx="324" cy="241" r="8"/></g>
+      <text x="100" y="272" text-anchor="middle" class="t-sm">molecules stay separate</text><text x="268" y="272" text-anchor="middle" class="t-sm">molecules form fibers</text>
+      <text x="12" y="300" class="t-sm">red blood cell</text>
+      <ellipse cx="100" cy="334" rx="44" ry="22" fill="var(--q4)" fill-opacity="0.22" stroke="var(--q4)" stroke-width="1.5"/><ellipse cx="100" cy="334" rx="20" ry="9" fill="none" stroke="var(--q4)" stroke-opacity="0.55" stroke-width="1.3"/>
+      <path d="M212,354 C230,304 300,300 324,346 C294,324 248,326 212,354 Z" fill="var(--q4)" fill-opacity="0.22" stroke="var(--q4)" stroke-width="1.5"/>
+      <text x="100" y="376" text-anchor="middle" class="t-sm">flexible disc</text><text x="268" y="376" text-anchor="middle" class="t-sm">rigid sickle shape</text>
+    </svg>
+  </div>
+  <figcaption><span class="fig-title">One base, one amino acid, one disease.</span> The sickle variant changes codon 7 of <em>HBB</em> from GAG to GTG, so β-globin carries valine instead of glutamic acid. Hemoglobin containing this chain (HbS) can polymerize when oxygen is low; red cells then sickle and break down. Two copies cause sickle cell disease; one copy (sickle cell trait) does not.<span class="fig-credit">Drawn for this lecture. Mechanism: Kato et al. 2018<sup><a href="#src-22">22</a></sup>; sequence: NM_000518.5<sup><a href="#src-20">20</a></sup>.</span></figcaption>
+</figure>
+
+<p><dfn>Sickle cell disease</dfn> is the classic example of a single missense change with a large effect. People with two copies of the sickle allele have the disease: their sickle-shaped red cells block small blood vessels and are destroyed early<sup><a href="#src-22">22</a></sup>. People with one copy (sickle cell trait) are almost 90% protected against severe malaria<sup><a href="#src-23">23</a></sup>, which is why the allele is common where malaria has been common (frequency 0.10 in the 1000 Genomes African group, and absent from its European and East Asian groups<sup><a href="#src-20">20</a></sup>; see <a href="allele-frequencies.html">page 6</a>).</p>
+
+<div class="widget" id="w-codon">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Mutate a codon: the first 12 codons of <em>HBB</em></span></div>
+  <div class="widget-body"><p class="note">Loading the interactive codon editor…</p></div>
+  <noscript><div class="widget-noscript">This interactive figure needs JavaScript. Without it: the first 12 codons of <em>HBB</em> are ATG GTG CAT CTG ACT CCT GAG GAG AAG TCT GCC GTT (Met Val His Leu Thr Pro Glu Glu Lys Ser Ala Val).</div></noscript>
+</div>
+<p class="what-to-notice"><strong>What to notice.</strong> The editor holds the first 36 bases of the real <em>HBB</em> coding sequence. Changes at the third base of a codon are often synonymous (try the third base of codon 2: GTA, GTC, GTG and GTT all encode valine), while changes at the first two bases usually alter the amino acid. A one-base insertion or deletion shifts the reading frame, so every later codon is read differently until a stop codon appears. Delete three neighboring bases and the reading frame is kept: one amino acid is lost, and one more can change if the deletion spans two codons. Every preset is a real variant recorded in dbSNP or ClinVar. The HGVS names follow the 3′ rule: in a run of identical bases, a deletion is assigned to the last one.</p>
+
+<h3 id="noncoding">Changes outside coding sequence</h3>
+<p>Protein-coding sequence makes up only about 1.1–1.2% of the genome<sup><a href="#src-35">35</a></sup>, so most variants are non-coding. A <dfn>non-coding variant</dfn> can still matter if it changes a regulatory element: a promoter or enhancer that controls how much a gene is transcribed, an untranslated region (UTR) that affects the mRNA, or a splice signal. Several running examples work this way:</p>
+<ul>
+  <li><strong>rs4988235</strong> lies in an intron of <em>MCM6</em>, about 14 kb upstream of <em>LCT</em>, the lactase gene; its A allele marks lactase persistence, the ability of adults to keep digesting milk sugar<sup><a href="#src-26">26</a></sup>.</li>
+  <li><strong>rs1427407</strong> lies in an enhancer of <em>BCL11A</em> that is active in red blood cell precursors. Its T allele weakens a transcription-factor binding site, which lowers <em>BCL11A</em> expression and raises fetal hemoglobin<sup><a href="#src-27">27</a></sup> (<a href="genes-expression.html">page 3</a>).</li>
+  <li><strong>rs2814778</strong> changes a binding site for the transcription factor GATA1 in the <em>ACKR1</em> promoter, so red blood cells make no Duffy protein (the "Duffy-null" type). This protects against <i>Plasmodium vivax</i> malaria and lowers blood neutrophil counts<sup><a href="#src-28">28</a></sup>.</li>
+</ul>
+<p>An <dfn>intergenic</dfn> variant lies between genes. Most have no known function, but some sit in enhancers that act on genes far away.</p>
+<p>Most associations found by genome-wide association studies (GWAS, which test millions of variants one at a time for association with a trait; <a href="genotype-to-phenotype.html">page 9</a>) are non-coding. Of 465 trait-associated SNPs from GWAS published through 2008, 45% were intronic, 43% intergenic and only 9% changed an amino acid<sup><a href="#src-24">24</a></sup>. A later analysis put about 93% of trait-associated variants in non-coding DNA and found that most of them lie in, or are tightly correlated with variants in, regions of open chromatin (DNase I hypersensitive sites), where regulatory elements are usually found<sup><a href="#src-25">25</a></sup>. Keep one caution in mind: an associated SNP is often not itself the cause. It may only be correlated with a nearby causal variant through linkage disequilibrium (<a href="haplotypes-ld.html">page 7</a>).</p>
+
+<h3 id="lof">Loss of function and gain of function</h3>
+<p>A <dfn>loss-of-function</dfn> (LoF) variant reduces or abolishes the activity of a gene's product: nonsense, frameshift, start-lost and essential splice-site variants usually do, and some missense variants do too. A <dfn>gain-of-function</dfn> variant increases activity or gives the product a new property. <em>PCSK9</em> shows both directions in one gene. Missense variants that probably increase PCSK9 activity cause inherited high LDL cholesterol (the cholesterol carried by low-density lipoprotein particles, a cause of coronary artery disease)<sup><a href="#src-30">30</a></sup>. Two nonsense variants, Y142X and C679X, which together have a frequency of 2% in African Americans, lower LDL cholesterol by about 40%<sup><a href="#src-30">30</a></sup>. The running example R46L (rs11591147) is associated with 15% lower LDL cholesterol and 47% lower coronary heart disease risk<sup><a href="#src-31">31</a></sup>. These findings led to PCSK9-inhibiting drugs (<a href="genotype-to-phenotype.html">page 9</a>).</p>
+<p>Losing one of two working copies is often tolerated, because the other copy still makes the product; each of us carries, on one copy, some variants that would be lethal on both<sup><a href="#src-36">36</a></sup>. There are exceptions. ALDH2 is built from four copies of the same protein chain, and one copy of the rs671 A allele (<em>ALDH2</em>*2) is enough to cause the alcohol-flush reaction<sup><a href="#src-29">29</a></sup>. How many copies are needed to change a trait is the subject of dominance and recessiveness (<a href="inheritance.html">page 5</a>).</p>
+<p>A variant's effect can also depend on the environment. α1-Antitrypsin inhibits elastase, an enzyme that can damage the lining of the lungs; its Z variant (Glu342→Lys) predisposes people to emphysema and chronic obstructive pulmonary disease, and smoking makes the effect worse<sup><a href="#src-36">36</a></sup>. Some harmful variants stay common because they also bring an advantage: the sickle allele and the variants that cause glucose-6-phosphate dehydrogenase (G6PD) deficiency both give resistance to malaria<sup><a href="#src-36">36</a></sup> (see natural selection, <a href="allele-frequencies.html">page 6</a>).</p>
+
+<aside class="callout data">
+  <div class="callout-title" data-no-autolink><span class="badge">In the data</span> Consequence annotations choose variants for rare-variant tests</div>
+  <p>Rare variants are too rare to test one at a time, so gene-based "burden" tests (Session 7) add up the rare variants in each gene, usually only those annotated as loss-of-function or damaging missense. These annotations come from tools such as VEP and depend on the transcript used; the HGVS names on this page use each gene's MANE Select transcript: one representative transcript per gene, annotated identically by NCBI and Ensembl and intended as the standard for clinical reporting (for <em>HBB</em>, NM_000518.5)<sup><a href="#src-20">20</a>,<a href="#src-38">38</a></sup>. Population frequencies used to define "rare" often come from gnomAD, which itself includes 416,555 UK Biobank exomes<sup><a href="#src-7">7</a></sup>.</p>
+</aside>
+
+<aside class="callout bridge">
+  <div class="callout-title" data-no-autolink><span class="badge">Lecture 1</span> Slides 63 and 15–16 · Consequence types and "loss-of-function"</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="assets/img/lecture1/slide-063.jpg" alt="Lecture 1, slide 63: coding sequence changes (nonsense, missense, synonymous) and regulatory changes (promoter, enhancer, splice site, UTR, chromatin)"><figcaption>Lecture 1 · slide 63</figcaption></figure>
+    <div>
+      <p>In Lecture 1 (slide 63) you will see "Nonsense (STOP codon)", "Missense or non-synonymous (change amino acid)" and "Synonymous (no change in amino acid)", then regulatory changes in a "promoter, enhancer, splice site" or "5′ or 3′ UTR". The slide ends: "Evidence from animal studies suggests less than 50% of disease-causing loci are coding sequence changes!" This agrees with the human GWAS figures above.</p>
+      <p>On slides 15–16 you will hear "two copies of a rare loss-of-function variant" (<em>ANGPTL3</em>) and "homozygous for an extremely rare loss-of-function variant" (<em>PCSK9</em>): both copies carry a variant that abolishes the function of the gene product.</p>
+    </div>
+  </div>
+</aside>
+
+<!-- ===================================================== 8. RUNNING EXAMPLES -->
+<h2 id="running-examples" data-toc="The running examples">The running examples <span class="tag core">Core</span></h2>
+<p>These variants recur on later pages. Positions and alleles are on the + strand of GRCh38; consequences are the Ensembl VEP terms for each gene's main transcript; frequencies are for the ALT allele in three 1000 Genomes super-populations: AFR (African), EAS (East Asian) and EUR (European), labels as defined by the project (<a href="ancestry.html">page 8</a>).</p>
+<div class="table-wrap">
+<table class="compact rx stack">
+  <caption>Running-example variants</caption>
+  <thead>
+    <tr><th rowspan="2">Variant, gene and GRCh38 position<br><span class="mono">chr:pos:REF:ALT</span></th><th rowspan="2">Consequence</th><th rowspan="2">HGVS and other names</th><th rowspan="2">The ALT allele is associated with</th><th colspan="3" class="c">ALT frequency (1000 Genomes)</th></tr>
+    <tr><th class="num">AFR</th><th class="num">EAS</th><th class="num">EUR</th></tr>
+  </thead>
+  <tbody>
+    <tr><td data-label="Variant and gene"><strong>rs671</strong><br><em>ALDH2</em> <span class="role">enzyme that clears acetaldehyde</span><span class="pos">chr12:111803962:G:A</span></td><td data-label="Consequence">missense</td><td data-label="HGVS and other names">c.1510G&gt;A, p.Glu504Lys; <em>ALDH2</em>*2, "Glu487Lys"</td><td data-label="ALT allele associated with">inactive enzyme; alcohol-flush reaction<sup><a href="#src-29">29</a></sup></td><td class="num" data-label="ALT freq. AFR">0.002</td><td class="num" data-label="EAS">0.17</td><td class="num" data-label="EUR">0</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs334</strong><br><em>HBB</em> <span class="role">β-globin</span><span class="pos">chr11:5227002:T:A</span></td><td data-label="Consequence">missense</td><td data-label="HGVS and other names">c.20A&gt;T, p.Glu7Val; HbS, "Glu6Val"</td><td data-label="ALT allele associated with">sickle cell disease (two copies); protection from severe malaria (one copy)<sup><a href="#src-22">22</a>,<a href="#src-23">23</a></sup></td><td class="num" data-label="ALT freq. AFR">0.10</td><td class="num" data-label="EAS">0</td><td class="num" data-label="EUR">0</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs1801133</strong><br><em>MTHFR</em> <span class="role">folate-cycle enzyme</span><span class="pos">chr1:11796321:G:A</span></td><td data-label="Consequence">missense</td><td data-label="HGVS and other names">c.665C&gt;T, p.Ala222Val; "C677T"</td><td data-label="ALT allele associated with">enzyme with reduced activity that is unstable when heated; higher homocysteine with two copies<sup><a href="#src-32">32</a></sup></td><td class="num" data-label="ALT freq. AFR">0.09</td><td class="num" data-label="EAS">0.30</td><td class="num" data-label="EUR">0.36</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs4988235</strong><br><em>MCM6</em> intron <span class="role">enhancer of <em>LCT</em> (lactase)</span><span class="pos">chr2:135851076:G:A</span></td><td data-label="Consequence">intron (regulatory)</td><td data-label="HGVS and other names">c.1917+326C&gt;T in <em>MCM6</em>; "LCT −13910C&gt;T"</td><td data-label="ALT allele associated with">lactase persistence<sup><a href="#src-26">26</a></sup></td><td class="num" data-label="ALT freq. AFR">0.03</td><td class="num" data-label="EAS">0</td><td class="num" data-label="EUR">0.51</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs11591147</strong><br><em>PCSK9</em> <span class="role">controls LDL receptor numbers</span><span class="pos">chr1:55039974:G:T</span></td><td data-label="Consequence">missense</td><td data-label="HGVS and other names">c.137G&gt;T, p.Arg46Leu; R46L</td><td data-label="ALT allele associated with">lower LDL cholesterol and lower coronary heart disease risk<sup><a href="#src-31">31</a></sup></td><td class="num" data-label="ALT freq. AFR">0</td><td class="num" data-label="EAS">0</td><td class="num" data-label="EUR">0.02</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs429358</strong><br><em>APOE</em><span class="pos">chr19:44908684:T:C</span></td><td data-label="Consequence">missense</td><td data-label="HGVS and other names">c.388T&gt;C, p.Cys130Arg; "Cys112Arg"</td><td data-label="ALT allele associated with">with rs7412 defines ε2/ε3/ε4; C marks ε4, which raises Alzheimer's disease risk<sup><a href="#src-33">33</a></sup></td><td class="num" data-label="ALT freq. AFR">0.27</td><td class="num" data-label="EAS">0.09</td><td class="num" data-label="EUR">0.16</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs7412</strong><br><em>APOE</em><span class="pos">chr19:44908822:C:T</span></td><td data-label="Consequence">missense</td><td data-label="HGVS and other names">c.526C&gt;T, p.Arg176Cys; "Arg158Cys"</td><td data-label="ALT allele associated with">T marks ε2 (rs429358-T with rs7412-T)<sup><a href="#src-33">33</a></sup></td><td class="num" data-label="ALT freq. AFR">0.10</td><td class="num" data-label="EAS">0.10</td><td class="num" data-label="EUR">0.06</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs1427407</strong><br><em>BCL11A</em> intron <span class="role">red-cell enhancer</span><span class="pos">chr2:60490908:T:G</span></td><td data-label="Consequence">intron (regulatory)</td><td data-label="HGVS and other names">c.386-22075A&gt;C</td><td data-label="ALT allele associated with">ALT G is the common allele; REF T, the minor allele, raises fetal hemoglobin<sup><a href="#src-27">27</a></sup></td><td class="num" data-label="ALT freq. AFR">0.76</td><td class="num" data-label="EAS">0.74</td><td class="num" data-label="EUR">0.85</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs2814778</strong><br><em>ACKR1</em> <span class="role">Duffy blood group</span><span class="pos">chr1:159204893:T:C</span></td><td data-label="Consequence">5′ UTR (promoter)</td><td data-label="HGVS and other names">c.−67T&gt;C; "−46T&gt;C"</td><td data-label="ALT allele associated with">Duffy-null red cells: resistance to <i>P. vivax</i> malaria, lower neutrophil counts<sup><a href="#src-28">28</a></sup></td><td class="num" data-label="ALT freq. AFR">0.96</td><td class="num" data-label="EAS">0</td><td class="num" data-label="EUR">0.006</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs10455872</strong><br><em>LPA</em> <span class="role">lipoprotein(a)</span><span class="pos">chr6:160589086:A:G</span></td><td data-label="Consequence">intron</td><td data-label="HGVS and other names">c.3947+467T&gt;C</td><td data-label="ALT allele associated with">higher lipoprotein(a) and higher coronary disease risk<sup><a href="#src-34">34</a></sup></td><td class="num" data-label="ALT freq. AFR">0.002</td><td class="num" data-label="EAS">0.005</td><td class="num" data-label="EUR">0.07</td></tr>
+    <tr><td data-label="Variant and gene"><strong>rs8176719</strong><br><em>ABO</em> <span class="role">blood group enzyme</span><span class="pos">chr9:133257521:T:TC</span></td><td data-label="Consequence">frameshift (see note)</td><td data-label="HGVS and other names">O allele: c.261delG</td><td data-label="ALT allele associated with">REF (the deletion) is the O allele; ALT (the insertion) is carried by A and B alleles<sup><a href="#src-14">14</a></sup></td><td class="num" data-label="ALT freq. AFR">0.29</td><td class="num" data-label="EAS">0.38</td><td class="num" data-label="EUR">0.39</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="sm">Frequencies: 1000 Genomes phase 3 as served by Ensembl release 116; HGVS on each gene's MANE Select transcript (for <em>ABO</em>, the blood-group allele name on NM_020469.3)<sup><a href="#src-20">20</a></sup>. For rs1427407 the high-fetal-hemoglobin allele T has frequency 0.24 / 0.26 / 0.15. For rs8176719, GRCh38 carries the O allele's deletion, so VEP labels the A/B-allele insertion a frameshift relative to the reference transcript; biologically, it is the O deletion that shifts the reading frame<sup><a href="#src-14">14</a>,<a href="#src-20">20</a></sup>. Effects describe associations reported in the cited studies; most of these variants change risk or levels rather than determining a trait.</p>
+
+<!-- ===================================================== 9. LOOKUP -->
+<h2 id="lookup" data-toc="Where to look variants up">Where to look variants up <span class="tag optional">Optional</span></h2>
+<p>Five public resources answer most questions about a single variant. Each accepts an rsID or a chromosome position.</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Public variant resources</caption>
+  <thead><tr><th>Resource</th><th>Answers the question</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Resource"><a href="https://www.ncbi.nlm.nih.gov/snp/" target="_blank" rel="noopener">dbSNP</a> (NCBI)</td><td data-label="Answers the question">What is this rsID? Where is it on GRCh37 and GRCh38, and which alleles exist?</td><td data-label="Notes">Build 157 holds about 1.2 billion reference SNP records<sup><a href="#src-6">6</a></sup>.</td></tr>
+    <tr><td data-label="Resource"><a href="https://gnomad.broadinstitute.org/" target="_blank" rel="noopener">gnomAD</a></td><td data-label="Answers the question">How common is this allele, overall and in each genetic-ancestry group?</td><td data-label="Notes">v4: 807,162 people (exomes and genomes); also gene-level constraint, i.e. how well each gene tolerates loss-of-function variants<sup><a href="#src-7">7</a></sup>.</td></tr>
+    <tr><td data-label="Resource"><a href="https://www.ensembl.org/tools/vep" target="_blank" rel="noopener">Ensembl VEP</a></td><td data-label="Answers the question">What is its consequence on each transcript?</td><td data-label="Notes">Also reports 1000 Genomes frequencies and HGVS names.</td></tr>
+    <tr><td data-label="Resource"><a href="https://www.ncbi.nlm.nih.gov/clinvar/" target="_blank" rel="noopener">ClinVar</a></td><td data-label="Answers the question">Has a laboratory classified it as pathogenic or benign for a disease?</td><td data-label="Notes">Uses the five-tier variant classes (pathogenic … benign)<sup><a href="#src-12">12</a></sup>.</td></tr>
+    <tr><td data-label="Resource"><a href="https://www.ebi.ac.uk/gwas/" target="_blank" rel="noopener">GWAS Catalog</a></td><td data-label="Answers the question">Which published GWAS report this variant, for which traits?</td><td data-label="Notes">About 7,800 publications and 1.2 million top associations (October 2026)<sup><a href="#src-37">37</a></sup>.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Each resource answers a different question, so read across them. For rs334, for example, dbSNP lists its alleles and positions, gnomAD (v4.1 genomes) shows that the A allele has a frequency of about 4% in its African/African American group and below 1% in every other group, VEP calls it <code>missense_variant</code> (p.Glu7Val), and ClinVar holds clinical classifications for sickle cell disease<sup><a href="#src-20">20</a>,<a href="#src-21">21</a></sup>.</p>
+
+<!-- ===================================================== KEY POINTS -->
+<aside class="callout key">
+  <div class="callout-title" data-no-autolink><span class="badge">Key points</span></div>
+  <ul>
+    <li>Variants start as mutations. Each child has about 70 de novo mutations, mostly from the father, while a typical genome differs from the reference at 4–5 million inherited sites.</li>
+    <li>Variant types range from single bases (SNVs; SNPs when common) through indels, STRs, CNVs and other structural variants to whole-chromosome aneuploidy. SNVs are the most numerous and are what arrays and GWAS mostly test.</li>
+    <li>A variant is an address plus alleles. A person's genotype is the pair of alleles on their two copies (homozygous or heterozygous), coded 0/1/2 as copies of one chosen allele; this is the entry of the genotype matrix. Multiallelic loci such as ABO need more than one column.</li>
+    <li>REF/ALT, ancestral/derived, major/minor, effect/other and risk/protective are different questions about the same alleles. Always name the allele behind a frequency or an effect, and check strand and build.</li>
+    <li>The same variant has several names (rsID, chr:pos:REF:ALT, HGVS g./c./p., legacy names), and genes on the − strand give complementary alleles in c. notation.</li>
+    <li>Coding variants can be synonymous, missense, nonsense, frameshift or start-lost; most variants, and most GWAS signals, are non-coding and act, if at all, through gene regulation.</li>
+  </ul>
+</aside>
+
+<!-- ===================================================== QUIZ -->
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A VCF line reads <code>12 111803962 rs671 G A … GT 0/1</code>. What are this person's alleles, is the person homozygous or heterozygous, and what is the 0/1/2 value if you count ALT alleles?</summary><div class="a"><p>The alleles are G (REF, index 0) and A (ALT, index 1). The person is heterozygous, and the count of ALT alleles is 1.</p></div></details>
+  <details class="q"><summary>In gnomAD's non-Finnish European group, allele A of rs4988235 has frequency 0.64. Which allele is minor there? With default settings, which allele will PLINK 1.9 make A1, and how will an A/A person be coded if A1 is counted?</summary><div class="a"><p>G is the minor allele (frequency 0.36), so PLINK 1.9 makes G the A1 allele by default. An A/A person carries no copies of G and is coded 0, even though A is the ALT allele. Counting ALT instead would code the same person 2.</p></div></details>
+  <details class="q"><summary>One paper calls an <em>MTHFR</em> variant "C677T", a clinical report writes c.665C&gt;T, and a VCF shows chromosome 1, position 11,796,321, G&gt;A. Can these be the same variant?</summary><div class="a"><p>Yes. "677" comes from an older numbering of the <em>MTHFR</em> transcript; c.665 is the position in the current reference transcript. <em>MTHFR</em> lies on the − strand, so the coding-strand C&gt;T appears as G&gt;A on the + strand used in VCF files (GRCh38).</p></div></details>
+  <details class="q"><summary>Classify these <em>HBB</em> changes: (a) c.9T&gt;C, which turns CAT into CAC; (b) c.19G&gt;T, which turns GAG into TAG; (c) c.20del; (d) deleting c.22–c.24.</summary><div class="a"><p>(a) Synonymous: both codons encode histidine. (b) Nonsense: TAG is a stop codon, p.(Glu7Ter). (c) Frameshift: one base is lost, so every later codon changes, p.(Glu7GlyfsTer13). (d) In-frame deletion: three bases (one codon) are lost, p.(Glu8del). Try each in the widget.</p></div></details>
+  <details class="q"><summary>A child has about 70 de novo mutations but differs from the reference genome at about 4–5 million sites. What does that say about where most of a person's variants come from?</summary><div class="a"><p>More than 99.99% were inherited. They arose as mutations in ancestors, often many generations ago, and are shared with many other people. This is why variants have population frequencies and why nearby variants are correlated (linkage disequilibrium).</p></div></details>
+  <details class="q"><summary>Most GWAS signals are intronic or intergenic. Give two reasons why such a variant can still be associated with a trait.</summary><div class="a"><p>(1) It may change a regulatory element, such as an enhancer, promoter or splice signal, and so alter how much of a gene's product is made (examples: rs4988235, rs1427407, rs2814778). (2) It may have no effect itself but be correlated, through linkage disequilibrium, with a nearby causal variant.</p></div></details>
+</section>
+
+<!-- ===================================================== LEARN MORE -->
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://medlineplus.gov/genetics/understanding/mutationsanddisorders/possiblemutations/" target="_blank" rel="noopener">What kinds of gene variants are possible?</a> <span class="src no-autolink">· MedlinePlus Genetics (NIH)</span> <span class="level intro">intro</span> — short illustrated tour of substitution, insertion, deletion, duplication, frameshift and repeat expansion.</li>
+    <li><a href="https://www.genome.gov/genetics-glossary" target="_blank" rel="noopener">Talking Glossary of Genomic and Genetic Terms</a> <span class="src no-autolink">· NHGRI</span> <span class="level intro">intro</span> — plain definitions with diagrams for allele, genotype, SNP, CNV and more.</li>
+    <li><a href="https://hgvs-nomenclature.org/stable/" target="_blank" rel="noopener">HGVS Nomenclature</a> <span class="src no-autolink">· Human Genome Variation Society</span> <span class="level intermediate">intermediate</span> — the official rules for c., g. and p. names, with many examples.</li>
+    <li><a href="https://jun2026.archive.ensembl.org/info/genome/variation/prediction/predicted_data.html" target="_blank" rel="noopener">Calculated variant consequences</a> <span class="src no-autolink">· Ensembl</span> <span class="level intermediate">intermediate</span> — every VEP consequence term, shown on a gene diagram and ranked by severity.</li>
+    <li><a href="https://gnomad.broadinstitute.org/" target="_blank" rel="noopener">gnomAD browser</a> <span class="src no-autolink">· Broad Institute</span> <span class="level intermediate">intermediate</span> — look up any variant's frequency by genetic-ancestry group; try rs671 and rs4988235.</li>
+    <li><a href="https://doi.org/10.1038/nature15393" target="_blank" rel="noopener">A global reference for human genetic variation</a> <span class="src no-autolink">· 1000 Genomes Project Consortium, <em>Nature</em> 2015</span> <span class="level advanced">advanced</span> — the source of the per-genome variant counts on this page.</li>
+    <li><a href="https://doi.org/10.1038/gim.2015.30" target="_blank" rel="noopener">Standards and guidelines for the interpretation of sequence variants</a> <span class="src no-autolink">· Richards et al., <em>Genetics in Medicine</em> 2015</span> <span class="level advanced">advanced</span> — how clinical laboratories classify variants from pathogenic to benign.</li>
+  </ul>
+</section>
+
+<!-- ===================================================== SOURCES -->
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Lecture 1 slides: "Next Generation Statistical Methods for Genome-Wide Association Studies: Course Overview and Intro" (9 September 2026), slides 15–17, 58, 63, 66–79.</li>
+    <li id="src-2">NHGRI Talking Glossary of Genomic and Genetic Terms: <a href="https://www.genome.gov/genetics-glossary/Mutation" target="_blank" rel="noopener">Mutation</a>, <a href="https://www.genome.gov/genetics-glossary/Microsatellite" target="_blank" rel="noopener">Microsatellite</a>, <a href="https://www.genome.gov/genetics-glossary/Aneuploidy" target="_blank" rel="noopener">Aneuploidy</a> (accessed 21 October 2026).</li>
+    <li id="src-3">Jónsson H, et al. Parental influence on human germline de novo mutations in 1,548 trios from Iceland. <em>Nature</em> 2017;549:519–522. <a href="https://doi.org/10.1038/nature24018" target="_blank" rel="noopener">doi:10.1038/nature24018</a></li>
+    <li id="src-4">1000 Genomes Project Consortium (Auton A, et al.). A global reference for human genetic variation. <em>Nature</em> 2015;526:68–74 (text and Table 1). <a href="https://doi.org/10.1038/nature15393" target="_blank" rel="noopener">doi:10.1038/nature15393</a></li>
+    <li id="src-5">Sachidanandam R, et al. A map of human genome sequence variation containing 1.42 million single nucleotide polymorphisms. <em>Nature</em> 2001;409:928–933 (one SNP per 1,331 bp between two sequences). <a href="https://doi.org/10.1038/35057149" target="_blank" rel="noopener">doi:10.1038/35057149</a>; Venter JC, et al. The sequence of the human genome. <em>Science</em> 2001;291:1304–1351 (1 bp per 1,250). <a href="https://doi.org/10.1126/science.1058040" target="_blank" rel="noopener">doi:10.1126/science.1058040</a></li>
+    <li id="src-6">NCBI dbSNP build 157 release notes: total RefSNP records 1,206,053,617. <a href="https://ftp.ncbi.nih.gov/snp/latest_release/release_notes.txt" target="_blank" rel="noopener">ftp.ncbi.nih.gov/snp/latest_release/release_notes.txt</a></li>
+    <li id="src-7">gnomAD v4.0 release announcement (1 November 2023): 807,162 individuals, 730,947 exomes (including 416,555 from UK Biobank) and 76,215 genomes; gnomAD statistics page: 786,500,648 SNVs and 122,583,462 indels. <a href="https://gnomad.broadinstitute.org/news/2023-11-gnomad-v4-0/" target="_blank" rel="noopener">gnomad.broadinstitute.org</a></li>
+    <li id="src-8">Alkan C, Coe BP, Eichler EE. Genome structural variation discovery and genotyping. <em>Nat Rev Genet</em> 2011;12:363–376 (SVs "affect &gt;50 bp of sequence"). <a href="https://doi.org/10.1038/nrg2958" target="_blank" rel="noopener">doi:10.1038/nrg2958</a></li>
+    <li id="src-9">MedlinePlus Genetics. <a href="https://medlineplus.gov/genetics/gene/htt/" target="_blank" rel="noopener">HTT gene</a> (accessed 21 October 2026).</li>
+    <li id="src-10">Coassin S, Kronenberg F. Lipoprotein(a) beyond the kringle IV repeat polymorphism: the complexity of genetic variation in the LPA gene. <em>Atherosclerosis</em> 2022;349:17–35. <a href="https://doi.org/10.1016/j.atherosclerosis.2022.04.003" target="_blank" rel="noopener">doi:10.1016/j.atherosclerosis.2022.04.003</a></li>
+    <li id="src-11">MedlinePlus Genetics. <a href="https://medlineplus.gov/genetics/condition/down-syndrome/" target="_blank" rel="noopener">Down syndrome</a> (accessed 21 October 2026).</li>
+    <li id="src-12">Richards S, et al. Standards and guidelines for the interpretation of sequence variants (ACMG/AMP). <em>Genet Med</em> 2015;17:405–424. <a href="https://doi.org/10.1038/gim.2015.30" target="_blank" rel="noopener">doi:10.1038/gim.2015.30</a></li>
+    <li id="src-13">Karki R, Pandya D, Elston RC, Ferlini C. Defining "mutation" and "polymorphism" in the era of personal genomics. <em>BMC Med Genomics</em> 2015;8:37. <a href="https://doi.org/10.1186/s12920-015-0115-z" target="_blank" rel="noopener">doi:10.1186/s12920-015-0115-z</a></li>
+    <li id="src-14">Yamamoto F, et al. Molecular genetic basis of the histo-blood group ABO system. <em>Nature</em> 1990;345:229–233. <a href="https://doi.org/10.1038/345229a0" target="_blank" rel="noopener">doi:10.1038/345229a0</a>; ISBT Blood Group Allele Database, <a href="https://blooddatabase.isbtweb.org/allele/ABO*A1.02" target="_blank" rel="noopener">ABO*A1.02</a> ("The hg38 reference genome is group O"). Genotype counts: Lecture 1, slide 73 (Wolpin et al., <em>Cancer Research</em> 2010).</li>
+    <li id="src-15">PLINK 1.9 documentation: <a href="https://www.cog-genomics.org/plink/1.9/formats" target="_blank" rel="noopener">file formats</a> (.bim A1 "usually minor"; .raw "counted allele") and <a href="https://www.cog-genomics.org/plink/1.9/data" target="_blank" rel="noopener">data management</a> (--keep-allele-order; --recode A counts A1 by default). PLINK 2.0 documentation: <a href="https://www.cog-genomics.org/plink/2.0/formats" target="_blank" rel="noopener">file formats</a> (.bim columns "ALT ('A1' in PLINK 1.x)" and "REF ('A2' in PLINK 1.x)") and <a href="https://www.cog-genomics.org/plink/2.0/assoc" target="_blank" rel="noopener">association analysis</a> (--glm uses minor-allele dosages unless 'omit-ref' is given).</li>
+    <li id="src-16">The Variant Call Format (VCF) version 4.3 specification. <a href="https://samtools.github.io/hts-specs/VCFv4.3.pdf" target="_blank" rel="noopener">samtools.github.io/hts-specs</a></li>
+    <li id="src-17">REGENIE documentation: <a href="https://rgcgithub.github.io/regenie/options/" target="_blank" rel="noopener">options</a> (--ref-first; "default is to use the last allele as the reference").</li>
+    <li id="src-18">bcftools manual: <a href="https://samtools.github.io/bcftools/bcftools.html" target="_blank" rel="noopener">norm -m</a> (split multiallelic sites into biallelic records).</li>
+    <li id="src-19">den Dunnen JT, et al. HGVS recommendations for the description of sequence variants: 2016 update. <em>Hum Mutat</em> 2016;37:564–569. <a href="https://doi.org/10.1002/humu.22981" target="_blank" rel="noopener">doi:10.1002/humu.22981</a>; current rules at <a href="https://hgvs-nomenclature.org/stable/" target="_blank" rel="noopener">hgvs-nomenclature.org</a> (numbering, frameshift, start codon, 3′ rule).</li>
+    <li id="src-20">Ensembl release 116 (GRCh38.p14) REST API: variant positions, alleles, ancestral alleles, VEP consequences and HGVS on MANE Select transcripts, the <em>HBB</em> coding sequence (ENST00000335295 = NM_000518.5), GRCh38 chromosome lengths, and allele frequencies (1000 Genomes phase 3; gnomAD v4.1 genomes); dbSNP build 157 records. <a href="https://rest.ensembl.org" target="_blank" rel="noopener">rest.ensembl.org</a> (queried 21 October 2026).</li>
+    <li id="src-21">ClinVar records for <em>HBB</em> variants used in the widget: <a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/15333/" target="_blank" rel="noopener">VCV000015333</a> (c.20A&gt;T, HbS), <a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/869230/" target="_blank" rel="noopener">VCV000869230</a> (c.19G&gt;T), <a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/15418/" target="_blank" rel="noopener">VCV000015418</a> (c.20del), <a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/36310/" target="_blank" rel="noopener">VCV000036310</a> (c.2T&gt;C), <a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/193106/" target="_blank" rel="noopener">VCV000193106</a> (c.9T&gt;C).</li>
+    <li id="src-22">Kato GJ, et al. Sickle cell disease. <em>Nat Rev Dis Primers</em> 2018;4:18010. <a href="https://doi.org/10.1038/nrdp.2018.10" target="_blank" rel="noopener">doi:10.1038/nrdp.2018.10</a></li>
+    <li id="src-23">Williams TN, et al. Sickle cell trait and the risk of <em>Plasmodium falciparum</em> malaria and other childhood diseases. <em>J Infect Dis</em> 2005;192:178–186. <a href="https://doi.org/10.1086/430744" target="_blank" rel="noopener">doi:10.1086/430744</a></li>
+    <li id="src-24">Hindorff LA, et al. Potential etiologic and functional implications of genome-wide association loci for human diseases and traits. <em>PNAS</em> 2009;106:9362–9367. <a href="https://doi.org/10.1073/pnas.0903103106" target="_blank" rel="noopener">doi:10.1073/pnas.0903103106</a></li>
+    <li id="src-25">Maurano MT, et al. Systematic localization of common disease-associated variation in regulatory DNA. <em>Science</em> 2012;337:1190–1195. <a href="https://doi.org/10.1126/science.1222794" target="_blank" rel="noopener">doi:10.1126/science.1222794</a></li>
+    <li id="src-26">Enattah NS, et al. Identification of a variant associated with adult-type hypolactasia. <em>Nat Genet</em> 2002;30:233–237. <a href="https://doi.org/10.1038/ng826" target="_blank" rel="noopener">doi:10.1038/ng826</a></li>
+    <li id="src-27">Bauer DE, et al. An erythroid enhancer of BCL11A subject to genetic variation determines fetal hemoglobin level. <em>Science</em> 2013;342:253–257. <a href="https://doi.org/10.1126/science.1242088" target="_blank" rel="noopener">doi:10.1126/science.1242088</a></li>
+    <li id="src-28">Tournamille C, et al. Disruption of a GATA motif in the Duffy gene promoter abolishes erythroid gene expression in Duffy-negative individuals. <em>Nat Genet</em> 1995;10:224–228. <a href="https://doi.org/10.1038/ng0695-224" target="_blank" rel="noopener">doi:10.1038/ng0695-224</a>; Miller LH, et al. <em>N Engl J Med</em> 1976;295:302–304. <a href="https://doi.org/10.1056/NEJM197608052950602" target="_blank" rel="noopener">doi:10.1056/NEJM197608052950602</a>; Reich D, et al. <em>PLoS Genet</em> 2009;5:e1000360. <a href="https://doi.org/10.1371/journal.pgen.1000360" target="_blank" rel="noopener">doi:10.1371/journal.pgen.1000360</a></li>
+    <li id="src-29">Crabb DW, Edenberg HJ, Bosron WF, Li TK. Genotypes for aldehyde dehydrogenase deficiency and alcohol sensitivity: the inactive ALDH2(2) allele is dominant. <em>J Clin Invest</em> 1989;83:314–316. <a href="https://doi.org/10.1172/JCI113875" target="_blank" rel="noopener">doi:10.1172/JCI113875</a></li>
+    <li id="src-30">Abifadel M, et al. Mutations in PCSK9 cause autosomal dominant hypercholesterolemia. <em>Nat Genet</em> 2003;34:154–156. <a href="https://doi.org/10.1038/ng1161" target="_blank" rel="noopener">doi:10.1038/ng1161</a>; Cohen J, et al. Low LDL cholesterol in individuals of African descent resulting from frequent nonsense mutations in PCSK9. <em>Nat Genet</em> 2005;37:161–165. <a href="https://doi.org/10.1038/ng1509" target="_blank" rel="noopener">doi:10.1038/ng1509</a></li>
+    <li id="src-31">Cohen JC, et al. Sequence variations in PCSK9, low LDL, and protection against coronary heart disease. <em>N Engl J Med</em> 2006;354:1264–1272. <a href="https://doi.org/10.1056/NEJMoa054013" target="_blank" rel="noopener">doi:10.1056/NEJMoa054013</a></li>
+    <li id="src-32">Frosst P, et al. A candidate genetic risk factor for vascular disease: a common mutation in methylenetetrahydrofolate reductase. <em>Nat Genet</em> 1995;10:111–113. <a href="https://doi.org/10.1038/ng0595-111" target="_blank" rel="noopener">doi:10.1038/ng0595-111</a></li>
+    <li id="src-33">Corder EH, et al. Gene dose of apolipoprotein E type 4 allele and the risk of Alzheimer's disease in late onset families. <em>Science</em> 1993;261:921–923. <a href="https://doi.org/10.1126/science.8346443" target="_blank" rel="noopener">doi:10.1126/science.8346443</a>; ε2/ε3/ε4 haplotype definitions: El-Lebedy D, et al. <em>Cardiovasc Diabetol</em> 2016;15:12. <a href="https://doi.org/10.1186/s12933-016-0329-1" target="_blank" rel="noopener">doi:10.1186/s12933-016-0329-1</a></li>
+    <li id="src-34">Clarke R, et al. Genetic variants associated with Lp(a) lipoprotein level and coronary disease. <em>N Engl J Med</em> 2009;361:2518–2528. <a href="https://doi.org/10.1056/NEJMoa0902604" target="_blank" rel="noopener">doi:10.1056/NEJMoa0902604</a></li>
+    <li id="src-35">GENCODE release 50 annotation (GRCh38.p14): coding sequence of MANE Select transcripts = 1.08% of the assembly; all annotated coding sequence = 1.24% (derived from the GTF for this lecture). <a href="https://www.gencodegenes.org/human/stats.html" target="_blank" rel="noopener">gencodegenes.org</a></li>
+    <li id="src-36">Lesk AM. <em>Introduction to Genomics</em>, 3rd ed. Oxford University Press, 2017, chapter 1 ("Mutations and disease"; "Single-nucleotide polymorphisms").</li>
+    <li id="src-37">GWAS Catalog statistics (data as of 3 October 2026): 7,845 publications, 1,198,394 top associations. <a href="https://www.ebi.ac.uk/gwas/" target="_blank" rel="noopener">ebi.ac.uk/gwas</a></li>
+    <li id="src-38">NCBI RefSeq. <a href="https://www.ncbi.nlm.nih.gov/refseq/MANE/" target="_blank" rel="noopener">MANE: Matched Annotation from NCBI and EMBL-EBI</a> (MANE Select: one representative transcript per locus; RefSeq and Ensembl/GENCODE versions match exactly; "a universal standard for clinical reporting"; accessed 21 October 2026).</li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>
