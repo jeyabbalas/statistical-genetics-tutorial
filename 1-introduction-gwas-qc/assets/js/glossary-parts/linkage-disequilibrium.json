@@ -1,0 +1,289 @@
+[
+  {
+    "id": "haplotype-frequency",
+    "term": "haplotype frequency",
+    "aka": [
+      "two-locus haplotype frequency"
+    ],
+    "short": "The fraction of chromosome copies in a population that carry a given combination of alleles at two or more loci, for example A at one SNP and G at the next. For two SNPs the four haplotype frequencies add up to 1, and their sums along rows and columns are the allele frequencies.",
+    "long": "<p>For SNPs with alleles A/a and G/g the four frequencies are \\(p_{\\mathrm{AG}}, p_{\\mathrm{Ag}}, p_{\\mathrm{aG}}, p_{\\mathrm{ag}}\\) (in the course's general notation \\(p_{11}, p_{12}, p_{21}, p_{22}\\)), with \\(p_{\\mathrm{A}} = p_{\\mathrm{AG}} + p_{\\mathrm{Ag}}\\) and \\(p_{\\mathrm{G}} = p_{\\mathrm{AG}} + p_{\\mathrm{aG}}\\). Every LD measure is computed from them. Genotype data do not show haplotypes, so the frequencies are estimated, usually by maximum likelihood with the EM algorithm. Example (slide 117): 8 AG, 2 Ag, 0 aG and 6 ag copies among 16 give 0.500, 0.125, 0 and 0.375.</p>",
+    "l1": "Slides 113, 117–118; the EM widget on page 6.",
+    "see": [
+      "haplotype",
+      "em-algorithm",
+      "ld-d",
+      "double-heterozygote"
+    ],
+    "match": [
+      "haplotype frequency"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "double-heterozygote",
+    "term": "double heterozygote",
+    "aka": [
+      "double-heterozygous genotype"
+    ],
+    "short": "A person who is heterozygous at both of two SNPs, for example Aa and Gg. Their genotypes do not show the phase: they carry either AG and ag, or Ag and aG.",
+    "long": "<p>In the 3 × 3 table of two-SNP genotype counts, the double heterozygotes are the center cell, and they are the only people whose haplotypes the table leaves open: anyone homozygous at either SNP has known haplotypes. The EM algorithm assigns each double heterozygote to AG + ag with probability \\(w = p_{\\mathrm{AG}}p_{\\mathrm{ag}}/(p_{\\mathrm{AG}}p_{\\mathrm{ag}} + p_{\\mathrm{Ag}}p_{\\mathrm{aG}})\\). On slide 117, 5 of the 8 people are double heterozygotes.</p>",
+    "l1": "Slides 114 and 117.",
+    "see": [
+      "phase",
+      "em-algorithm",
+      "haplotype-frequency"
+    ],
+    "match": [
+      "double heterozygote",
+      "double-heterozygote"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "likelihood",
+    "term": "likelihood (log-likelihood)",
+    "aka": [
+      "likelihood function",
+      "log-likelihood"
+    ],
+    "short": "The probability of the observed data under a model, read as a function of the model's unknown parameters. Its logarithm, the log-likelihood, turns a product over people into a sum; the parameter values that maximize it are the maximum-likelihood estimates.",
+    "long": "<p>For two SNPs under random mating, a person with haplotypes AG and Ag has probability \\(2p_{\\mathrm{AG}}p_{\\mathrm{Ag}}\\), and a double heterozygote \\(2p_{\\mathrm{AG}}p_{\\mathrm{ag}} + 2p_{\\mathrm{Ag}}p_{\\mathrm{aG}}\\). Multiplying over people gives the likelihood of the four haplotype frequencies. A likelihood is not a probability distribution over the parameters, and only differences or ratios of likelihoods for the same data are meaningful: a log-likelihood higher by 2.6 means the data are \\(e^{2.6} \\approx 14\\) times more probable.</p>",
+    "l1": "The EM section and widget on page 6; allele frequencies on page 5.",
+    "see": [
+      "em-algorithm",
+      "haplotype-frequency"
+    ],
+    "match": [
+      "likelihood",
+      "log-likelihood"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "linkage-equilibrium",
+    "term": "linkage equilibrium",
+    "aka": [
+      "no LD"
+    ],
+    "short": "The absence of LD: the alleles at two loci occur together on chromosome copies as often as independence predicts, so each haplotype frequency is the product of its two allele frequencies and D = 0.",
+    "long": "<p>Two loci in linkage equilibrium can still be close together and linked; equilibrium describes the population's haplotype frequencies, not the distance. Recombination moves a population toward linkage equilibrium by a factor \\(1 - \\theta\\) per generation, and drift moves it away again.</p>",
+    "l1": "Page 6, measures and decay sections.",
+    "see": [
+      "ld",
+      "ld-d",
+      "haplotype-frequency"
+    ],
+    "match": [
+      "linkage equilibrium"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "four-gamete-test",
+    "term": "four-gamete test",
+    "aka": [
+      "four-gamete rule"
+    ],
+    "short": "If each of two SNPs arose by a single mutation, all four of their haplotypes can appear only after a crossover between them. Seeing all four in a sample is therefore evidence that recombination happened in the sample's history.",
+    "long": "<p>Proposed by Hudson and Kaplan (1985) to count the minimum number of recombination events in a sample of sequences. A pair with only three haplotypes has \\(|D'| = 1\\). Haploview offers a four-gamete rule for defining haplotype blocks and a four-gamete color scheme for LD heatmaps.</p>",
+    "l1": "Page 6, origins section (slides 109–111).",
+    "see": [
+      "d-prime",
+      "recombination",
+      "ld-block"
+    ],
+    "links": [
+      {
+        "t": "Hudson & Kaplan 1985",
+        "u": "https://doi.org/10.1093/genetics/111.1.147"
+      }
+    ],
+    "match": [
+      "four-gamete test",
+      "four-gamete rule"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "map-function",
+    "term": "map function (Haldane's)",
+    "aka": [
+      "Haldane map function",
+      "Kosambi map function"
+    ],
+    "short": "A formula that converts map distance d (expected crossovers between two loci, in morgans) into the recombination fraction θ. Haldane's map function, which assumes crossovers occur independently, is θ = (1 − e^(−2d))/2.",
+    "long": "<p>Under Haldane's assumption the number of crossovers between two loci is Poisson with mean \\(d\\), and \\(\\theta\\) is the probability that it is odd: \\(\\theta = \\tfrac{1}{2}(1 - e^{-2d})\\), inverted by \\(d = -\\tfrac{1}{2}\\ln(1 - 2\\theta)\\). For small distances \\(\\theta \\approx d\\) (1 cM gives 0.0099); for large ones \\(\\theta\\) approaches 0.5 (100 cM gives 0.432). Kosambi's map function allows for crossover interference.</p>",
+    "l1": "Page 6, decay section and widget.",
+    "see": [
+      "recombination-fraction",
+      "centimorgan",
+      "genetic-map",
+      "recombination-rate"
+    ],
+    "match": [
+      "map function",
+      "Haldane's map function"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "recombination-rate",
+    "term": "recombination rate (cM/Mb)",
+    "aka": [
+      "local recombination rate"
+    ],
+    "short": "Map distance per unit of physical distance, usually in centimorgans per megabase. The human genome average is about 1.13 cM/Mb, but local rates vary by orders of magnitude, with most crossovers in short hotspots.",
+    "long": "<p>Multiplying the physical distance between two SNPs by the local rate gives their map distance, and a map function turns that into a recombination fraction: 100 kb at 1.13 cM/Mb is 0.113 cM, so \\(\\theta \\approx 0.00113\\). Regional association plots and LDproxy draw the local rate under the data, because LD changes most where the rate is high.</p>",
+    "l1": "Page 6, decay section; recombination track of the heatmap widget.",
+    "see": [
+      "recombination-hotspot",
+      "genetic-map",
+      "map-function"
+    ],
+    "match": [
+      "recombination rate"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "lod",
+    "term": "LOD (log of the odds)",
+    "aka": [
+      "log10 likelihood ratio"
+    ],
+    "short": "The base-10 logarithm of a likelihood ratio: how many times more probable the data are under one hypothesis than another, on a log scale. In LD heatmaps it compares the estimated haplotype frequencies with no LD; LOD 2 means 100 times more probable.",
+    "long": "<p>Haploview's standard LD colors combine \\(D'\\) with this LOD: white for \\(D' &lt; 1\\) and LOD below 2, blue for \\(D' = 1\\) and LOD below 2, pink to red for \\(D' &lt; 1\\) and LOD at least 2, bright red for \\(D' = 1\\) and LOD at least 2. In family linkage studies the same idea is the <a href=\"glossary.html#lod-score\">LOD score</a>, which compares linkage with no linkage.</p>",
+    "l1": "Page 6, LD heatmaps.",
+    "see": [
+      "lod-score",
+      "ld-heatmap",
+      "likelihood"
+    ],
+    "match": [
+      "LOD"
+    ],
+    "cs": true,
+    "noPlural": true,
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "ld-heatmap",
+    "term": "LD heatmap",
+    "aka": [
+      "LD plot",
+      "Haploview plot"
+    ],
+    "short": "A picture of the LD between every pair of SNPs in a region: the SNPs in genome order along the top and one colored diamond per pair below them, usually colored by r² (white 0 to black 1) or by D′ and LOD.",
+    "long": "<p>The pair of SNPs \\(i\\) and \\(j\\) sits where the diagonal down to the right from SNP \\(i\\) meets the diagonal down to the left from SNP \\(j\\), so it is half of the LD matrix rotated by 45°. LD blocks appear as dark (or red) triangles along the top, separated by pale stripes where recombination hotspots lie. The layout comes from Haploview; LDlink's LDmatrix draws the same information as a square.</p>",
+    "l1": "Slides 95–96 show summaries of the same information; page 6 has an interactive heatmap for two simulated populations.",
+    "see": [
+      "ld-block",
+      "r-squared",
+      "d-prime",
+      "haploview",
+      "ld-matrix"
+    ],
+    "match": [
+      "LD heatmap"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "ld-matrix",
+    "term": "LD matrix",
+    "aka": [
+      "correlation matrix of variants"
+    ],
+    "short": "The M × M matrix of correlations r (or r²) between every pair of M variants, symmetric with ones on the diagonal. Fine-mapping, conditional analysis and LD score methods take it from the GWAS sample or from a reference panel of matching ancestry.",
+    "long": "<p>Its size grows as \\(M^2\\): 10,000 variants need \\(10^8\\) entries, about 800 MB in double precision. Signed \\(r\\) depends on which allele is counted at each variant, so the matrix must use the same allele coding as the summary statistics. <code>plink --r2 square</code> writes one for the selected variants.</p>",
+    "l1": "Page 6, LD in the data.",
+    "see": [
+      "ld-heatmap",
+      "ld-reference-panel",
+      "fine-mapping",
+      "ld-score"
+    ],
+    "match": [
+      "LD matrix",
+      "LD matrices"
+    ],
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "haploview",
+    "term": "Haploview",
+    "aka": [],
+    "short": "Free software from the Broad Institute (2005) for displaying LD and haplotype blocks. Its triangle of colored diamonds and its D′/LOD and r² color schemes are still the usual way to draw LD heatmaps.",
+    "long": "<p>Haploview estimates two-SNP haplotype frequencies, computes \\(D'\\), \\(r^2\\) and LOD for each pair, and defines blocks with the Gabriel et al. rule, a four-gamete rule or a solid-spine rule. It is no longer developed, but its displays are copied by many tools.</p>",
+    "l1": "Page 6, LD heatmaps.",
+    "see": [
+      "ld-heatmap",
+      "ld-block"
+    ],
+    "links": [
+      {
+        "t": "Barrett et al. 2005",
+        "u": "https://doi.org/10.1093/bioinformatics/bth457"
+      }
+    ],
+    "match": [
+      "Haploview"
+    ],
+    "cs": true,
+    "noPlural": true,
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "ldlink",
+    "term": "LDlink",
+    "aka": [],
+    "short": "A free web application from the US National Cancer Institute's Division of Cancer Epidemiology and Genetics that computes LD for chosen variants in the 1000 Genomes populations. Modules include LDpair (two variants), LDmatrix (a heatmap) and LDproxy (proxies within 500 kb).",
+    "long": "<p>LDlink works on genome builds GRCh37 and GRCh38. Besides LD it links variants and their proxies to GWAS Catalog traits (LDtrait) and gene expression (LDexpress), prunes variant lists (SNPclip) and finds arrays that contain variants (SNPchip). An API, used by the R package LDlinkR, needs a registered access token.</p>",
+    "l1": "Page 6, reference panels and the Run-it exercise.",
+    "see": [
+      "thousand-genomes",
+      "ld-reference-panel",
+      "ld-heatmap"
+    ],
+    "links": [
+      {
+        "t": "LDlink",
+        "u": "https://ldlink.nih.gov/"
+      },
+      {
+        "t": "Machiela & Chanock 2015",
+        "u": "https://doi.org/10.1093/bioinformatics/btv402"
+      }
+    ],
+    "match": [
+      "LDlink",
+      "LDpair",
+      "LDmatrix",
+      "LDproxy",
+      "LDpop"
+    ],
+    "cs": true,
+    "noPlural": true,
+    "owner": "linkage-disequilibrium"
+  },
+  {
+    "id": "coalescent",
+    "term": "coalescent",
+    "aka": [
+      "coalescent simulation",
+      "coalescent with recombination"
+    ],
+    "short": "A model that traces the ancestry of sampled chromosome copies backward in time: two lineages merge (coalesce) with probability 1/(2N) per generation in a population of N people, and recombination splits a lineage in two. It is the usual way to simulate genetic data quickly.",
+    "long": "<p>Instead of simulating every person in every generation, a coalescent simulation follows only the ancestors of the sample, then places mutations on the branches of the resulting genealogy; copies below a mutated branch carry the new allele. Hudson's program ms (2002) is the classic implementation; the LD heatmap widget on page 6 uses the same algorithm.</p>",
+    "l1": "Page 6, the heatmap widget's simulation.",
+    "see": [
+      "genetic-drift",
+      "effective-population-size",
+      "recombination"
+    ],
+    "match": [
+      "coalescent"
+    ],
+    "owner": "linkage-disequilibrium"
+  }
+]

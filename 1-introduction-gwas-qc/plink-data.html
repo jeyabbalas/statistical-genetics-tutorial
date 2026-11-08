@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The data: PLINK .bed, .bim and .fam files, inside out · Lecture 1</title>
+<meta name="description" content="What the practical's input files contain: the .fam and .bim text files column by column, the .bed file bit by bit with real PennCATH bytes decoded by hand, the genotype matrix in memory, and which allele R and Python readers count.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/widgets/plink-data-columns.js"></script>
+<script defer src="assets/js/widgets/plink-data-bed-decoder.js"></script>
+<style>
+/* Page-specific styles only; every rule is scoped with body[data-page="plink-data"]. */
+/* Column explorer (plink-data-columns.js) */
+body[data-page="plink-data"] .ce-intro { margin: 0 0 8px; }
+body[data-page="plink-data"] .ce-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+body[data-page="plink-data"] table.ce-table { margin: 0; font-size: 0.8rem; border-collapse: collapse; min-width: 100%; }
+body[data-page="plink-data"] .ce-table th, body[data-page="plink-data"] .ce-table td { padding: 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+body[data-page="plink-data"] .ce-table tbody tr:last-child th, body[data-page="plink-data"] .ce-table tbody tr:last-child td { border-bottom: 0; }
+body[data-page="plink-data"] .ce-table thead th { padding: 6px 8px; font-size: 0.72rem; font-weight: 700; color: var(--fg-muted); white-space: nowrap; background: var(--bg-alt); }
+body[data-page="plink-data"] .ce-table thead th.col { color: var(--accent-hover); background: var(--accent-soft); }
+body[data-page="plink-data"] .ce-table th.ce-ln { font-family: var(--mono); font-weight: 500; color: var(--fg-muted); padding: 6px 8px; text-align: right; background: var(--bg-alt); }
+body[data-page="plink-data"] .ce-cell { display: block; width: 100%; font: inherit; font-family: var(--mono); font-size: 0.8rem; text-align: left; white-space: nowrap; padding: 7px 8px; border: 0; border-radius: 0; background: transparent; color: var(--fg); cursor: pointer; }
+body[data-page="plink-data"] .ce-cell.col { background: var(--accent-soft); }
+body[data-page="plink-data"] .ce-cell.sel { background: var(--accent); color: #fff; }
+body[data-page="plink-data"] .ce-cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+body[data-page="plink-data"] .ce-info { margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; background: var(--bg-alt); font-size: 0.9rem; }
+body[data-page="plink-data"] .ce-info p { margin: 0.35em 0; }
+body[data-page="plink-data"] .ce-title { font-weight: 700; }
+/* .bed encoder and decoder (plink-data-bed-decoder.js) */
+body[data-page="plink-data"] .bd-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 820px) { body[data-page="plink-data"] .bd-cols { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="plink-data"] .bd-h { font-weight: 700; font-size: 0.84rem; color: var(--fg-muted); margin: 0.4em 0 0.4em; }
+body[data-page="plink-data"] .bd-n { font-family: var(--mono); font-weight: 700; display: inline-block; min-width: 2ch; }
+body[data-page="plink-data"] .bd-tablewrap { overflow-x: auto; }
+body[data-page="plink-data"] table.bd-table { border-collapse: separate; border-spacing: 3px; font-size: 0.8rem; margin: 0; width: auto; }
+body[data-page="plink-data"] .bd-table th, body[data-page="plink-data"] .bd-table td { padding: 0; border: 0; vertical-align: middle; }
+body[data-page="plink-data"] .bd-table thead th { padding: 0 2px 4px; text-align: center; font-weight: 600; font-size: 0.74rem; vertical-align: bottom; }
+body[data-page="plink-data"] .bd-table thead th:first-child { text-align: left; color: var(--fg-muted); font-weight: 600; }
+body[data-page="plink-data"] .bd-table thead th span { display: block; line-height: 1.3; }
+body[data-page="plink-data"] .bd-rs { font-family: var(--mono); }
+body[data-page="plink-data"] .bd-line { font-family: var(--mono); }
+body[data-page="plink-data"] .bd-al { color: var(--fg-muted); font-weight: 500; white-space: nowrap; }
+body[data-page="plink-data"] .bd-table tbody th { text-align: left; padding-right: 6px; font-family: var(--mono); font-size: 0.74rem; font-weight: 500; color: var(--fg-muted); white-space: nowrap; }
+body[data-page="plink-data"] .bd-ln { display: inline-block; min-width: 2ch; text-align: right; font-weight: 700; color: var(--fg); }
+body[data-page="plink-data"] .bd-cell { display: block; width: 100%; min-width: 52px; font: inherit; font-family: var(--mono); font-size: 0.78rem; line-height: 1.2; padding: 4px 3px; border: 1px solid var(--border-strong); border-radius: 6px; cursor: pointer; color: var(--fg); background: var(--g0); }
+body[data-page="plink-data"] .bd-cell span { display: block; }
+body[data-page="plink-data"] .bd-gn { font-size: 0.66rem; opacity: 0.85; }
+body[data-page="plink-data"] .bd-cell.g1 { background: var(--g1); }
+body[data-page="plink-data"] .bd-cell.g2 { background: var(--g2); color: #fff; }
+body[data-page="plink-data"] .bd-cell.gm { background: #fff; color: #b42318; border: 1.5px dashed #b42318; }
+body[data-page="plink-data"] .bd-cell.sel { outline: 3px solid var(--accent); outline-offset: 1px; }
+body[data-page="plink-data"] .bd-cell:disabled { cursor: default; }
+body[data-page="plink-data"] tr.bd-out th, body[data-page="plink-data"] tr.bd-out td { opacity: 0.3; }
+body[data-page="plink-data"] .bd-editor { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0 4px; font-size: 0.86rem; }
+body[data-page="plink-data"] .bd-ed-l { flex: 1 0 100%; font-weight: 600; }
+body[data-page="plink-data"] .bd-set { font-family: var(--mono); font-size: 0.8rem; padding: 4px 9px; }
+body[data-page="plink-data"] .bd-snp { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px 8px; margin-bottom: 8px; background: var(--bg-alt); }
+body[data-page="plink-data"] .bd-snp.cur { border-color: var(--accent); background: var(--accent-soft); }
+body[data-page="plink-data"] .bd-snp-h { font-family: var(--mono); font-size: 0.74rem; color: var(--fg-muted); margin-bottom: 4px; }
+body[data-page="plink-data"] .bd-bytes { display: flex; flex-wrap: wrap; gap: 6px; }
+body[data-page="plink-data"] .bd-byte { border: 1px solid var(--border-strong); border-radius: 6px; padding: 3px 4px 2px; background: #fff; }
+body[data-page="plink-data"] .bd-byte.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+body[data-page="plink-data"] .bd-hex { text-align: center; font-family: var(--mono); font-weight: 700; font-size: 0.95rem; }
+body[data-page="plink-data"] .bd-pairs, body[data-page="plink-data"] .bd-who { display: grid; grid-template-columns: repeat(4, 2.1rem); gap: 2px; }
+body[data-page="plink-data"] .bd-who span { text-align: center; font-size: 0.66rem; color: var(--fg-muted); }
+body[data-page="plink-data"] .bd-pair { font: inherit; font-family: var(--mono); font-size: 0.76rem; padding: 1px 0; text-align: center; border-radius: 4px; border: 1px solid var(--border-strong); background: var(--g0); color: var(--fg); cursor: pointer; }
+body[data-page="plink-data"] .bd-pair.c0 { background: var(--g2); color: #fff; }
+body[data-page="plink-data"] .bd-pair.c1 { background: #fff; color: #b42318; border: 1.5px dashed #b42318; }
+body[data-page="plink-data"] .bd-pair.c2 { background: var(--g1); }
+body[data-page="plink-data"] .bd-pair.pad { background: repeating-linear-gradient(45deg, #fff, #fff 3px, #e3e7ed 3px, #e3e7ed 6px); color: var(--fg-muted); cursor: default; }
+body[data-page="plink-data"] .bd-pair.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+body[data-page="plink-data"] .bd-readout { margin-top: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+body[data-page="plink-data"] .bd-dump { font-family: var(--mono); font-size: 0.84rem; line-height: 2; background: #f7f8fa; border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; overflow-wrap: anywhere; }
+body[data-page="plink-data"] .bd-db { padding: 1px 3px; border-radius: 3px; background: #e3edf7; }
+body[data-page="plink-data"] .bd-db.alt { background: #e4efdf; }
+body[data-page="plink-data"] .bd-db.hdr { background: #fbe3c4; }
+body[data-page="plink-data"] .bd-db.sel { outline: 2px solid var(--accent); }
+body[data-page="plink-data"] .bd-note { margin: 8px 0 0; }
+@media (max-width: 480px) {
+  body[data-page="plink-data"] .bd-table thead th .bd-rs { display: none; }
+  body[data-page="plink-data"] .bd-table thead th .bd-al { white-space: normal; }
+  body[data-page="plink-data"] .bd-cell { min-width: 46px; }
+  body[data-page="plink-data"] .bd-pairs, body[data-page="plink-data"] .bd-who { grid-template-columns: repeat(4, 1.85rem); }
+}
+/* Byte diagrams and memory bars in the text */
+body[data-page="plink-data"] .bits { font-family: var(--mono); white-space: nowrap; }
+body[data-page="plink-data"] .mem-bar { display: block; height: 10px; border-radius: 3px; background: var(--q1); width: var(--w); min-width: 3px; margin-top: 4px; }
+body[data-page="plink-data"] table.mem td:nth-child(2), body[data-page="plink-data"] table.mem td:nth-child(3) { font-variant-numeric: tabular-nums; white-space: nowrap; }
+</style>
+</head>
+<body data-page="plink-data">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Page 12 of 23</p>
+  <h1>The data: PLINK .bed, .bim and .fam files, inside out</h1>
+  <p class="lede">The practical's genotypes come as three files named <code>penncath</code>: a text file that lists the 1,401 people, a text file that lists the 861,473 SNPs (single-nucleotide polymorphisms: positions in the genome where people differ by one DNA letter), and a binary file that holds every genotype call, the pair of alleles the genotyping software assigned to one person at one SNP, in two bits. This page opens each file, decodes real genotypes from the raw bytes by hand, and shows how R and Python read the same files, including the readers that count the other allele without saying so.</p>
+  <div class="chips">
+    <span class="chip time">≈ 45 min</span>
+    <span class="chip data">Shows up in the data as: penncath.bed · penncath.bim · penncath.fam</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">A fileset is one genotype matrix kept in three files</h2>
+  <figure>
+<svg viewBox="0 0 860 430" role="img" aria-labelledby="pmm-t pmm-d" class="only-wide">
+<title id="pmm-t">One genotype matrix stored in three files</title>
+<desc id="pmm-d">Left: eight real PennCATH people (rows, lines 1 to 8 of penncath.fam) by four real SNPs (columns, lines 2, 4, 6 and 10 of penncath.bim), each cell the number of copies of allele A1, with missing calls marked NA. Right: penncath.bed is three header bytes, 6c 1b 01, followed by one block of 351 bytes per SNP. The first two bytes of the block of SNP 2 (rs12565286), f3 and ff, are expanded into 2-bit codes: reading from the lowest bits, person 1 has code 11 (C/C, 0 copies of G), person 2 has 00 (G/G, 2 copies), and persons 3 to 8 have 11.</desc>
+<defs><marker id="pmm-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker><pattern id="pmm-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cfd5dd" stroke-width="3"/></pattern></defs>
+<text x="16" y="20" class="t-b">The matrix: 8 of 1,401 people × 4 of 861,473 SNPs</text>
+<text x="16" y="40" class="t-xs" style="fill:var(--data);font-weight:700;font-size:11px">columns: lines of penncath.bim, in file order</text>
+<text x="142" y="66" class="t-xs" text-anchor="middle" style="font-size:11px">line 2</text>
+<text x="142" y="81" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">rs12565286</text>
+<text x="142" y="96" class="t-xs" text-anchor="middle" style="font-size:11px">A1 G · A2 C</text>
+<text x="214" y="66" class="t-xs" text-anchor="middle" style="font-size:11px">line 4</text>
+<text x="214" y="81" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">rs3094315</text>
+<text x="214" y="96" class="t-xs" text-anchor="middle" style="font-size:11px">A1 C · A2 T</text>
+<text x="286" y="66" class="t-xs" text-anchor="middle" style="font-size:11px">line 6</text>
+<text x="286" y="81" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">rs11240776</text>
+<text x="286" y="96" class="t-xs" text-anchor="middle" style="font-size:11px">A1 G · A2 A</text>
+<text x="358" y="66" class="t-xs" text-anchor="middle" style="font-size:11px">line 10</text>
+<text x="358" y="81" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">rs11240777</text>
+<text x="358" y="96" class="t-xs" text-anchor="middle" style="font-size:11px">A1 A · A2 G</text>
+<text x="100" y="121" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10002&quot;</text>
+<text x="16" y="121" class="t-xs" style="font-size:11px">1</text>
+<rect x="106" y="104" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="142" y="121.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="178" y="104" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="214" y="121.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="250" y="104" width="72" height="26" rx="0" fill="url(#pmm-hatch)" stroke="#fff" stroke-width="1.5"/>
+<text x="286" y="121" class="t-xs" text-anchor="middle" style="fill:#5a6370;font-weight:700;font-size:11px">NA</text>
+<rect x="322" y="104" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="358" y="121.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<text x="100" y="147" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10004&quot;</text>
+<text x="16" y="147" class="t-xs" style="font-size:11px">2</text>
+<rect x="106" y="130" width="72" height="26" rx="0" fill="var(--g2)" stroke="#fff" stroke-width="1.5"/>
+<text x="142" y="147.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#fff">2</text>
+<rect x="178" y="130" width="72" height="26" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="214" y="147.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<rect x="250" y="130" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="286" y="147.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="322" y="130" width="72" height="26" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="358" y="147.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<text x="100" y="173" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10005&quot;</text>
+<text x="16" y="173" class="t-xs" style="font-size:11px">3</text>
+<rect x="106" y="156" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="142" y="173.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="178" y="156" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="214" y="173.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="250" y="156" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="286" y="173.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="322" y="156" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="358" y="173.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<text x="100" y="199" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10007&quot;</text>
+<text x="16" y="199" class="t-xs" style="font-size:11px">4</text>
+<rect x="106" y="182" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="142" y="199.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="178" y="182" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="214" y="199.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="250" y="182" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="286" y="199.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="322" y="182" width="72" height="26" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="358" y="199.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<text x="100" y="225" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10008&quot;</text>
+<text x="16" y="225" class="t-xs" style="font-size:11px">5</text>
+<rect x="106" y="208" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="142" y="225.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="178" y="208" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="214" y="225.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="250" y="208" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="286" y="225.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="322" y="208" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="358" y="225.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<text x="100" y="251" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10009&quot;</text>
+<text x="16" y="251" class="t-xs" style="font-size:11px">6</text>
+<rect x="106" y="234" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="142" y="251.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="178" y="234" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="214" y="251.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="250" y="234" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="286" y="251.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="322" y="234" width="72" height="26" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="358" y="251.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<text x="100" y="277" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10010&quot;</text>
+<text x="16" y="277" class="t-xs" style="font-size:11px">7</text>
+<rect x="106" y="260" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="142" y="277.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="178" y="260" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="214" y="277.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="250" y="260" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="286" y="277.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="322" y="260" width="72" height="26" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="358" y="277.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<text x="100" y="303" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10011&quot;</text>
+<text x="16" y="303" class="t-xs" style="font-size:11px">8</text>
+<rect x="106" y="286" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="142" y="303.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="178" y="286" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="214" y="303.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="250" y="286" width="72" height="26" rx="0" fill="url(#pmm-hatch)" stroke="#fff" stroke-width="1.5"/>
+<text x="286" y="303" class="t-xs" text-anchor="middle" style="fill:#5a6370;font-weight:700;font-size:11px">NA</text>
+<rect x="322" y="286" width="72" height="26" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="358" y="303.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="107" y="105" width="70" height="102" rx="3" fill="none" stroke="var(--accent)" stroke-width="2.4"/>
+<rect x="107" y="209" width="70" height="102" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 3"/>
+<text x="16" y="334" class="t-xs" style="fill:var(--data);font-weight:700;font-size:11px">rows: lines of penncath.fam, in file order</text>
+<rect x="16" y="348" width="24" height="16" rx="2" fill="var(--g0)" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="28" y="360" class="t-xs" text-anchor="middle" style="font-weight:700;fill:#1d2127;font-size:11px">0</text>
+<rect x="46" y="348" width="24" height="16" rx="2" fill="var(--g1)" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="58" y="360" class="t-xs" text-anchor="middle" style="font-weight:700;fill:#1d2127;font-size:11px">1</text>
+<rect x="76" y="348" width="24" height="16" rx="2" fill="var(--g2)" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="88" y="360" class="t-xs" text-anchor="middle" style="font-weight:700;fill:#fff;font-size:11px">2</text>
+<rect x="106" y="348" width="26" height="16" rx="2" fill="url(#pmm-hatch)" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="119" y="360" class="t-xs" text-anchor="middle" style="font-weight:700;font-size:11px">NA</text>
+<text x="140" y="360" class="t-xs" style="font-size:11px">copies of A1 · missing call</text>
+<text x="16" y="392" class="t-xs" style="font-size:11px">Real PennCATH genotypes. Outlined: the 8 people</text>
+<text x="16" y="407" class="t-xs" style="font-size:11px">whose SNP 2 codes fill the first two bytes of its</text>
+<text x="16" y="422" class="t-xs" style="font-size:11px">block in penncath.bed (right).</text>
+<text x="452" y="20" class="t-b">penncath.bed: a header, then one block per SNP</text>
+<rect x="452" y="36" width="30" height="30" rx="4" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.2"/>
+<text x="467" y="56" class="t-mono" text-anchor="middle" style="font-size:12px;font-weight:700">6c</text>
+<rect x="484" y="36" width="30" height="30" rx="4" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.2"/>
+<text x="499" y="56" class="t-mono" text-anchor="middle" style="font-size:12px;font-weight:700">1b</text>
+<rect x="516" y="36" width="30" height="30" rx="4" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.2"/>
+<text x="531" y="56" class="t-mono" text-anchor="middle" style="font-size:12px;font-weight:700">01</text>
+<rect x="552" y="36" width="92" height="30" rx="4" fill="var(--bg-alt)" stroke="#b9c1cc" stroke-width="1"/>
+<text x="598" y="55" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:400;font-size:11px">SNP 1 · 351 B</text>
+<rect x="648" y="36" width="92" height="30" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+<text x="694" y="55" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">SNP 2 · 351 B</text>
+<rect x="744" y="36" width="26" height="30" rx="4" fill="var(--bg-alt)" stroke="#b9c1cc" stroke-width="1"/>
+<text x="757" y="55" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:400;font-size:11px">…</text>
+<rect x="774" y="36" width="84" height="30" rx="4" fill="var(--bg-alt)" stroke="#b9c1cc" stroke-width="1"/>
+<text x="816" y="55" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:400;font-size:11px">SNP 861,473</text>
+<line x1="452" y1="68" x2="452" y2="74" stroke="#8a93a0" stroke-width="1"/>
+<text x="452" y="87" class="t-xs" style="font-family:var(--mono);font-size:11px">0</text>
+<line x1="552" y1="68" x2="552" y2="74" stroke="#8a93a0" stroke-width="1"/>
+<text x="552" y="87" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px">3</text>
+<line x1="648" y1="68" x2="648" y2="74" stroke="#8a93a0" stroke-width="1"/>
+<text x="648" y="87" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px">354</text>
+<line x1="740" y1="68" x2="740" y2="74" stroke="#8a93a0" stroke-width="1"/>
+<text x="740" y="87" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px">705</text>
+<text x="858" y="87" class="t-xs" text-anchor="end" style="font-size:11px">byte offset</text>
+<path d="M648,66 L446,116" stroke="var(--accent)" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+<path d="M740,66 L858,116" stroke="var(--accent)" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+<rect x="446" y="116" width="412" height="196" rx="8" fill="#fbfcfe" stroke="var(--accent)" stroke-width="1"/>
+<text x="456" y="136" class="t-xs" style="fill:var(--fg);font-weight:700;font-size:11px">First two bytes of the SNP 2 block (rs12565286: A1 G, A2 C)</text>
+<text x="456" y="170" class="t-mono" style="font-weight:700;font-size:15px">f3</text>
+<text x="481" y="170" class="t" style="fill:var(--fg-muted)">=</text>
+<text x="456" y="195" class="t-xs" style="font-size:11px">person</text>
+<rect x="496" y="148" width="44" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="518" y="169" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="518" y="195" class="t-xs" text-anchor="middle" style="font-size:11px">4</text>
+<text x="518" y="210" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<rect x="546" y="148" width="44" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="568" y="169" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="568" y="195" class="t-xs" text-anchor="middle" style="font-size:11px">3</text>
+<text x="568" y="210" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<rect x="596" y="148" width="44" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="618" y="169" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">00</text>
+<text x="618" y="195" class="t-xs" text-anchor="middle" style="font-size:11px">2</text>
+<text x="618" y="210" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">G/G</text>
+<rect x="646" y="148" width="44" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+<text x="668" y="169" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="668" y="195" class="t-xs" text-anchor="middle" style="font-size:11px">1</text>
+<text x="668" y="210" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<text x="456" y="252" class="t-mono" style="font-weight:700;font-size:15px">ff</text>
+<text x="481" y="252" class="t" style="fill:var(--fg-muted)">=</text>
+<text x="456" y="277" class="t-xs" style="font-size:11px">person</text>
+<rect x="496" y="230" width="44" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="518" y="251" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="518" y="277" class="t-xs" text-anchor="middle" style="font-size:11px">8</text>
+<text x="518" y="292" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<rect x="546" y="230" width="44" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="568" y="251" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="568" y="277" class="t-xs" text-anchor="middle" style="font-size:11px">7</text>
+<text x="568" y="292" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<rect x="596" y="230" width="44" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="618" y="251" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="618" y="277" class="t-xs" text-anchor="middle" style="font-size:11px">6</text>
+<text x="618" y="292" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<rect x="646" y="230" width="44" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+<text x="668" y="251" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="668" y="277" class="t-xs" text-anchor="middle" style="font-size:11px">5</text>
+<text x="668" y="292" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<text x="704" y="164" class="t-xs" style="font-weight:700;fill:var(--fg);font-size:11px">2-bit code → copies of A1</text>
+<text x="704" y="182" class="t-xs" style="font-family:var(--mono);font-size:11px;font-weight:700;fill:var(--fg)">00</text>
+<text x="728" y="182" class="t-xs" style="fill:var(--fg);font-size:11px">→ 2 (A1/A1)</text>
+<text x="704" y="199" class="t-xs" style="font-family:var(--mono);font-size:11px;font-weight:700;fill:var(--fg)">01</text>
+<text x="728" y="199" class="t-xs" style="fill:var(--fg);font-size:11px">→ missing</text>
+<text x="704" y="216" class="t-xs" style="font-family:var(--mono);font-size:11px;font-weight:700;fill:var(--fg)">10</text>
+<text x="728" y="216" class="t-xs" style="fill:var(--fg);font-size:11px">→ 1 (A1/A2)</text>
+<text x="704" y="233" class="t-xs" style="font-family:var(--mono);font-size:11px;font-weight:700;fill:var(--fg)">11</text>
+<text x="728" y="233" class="t-xs" style="fill:var(--fg);font-size:11px">→ 0 (A2/A2)</text>
+<text x="704" y="254" class="t-xs" style="font-size:11px">Read each byte from</text>
+<text x="704" y="269" class="t-xs" style="font-size:11px">the right: person 1 is</text>
+<text x="704" y="284" class="t-xs" style="font-size:11px">in the lowest 2 bits.</text>
+<path d="M396,156 C420,156 420,164 442,164" stroke="var(--accent)" stroke-width="1.4" fill="none" marker-end="url(#pmm-arr)"/>
+<path d="M396,260 C420,260 420,246 442,246" stroke="var(--accent)" stroke-width="1.2" fill="none" marker-end="url(#pmm-arr)" stroke-dasharray="4 3"/>
+<text x="452" y="338" class="t-xs" style="fill:var(--fg);font-size:11px">Each SNP block has ⌈1,401 / 4⌉ = 351 bytes: 350 full bytes, then</text>
+<text x="452" y="353" class="t-xs" style="fill:var(--fg);font-size:11px">one byte with person 1,401 in its lowest 2 bits and 6 zero bits.</text>
+<text x="452" y="377" class="t-xs" style="fill:var(--fg);font-weight:700;font-size:11px">File size: 3 + 861,473 × 351 = 302,377,026 bytes.</text>
+<text x="452" y="398" class="t-xs" style="font-size:11px">Header: 6c 1b marks a PLINK .bed file; 01 means SNP-major.</text>
+</svg>
+<svg viewBox="0 0 300 790" role="img" aria-labelledby="pmmn-t pmmn-d" class="only-narrow">
+<title id="pmmn-t">One genotype matrix stored in three files</title>
+<desc id="pmmn-d">Top: eight real PennCATH people (lines 1 to 8 of penncath.fam) by four real SNPs (lines 2, 4, 6 and 10 of penncath.bim), each cell the number of copies of allele A1. Bottom: penncath.bed is the header 6c 1b 01 followed by one 351-byte block per SNP; the first byte of the block of SNP 2, f3, holds four 2-bit codes, read from the lowest bits: person 1 has 11 (C/C), person 2 has 00 (G/G), persons 3 and 4 have 11.</desc>
+<defs><marker id="pmmn-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker><pattern id="pmmn-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cfd5dd" stroke-width="3"/></pattern></defs>
+<text x="2" y="17" class="t-b" style="font-size:12.5px">8 of 1,401 people × 4 of 861,473 SNPs</text>
+<text x="2" y="36" class="t-xs" style="fill:var(--data);font-weight:700;font-size:11px">columns: lines of penncath.bim</text>
+<text x="93" y="58" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">SNP 2</text>
+<text x="93" y="73" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px">G / C</text>
+<text x="151" y="58" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">SNP 4</text>
+<text x="151" y="73" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px">C / T</text>
+<text x="209" y="58" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">SNP 6</text>
+<text x="209" y="73" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px">G / A</text>
+<text x="267" y="58" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">SNP 10</text>
+<text x="267" y="73" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:11px">A / G</text>
+<text x="58" y="98" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10002&quot;</text>
+<rect x="64" y="82" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="93" y="98.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="122" y="82" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="151" y="98.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="180" y="82" width="58" height="24" rx="0" fill="url(#pmmn-hatch)" stroke="#fff" stroke-width="1.5"/>
+<text x="209" y="98" class="t-xs" text-anchor="middle" style="fill:#5a6370;font-weight:700;font-size:11px">NA</text>
+<rect x="238" y="82" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="267" y="98.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<text x="58" y="122" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10004&quot;</text>
+<rect x="64" y="106" width="58" height="24" rx="0" fill="var(--g2)" stroke="#fff" stroke-width="1.5"/>
+<text x="93" y="122.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#fff">2</text>
+<rect x="122" y="106" width="58" height="24" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="151" y="122.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<rect x="180" y="106" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="209" y="122.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="238" y="106" width="58" height="24" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="267" y="122.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<text x="58" y="146" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10005&quot;</text>
+<rect x="64" y="130" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="93" y="146.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="122" y="130" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="151" y="146.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="180" y="130" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="209" y="146.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="238" y="130" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="267" y="146.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<text x="58" y="170" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10007&quot;</text>
+<rect x="64" y="154" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="93" y="170.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="122" y="154" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="151" y="170.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="180" y="154" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="209" y="170.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="238" y="154" width="58" height="24" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="267" y="170.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<text x="58" y="194" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10008&quot;</text>
+<rect x="64" y="178" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="93" y="194.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="122" y="178" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="151" y="194.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="180" y="178" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="209" y="194.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="238" y="178" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="267" y="194.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<text x="58" y="218" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10009&quot;</text>
+<rect x="64" y="202" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="93" y="218.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="122" y="202" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="151" y="218.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="180" y="202" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="209" y="218.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="238" y="202" width="58" height="24" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="267" y="218.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<text x="58" y="242" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10010&quot;</text>
+<rect x="64" y="226" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="93" y="242.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="122" y="226" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="151" y="242.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="180" y="226" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="209" y="242.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="238" y="226" width="58" height="24" rx="0" fill="var(--g1)" stroke="#fff" stroke-width="1.5"/>
+<text x="267" y="242.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">1</text>
+<text x="58" y="266" class="t-xs" text-anchor="end" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">&quot;10011&quot;</text>
+<rect x="64" y="250" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="93" y="266.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="122" y="250" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="151" y="266.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="180" y="250" width="58" height="24" rx="0" fill="url(#pmmn-hatch)" stroke="#fff" stroke-width="1.5"/>
+<text x="209" y="266" class="t-xs" text-anchor="middle" style="fill:#5a6370;font-weight:700;font-size:11px">NA</text>
+<rect x="238" y="250" width="58" height="24" rx="0" fill="var(--g0)" stroke="#fff" stroke-width="1.5"/>
+<text x="267" y="266.5" class="t-sm" text-anchor="middle" style="font-weight:700;font-size:12px;fill:#1d2127">0</text>
+<rect x="65" y="83" width="56" height="94" rx="3" fill="none" stroke="var(--accent)" stroke-width="2.4"/>
+<rect x="65" y="179" width="56" height="94" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-dasharray="5 3"/>
+<text x="2" y="292" class="t-xs" style="fill:var(--data);font-weight:700;font-size:11px">rows: lines of penncath.fam</text>
+<rect x="2" y="304" width="24" height="16" rx="2" fill="var(--g0)" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="14" y="316" class="t-xs" text-anchor="middle" style="font-weight:700;fill:#1d2127;font-size:11px">0</text>
+<rect x="32" y="304" width="24" height="16" rx="2" fill="var(--g1)" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="44" y="316" class="t-xs" text-anchor="middle" style="font-weight:700;fill:#1d2127;font-size:11px">1</text>
+<rect x="62" y="304" width="24" height="16" rx="2" fill="var(--g2)" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="74" y="316" class="t-xs" text-anchor="middle" style="font-weight:700;fill:#fff;font-size:11px">2</text>
+<rect x="92" y="304" width="26" height="16" rx="2" fill="url(#pmmn-hatch)" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="105" y="316" class="t-xs" text-anchor="middle" style="font-weight:700;font-size:11px">NA</text>
+<text x="126" y="316" class="t-xs" style="font-size:11px">copies of A1</text>
+<text x="2" y="350" class="t-b" style="font-size:12.5px">penncath.bed</text>
+<text x="98" y="350" class="t-xs" style="fill:var(--fg);font-size:11px">one 351-byte block per SNP</text>
+<rect x="2" y="362" width="26" height="28" rx="4" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.2"/>
+<text x="15" y="381" class="t-mono" text-anchor="middle" style="font-size:12px;font-weight:700">6c</text>
+<rect x="30" y="362" width="26" height="28" rx="4" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.2"/>
+<text x="43" y="381" class="t-mono" text-anchor="middle" style="font-size:12px;font-weight:700">1b</text>
+<rect x="58" y="362" width="26" height="28" rx="4" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.2"/>
+<text x="71" y="381" class="t-mono" text-anchor="middle" style="font-size:12px;font-weight:700">01</text>
+<rect x="88" y="362" width="58" height="28" rx="4" fill="var(--bg-alt)" stroke="#b9c1cc" stroke-width="1"/>
+<text x="117" y="381" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:400;font-size:11px">SNP 1</text>
+<rect x="150" y="362" width="58" height="28" rx="4" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+<text x="179" y="381" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">SNP 2</text>
+<rect x="212" y="362" width="22" height="28" rx="4" fill="var(--bg-alt)" stroke="#b9c1cc" stroke-width="1"/>
+<text x="223" y="381" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:400;font-size:11px">…</text>
+<rect x="238" y="362" width="58" height="28" rx="4" fill="var(--bg-alt)" stroke="#b9c1cc" stroke-width="1"/>
+<text x="267" y="381" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:400;font-size:11px">SNP m</text>
+<path d="M150,390 L4,426" stroke="var(--accent)" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+<path d="M208,390 L296,426" stroke="var(--accent)" stroke-width="1" fill="none" stroke-dasharray="3 3"/>
+<rect x="2" y="426" width="296" height="186" rx="8" fill="#fbfcfe" stroke="var(--accent)" stroke-width="1"/>
+<text x="10" y="446" class="t-xs" style="fill:var(--fg);font-weight:700;font-size:11px">First byte of SNP 2 (A1 G, A2 C)</text>
+<text x="10" y="480" class="t-mono" style="font-weight:700;font-size:15px">f3</text>
+<text x="35" y="480" class="t" style="fill:var(--fg-muted)">=</text>
+<rect x="50" y="458" width="52" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="76" y="479" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="76" y="505" class="t-xs" text-anchor="middle" style="font-size:11px">person 4</text>
+<text x="76" y="520" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<rect x="108" y="458" width="52" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="134" y="479" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="134" y="505" class="t-xs" text-anchor="middle" style="font-size:11px">person 3</text>
+<text x="134" y="520" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<rect x="166" y="458" width="52" height="32" rx="5" fill="#fff" stroke="#b9c1cc" stroke-width="1.1"/>
+<text x="192" y="479" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">00</text>
+<text x="192" y="505" class="t-xs" text-anchor="middle" style="font-size:11px">person 2</text>
+<text x="192" y="520" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">G/G</text>
+<rect x="224" y="458" width="52" height="32" rx="5" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.6"/>
+<text x="250" y="479" class="t-mono" text-anchor="middle" style="font-weight:700;font-size:14px">11</text>
+<text x="250" y="505" class="t-xs" text-anchor="middle" style="font-size:11px">person 1</text>
+<text x="250" y="520" class="t-xs" text-anchor="middle" style="fill:var(--fg);font-weight:700;font-size:11px">C/C</text>
+<text x="10" y="548" class="t-xs" style="font-size:11px">Read from the right: person 1 is in the</text>
+<text x="10" y="563" class="t-xs" style="font-size:11px">lowest 2 bits. The next byte, ff, holds</text>
+<text x="10" y="578" class="t-xs" style="font-size:11px">persons 5–8, all 11 (C/C).</text>
+<text x="4" y="640" class="t-xs" style="font-weight:700;fill:var(--fg);font-size:11px">2-bit code → copies of A1</text>
+<text x="4" y="658" class="t-xs" style="font-family:var(--mono);font-size:11px;font-weight:700;fill:var(--fg)">00</text>
+<text x="28" y="658" class="t-xs" style="fill:var(--fg);font-size:11px">→ 2 (A1/A1)</text>
+<text x="4" y="675" class="t-xs" style="font-family:var(--mono);font-size:11px;font-weight:700;fill:var(--fg)">01</text>
+<text x="28" y="675" class="t-xs" style="fill:var(--fg);font-size:11px">→ missing</text>
+<text x="4" y="692" class="t-xs" style="font-family:var(--mono);font-size:11px;font-weight:700;fill:var(--fg)">10</text>
+<text x="28" y="692" class="t-xs" style="fill:var(--fg);font-size:11px">→ 1 (A1/A2)</text>
+<text x="4" y="709" class="t-xs" style="font-family:var(--mono);font-size:11px;font-weight:700;fill:var(--fg)">11</text>
+<text x="28" y="709" class="t-xs" style="fill:var(--fg);font-size:11px">→ 0 (A2/A2)</text>
+<text x="176" y="640" class="t-xs" style="font-weight:700;fill:var(--fg);font-size:11px">File size</text>
+<text x="176" y="658" class="t-xs" style="fill:var(--fg);font-size:11px">3 + 861,473 × 351</text>
+<text x="176" y="675" class="t-xs" style="fill:var(--fg);font-weight:700;font-size:11px">= 302,377,026 bytes</text>
+<text x="176" y="718" class="t-xs" style="font-size:11px">6c 1b: a .bed file</text>
+<text x="176" y="735" class="t-xs" style="font-size:11px">01: SNP-major</text>
+<text x="2" y="768" class="t-xs" style="font-size:11px">Columns: SNP 2 = rs12565286, SNP 4 = rs3094315,</text>
+<text x="2" y="783" class="t-xs" style="font-size:11px">SNP 6 = rs11240776, SNP 10 = rs11240777.</text>
+</svg>
+  </figure>
+  <p class="mm-statement">A PLINK binary fileset is one matrix of genotype calls, people by SNPs, kept in three files that share a name. The <code>.fam</code> file names the rows, the <code>.bim</code> file names the columns and says which allele the numbers count, and the <code>.bed</code> file holds the entries at two bits each, one SNP after another. Nothing but the order of the lines ties the three together.</p>
+  <ul class="mm-hooks">
+    <li><strong>Rows: the .fam file.</strong> One line per person, in the order of the genotypes, with six columns: family ID, individual ID, father, mother, sex and phenotype.</li>
+    <li><strong>Columns: the .bim file.</strong> One line per SNP, in the order of the genotype blocks: chromosome, SNP ID, two positions, and the alleles A1 and A2. A stored genotype is the number of copies of A1.</li>
+    <li><strong>Entries: the .bed file.</strong> Three header bytes, then one block of \(\lceil n/4 \rceil\) bytes per SNP for \(n\) people; each byte holds four people's 2-bit codes, the first person in the lowest bits.</li>
+    <li><strong>By hand.</strong> A hex dump of <code>penncath.bed</code> and a little arithmetic recover real genotypes, which is also how you test any reader.</li>
+    <li><strong>In memory.</strong> The matrix has 1.2 billion entries: 0.3 GB packed, 9.7 GB as 64-bit numbers. R and Python readers differ in layout, size and in which allele they count.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and the previous page</div>
+  <p>The three-file format is introduced in <a href="../0-biological-foundations/the-data.html#plink-files">Lecture 0 · PLINK binary filesets</a>. How an array turns fluorescence signals into the calls stored here is in <a href="../0-biological-foundations/samples-to-genotypes.html#calling">Lecture 0 · Genotype calling</a>, and why the same SNP can be written with different letters is in <a href="../0-biological-foundations/dna.html#strands-in-snp-data">Lecture 0 · Strands in SNP data</a>. The study behind the files, PennCATH, is described on <a href="practical-overview.html#penncath">The practical</a>; PLINK itself is explained on <a href="tools.html#plink">The tools</a>.</p>
+</aside>
+
+<p>The commands on this page are ordinary Unix tools (<code>head</code>, <code>awk</code>, <code>xxd</code>) run on the real files, and every output shown is what they print. To repeat them, download the data as described on <a href="setup.html">Set up your computer</a> and open a terminal in the folder that holds the files, <code>~/statgen-workshop/data/inputs/penncath_withPheno</code>.</p>
+
+<h2 id="fam">The .fam file: one line per person <span class="tag core">Core</span></h2>
+<p>The genotypes were measured for the PennCATH study and later released for teaching with a tutorial paper by Reed and colleagues.<sup><a href="#src-6">6</a></sup> The <code>.fam</code> file is plain text with no header line. Each line describes one person, and the line number is the person's position inside every SNP's block of the <code>.bed</code> file: line 1 is the first genotype of each block, line 2 the second, and so on. Nothing else connects a person to their genotypes. These are the first four lines and the last line of <code>penncath.fam</code>:</p>
+
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>head -n 4 penncath.fam
+<span class="prompt">$ </span>tail -n 1 penncath.fam</pre>
+<span class="output-label">Output</span>
+<pre class="output">"10002" 1 0 0 1 1
+"10004" 1 0 0 2 1
+"10005" 1 0 0 1 2
+"10007" 1 0 0 1 1
+"11596" 1 0 0 1 -9</pre>
+
+<p>The six columns are separated by spaces (tabs are also allowed). PLINK's documentation defines them as follows; the notes say what this file holds.<sup><a href="#src-2">2</a></sup></p>
+<dl class="cols-doc">
+  <dt>1 · FID</dt><dd><strong>Family ID</strong>, a label shared by the members of one family. The PennCATH participants are unrelated, so each person's FID is their study number. The quotation marks are part of the ID: PLINK reads the first person's FID as the seven characters <code>"10002"</code>, quotes included.</dd>
+  <dt>2 · IID</dt><dd><strong>Individual ID</strong> within the family; it cannot be 0. Every IID in this file is 1. That is allowed, because PLINK identifies a person by the pair (FID, IID), but programs that read the IID alone, such as GrafAnc in step 8 of the practical, would see 1,401 people with the same ID, so step 8 builds unique IIDs first.</dd>
+  <dt>3 · father</dt><dd>The father's IID, or 0 if the father is not in the file. All 0 here.</dd>
+  <dt>4 · mother</dt><dd>The mother's IID, or 0. All 0 here. A person whose father and mother IDs are both 0 is a <a class="term" href="glossary.html#founder">founder</a>; a parent ID that is filled in makes the person a nonfounder even if that parent is not in the file. PLINK computes allele frequencies, Hardy–Weinberg tests and LD pruning from founders only, which here means everyone.</dd>
+  <dt>5 · sex</dt><dd>1 = male, 2 = female, 0 = unknown. 937 people are coded 1 and 464 are coded 2.</dd>
+  <dt>6 · phenotype</dt><dd>For a case–control trait, 1 = control, 2 = case, and −9 or 0 = missing. Any other number makes PLINK read the whole column as a quantitative trait, such as a cholesterol level, with −9 still meaning missing. (The option <code>--1</code> switches to 0 = control, 1 = case.) This file has 470 people coded 1, 463 coded 2 and 468 coded −9; what the codes mean here is the subject of <a href="#phenotype-column">What column 6 holds</a> below.</dd>
+</dl>
+
+<p>Counting the values of a column is the quickest check of a <code>.fam</code> file. <code>awk '{print $5}'</code> prints the fifth whitespace-separated field of every line, <code>sort</code> groups equal values, and <code>uniq -c</code> counts each group:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk '{print $5}' penncath.fam | sort | uniq -c    <span class="cm"># sex</span>
+<span class="prompt">$ </span>awk '{print $6}' penncath.fam | sort | uniq -c    <span class="cm"># phenotype</span></pre>
+<span class="output-label">Output</span>
+<pre class="output"> 937 1
+ 464 2
+ 468 -9
+ 470 1
+ 463 2</pre>
+<p>The same numbers appear in the PLINK log that came with the files ("1401 people (937 males, 464 females)", "463 are cases and 470 are controls", "468 phenotypes are missing"), which is read line by line on <a href="tools.html#plink-log">The tools · Read the .log file</a>.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Never sort or edit the .fam file on its own</div>
+  <p>The <code>.bed</code> file contains no IDs to match against, only positions. Sorting the <code>.fam</code> file, deleting a line, or replacing it with the <code>.fam</code> file of another fileset attaches every genotype to the wrong person, and PLINK reports no error as long as the number of lines is unchanged. To change IDs, sex or phenotypes, or to drop people, use PLINK options that rewrite all three files consistently: <code>--update-ids</code>, <code>--update-sex</code>, <code>--pheno</code>, <code>--keep</code> and <code>--remove</code>, followed by <code>--make-bed</code>.<sup><a href="#src-3">3</a></sup></p>
+</aside>
+
+<h3 id="phenotype-column">What column 6 holds in this copy of PennCATH</h3>
+<p>The practical describes column 6 as coronary artery disease (CAD) case–control status: 1 = control, 2 = case, −9 = missing.<sup><a href="#src-8">8</a></sup> A second source gives a different picture. The teaching copy of PennCATH distributed by Patrick Breheny comes with a clinical table, <code>penncath.csv</code>, that records CAD for all 1,401 people ("CAD=1 means that the subject has coronary artery disease").<sup><a href="#src-7">7</a></sup> Matching that table to <code>penncath.fam</code> on the family ID gives:</p>
+<div class="table-wrap">
+<table class="compact">
+  <thead><tr><th>Code in column 6</th><th>People</th><th>CAD in the clinical table</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>470</td><td>CAD = 1 for all 470</td></tr>
+    <tr><td>2</td><td>463</td><td>CAD = 1 for all 463</td></tr>
+    <tr><td>−9</td><td>468</td><td>CAD = 0 for all 468</td></tr>
+  </tbody>
+</table>
+</div>
+<p>By the clinical table, then, the 468 people with a missing phenotype are the people without CAD, and codes 1 and 2 divide the 933 people with CAD into two groups. We found no documentation of what that division is. (In Breheny's copy the 468 are coded 0, which PLINK reads as missing and wrote as −9 when the files were rewritten for the workshop.) For quality control the consequence is small: only step 2 uses the phenotype, and there the "controls" (PLINK's UNAFF group) are the 470 people coded 1. The general lesson matters more: PLINK cannot know what a phenotype column means, so check it against the study's own documentation before any association analysis.</p>
+
+<h2 id="bim">The .bim file: one line per SNP <span class="tag core">Core</span></h2>
+<p>The <code>.bim</code> file (PLINK calls it the "extended MAP file") is also plain text with no header. Each line describes one SNP, in the order of the SNP blocks of the <code>.bed</code> file. Its columns are separated by tabs. These are its first eight lines and its last line:</p>
+
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>head -n 8 penncath.bim
+<span class="prompt">$ </span>tail -n 1 penncath.bim</pre>
+<span class="output-label">Output</span>
+<pre class="output">1	rs10458597	0	564621	-9	C
+1	rs12565286	0	721290	G	C
+1	rs12082473	0	740857	T	C
+1	rs3094315	0	752566	C	T
+1	rs2286139	0	761732	C	T
+1	rs11240776	0	765269	G	A
+1	rs2980319	0	777122	A	T
+1	rs2980300	0	785989	A	G
+22	rs28729663	0	51219006	A	G</pre>
+
+<dl class="cols-doc">
+  <dt>1 · chromosome</dt><dd>1–22 for the autosomes; PLINK codes X, Y, the pseudo-autosomal region of X and Y, and mitochondrial DNA as 23, 24, 25 and 26 in its output; 0 means unknown. This file has autosomes only, from 71,038 SNPs on chromosome 1 to 11,382 on chromosome 22, and no X chromosome, which is why the practical cannot check recorded sex against the genotypes.</dd>
+  <dt>2 · SNP ID</dt><dd>Here the dbSNP rsID, a stable public identifier. Any text without spaces is allowed, and IDs must be unique for most PLINK operations.</dd>
+  <dt>3 · genetic position</dt><dd>Position on the genetic map in morgans or centimorgans (a measure of recombination). It is 0 for every SNP here; PLINK's documentation says a dummy 0 is safe.</dd>
+  <dt>4 · base-pair position</dt><dd>The 1-based coordinate on the chromosome, which only means something together with a genome build. These positions are on GRCh37: dbSNP places <a href="https://www.ncbi.nlm.nih.gov/snp/rs12565286" target="_blank" rel="noopener">rs12565286</a> at 721,290 on chromosome 1 in GRCh37, the value on line 2.</dd>
+  <dt>5 · A1</dt><dd>Allele 1, defined by the format as the allele of the "clear bits" in the <code>.bed</code> file (code 00) and "usually minor". A stored genotype counts copies of A1.</dd>
+  <dt>6 · A2</dt><dd>Allele 2, the allele of the "set bits" (code 11), "usually major".</dd>
+</dl>
+
+<h3 id="a1-a2">A1 is the allele that is counted, and PLINK chooses it</h3>
+<p>When PLINK 1.9 writes a fileset with <code>--make-bed</code>, it makes A1 the minor allele, the less frequent of the two among the people in the file, unless <code>--keep-allele-order</code> is given; the documentation says that "otherwise, the major allele is set to A2".<sup><a href="#src-3">3</a></sup> In <code>penncath.bim</code> this holds everywhere: decoding the whole <code>.bed</code> file with the code further down, no SNP has an A1 frequency above 0.5. Three consequences follow.</p>
+<ul>
+  <li><strong>A1 is not the reference allele.</strong> The reference allele is the letter in the reference genome sequence. At rs12565286 the GRCh37 reference letter is G, and G is also A1, but only because G is the rarer allele in these people (5.2% of called alleles).</li>
+  <li><strong>A1 can change between files.</strong> If filtering removes people and a SNP's frequency crosses 0.5, the next <code>--make-bed</code> swaps A1 and A2 for that SNP and every stored count becomes 2 minus its old value. Compare results across files by their A1 column, never by position in a table.</li>
+  <li><strong>A1 is not the risk allele.</strong> An association test reports the effect of each extra copy of A1, whichever direction that turns out to be.</li>
+</ul>
+<p>A SNP where only one allele was seen in anyone has nothing to put in column 5. PLINK 1.9 writes 0 there; this file has −9 instead, inherited from the file it was made from, and PLINK reads −9 as the name of an allele that no one carries. Either way such a SNP is monomorphic in these people: everyone with a call has the same genotype, so it carries no information for association or QC statistics. Line 1 is one of 26,153 such SNPs. One SNP, rs9428247 on line 35,786, has no calls at all and −9 in both columns.</p>
+
+<h3 id="allele-pairs">Which letters appear, and why two pairs are ambiguous</h3>
+<p>Counting the unordered allele pairs of the 835,319 SNPs with two known alleles shows which DNA changes the array measures:</p>
+<div class="table-wrap">
+<table class="compact">
+  <thead><tr><th>Allele pair</th><th>SNPs</th><th>Pair on the other strand</th><th>Strand can be read from the letters?</th></tr></thead>
+  <tbody>
+    <tr><td>C/T</td><td>292,333</td><td>G/A</td><td>Yes</td></tr>
+    <tr><td>A/G</td><td>282,874</td><td>T/C</td><td>Yes</td></tr>
+    <tr><td>A/C</td><td>74,288</td><td>T/G</td><td>Yes</td></tr>
+    <tr><td>G/T</td><td>56,825</td><td>C/A</td><td>Yes</td></tr>
+    <tr><td>C/G</td><td>76,264</td><td>G/C</td><td>No: strand-ambiguous</td></tr>
+    <tr><td>A/T</td><td>52,735</td><td>T/A</td><td>No: strand-ambiguous</td></tr>
+  </tbody>
+</table>
+</div>
+<p>DNA has two complementary strands, and a SNP can be reported from either: A pairs with T and C with G, so a C/T SNP read from the other strand is G/A. Line 4 is an example. Ensembl lists rs3094315 at 752,566 on GRCh37 with alleles G and A on the forward strand, the strand the reference sequence is written on,<sup><a href="#src-17">17</a></sup> while <code>penncath.bim</code> has C and T: the same SNP, reported from the reverse strand. For most SNPs a mismatch like this can be detected and fixed by complementing the letters, which is what <code>--flip</code> does in step 7 of the practical when the data are merged with the 1000 Genomes reference. For the 128,999 A/T and C/G SNPs it cannot: their complement is the same pair, so the letters alone never reveal the strand. Line 7, rs2980319 (A/T), is one of them.</p>
+
+<h3 id="explore">Explore both files cell by cell</h3>
+<div class="widget" id="w-columns">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The columns of penncath.fam and penncath.bim</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This explorer needs JavaScript. The column descriptions above contain the same information.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Neither file has a header line, so the meaning of each column comes only from the format definition. In the <code>.fam</code> rows, every IID is 1 and every parent is 0; the people are told apart by their FIDs alone. In the <code>.bim</code> rows, compare line 6, a SNP whose many missing calls will fail step 1 of the practical, with line 35,786, where no one has a call, and with line 861,473, the last SNP of the file, where A1 is the rarer allele at a frequency of 0.137.</p>
+
+<h2 id="bed">The .bed file: two bits per genotype <span class="tag core">Core</span></h2>
+<p>The <code>.bed</code> file ("binary biallelic genotype table") is not text, so <code>head</code> is no use; <code>xxd</code> prints a file's bytes in hexadecimal, two digits per byte. (It has nothing to do with the UCSC genome browser's BED format, a text format for genome intervals.) The first 16 bytes:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>xxd -l 16 penncath.bed</pre>
+<span class="output-label">Output</span>
+<pre class="output">00000000: 6c1b 01ff ffff ffff ffff ffff ffff ffff  l...............</pre>
+<p>The first column is the offset of the first byte shown (0), then come the bytes in file order, grouped two by two, and on the right the bytes as text where they are printable. Everything after the header follows from the format specification:<sup><a href="#src-2">2</a></sup><sup><a href="#src-4">4</a></sup></p>
+<ul>
+  <li><strong>Bytes 0 and 1, <code>6c 1b</code>:</strong> the "magic number" that marks the file as a PLINK <code>.bed</code> file. Readers check these bytes before anything else; the code further down stops if they are wrong.</li>
+  <li><strong>Byte 2, <code>01</code>:</strong> the layout. 01 means SNP-major: all people's genotypes for the first SNP, then all people's genotypes for the second SNP, and so on. PLINK 1.07 could also write 00, sample-major (all SNPs of the first person, then all SNPs of the second person); PLINK 1.9 converts such a file to SNP-major when it reads one.<sup><a href="#src-4">4</a></sup></li>
+  <li><strong>From byte 3:</strong> one block per SNP, in <code>.bim</code> order. A block holds the genotypes of all \(n\) people in <code>.fam</code> order, four per byte, so it is \(\lceil n/4 \rceil\) bytes long: \(n/4\) rounded up, because every block starts on a fresh byte. For \(n = 1{,}401\) that is 351 bytes.</li>
+</ul>
+<p>The first SNP, rs10458597, is monomorphic: everyone with a call has two copies of C, which is A2, so its block is almost entirely <code>ff</code> bytes (four people with code 11 each). Within a block, each person has a 2-bit code:</p>
+<div class="table-wrap">
+<table class="compact">
+  <thead><tr><th>Code</th><th>Genotype</th><th>Copies of A1</th><th>At rs12565286 (A1 = G, A2 = C)</th></tr></thead>
+  <tbody>
+    <tr><td><span class="bits">00</span></td><td>homozygous for A1</td><td>2</td><td>G/G</td></tr>
+    <tr><td><span class="bits">01</span></td><td>missing (no call)</td><td>—</td><td>no genotype</td></tr>
+    <tr><td><span class="bits">10</span></td><td>heterozygous</td><td>1</td><td>G/C</td></tr>
+    <tr><td><span class="bits">11</span></td><td>homozygous for A2</td><td>0</td><td>C/C</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Inside a byte, the first person of the four sits in the two lowest-order bits (the rightmost two when the byte is written in binary), the second person in the next two, and so on, so a byte written in binary reads from right to left. Where a person's genotype lives is therefore a matter of arithmetic:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} b = 3 + (j - 1)\,B + \left\lfloor \frac{i - 1}{4} \right\rfloor \\ s = 2\,\big((i - 1) \bmod 4\big) \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(i\)</dt><dd>The person's line number in the <code>.fam</code> file, from 1 to \(n\).</dd>
+    <dt>\(j\)</dt><dd>The SNP's line number in the <code>.bim</code> file, from 1 to \(m\), the number of SNPs.</dd>
+    <dt>\(B = \lceil n/4 \rceil\)</dt><dd>Bytes per SNP block: 351 for the 1,401 PennCATH people.</dd>
+    <dt>\(b\)</dt><dd>The offset of the byte that holds the genotype, counting the file's first byte as 0.</dd>
+    <dt>\(\lfloor (i-1)/4 \rfloor\)</dt><dd>Which byte of the block: people 1–4 are in byte 0, people 5–8 in byte 1, and so on.</dd>
+    <dt>\(s\)</dt><dd>The position of the person's lower bit inside that byte: 0, 2, 4 or 6. The code is the two bits at positions \(s\) and \(s+1\), that is, the byte shifted right by \(s\) bits with all but the last two bits cleared.</dd>
+  </dl>
+  <p class="eq-intuition">The 3 skips the header, \((j-1)B\) skips the blocks of the \(j-1\) SNPs before this one, and the floor term picks the byte of the block; within it, each earlier person of the same byte pushes this one two bits further to the left. For person 2 at SNP 2 (rs12565286): \(b = 3 + 351 + 0 = 354\) and \(s = 2\). The same arithmetic gives the size of the whole file: the last block ends at byte \(3 + mB\), so with \(m = 861{,}473\) SNPs the file has \(3 + 861{,}473 \times 351 = 302{,}377{,}026\) bytes. Because \(1{,}401 = 4 \times 350 + 1\), the last byte of every block holds a single person and six bits of padding, which are always 0.</p>
+</div>
+
+<p>The file size is the quickest test that the three files belong together: <code>wc -l</code> counts lines and <code>wc -c</code> counts bytes.</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>wc -l penncath.fam penncath.bim
+<span class="prompt">$ </span>wc -c penncath.bed</pre>
+<span class="output-label">Output</span>
+<pre class="output">    1401 penncath.fam
+  861473 penncath.bim
+  862874 total
+ 302377026 penncath.bed</pre>
+<p>302,377,026 is exactly \(3 + 861{,}473 \times 351\). PLINK makes the same check when it loads a fileset and stops with an error if the size does not match the line counts, which catches a <code>.fam</code> or <code>.bim</code> file with lines added or lost, but not one whose lines were reordered. Why this layout makes PLINK fast, with the bit operations that count 32 genotypes at a time, is on <a href="tools.html#plink-bits">The tools · Why it is fast</a>.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Two documentation pages, two ways of writing the same bits</div>
+  <p>The PLINK 1.9 page lists the codes with the high bit first, as above: 01 = missing, 10 = heterozygous. The older PLINK 1.07 page writes each code in the order the bits are read, low bit first, and so lists "01 Heterozygote" and "10 Missing genotype".<sup><a href="#src-4">4</a></sup> Both describe the same file. If a decoder you wrote turns heterozygotes into missing calls and missing calls into heterozygotes, it has mixed the two conventions.</p>
+</aside>
+
+<h3 id="decoder">Encode and decode the bytes</h3>
+<div class="widget" id="w-bed-decoder">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">From genotypes to .bed bytes and back</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The worked example in the next section decodes the same bytes by hand.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> With all 12 people the four 3-byte blocks are the real first bytes of these SNPs' blocks in <code>penncath.bed</code>. Click a genotype to see its two bits light up in the block, then change it: setting person 1 at rs12565286 to missing changes the first byte from <code>f3</code> to <code>f1</code>, because only the two lowest bits change, from 11 to 01. Lower the number of people from 12 to 9 and the blocks stay 3 bytes long but the last byte now holds one person and three pairs of padding; at 8 people each block shrinks to 2 bytes and every byte offset after the first block moves. Give several people two copies of G at rs12565286 until G becomes the commoner allele, and the note explains what PLINK would do to A1 and A2.</p>
+
+<h2 id="by-hand">Decode real genotypes by hand <span class="tag core">Core</span></h2>
+<p>The block of the second SNP, rs12565286, starts at byte \(3 + 351 = 354\). Its first eight bytes, in hexadecimal and then the first three in binary (<code>-s</code> sets the start offset, <code>-l</code> the number of bytes, and <code>-b</code> switches to binary):</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>xxd -s 354 -l 8 penncath.bed
+<span class="prompt">$ </span>xxd -b -s 354 -l 3 penncath.bed</pre>
+<span class="output-label">Output</span>
+<pre class="output">00000162: f3ff ffdf febf ffeb  ........
+00000162: 11110011 11111111 11111111  ...</pre>
+<p>(162 is 354 in hexadecimal.) Split the first byte, <span class="bits">11110011</span>, into four 2-bit codes and read them from the right:</p>
+<div class="table-wrap">
+<table class="compact">
+  <thead><tr><th>Bits</th><th>Person (.fam line)</th><th>Code</th><th>Genotype</th></tr></thead>
+  <tbody>
+    <tr><td>1–0</td><td>1 · "10002"</td><td><span class="bits">11</span></td><td>C/C, 0 copies of G</td></tr>
+    <tr><td>3–2</td><td>2 · "10004"</td><td><span class="bits">00</span></td><td>G/G, 2 copies of G</td></tr>
+    <tr><td>5–4</td><td>3 · "10005"</td><td><span class="bits">11</span></td><td>C/C</td></tr>
+    <tr><td>7–6</td><td>4 · "10007"</td><td><span class="bits">11</span></td><td>C/C</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The next two bytes, <code>ff</code>, are people 5 to 12, all C/C. The remaining five bytes contain the first exceptions: in <code>df</code> = <span class="bits">11011111</span> the third pair from the right is 01, so person 15 has no call; <code>fe</code> = <span class="bits">11111110</span> makes person 17 heterozygous (G/C); <code>bf</code> = <span class="bits">10111111</span> makes person 24 heterozygous; and <code>eb</code> = <span class="bits">11101011</span> makes persons 30 and 31 heterozygous. The last byte of the block is at offset \(354 + 350 = 704\):</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>xxd -b -s 704 -l 1 penncath.bed</pre>
+<span class="output-label">Output</span>
+<pre class="output">000002c0: 00000011  .</pre>
+<p>Its lowest pair, 11, is person 1,401 ("11596" on the last <code>.fam</code> line): C/C. The other six bits are padding. On a system without <code>xxd</code>, <code>od -A d -t x1 -j 354 -N 8 penncath.bed</code> prints the same bytes with decimal offsets.</p>
+
+<h3 id="read-code">The same in a few lines of code</h3>
+<p>A reader for one SNP needs exactly the arithmetic above: check the header, jump to the block, and pull out each person's two bits. These versions use no packages, and both were run on the real <code>penncath</code> files with the output shown.</p>
+<div class="tabset" data-group="lang">
+<section class="tab-panel" data-label="Python">
+<span class="code-label python">python</span>
+<pre class="code"><span class="cm"># read_bed.py: decode one SNP of a PLINK 1 .bed file with plain Python (no packages).</span>
+CODE = {0b00: 2, 0b01: None, 0b10: 1, 0b11: 0}   <span class="cm"># 2-bit code -> copies of A1; None = missing</span>
+
+def read_snp(prefix, j, n):
+    """Genotypes of SNP j (0-based, in .bim order) for all n people (in .fam order)."""
+    bytes_per_snp = (n + 3) // 4                    <span class="cm"># ceil(n / 4)</span>
+    with open(prefix + ".bed", "rb") as bed:
+        assert bed.read(3) == b"\x6c\x1b\x01"       <span class="cm"># magic number, SNP-major</span>
+        bed.seek(3 + j * bytes_per_snp)             <span class="cm"># skip the header and j earlier SNPs</span>
+        block = bed.read(bytes_per_snp)
+    return [CODE[(block[i // 4] &gt;&gt; (2 * (i % 4))) &amp; 0b11] for i in range(n)]
+
+prefix = "penncath"
+n = sum(1 for _ in open(prefix + ".fam"))           <span class="cm"># 1401 people</span>
+bim = [line.split() for line in open(prefix + ".bim")]
+for j in range(4):
+    g = read_snp(prefix, j, n)
+    called = [x for x in g if x is not None]
+    freq = sum(called) / (2 * len(called))
+    print(bim[j][1], "A1=" + bim[j][4], "A2=" + bim[j][5],
+          "first 12:", g[:12], "missing:", g.count(None), "A1 freq: %.4f" % freq)</pre>
+<span class="output-label">Output</span>
+<pre class="output">rs10458597 A1=-9 A2=C first 12: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] missing: 3 A1 freq: 0.0000
+rs12565286 A1=G A2=C first 12: [0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] missing: 17 A1 freq: 0.0517
+rs12082473 A1=T A2=C first 12: [0, 0, 0, 0, 0, 0, 0, 0, 0, None, 0, 0] missing: 32 A1 freq: 0.0015
+rs3094315 A1=C A2=T first 12: [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0] missing: 15 A1 freq: 0.1782</pre>
+</section>
+<section class="tab-panel" data-label="R">
+<span class="code-label r">r</span>
+<pre class="code"><span class="cm"># Decode one SNP of a PLINK 1 .bed file in base R (no packages).</span>
+read_bed_snp &lt;- function(prefix, j, n) {         <span class="cm"># j is 1-based, in .bim order</span>
+  bytes_per_snp &lt;- ceiling(n / 4)
+  con &lt;- file(paste0(prefix, ".bed"), "rb")
+  on.exit(close(con))
+  magic &lt;- readBin(con, "raw", 3)
+  stopifnot(identical(magic, as.raw(c(0x6c, 0x1b, 0x01))))
+  seek(con, 3 + (j - 1) * bytes_per_snp)          <span class="cm"># skip the header and earlier SNPs</span>
+  block &lt;- as.integer(readBin(con, "raw", bytes_per_snp))
+  i &lt;- 0:(n - 1)                                  <span class="cm"># person index, 0-based</span>
+  code &lt;- bitwAnd(bitwShiftR(block[i %/% 4 + 1], 2 * (i %% 4)), 3L)
+  c(2L, NA, 1L, 0L)[code + 1]                     <span class="cm"># 00, 01, 10, 11 -> copies of A1</span>
+}
+
+fam &lt;- read.table("penncath.fam")
+bim &lt;- read.table("penncath.bim", colClasses = "character")
+g &lt;- read_bed_snp("penncath", 2, nrow(fam))
+bim[2, ]
+head(g, 12)
+table(g, useNA = "ifany")</pre>
+<span class="output-label">Output</span>
+<pre class="output">  V1         V2 V3     V4 V5 V6
+2  1 rs12565286  0 721290  G  C
+ [1] 0 2 0 0 0 0 0 0 0 0 0 0
+g
+   0    1    2 &lt;NA&gt;
+1247  131    6   17 </pre>
+<p>For Python users: <code>readBin(con, "raw", k)</code> reads <code>k</code> bytes like <code>f.read(k)</code>; <code>bitwShiftR</code> and <code>bitwAnd</code> are <code>&gt;&gt;</code> and <code>&amp;</code>; <code>%/%</code> and <code>%%</code> are integer division and remainder; and R vectors are indexed from 1, hence the <code>+ 1</code> in two places. The last line counts 1,247 people with C/C, 131 heterozygous, 6 with G/G and 17 missing; \((2 \times 6 + 131) / (2 \times 1{,}384) = 0.0517\), the A1 frequency printed by the Python version.</p>
+</section>
+</div>
+<p>Decoding a whole file one SNP at a time this way is slow in pure Python, and vectorized code is the usual next step. The NumPy version below decodes every SNP at once. <strong>It is untested</strong>: NumPy was not available where this page was written, so check it against the pure-Python reader on a few SNPs before relying on it.</p>
+<span class="code-label python">python · not run here</span>
+<pre class="code">import numpy as np
+
+def read_bed(prefix, n, m):
+    """All genotypes as an n x m int8 matrix of A1 copies, -1 = missing. Untested."""
+    bps = (n + 3) // 4                                       <span class="cm"># bytes per SNP</span>
+    raw = np.fromfile(prefix + ".bed", dtype=np.uint8)
+    assert raw[:3].tolist() == [0x6C, 0x1B, 0x01]
+    blocks = raw[3:].reshape(m, bps)                         <span class="cm"># one row per SNP</span>
+    codes = np.stack([(blocks &gt;&gt; s) &amp; 0b11 for s in (0, 2, 4, 6)], axis=2)
+    codes = codes.reshape(m, 4 * bps)[:, :n]                 <span class="cm"># drop the padding</span>
+    lookup = np.array([2, -1, 1, 0], dtype=np.int8)          <span class="cm"># codes 00, 01, 10, 11</span>
+    return lookup[codes].T                                   <span class="cm"># people x SNPs</span></pre>
+<p>For PennCATH this holds several copies of the matrix at once, about 2.7 GB at its peak, which is the problem the next section is about.</p>
+
+<h2 id="in-memory">The genotype matrix in memory <span class="tag core">Core</span></h2>
+<p>PennCATH has \(1{,}401 \times 861{,}473 = 1{,}206{,}923{,}673\) genotypes. How much memory they take depends only on how many bytes each one is given:</p>
+<div class="table-wrap">
+<table class="compact mem">
+  <thead><tr><th>Representation</th><th>Bytes per genotype</th><th>PennCATH</th></tr></thead>
+  <tbody>
+    <tr><td>2-bit codes: the <code>.bed</code> file, and PLINK 1.9's own memory<sup><a href="#src-1">1</a></sup><span class="mem-bar" style="--w: 3.1%"></span></td><td>0.25</td><td>0.30 GB</td></tr>
+    <tr><td>One byte: NumPy <code>int8</code>, R <code>raw</code>, snpStats<span class="mem-bar" style="--w: 12.5%"></span></td><td>1</td><td>1.21 GB</td></tr>
+    <tr><td>Four bytes: R <code>integer</code>, <code>float32</code><span class="mem-bar" style="--w: 50%"></span></td><td>4</td><td>4.83 GB</td></tr>
+    <tr><td>Text <code>.ped</code> file: two letters and two spaces<span class="mem-bar" style="--w: 50%"></span></td><td>≈ 4</td><td>≈ 4.8 GB</td></tr>
+    <tr><td>Eight bytes: R <code>numeric</code>, NumPy <code>float64</code><span class="mem-bar" style="--w: 100%"></span></td><td>8</td><td>9.66 GB</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Two bits is the least that can hold four possible values, and it is what makes the <code>.bed</code> format practical: the file is 32 times smaller than a matrix of 64-bit numbers, and reading one SNP means reading one contiguous run of 351 bytes. The practical never loads the matrix into R at all. PLINK reads the <code>.bed</code> file, writes small summary tables (one line per person or per SNP), and R reads only those. Analyses that do need the matrix in R or Python, such as fitting your own models, either read a subset of SNPs or use a reader that keeps the data on disk and fetches what is asked for.</p>
+
+<h3 id="readers">Readers for R and Python, and the allele each one counts</h3>
+<p>Every reader below decodes the same 2-bit codes, but they return different shapes and types, and they do not all count A1:</p>
+<div class="table-wrap">
+<table class="stack">
+  <thead><tr><th>Package</th><th>Read with</th><th>Returns</th><th>Counts copies of</th></tr></thead>
+  <tbody>
+    <tr><td>genio (R)<sup><a href="#src-10">10</a></sup></td><td data-label="Read with"><code>read_plink()</code>, <code>read_bed()</code></td><td data-label="Returns">An integer matrix with SNPs in rows and people in columns, all in memory (4 bytes per genotype)</td><td data-label="Counts copies of">A1, the <code>.bim</code> column 5, which genio names <code>alt</code> (column 6 is <code>ref</code>)</td></tr>
+    <tr><td>BEDMatrix (R)<sup><a href="#src-11">11</a></sup></td><td data-label="Read with"><code>BEDMatrix()</code></td><td data-label="Returns">A matrix-like object, people × SNPs, that maps the file into memory and decodes only the entries you index</td><td data-label="Counts copies of">A1; column names end in it, such as <code>rs12565286_G</code></td></tr>
+    <tr><td>snpStats (R, Bioconductor)<sup><a href="#src-12">12</a></sup></td><td data-label="Read with"><code>read.plink()</code></td><td data-label="Returns">A <code>SnpMatrix</code>, people × SNPs, one byte per genotype; <code>as(x, "numeric")</code> converts to 0, 1, 2</td><td data-label="Counts copies of">A2: it maps A1/A1 to its code for "A/A", and the numeric value counts the "B" allele, the map's <code>allele.2</code></td></tr>
+    <tr><td>pandas-plink (Python)<sup><a href="#src-13">13</a></sup></td><td data-label="Read with"><code>read_plink1_bin()</code></td><td data-label="Returns">An xarray array of <code>float32</code>, people × SNPs, loaded lazily with Dask; NaN = missing</td><td data-label="Counts copies of">By default <code>.bim</code> column 6 (PLINK's A2), which pandas-plink names <code>a1</code>; <code>ref="a0"</code> counts PLINK's A1</td></tr>
+    <tr><td>bed-reader (Python)<sup><a href="#src-14">14</a></sup></td><td data-label="Read with"><code>open_bed(...).read()</code></td><td data-label="Returns">A NumPy array, people × SNPs, <code>float32</code> by default; NaN = missing (−127 for <code>int8</code>)</td><td data-label="Counts copies of">A1 (<code>count_A1=True</code> is the default)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> The same name for different alleles</div>
+  <p>"a1" in pandas-plink is PLINK's A2, and "alt" in genio is PLINK's A1, whatever the reference genome says. A reader that counts the other allele returns \(2 - g\) instead of \(g\) for every genotype, so frequencies become one minus themselves and every effect estimate changes sign, without any error. Before trusting a reader, decode one SNP with the ten-line function above and compare: for rs12565286 the mean count should be \(2 \times 0.0517 = 0.103\) copies of G, and a reader that reports 1.897 is counting C.</p>
+</aside>
+
+<h2 id="other-formats">Other formats that hold the same matrix <span class="tag optional">Optional</span></h2>
+<p>The PLINK 1 binary fileset is one of several formats for genotype data; Lecture 0 compares them in <a href="../0-biological-foundations/the-data.html#genotype-files">Genotype files</a>. What each one does differently:</p>
+<ul>
+  <li><strong>PLINK 2: <code>.pgen</code>, <code>.pvar</code>, <code>.psam</code>.</strong> The same three roles, but the genotype file can compress, and can hold phased genotypes, dosages from imputation and SNPs with more than two alleles. The <code>.pvar</code> file names the alleles REF (the reference-genome letter) and ALT instead of A1 and A2, and PLINK 2 does not reorder them by frequency.<sup><a href="#src-15">15</a></sup></li>
+  <li><strong>VCF (Variant Call Format).</strong> A text format from sequencing, one line per variant with REF and ALT and one column per person; it is what reference panels and imputation servers use. See <a href="../0-biological-foundations/the-data.html#vcf-files">Lecture 0 · VCF files</a>.<sup><a href="#src-16">16</a></sup></li>
+  <li><strong>BGEN.</strong> A compressed binary format for imputed data that stores genotype probabilities rather than calls; UK Biobank distributes its imputed genotypes this way. See <a href="../0-biological-foundations/the-data.html#bgen-files">Lecture 0 · BGEN files</a>.<sup><a href="#src-18">18</a></sup></li>
+  <li><strong><code>.ped</code> and <code>.map</code>.</strong> PLINK's original text format, one line per person with two letters per SNP.<sup><a href="#src-5">5</a></sup> The PLINK 1.9 documentation says it "is NOT a native file format for PLINK 1.9" and "should almost never be used".<sup><a href="#src-3">3</a></sup></li>
+</ul>
+<p>Conversions are one PLINK command each. These were not run here:</p>
+<span class="code-label bash">bash · not run here</span>
+<pre class="code">plink --bfile penncath --recode vcf --out penncath      <span class="cm"># penncath.vcf; sample IDs become FID_IID</span>
+plink --bfile penncath --recode A --out penncath        <span class="cm"># penncath.raw: one column per SNP, 0/1/2 copies of A1</span>
+plink2 --bfile penncath --make-pgen --out penncath      <span class="cm"># penncath.pgen, .pvar, .psam</span></pre>
+<p>Two details matter when converting from a <code>.bed</code> file. PLINK 1.9's VCF output writes A2 as the REF allele and flags it as provisional (a <code>PR</code> entry in the INFO column), because the <code>.bim</code> file does not record which allele the reference genome has. And the <code>.raw</code> file, the usual route into R for a few hundred SNPs, names each column by SNP and counted allele (for example <code>rs12565286_G</code>); for all of PennCATH it would be about 2.4 GB of text.</p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021 · Experimentation › Data processing</div>
+  <p>The reading lists what a GWAS starts from: "Input files for a GWAS include anonymized individual ID numbers, coded family relations between individuals, sex, phenotype information, covariates, genotype calls for all called variants and information on the genotyping batch."<sup><a href="#src-9">9</a></sup> In the practical's files, the IDs, family relations, sex and phenotype are the six columns of <code>penncath.fam</code>, and the genotype calls are <code>penncath.bed</code> with <code>penncath.bim</code>. The covariates (age, cholesterol) would come in a separate table, and the genotyping batch is not part of this copy of the data, which is one reason the practical cannot check for batch effects (see <a href="practical-overview.html#beyond">what the practical does not do</a>).</p>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>A PLINK binary fileset is one people × SNPs matrix: the <code>.fam</code> file names the rows, the <code>.bim</code> file the columns, and the <code>.bed</code> file holds the entries. Only line order connects them.</li>
+    <li>The <code>.fam</code> file has six columns: FID, IID, father, mother, sex (1/2/0) and phenotype (1 = control, 2 = case, −9 or 0 = missing). In this copy every IID is 1, and column 6 should be checked against the study's documentation.</li>
+    <li>The <code>.bim</code> file has six columns: chromosome, ID, genetic position, base-pair position (GRCh37 here), A1 and A2. Stored genotypes count A1, which PLINK 1.9 sets to the minor allele whenever it writes a fileset.</li>
+    <li>The <code>.bed</code> file is <code>6c 1b 01</code> followed by one block of \(\lceil n/4 \rceil\) bytes per SNP; codes 00, 01, 10, 11 mean 2 copies of A1, missing, 1 copy, 0 copies, with the first person in the lowest bits.</li>
+    <li>The file size \(3 + m\lceil n/4 \rceil\) and a hex dump are enough to verify any reader. Readers differ in which allele they count, so check one SNP before trusting one.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Where in <code>penncath.bed</code> is the genotype of person 3 at the SNP on line 5 of the <code>.bim</code> file, and which bits hold it?</summary><div class="a"><p>The block of SNP 5 starts at byte \(3 + 4 \times 351 = 1{,}407\). Person 3 is in the first byte of the block, \(\lfloor 2/4 \rfloor = 0\), so the byte is 1,407; the shift is \(2 \times (2 \bmod 4) = 4\), so the genotype is in bits 4 and 5. <code>xxd -b -s 1407 -l 1 penncath.bed</code> shows the byte.</p></div></details>
+  <details class="q"><summary>A byte inside a block is <code>6b</code>, which is 01101011 in binary. What are the genotypes of the four people it holds?</summary><div class="a"><p>Read the pairs from the right. Bits 1–0 are 11: the first person is homozygous for A2 (0 copies of A1). Bits 3–2 are 10: heterozygous. Bits 5–4 are 10: heterozygous. Bits 7–6 are 01: the fourth person has no call.</p></div></details>
+  <details class="q"><summary>Why does every SNP block of <code>penncath.bed</code> end with six bits of padding, and how long would a block be with 1,404 people?</summary><div class="a"><p>\(1{,}401 = 4 \times 350 + 1\): 350 bytes hold 1,400 people and the 351st byte holds one person in its two lowest bits, leaving three empty pairs, six bits that PLINK sets to 0. With 1,404 people the block is still \(\lceil 1{,}404/4 \rceil = 351\) bytes, with no padding.</p></div></details>
+  <details class="q"><summary>Someone sorts <code>penncath.fam</code> by sex and saves it under the same name. What happens the next time PLINK reads the fileset?</summary><div class="a"><p>Nothing visible: the number of lines is unchanged, so the file size still matches and PLINK runs. But the <code>.bed</code> file still stores genotypes in the original order, so most people now carry someone else's genotypes. Sex and phenotype no longer match the DNA, which would show up only in checks such as a sex check (not possible here, without an X chromosome) or as weaker associations. Changes to people go through PLINK options such as <code>--update-sex</code> or <code>--keep</code>, never through editing the <code>.fam</code> file.</p></div></details>
+  <details class="q"><summary>You load PennCATH with pandas-plink's defaults and the mean of the column for rs12565286 is 1.897. The <code>.bim</code> file says A1 = G with a frequency of 0.0517. Is the file corrupted?</summary><div class="a"><p>No. pandas-plink counts its <code>a1</code> allele by default, which is column 6 of the <code>.bim</code> file, PLINK's A2 (C here). The mean count of C is \(2 - 2 \times 0.0517 = 1.897\). Pass <code>ref="a0"</code> to count PLINK's A1, or keep the default and record that every value counts A2.</p></div></details>
+  <details class="q"><summary>The <code>.bim</code> file of one fileset lists a SNP as A/G, and another fileset lists the same rsID as T/C. Can they be merged as they are? What if one had A/T and the other T/A?</summary><div class="a"><p>A/G and T/C are the same SNP read from opposite strands (A pairs with T, G with C), so the second fileset's letters must be complemented first, which is what <code>--flip</code> does in step 7. For A/T the complement is again A/T, so the letters cannot show whether the two files use the same strand; such strand-ambiguous SNPs are usually removed before a merge or resolved with allele frequencies.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/formats" target="_blank" rel="noopener">PLINK 1.9 file format reference</a> <span class="src">· cog-genomics.org</span> <span class="level intro">intro</span> — the definitions of <code>.bed</code>, <code>.bim</code>, <code>.fam</code> and every output file of the practical, column by column.</li>
+    <li><a href="https://web.archive.org/web/2023/https://zzz.bwh.harvard.edu/plink/binary.shtml" target="_blank" rel="noopener">PLINK 1.07: Binary PED files</a> <span class="src">· Purcell, archived</span> <span class="level intro">intro</span> — the original description of the format, with a small file decoded byte by byte with <code>xxd</code>.</li>
+    <li><a href="https://pbreheny.github.io/adv-gwas-tutorial/quality_control.html" target="_blank" rel="noopener">GWAS tutorial: data formats, summary statistics and quality control</a> <span class="src">· Breheny</span> <span class="level intro">intro</span> — reads the same PennCATH files into R, with the clinical table, and runs QC with R packages.</li>
+    <li><a href="https://www.cog-genomics.org/plink/2.0/formats" target="_blank" rel="noopener">PLINK 2.0 file format reference</a> <span class="src">· cog-genomics.org</span> <span class="level intermediate">intermediate</span> — <code>.pgen</code>, <code>.pvar</code> and <code>.psam</code>, and how REF/ALT replace A1/A2.</li>
+    <li><a href="https://fastlmm.github.io/bed-reader/" target="_blank" rel="noopener">bed-reader documentation</a> <span class="src">· FaST-LMM project</span> <span class="level intermediate">intermediate</span> — reading <code>.bed</code> files into NumPy, with options for data type, allele counted and subsets of SNPs.</li>
+    <li><a href="https://doi.org/10.1186/s13742-015-0047-8" target="_blank" rel="noopener">Second-generation PLINK</a> <span class="src">· Chang et al. 2015, GigaScience</span> <span class="level advanced">advanced</span> — how PLINK 1.9 computes on the 2-bit codes directly, 64 bits at a time.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Chang CC, Chow CC, Tellier LC, Vattikuti S, Purcell SM, Lee JJ. Second-generation PLINK: rising to the challenge of larger and richer datasets. <em>GigaScience</em>. 2015;4:7. <a href="https://doi.org/10.1186/s13742-015-0047-8" target="_blank" rel="noopener">doi:10.1186/s13742-015-0047-8</a></li>
+    <li id="src-2">PLINK 1.9 documentation. File format reference: <a href="https://www.cog-genomics.org/plink/1.9/formats#bed" target="_blank" rel="noopener">.bed</a>, <a href="https://www.cog-genomics.org/plink/1.9/formats#bim" target="_blank" rel="noopener">.bim</a>, <a href="https://www.cog-genomics.org/plink/1.9/formats#fam" target="_blank" rel="noopener">.fam</a>.</li>
+    <li id="src-3">PLINK 1.9 documentation. Data management: <a href="https://www.cog-genomics.org/plink/1.9/data#make_bed" target="_blank" rel="noopener">--make-bed</a>, <a href="https://www.cog-genomics.org/plink/1.9/data#ax_allele" target="_blank" rel="noopener">--keep-allele-order</a>, <a href="https://www.cog-genomics.org/plink/1.9/data#recode" target="_blank" rel="noopener">--recode</a>, <a href="https://www.cog-genomics.org/plink/1.9/data#update_indiv" target="_blank" rel="noopener">--update-ids and --update-sex</a>.</li>
+    <li id="src-4">Purcell S. PLINK 1.07 documentation: Binary PED files. <a href="https://web.archive.org/web/2023/https://zzz.bwh.harvard.edu/plink/binary.shtml" target="_blank" rel="noopener">Archived copy</a>.</li>
+    <li id="src-5">Purcell S, Neale B, Todd-Brown K, et al. PLINK: a tool set for whole-genome association and population-based linkage analyses. <em>Am J Hum Genet</em>. 2007;81(3):559–575. <a href="https://doi.org/10.1086/519795" target="_blank" rel="noopener">doi:10.1086/519795</a></li>
+    <li id="src-6">Reed E, Nunez S, Kulp D, Qian J, Reilly MP, Foulkes AS. A guide to genome-wide association analysis and post-analytic interrogation. <em>Stat Med</em>. 2015;34(28):3769–3792. <a href="https://doi.org/10.1002/sim.6605" target="_blank" rel="noopener">doi:10.1002/sim.6605</a></li>
+    <li id="src-7">Breheny P. GWAS tutorial: data formats, summary statistics, and quality control. <a href="https://pbreheny.github.io/adv-gwas-tutorial/quality_control.html" target="_blank" rel="noopener">pbreheny.github.io/adv-gwas-tutorial</a>. The clinical table <code>penncath.csv</code> is in the tutorial's data download.</li>
+    <li id="src-8">DCEG Statistical Genetics Workshop. Session 1 practical: quality control of GWAS data with PLINK. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">Workshop website</a>.</li>
+    <li id="src-9">Uffelmann E, Huang QQ, Munung NS, et al. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-10">Ochoa A. genio: genetics input/output functions. R package. <a href="https://cran.r-project.org/package=genio" target="_blank" rel="noopener">CRAN</a>.</li>
+    <li id="src-11">Grueneberg A, de los Campos G. BEDMatrix: extract genotypes from a PLINK .bed file. R package. <a href="https://cran.r-project.org/package=BEDMatrix" target="_blank" rel="noopener">CRAN</a>.</li>
+    <li id="src-12">Clayton D. snpStats: SnpMatrix and XSnpMatrix classes and methods. Bioconductor package. <a href="https://bioconductor.org/packages/snpStats/" target="_blank" rel="noopener">Bioconductor</a>.</li>
+    <li id="src-13">Horta D. pandas-plink: PLINK reader for Python. <a href="https://pandas-plink.readthedocs.io/" target="_blank" rel="noopener">Documentation</a>.</li>
+    <li id="src-14">Kadie C, Heckerman D. bed-reader: read and write the PLINK BED format, simply and efficiently. <a href="https://fastlmm.github.io/bed-reader/" target="_blank" rel="noopener">Documentation</a>.</li>
+    <li id="src-15">PLINK 2.0 documentation. File format reference. <a href="https://www.cog-genomics.org/plink/2.0/formats" target="_blank" rel="noopener">cog-genomics.org/plink/2.0/formats</a>.</li>
+    <li id="src-16">Danecek P, Auton A, Abecasis G, et al. The variant call format and VCFtools. <em>Bioinformatics</em>. 2011;27(15):2156–2158. <a href="https://doi.org/10.1093/bioinformatics/btr330" target="_blank" rel="noopener">doi:10.1093/bioinformatics/btr330</a></li>
+    <li id="src-17">Ensembl GRCh37 REST API: variation records for rs3094315 and rs12565286. <a href="https://grch37.rest.ensembl.org/variation/human/rs3094315?content-type=application/json" target="_blank" rel="noopener">grch37.rest.ensembl.org</a>.</li>
+    <li id="src-18">Band G, Marchini J. BGEN: a binary file format for imputed genotype and haplotype data. <em>bioRxiv</em>. 2018. <a href="https://doi.org/10.1101/308296" target="_blank" rel="noopener">doi:10.1101/308296</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

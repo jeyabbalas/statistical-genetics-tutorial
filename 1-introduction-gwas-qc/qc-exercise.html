@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exercise: build a quality-controlled dataset · Lecture 1</title>
+<meta name="description" content="The practical's exercise in the browser: run all eight QC steps on the toy data, choose rules for Hardy–Weinberg equilibrium, heterozygosity and relatedness, build removal lists with awk, make the cleaned fileset with one PLINK command, and record a QC report that someone else can check.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/grafanc-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-exercise-report.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-exercise"]. */
+body[data-page="qc-exercise"] .qr-table-wrap { overflow-x: auto; margin: 8px 0 10px; }
+body[data-page="qc-exercise"] table.qr { font-size: 0.84rem; margin: 0; min-width: 640px; }
+body[data-page="qc-exercise"] table.qr td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+body[data-page="qc-exercise"] table.qr td.src { font-size: 0.78rem; color: var(--fg-muted); }
+body[data-page="qc-exercise"] table.qr tr.qr-total td { font-weight: 700; }
+body[data-page="qc-exercise"] .qr-checks { margin: 6px 0 0; padding-left: 1.2em; font-size: 0.88rem; }
+body[data-page="qc-exercise"] .qr-checks li { margin: 0.25em 0; }
+body[data-page="qc-exercise"] .qr-ok { color: var(--key); font-weight: 700; }
+body[data-page="qc-exercise"] .qr-bad { color: var(--pitfall); font-weight: 700; }
+body[data-page="qc-exercise"] .qr-wait { color: var(--fg-muted); font-weight: 700; }
+body[data-page="qc-exercise"] table.qr.qr-cmp { min-width: 0; }
+body[data-page="qc-exercise"] table.qr.qr-cmp td:last-child { white-space: nowrap; }
+body[data-page="qc-exercise"] details.qr-key { margin-top: 10px; font-size: 0.88rem; }
+body[data-page="qc-exercise"] details.qr-key summary { cursor: pointer; font-weight: 600; }
+body[data-page="qc-exercise"] details.qr-key ul { margin: 4px 0 8px; padding-left: 1.2em; }
+body[data-page="qc-exercise"] table.files td:first-child, body[data-page="qc-exercise"] table.files td:nth-child(2) { white-space: nowrap; }
+@media (max-width: 600px) { body[data-page="qc-exercise"] table.files td:first-child, body[data-page="qc-exercise"] table.files td:nth-child(2) { white-space: normal; } }
+</style>
+</head>
+<body data-page="qc-exercise">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Exercise · Page 23 of 23</p>
+  <h1>Exercise: build a quality-controlled dataset</h1>
+  <p class="lede">Steps 1–8 computed a statistic for every SNP, person or pair of people, but only step 1 removed anything. The practical's exercise asks you to turn the other statistics into decisions: choose a Hardy–Weinberg threshold, rules for heterozygosity and relatedness, and what to do with genetic-ancestry information; then make a cleaned fileset with PLINK. On this page you do that on the toy data, with shell tools for the lists and one PLINK command for the result, and you record a QC report that someone else could check line by line.</p>
+  <div class="chips">
+    <span class="chip core">The practical's exercise</span>
+    <span class="chip">plink --remove · --hwe · --make-bed</span>
+    <span class="chip data">Writes: toy.qc.bed, .bim, .fam</span>
+    <span class="chip time">≈ 90 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="9" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Eight diagnoses, two kinds of filter, one command, one report</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 250" role="img" aria-labelledby="mm-t mm-d">
+<title id="mm-t">The exercise as one row of the QC pipeline</title>
+<desc id="mm-d">Input: the outputs of steps 1 to 8 and the step 1 fileset. Five boxes in a row. Diagnose: Hardy–Weinberg p-values per SNP, heterozygosity rate and F per person, PI_HAT per pair of people, GrafAnc scores per person. Decide: one rule per statistic, fixed before any association test. List: the people who fail, in fail_het.txt and fail_related.txt, combined into toy.remove.txt; the Hardy–Weinberg threshold is a filter on SNPs. Apply: one PLINK command with --remove, --hwe and --make-bed on the step 1 fileset writes toy.qc. Record: a QC report with the rule, the count and the source of each number. Genetic-ancestry information is flagged, not used to remove people, unless the protocol fixed such a rule in advance.</desc>
+<defs><marker id="mm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<rect x="10" y="6" width="732" height="26" rx="6" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="376" y="24" class="t-sm" text-anchor="middle" style="fill:var(--fg)">Input: the outputs of steps 1–8, and the step 1 fileset toy.geno0.01.mind0.01</text>
+<text x="76" y="56" class="t-b t-mm" text-anchor="middle">diagnose</text>
+<text x="226" y="56" class="t-b t-mm" text-anchor="middle">decide</text>
+<text x="376" y="56" class="t-b t-mm" text-anchor="middle">list</text>
+<text x="526" y="56" class="t-b t-mm" text-anchor="middle">apply</text>
+<text x="676" y="56" class="t-b t-mm" text-anchor="middle">record</text>
+<rect x="10" y="66" width="132" height="116" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="76" y="90" class="t-sm" text-anchor="middle">HWE p per SNP;</text>
+<text x="76" y="107" class="t-sm" text-anchor="middle">het rate and F</text>
+<text x="76" y="124" class="t-sm" text-anchor="middle">per person;</text>
+<text x="76" y="141" class="t-sm" text-anchor="middle">PI_HAT per pair;</text>
+<text x="76" y="158" class="t-sm" text-anchor="middle">GrafAnc scores</text>
+<line x1="144" y1="124" x2="158" y2="124" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="160" y="66" width="132" height="116" rx="8" fill="#f3f1ff" stroke="#4c3fb0" stroke-width="1.4"/>
+<text x="226" y="98" class="t-sm" text-anchor="middle">one rule per</text>
+<text x="226" y="115" class="t-sm" text-anchor="middle">statistic, fixed</text>
+<text x="226" y="132" class="t-sm" text-anchor="middle">before any</text>
+<text x="226" y="149" class="t-sm" text-anchor="middle">association test</text>
+<line x1="294" y1="124" x2="308" y2="124" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="310" y="66" width="132" height="116" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="376" y="90" class="t-sm" text-anchor="middle">people: fail_het.txt</text>
+<text x="376" y="107" class="t-sm" text-anchor="middle">+ fail_related.txt</text>
+<text x="376" y="124" class="t-sm" text-anchor="middle">= toy.remove.txt;</text>
+<text x="376" y="141" class="t-sm" text-anchor="middle">SNPs: a threshold</text>
+<text x="376" y="158" class="t-sm" text-anchor="middle">for --hwe</text>
+<line x1="444" y1="124" x2="458" y2="124" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="460" y="66" width="132" height="116" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="526" y="98" class="t-sm" text-anchor="middle">plink --remove</text>
+<text x="526" y="115" class="t-sm" text-anchor="middle">--hwe --make-bed</text>
+<text x="526" y="132" class="t-sm" text-anchor="middle">on the step 1</text>
+<text x="526" y="149" class="t-sm" text-anchor="middle">fileset → toy.qc</text>
+<line x1="594" y1="124" x2="608" y2="124" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="610" y="66" width="132" height="116" rx="8" fill="#fbf6e0" stroke="#d9c98a"/>
+<text x="676" y="98" class="t-sm" text-anchor="middle">QC report: per</text>
+<text x="676" y="115" class="t-sm" text-anchor="middle">step, the rule,</text>
+<text x="676" y="132" class="t-sm" text-anchor="middle">what it removed</text>
+<text x="676" y="149" class="t-sm" text-anchor="middle">and the source</text>
+<text x="10" y="214" class="t-sm">People and SNPs are removed only when they fail a rule. Genetic-ancestry information is flagged, not used to</text>
+<text x="10" y="230" class="t-sm">remove people, unless the study's protocol fixed such a rule in advance.</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 340 344" role="img" aria-labelledby="mm-t2 mm-d2">
+<title id="mm-t2">The exercise as one row of the QC pipeline</title>
+<desc id="mm-d2">Input: the outputs of steps 1 to 8 and the step 1 fileset. Diagnose: HWE p-values, heterozygosity rate and F, PI_HAT, GrafAnc scores. Decide: one rule per statistic, fixed before any association test. List: fail_het.txt and fail_related.txt combined into toy.remove.txt; a threshold for --hwe. Apply: plink --remove, --hwe and --make-bed on the step 1 fileset writes toy.qc. Record: the QC report.</desc>
+<rect x="10" y="6" width="320" height="40" rx="6" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="170" y="23" class="t-sm" text-anchor="middle" style="fill:var(--fg)">Input: the outputs of steps 1–8 and</text>
+<text x="170" y="38" class="t-sm" text-anchor="middle" style="fill:var(--fg)">the step 1 fileset</text>
+<text x="10" y="74" class="t-b t-mm">diagnose</text>
+<text x="100" y="74" class="t-sm">HWE p; het rate and F; PI_HAT;</text>
+<text x="100" y="89" class="t-sm">GrafAnc scores</text>
+<line x1="10" y1="98" x2="330" y2="98" stroke="#d0d6de"/>
+<text x="10" y="118" class="t-b t-mm">decide</text>
+<text x="100" y="118" class="t-sm">one rule per statistic, fixed</text>
+<text x="100" y="133" class="t-sm">before any association test</text>
+<line x1="10" y1="142" x2="330" y2="142" stroke="#d0d6de"/>
+<text x="10" y="162" class="t-b t-mm">list</text>
+<text x="100" y="162" class="t-sm">people: toy.remove.txt;</text>
+<text x="100" y="177" class="t-sm">SNPs: a threshold for --hwe</text>
+<line x1="10" y1="186" x2="330" y2="186" stroke="#d0d6de"/>
+<text x="10" y="206" class="t-b t-mm">apply</text>
+<text x="100" y="206" class="t-sm">plink --remove --hwe --make-bed</text>
+<text x="100" y="221" class="t-sm">on the step 1 fileset → toy.qc</text>
+<line x1="10" y1="230" x2="330" y2="230" stroke="#d0d6de"/>
+<text x="10" y="250" class="t-b t-mm">record</text>
+<text x="100" y="250" class="t-sm">QC report: rule, count, source</text>
+<text x="10" y="294" class="t-sm">People and SNPs are removed only when they</text>
+<text x="10" y="310" class="t-sm">fail a rule; genetic-ancestry information is</text>
+<text x="10" y="326" class="t-sm">flagged unless a rule was fixed in advance.</text>
+</svg>
+  </figure>
+  <p class="mm-statement">Each of the eight steps left one statistic per SNP, per person or per pair of people. The exercise fixes a rule for each statistic, turns the rules into two kinds of filter (a list of people for <code>--remove</code> and a p-value threshold for <code>--hwe</code>), applies both in one PLINK command to the fileset that step 1 left, and records what each rule removed, so that another analyst can reproduce every number.</p>
+  <ul class="mm-hooks">
+    <li><strong>Everything in one terminal.</strong> This page's lab starts from the raw toy data; its suggested commands are the practical's steps 1–8 (<a href="#full-lab">Task 1</a>).</li>
+    <li><strong>Rules first, results later.</strong> Each threshold is chosen from the QC statistics alone, before any association test, and justified (<a href="#decisions">Tasks 2–5</a>).</li>
+    <li><strong>Lists of IDs, then one command.</strong> awk writes the IDs that fail into text files; <code>plink --remove … --hwe … --make-bed</code> applies them in PLINK's fixed order (<a href="#final-fileset">Task 6</a>).</li>
+    <li><strong>A report someone else can check.</strong> Every count in it comes from a log line or a file, and a widget reads them from your files (<a href="#report">Task 7</a>).</li>
+    <li><strong>What changes if you change the order.</strong> Four short experiments show why the practical's order and choices matter (<a href="#what-if">what-if questions</a>).</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> The eight steps, and the tools for this page</div>
+  <p>The eight steps and the files that pass between them: <a href="practical-overview.html#eight-steps">The practical · Eight steps</a> and <a href="practical-overview.html#file-chain">the file chain</a>. Each decision builds on one step page: missingness and the order of the two filters (<a href="qc-missingness.html#order">step 1</a>), Hardy–Weinberg thresholds (<a href="qc-hwe.html#threshold">step 2</a>), relatedness (<a href="qc-relatedness.html#threshold">step 4</a>), heterozygosity (<a href="qc-heterozygosity.html">step 5</a>), PCA (<a href="qc-pca.html">step 6</a>), the reference PCA (<a href="qc-reference-pca.html#threshold">step 7</a>) and GrafAnc (<a href="qc-grafanc.html#threshold">step 8</a>). The shell tools used here (<code>awk</code>, <code>sort</code>, <code>uniq</code>, <code>wc</code>, <code>grep</code>): <a href="tools.html#shell">The tools · The shell</a>. PLINK's fixed order of operations: <a href="tools.html#plink-order">The tools · Order of operations</a>. Family and individual IDs, and what the phenotype column holds in PennCATH: <a href="plink-data.html#fam">The data · .fam</a> and <a href="plink-data.html#phenotype-column">What column 6 holds</a>.</p>
+</aside>
+
+<h2 id="full-lab">Task 1: run the whole pipeline <span class="tag core">Core</span></h2>
+
+<p>Each page of this site has its own lab, and nothing carries over from one page to the next, so this page starts from the raw toy data. The terminal's suggested commands are the practical's commands for steps 1–8, in order, with <code>toy</code> in place of <code>penncath</code>. Press <strong>Run next</strong> until all have run, or press <em>Run steps 1–8</em> in the QC report widget further down, which runs the remaining suggestions in this terminal for you. Open <strong>Show files</strong> to watch the analysis folder fill up.</p>
+
+<div class="lab" id="lab-pipeline" data-title="Steps 1–8 · the whole practical on the toy data">
+<pre class="lab-script">plink --bfile ${input_dir}/toy --missing --out ${analysis_dir}/toy
+plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --hardy --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --genome --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --het \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --maf 0.05 --pca --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --bmerge ${reference_dir}/toy_1kg.bed \
+      ${reference_dir}/toy_1kg.bim \
+      ${reference_dir}/toy_1kg.fam \
+      --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes || true
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --flip ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp \
+      --make-bed \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs \
+      --bmerge ${reference_dir}/toy_1kg.bed \
+      ${reference_dir}/toy_1kg.bim \
+      ${reference_dir}/toy_1kg.fam \
+      --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes \
+      --geno 0.1 --maf 0.05 --pca \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+cd ${analysis_dir}
+git clone https://github.com/Illumina/akt.git
+awk '{
+    gsub("\"", "", $1);
+    print "\"" $1 "\"", $2, "\"" $1 "\"", "\"" $1 "_" $2 "\""
+}' ${analysis_dir}/toy.geno0.01.mind0.01.fam &gt; ${analysis_dir}/toy.updateIDs.txt
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --update-ids \
+     ${analysis_dir}/toy.updateIDs.txt --make-bed \
+     --out ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs
+if [ ! -d "${analysis_dir}/grafanc" ]; then
+    cd ${analysis_dir}
+    git clone https://github.com/jimmy-penn/grafanc.git
+fi
+if [ -f "${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz" ]; then
+    gunzip ${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz
+fi
+ls ${analysis_dir}/grafanc/bin/
+module load bcftools/1.23
+export GRAFPATH=${analysis_dir}/grafanc/cpp
+${analysis_dir}/grafanc/bin/grafanc \
+    ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs \
+    ${analysis_dir}/toy_grafanc_out.txt
+head ${analysis_dir}/toy_grafanc_out.txt</pre>
+</div>
+
+<p>The tasks below use these files. All of them are in <code>${analysis_dir}</code> once the suggestions have run.</p>
+<div class="table-wrap">
+<table class="compact stack files">
+  <caption>What the exercise uses from each step</caption>
+  <thead><tr><th>Step</th><th>File</th><th>What it holds</th><th>Used for</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Step">1</td><td data-label="File"><code>toy.geno0.01.mind0.01</code> <code>.bed .bim .fam</code></td><td data-label="What it holds">The fileset after the two missingness filters</td><td data-label="Used for">The input of the final command (Task 6)</td></tr>
+    <tr><td data-label="Step">1</td><td data-label="File"><code>toy.geno0.01.imiss</code></td><td data-label="What it holds">Each person's fraction of missing calls (<code>F_MISS</code>) after the SNP filter</td><td data-label="Used for">Choosing which member of a related pair to remove (Task 4)</td></tr>
+    <tr><td data-label="Step">2</td><td data-label="File"><code>toy.geno0.01.mind0.01.hwe</code></td><td data-label="What it holds">Exact-test p-values per SNP, in rows <code>ALL</code>, <code>AFF</code>, <code>UNAFF</code></td><td data-label="Used for">The Hardy–Weinberg threshold (Task 2)</td></tr>
+    <tr><td data-label="Step">3</td><td data-label="File"><code>toy.geno0.01.mind0.01.prune.in</code></td><td data-label="What it holds">The SNPs that LD pruning kept</td><td data-label="Used for">Steps 4–6 only; the cleaned fileset keeps all SNPs</td></tr>
+    <tr><td data-label="Step">4</td><td data-label="File"><code>toy.geno0.01.mind0.01.LD0.3.genome</code></td><td data-label="What it holds"><code>PI_HAT</code> and <code>Z0</code>–<code>Z2</code> for every pair of people</td><td data-label="Used for">Relatedness (Task 4)</td></tr>
+    <tr><td data-label="Step">5</td><td data-label="File"><code>toy.geno0.01.mind0.01.LD0.3.het</code></td><td data-label="What it holds"><code>O(HOM)</code>, <code>E(HOM)</code>, <code>N(NM)</code> and <code>F</code> per person</td><td data-label="Used for">Heterozygosity (Task 3)</td></tr>
+    <tr><td data-label="Step">6–7</td><td data-label="File"><code>….LD0.3.eigenvec</code>, <code>….merge1kgenomes.eigenvec</code></td><td data-label="What it holds">Principal components of the study alone and with the reference</td><td data-label="Used for">Looking; not used to remove anyone here</td></tr>
+    <tr><td data-label="Step">8</td><td data-label="File"><code>toy_grafanc_out.txt</code>, <code>toy.updateIDs.txt</code></td><td data-label="What it holds">GrafAnc's scores and groups; the old and new IDs</td><td data-label="Used for">Optional flags (Task 5)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="decisions">Tasks 2–5: choose the rules and list who fails <span class="tag core">Core</span></h2>
+
+<p>The practical's exercise, in its own words:<sup><a href="#src-1">1</a></sup></p>
+<blockquote>
+  <p>1. Choose a HWE p-value threshold and justify your choice.<br>
+  2. Choose and apply a threshold for excluding samples based on heterozygosity, and separately for relatedness. <strong>Note:</strong> a well-justified analysis may conclude that no samples need to be excluded on one or both of these criteria. The goal is to apply and justify a defensible method, not to guarantee you find something to remove.<br>
+  3. <strong>Optional:</strong> Consider whether the study design or analysis plan calls for flagging samples whose genetic-structure patterns differ from the main cohort. Do not exclude a sample solely because its GrafAnc label differs from the majority. […]<br>
+  4. Use PLINK to produce a QC-filtered dataset (<code>--hwe</code>, <code>--remove</code>, etc. as appropriate) based on the criteria covered in this workshop.</p>
+</blockquote>
+<p>Each task below states the decision, shows how to look at the statistic with the shell, and hides one worked solution, the one this page uses from then on. Try your own first. Whatever you choose, fix it from the QC statistics alone, before any association test: a threshold adjusted after seeing which SNPs are associated with the disease can be tuned, knowingly or not, toward the hoped-for result.</p>
+
+<h3 id="task-hwe">Task 2: a Hardy–Weinberg threshold</h3>
+
+<p><code>--hwe T</code> removes every SNP whose exact-test p-value is below <code>T</code>. For case–control data PLINK 1.9 tests only the people it treats as controls, those coded 1 in column 6 of the <code>.fam</code> file (the <code>UNAFF</code> rows of the <code>.hwe</code> file),<sup><a href="#src-3">3</a></sup> because, in the practical's words, "a genuine disease association can cause HWE departures among cases".<sup><a href="#src-1">1</a></sup> What code 1 means in the real PennCATH files is less simple than "no disease": <a href="plink-data.html#phenotype-column">The data · What column 6 holds</a>. Published thresholds range from 10⁻⁵ to 10⁻¹² (<a href="qc-hwe.html#threshold">step 2 · Choose a threshold</a>); the practical's own question counts SNPs below 10⁻⁸. Look at the controls' smallest p-values and count how many SNPs a few candidate thresholds would remove.</p>
+
+<details class="q"><summary>A solution</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk '$3 == "UNAFF"' ${analysis_dir}/toy.geno0.01.mind0.01.hwe | sort -g -k9,9 | head -5
+<span class="prompt">$ </span>awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-8' ${analysis_dir}/toy.geno0.01.mind0.01.hwe | wc -l
+<span class="prompt">$ </span>awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-6' ${analysis_dir}/toy.geno0.01.mind0.01.hwe | wc -l</pre>
+<p>In the <code>.hwe</code> file column 3 is <code>TEST</code> and column 9 is <code>P</code>. An awk pattern with no action prints the lines for which it is true, so the first command keeps the controls' rows and <code>sort -g -k9,9</code> sorts them by p-value (<code>-g</code> understands numbers such as <code>3.1e-09</code>); the other two count rows below 10⁻⁸ and 10⁻⁶. Look at the extreme rows: is the departure a shortfall or an excess of heterozygotes (<code>O(HET)</code> against <code>E(HET)</code>)?</p>
+<p><strong>Choice used from here on: <code>--hwe 1e-6</code> in controls</strong>, the threshold Marees et al. recommend for controls.<sup><a href="#src-5">5</a></sup> It removes SNPs with gross departures, which serious genotyping errors produce, while genuine associations "can be expected to deviate slightly from Hardy-Weinberg equilibrium", in the words of the PLINK documentation, and rarely reach so small a p-value.<sup><a href="#src-3">3</a></sup> The filter is applied in Task 6, together with the removal of people, so the test is computed on the controls who remain. PLINK's documentation recommends the mid-p version of the test (the <code>midp</code> modifier; <a href="qc-hwe.html#hwe-flag">step 2 · The --hwe filter</a>); this page uses the plain exact test, the one in the <code>.hwe</code> file, so that this count and Task 6's log measure the same thing.</p>
+<p>In the lab, <span data-card="hwe_unaff_p_lt_1e8">?</span> UNAFF rows are below 10⁻⁸ and <span data-card="hwe_unaff_p_lt_1e6">?</span> below 10⁻⁶. They are the same SNPs, the <span data-card="hwe_planted">?</span> genotyping artifacts planted in the toy data (<span data-card="hwe_planted_ids">?</span>): <span data-card="hwe_planted_deficit">?</span> have too few heterozygotes, because most of their heterozygous genotypes were called as homozygous, and <span data-card="hwe_planted_excess">?</span> (<span data-card="hwe_planted_excess_ids">?</span>) have too many. Below 10⁻³ there are <span data-card="hwe_unaff_p_lt_1e3">?</span> rows: a looser threshold starts to remove SNPs that nobody planted, whose departures are chance.</p>
+</div></details>
+
+<h3 id="task-het">Task 3: heterozygosity</h3>
+
+<p>Step 5's <code>.het</code> file gives, for each person, the number of pruned SNPs with a genotype and how many of them are homozygous. The practical turns them into a heterozygosity rate and flags people far from the average;<sup><a href="#src-1">1</a></sup> the <code>F</code> column is a second measure that compares the observed number of homozygous genotypes with the number expected from the sample's allele frequencies.<sup><a href="#src-2">2</a></sup> Why each departure arises, and why the two measures flag different people: <a href="qc-heterozygosity.html">step 5</a>.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ h_i = \frac{N_i - O_i}{N_i} \]
+  \[ F_i = \frac{O_i - E_i}{N_i - E_i} \]</div>
+  <dl class="eq-terms">
+    <dt>\(N_i\)</dt><dd>Column <code>N(NM)</code>: the number of pruned SNPs at which person \(i\) has a genotype.</dd>
+    <dt>\(O_i\)</dt><dd>Column <code>O(HOM)</code>: how many of those genotypes are homozygous.</dd>
+    <dt>\(E_i\)</dt><dd>Column <code>E(HOM)</code>: the number of homozygous genotypes expected for a person drawn at random from the sample, computed from the allele frequencies.</dd>
+    <dt>\(h_i\)</dt><dd>The heterozygosity rate: the fraction of the person's genotypes that are heterozygous.</dd>
+    <dt>\(F_i\)</dt><dd>Column <code>F</code>: the excess of homozygous genotypes over the expected number, as a fraction of the most it could be.</dd>
+  </dl>
+  <p class="eq-intuition">A sample that mixes DNA from two people shows extra heterozygous calls, so \(h_i\) is high and \(F_i\) negative; a person whose parents are related carries long homozygous stretches, so \(h_i\) is low and \(F_i\) positive. \(F_i\) is about 0 for a person whose genotypes look like a random draw from the sample's allele frequencies, which is why a person whose genetic ancestry differs from most of the sample can have a large \(|F_i|\) without any technical problem.</p>
+</div>
+
+<p>The practical's rule flags a person when \(h_i\) lies more than 3 standard deviations from the mean of all people in the file. Some pipelines use a fixed cut on \(F_i\) instead, such as \(|F_i| &gt; 0.1\) or 0.2.<sup><a href="#src-1">1</a></sup> Compute both lists and compare them.</p>
+
+<details class="q"><summary>A solution</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk 'FNR == 1 { next }
+     NR == FNR { r = ($5 - $3) / $5; s += r; ss += r * r; n++; next }
+     { m = s / n; sd = sqrt((ss - n * m * m) / (n - 1)); r = ($5 - $3) / $5
+       if (r &lt; m - 3 * sd || r &gt; m + 3 * sd) print $1, $2 }' \
+    ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het \
+    &gt; ${analysis_dir}/fail_het.txt
+<span class="prompt">$ </span>cat ${analysis_dir}/fail_het.txt
+<span class="prompt">$ </span>awk 'NR &gt; 1 &amp;&amp; ($6 &gt; 0.1 || $6 &lt; -0.1) { print $1, $2, $6 }' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het</pre>
+<p>The first program reads the same file twice, because the mean and standard deviation must be known before any person can be judged. <code>FNR == 1 { next }</code> skips the header line of each pass (<code>FNR</code> counts lines within the current file). During the first pass <code>NR == FNR</code> is true (<code>NR</code> counts lines across all files), and the program adds up \(h_i\) (<code>r</code>) and its square. During the second pass it computes the mean <code>m</code> and the standard deviation <code>sd</code>, with the \(n - 1\) denominator that R's <code>sd()</code> uses, and prints the family and individual IDs of people outside \(m \pm 3\,\mathrm{sd}\). The output, one person per line with the IDs exactly as in the <code>.fam</code> file, is the format <code>--remove</code> reads. The last command lists the people with \(|F| &gt; 0.1\), with their <code>F</code>.</p>
+<p><strong>Choice used from here on: the practical's ±3 SD rule</strong>, written to <code>fail_het.txt</code>. The \(|F|\) list is kept for comparison: a person flagged only by \(F\) may be one whose genetic ancestry differs from most of the sample, which is a reason to look at steps 6–8, not a technical failure.</p>
+<p>In the lab, the ±3 SD rule flags <span data-card="het_outliers_3sd">?</span> people (<span data-card="het_outliers_3sd_fids">?</span>): the sample planted as contaminated (<span data-card="het_contaminated_fid">?</span>, a high rate and a negative <code>F</code>), the person planted as the child of two relatives (<span data-card="het_inbred_fid">?</span>, a low rate and a positive <code>F</code>), and a person whom the simulation made admixed, with one European-like and one African-like parent. That person's extra heterozygosity comes from their genetic ancestry, not from a fault in the sample, yet the rule removes them: step 7 places them between the EUR and AFR clusters, which explains the rate, so keeping them is also defensible. The \(|F| &gt; 0.1\) list has <span data-card="het_f_abs_gt_0_1">?</span> people (<span data-card="het_f_fids">?</span>): the same people and an East-Asian-like person whose <code>F</code> is just above 0.1, again because of ancestry. Neither rule can tell the causes apart; the results of steps 6–8 can.</p>
+</div></details>
+
+<h3 id="task-related">Task 4: relatedness</h3>
+
+<p>Analyses that assume unrelated people need one member of each closely related pair removed; mixed models can keep both (<a href="qc-relatedness.html#threshold">step 4 · Choose a threshold</a>). A common rule removes one member of every pair with <code>PI_HAT</code> &gt; 0.1875, halfway between the values expected for second- and third-degree relatives, and keeps the member with fewer missing calls.<sup><a href="#src-4">4</a></sup> Two refinements matter. A person who appears in many pairs may be a contaminated sample rather than a relative of many people, so check heterozygosity first; and a pair whose member already fails Task 3 needs no second removal, because that person goes anyway. A pair with <code>PI_HAT</code> near 1 is a duplicate or identical twins: compare the two records before choosing.</p>
+
+<details class="q"><summary>A solution</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk 'NR == FNR { if (FNR &gt; 1) fmiss[$1 " " $2] = $6; next }
+     FNR &gt; 1 &amp;&amp; $10 &gt; 0.1875 { print $1, $2, $3, $4, $10, fmiss[$1 " " $2], fmiss[$3 " " $4] }' \
+    ${analysis_dir}/toy.geno0.01.imiss ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome \
+    &gt; ${analysis_dir}/related_pairs.txt
+<span class="prompt">$ </span>cat ${analysis_dir}/related_pairs.txt
+<span class="prompt">$ </span>awk '{ n[$1 " " $2]++; n[$3 " " $4]++ } END { for (k in n) print n[k], k }' ${analysis_dir}/related_pairs.txt | sort -k1,1nr
+<span class="prompt">$ </span>awk 'FILENAME ~ /fail_het/ { het[$1 " " $2] = 1; next }
+     !(($1 " " $2) in het) &amp;&amp; !(($3 " " $4) in het) { print ($6 &gt;= $7 ? $1 " " $2 : $3 " " $4) }' \
+    ${analysis_dir}/fail_het.txt ${analysis_dir}/related_pairs.txt | sort -u &gt; ${analysis_dir}/fail_related.txt
+<span class="prompt">$ </span>cat ${analysis_dir}/fail_related.txt</pre>
+<p>The first program reads <code>toy.geno0.01.imiss</code> into an array <code>fmiss</code>, keyed by "family ID, space, individual ID", with each person's <code>F_MISS</code> (column 6). Then, for each pair in the <code>.genome</code> file with <code>PI_HAT</code> (column 10) above 0.1875, it prints the four IDs, <code>PI_HAT</code> and both people's missing fractions. The second counts how many listed pairs each person is in (<code>END</code> runs after the last line), largest first. The third skips pairs that contain a heterozygosity failure and, for each other pair, prints the member with the larger missing fraction (the first member when they are equal, as on the step 4 page); <code>sort -u</code> removes repeats, so a person in two pairs is listed once.</p>
+<p>The third program recognizes its first file by name (<code>FILENAME ~ /fail_het/</code>), not by the usual <code>NR == FNR</code>. The reason: if <code>fail_het.txt</code> is empty, which is a legitimate outcome of Task 3, awk reads no line of it, <code>NR == FNR</code> is still true for every line of the second file, and every pair would be swallowed into the array and none printed.</p>
+<p><strong>Choice used from here on:</strong> <code>PI_HAT</code> &gt; 0.1875, remove the member with more missing calls, skip pairs that contain a heterozygosity failure. If one person is in several pairs, removing that person alone may resolve them all; look at the second command's output and decide before using the pair-by-pair list.</p>
+<p>In the lab, <code>related_pairs.txt</code> lists <span data-card="pairs_pihat_gt_0_1875">?</span> pairs, and the second command shows why there are so many: one person, the contaminated sample <span data-card="het_contaminated_fid">?</span>, is in all of them but <span data-card="sim_related_pairs">?</span>. Its extra heterozygous calls make it look related to most people (<a href="qc-relatedness.html">step 4</a>), and it fails Task 3, so the third command skips its pairs. The others are the <span data-card="sim_related_pairs">?</span> planted pairs: a duplicate (<span data-card="ibd_duplicate_fids">?</span>, <code>PI_HAT</code> <span data-card="ibd_duplicate_pihat">?</span>), a parent and child (<span data-card="ibd_parent_offspring_fids">?</span>, <span data-card="ibd_parent_offspring_pihat">?</span>), full siblings (<span data-card="ibd_full_sibs_fids">?</span>, <span data-card="ibd_full_sibs_pihat">?</span>) and half siblings, a second-degree pair (<span data-card="ibd_half_sibs_fids">?</span>, <span data-card="ibd_half_sibs_pihat">?</span>). The rule removes the member of each pair with more missing calls, so <code>fail_related.txt</code> has <span data-card="sim_related_pairs">?</span> lines.</p>
+</div></details>
+
+<h3 id="task-ancestry">Task 5 (optional): genetic-similarity flags <span class="tag optional">Optional</span></h3>
+
+<p>Steps 6–8 described the toy study's genetic structure. The practical makes any action on it optional and rules out one: excluding a person "solely because its GrafAnc label differs from the majority". Defensible options it lists are keeping everyone and adjusting for structure, stratified analyses, or restricting the analysis to a more genetically homogeneous subset "when that restriction is scientifically justified and prespecified".<sup><a href="#src-1">1</a></sup> A flag list records who would be affected by such a choice without removing anyone. GrafAnc's groups are algorithmic assignments relative to its reference populations, not race, ethnicity or identity (<a href="qc-grafanc.html#threshold">step 8 · Labels are not identities</a>).</p>
+
+<details class="q"><summary>A solution</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk -F'\t' 'NR == 1 { for (i = 1; i &lt;= NF; i++) col[$i] = i; next }
+     { print int($col["AncGroupID"] / 100) }' ${analysis_dir}/toy_grafanc_out.txt | sort | uniq -c
+<span class="prompt">$ </span>awk 'NR == FNR { if (FNR == 1) { for (i = 1; i &lt;= NF; i++) col[$i] = i }
+                 else if (int($col["AncGroupID"] / 100) != 3) { s = $col["Sample"]; gsub(/"/, "", s); flag[s] = 1 }
+                 next }
+     { k = $4; gsub(/"/, "", k); if (k in flag) print $1, $2 }' \
+    ${analysis_dir}/toy_grafanc_out.txt ${analysis_dir}/toy.updateIDs.txt &gt; ${analysis_dir}/flag_ancestry.txt
+<span class="prompt">$ </span>cat ${analysis_dir}/flag_ancestry.txt</pre>
+<p>Both programs find columns by name: on the header line they store each column's position in <code>col</code>, so <code>$col["AncGroupID"]</code> is the group code whatever its position. The first prints the continental digit of every person's group (<code>int()</code> drops the decimals) and counts each digit: 1 AFR, 2 MEN, 3 EUR, 4 SAS, 5 EAS, 6 AMR, 7 OCN, 8 MIX in the practical's coding.<sup><a href="#src-1">1</a></sup> The second marks every person whose digit is not 3 and translates GrafAnc's sample name back to the original IDs. GrafAnc names people by the new individual ID from step 8 (such as <code>"10002_1"</code>), while the removal lists and the final command use the step 1 fileset's IDs; <code>toy.updateIDs.txt</code> holds both, the new individual ID in column 4. Quotation marks are removed on both sides before matching, so the match does not depend on whether the program kept them.</p>
+<p><strong>Choice used from here on:</strong> keep everyone, and keep <code>flag_ancestry.txt</code> as a record for a sensitivity analysis and for the PCs that Session 2 uses as covariates. The flag rule is one choice among several: a rule on <code>Pe</code>, or on step 7's PCs, would flag different people.</p>
+<p>In the lab, the first command counts <span data-card="grafanc_eur">?</span> people with digit 3 (EUR), <span data-card="grafanc_afr">?</span> with 1 (AFR), <span data-card="grafanc_eas">?</span> with 5 (EAS), <span data-card="grafanc_sas">?</span> with 4 (SAS) and <span data-card="grafanc_amr">?</span> with 6 (AMR); the lab's GrafAnc gives continental codes only (<a href="qc-grafanc.html#run">step 8 · The lab's GrafAnc</a>). <code>flag_ancestry.txt</code> lists everyone outside EUR, all of them people the simulation drew from non-European populations or made admixed, and nobody else. The admixed person removed by the ±3 SD rule and the East-Asian-like person with \(|F| &gt; 0.1\) are on both this list and Task 3's: reading a flag list next to the removal lists shows such overlaps.</p>
+</div></details>
+
+<h2 id="final-fileset">Task 6: make the cleaned fileset <span class="tag core">Core</span></h2>
+
+<p>The people who fail go into one list, and one PLINK command applies the list and the Hardy–Weinberg threshold to the fileset that step 1 left:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>cat ${analysis_dir}/fail_het.txt ${analysis_dir}/fail_related.txt \
+    | sort -u &gt; ${analysis_dir}/toy.remove.txt
+<span class="prompt">$ </span>wc -l ${analysis_dir}/fail_het.txt ${analysis_dir}/fail_related.txt \
+    ${analysis_dir}/toy.remove.txt
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --remove ${analysis_dir}/toy.remove.txt \
+      --hwe 1e-6 --make-bed --out ${analysis_dir}/toy.qc</pre>
+
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="3">--remove ${analysis_dir}/toy.remove.txt</span> <span class="part" data-n="4">--hwe 1e-6</span> <span class="part" data-n="5">--make-bed</span> <span class="part" data-n="6">--out ${analysis_dir}/toy.qc</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code> — PLINK 1.9.</li>
+    <li><code>--bfile PREFIX</code> — the step 1 output, with all its SNPs. Not the pruned SNP set, which served steps 4–6; not the <code>uniqueIDs</code> fileset, whose individual IDs differ from those in the lists; not the merged file, which contains the reference people.</li>
+    <li><code>--remove FILE</code> — drop the people listed in FILE, one per line, family ID then individual ID. PLINK compares the IDs as text, so <code>"10002"</code> and <code>10002</code> are different IDs. The log reports <code>--remove: N people remaining.</code><sup><a href="#src-3">3</a></sup></li>
+    <li><code>--hwe 1e-6</code> — drop SNPs whose exact-test p-value in controls is below 10⁻⁶. The log reports <code>--hwe: N variants removed due to Hardy-Weinberg exact test.</code></li>
+    <li><code>--make-bed</code> — write the result as a new fileset. Without it the filters would be applied to this run only and nothing would be saved.</li>
+    <li><code>--out PREFIX</code> — the cleaned fileset, <code>toy.qc.bed</code>, <code>.bim</code> and <code>.fam</code>, and its log.</li>
+  </ol>
+</div>
+
+<p><strong>Order of operations.</strong> PLINK 1.9 applies its filters in a fixed order, whatever their order on the command line, and <code>--remove</code> comes before <code>--hwe</code>.<sup><a href="#src-2">2</a></sup> The Hardy–Weinberg test is therefore computed on the controls who remain, so a contaminated control that is being removed cannot push a SNP below the threshold. That is also why the number of SNPs in the log can differ slightly from the count in Task 2, which used all controls.</p>
+
+<p><strong>Check the result.</strong> Read the three log lines and count the lines of the new files:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>grep -E 'remaining|removed due to|pass filters' ${analysis_dir}/toy.qc.log
+<span class="prompt">$ </span>wc -l ${analysis_dir}/toy.geno0.01.mind0.01.fam ${analysis_dir}/toy.qc.fam ${analysis_dir}/toy.qc.bim</pre>
+<p>The number of people remaining should be the step 1 count minus the number of lines of <code>toy.remove.txt</code>. If it equals the step 1 count, no ID in the list matched anyone, almost always because of quotation marks or the wrong set of IDs (<a href="#pitfalls">Pitfalls</a>). The last log line, <code>… variants and … people pass filters and QC.</code>, gives the size of the cleaned fileset, which the two <code>wc -l</code> counts confirm.</p>
+<p>In the lab, the worked solution's <code>toy.remove.txt</code> holds the <span data-card="het_outliers_3sd">?</span> people of <code>fail_het.txt</code> and the <span data-card="sim_related_pairs">?</span> of <code>fail_related.txt</code>, with nobody on both lists. <code>--hwe 1e-6</code>, computed on the controls who remain, removes the same <span data-card="hwe_planted">?</span> planted SNPs as Task 2 found. Of the step 1 fileset's <span data-card="qc_people">?</span> people and <span data-card="qc_snps">?</span> SNPs, <code>toy.qc</code> therefore keeps <span data-card="exercise_people">?</span> people (<span data-card="exercise_removed">?</span> removed) and <span data-card="exercise_snps">?</span> SNPs (<span data-card="exercise_hwe_removed">?</span> removed by <code>--hwe</code>). The report below shows your own counts and checks them against these reference values.</p>
+
+<h2 id="report">Task 7: the QC report <span class="tag core">Core</span></h2>
+
+<p>A QC report lists, for each step, the statistic, the rule, what the rule removed or flagged, and where each number comes from (a log line or a file), so that another analyst can rerun the commands and get the same numbers. The widget below builds that table from the files in this page's lab: it reads the PLINK logs, the lists and the <code>.fam</code> and <code>.bim</code> files you made, and redraws whenever a command writes one of them. It also checks that the numbers are consistent with each other.</p>
+
+<div class="widget" id="w-qc-report">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The QC report, read from your files</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It reads the logs and lists that the terminal above writes and fills in a QC report table.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Rows fill in as files appear: run Task 1 (or press <em>Run steps 1–8</em>), then Tasks 2–6 by pasting the solutions into the terminal or typing your own. Only three rows remove anything: step 1's two filters and the final command (people from your list, SNPs by <code>--hwe</code>). Steps 3, 6 and 7 never remove anyone, and step 8 at most flags. Step 1's removals come from line counts, not logs: the practical reuses the prefix <code>toy.geno0.01</code> for <code>--missing</code> and <code>toy.geno0.01.mind0.01</code> for <code>--hardy</code> and <code>--indep-pairwise</code>, and each PLINK run overwrites the <code>.log</code> of the same name, so the filters' own log lines are gone by the end of Task 1. A report should cite a source that still exists. The checks under the table compare numbers that must agree, such as the people remaining after <code>--remove</code> and the lines of <code>toy.qc.fam</code>. Change a rule, rerun the final command, and watch which rows change.</p>
+<p>The table under the checks compares your counts with the toy data's reference values, computed for this site by running the practical's commands with the lab's emulators (<code>window.TOY_CARD</code>; the same numbers appear in the toy-data paragraphs of the step pages). Real PLINK 1.9.0 writes the same files from the same commands. For steps 1–8 a difference means that a command differs from the practical's, or that a file was overwritten. For the final command the reference is this page's worked solution: <span data-card="het_outliers_3sd">?</span> heterozygosity failures plus one member of each of the <span data-card="sim_related_pairs">?</span> related pairs removed, and the <span data-card="hwe_planted">?</span> planted SNPs removed by <code>--hwe 1e-6</code>. A difference there is expected whenever your rules differ. A last, hidden list shows, for everyone you removed or flagged, what the simulation planted in them: open it after you have made your decisions.</p>
+
+<p>The same report in R, counting people and SNPs at each stage from the <code>.fam</code> and <code>.bim</code> files. If you have not made <code>toy.qc</code> yet, the console first runs the steps it needs and the worked solution (the first run also downloads R into the page).</p>
+
+<div class="rlab" id="rlab-report" data-title="The QC report in R" data-packages="dplyr">
+<pre class="lab-setup">if [ ! -f "${analysis_dir}/toy.qc.fam" ]; then
+    plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+    plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01
+    plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/toy.geno0.01.mind0.01
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in --genome --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --het --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+    awk 'FNR == 1 { next } NR == FNR { r = ($5 - $3) / $5; s += r; ss += r * r; n++; next } { m = s / n; sd = sqrt((ss - n * m * m) / (n - 1)); r = ($5 - $3) / $5; if (r &lt; m - 3 * sd || r &gt; m + 3 * sd) print $1, $2 }' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het &gt; ${analysis_dir}/fail_het.txt
+    awk 'NR == FNR { if (FNR &gt; 1) fmiss[$1 " " $2] = $6; next } FNR &gt; 1 &amp;&amp; $10 &gt; 0.1875 { print $1, $2, $3, $4, $10, fmiss[$1 " " $2], fmiss[$3 " " $4] }' ${analysis_dir}/toy.geno0.01.imiss ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome &gt; ${analysis_dir}/related_pairs.txt
+    awk 'FILENAME ~ /fail_het/ { het[$1 " " $2] = 1; next } !(($1 " " $2) in het) &amp;&amp; !(($3 " " $4) in het) { print ($6 &gt;= $7 ? $1 " " $2 : $3 " " $4) }' ${analysis_dir}/fail_het.txt ${analysis_dir}/related_pairs.txt | sort -u &gt; ${analysis_dir}/fail_related.txt
+    cat ${analysis_dir}/fail_het.txt ${analysis_dir}/fail_related.txt | sort -u &gt; ${analysis_dir}/toy.remove.txt
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --remove ${analysis_dir}/toy.remove.txt --hwe 1e-6 --make-bed --out ${analysis_dir}/toy.qc
+fi</pre>
+<pre class="rlab-code">library(dplyr)
+
+count_lines &lt;- function(path) length(readLines(path))
+
+stages &lt;- c(
+  "input"                   = file.path(input_dir, "toy"),
+  "after --geno 0.01"       = file.path(analysis_dir, "toy.geno0.01"),
+  "after --mind 0.01"       = file.path(analysis_dir, "toy.geno0.01.mind0.01"),
+  "after --remove and --hwe" = file.path(analysis_dir, "toy.qc"))
+
+report &lt;- data.frame(
+  stage  = names(stages),
+  people = sapply(stages, function(p) count_lines(paste0(p, ".fam"))),
+  snps   = sapply(stages, function(p) count_lines(paste0(p, ".bim"))),
+  row.names = NULL)
+
+report %&gt;%
+  mutate(people_removed = lag(people) - people,
+         snps_removed   = lag(snps) - snps)
+
+# The removal lists: one person per line
+sapply(c("fail_het.txt", "fail_related.txt", "toy.remove.txt"),
+       function(f) count_lines(file.path(analysis_dir, f)))
+
+# The PLINK log lines behind the last row
+grep("remaining|removed due to|pass filters",
+     readLines(file.path(analysis_dir, "toy.qc.log")), value = TRUE)</pre>
+</div>
+
+<p>What the new functions do: <code>readLines(path)</code> reads a text file into a vector with one element per line, and <code>length()</code> counts them, like <code>len(open(path).readlines())</code>. <code>sapply(x, f)</code> applies <code>f</code> to each element and simplifies the result to a vector, like a list comprehension. <code>lag(x)</code> (dplyr) shifts a column down by one row, so <code>lag(people) - people</code> is the number removed at each stage, like <code>df.people.shift() - df.people</code>; the first row has nothing before it and gets <code>NA</code>. <code>grep(pattern, x, value = TRUE)</code> returns the elements of <code>x</code> that match, like the shell's <code>grep</code>.</p>
+
+<h2 id="what-if">What-if questions <span class="tag core">Core</span></h2>
+
+<p>Each question changes one choice of the pipeline. Run the commands in the terminal above (paste them; each runs in turn), then open the answer.</p>
+
+<details class="q"><summary>What if you filter people before SNPs: --mind 0.01 first, then --geno 0.01?</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${input_dir}/toy --mind 0.01 --make-bed --out ${analysis_dir}/toy.mind0.01
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/toy.mind0.01 --geno 0.01 --make-bed --out ${analysis_dir}/toy.mind0.01.geno0.01
+<span class="prompt">$ </span>grep -h 'removed due to missing' ${analysis_dir}/toy.mind0.01.log ${analysis_dir}/toy.mind0.01.geno0.01.log
+<span class="prompt">$ </span>wc -l ${analysis_dir}/toy.geno0.01.mind0.01.fam ${analysis_dir}/toy.mind0.01.geno0.01.fam
+<span class="prompt">$ </span>wc -l ${analysis_dir}/toy.geno0.01.mind0.01.bim ${analysis_dir}/toy.mind0.01.geno0.01.bim</pre>
+<p>A few bad SNPs with many missing calls raise every person's missing fraction. Filtered first, they are gone before people are judged, so <code>--mind</code> removes only people whose DNA is genuinely poor. In the reversed order the bad SNPs still count, more people cross 1%, and those people are lost although their data on the good SNPs may be fine. The <code>grep -h</code> line prints the reversed order's two log lines without file names. The practical's order cannot be read the same way, because its later commands reuse the prefixes <code>toy.geno0.01</code> and <code>toy.geno0.01.mind0.01</code> and overwrite those logs; the two <code>wc -l</code> lines compare the people and the SNPs that each order keeps. A single command with both flags, <code>plink --bfile ${input_dir}/toy --geno 0.01 --mind 0.01 …</code>, does not follow the practical's order either: PLINK applies <code>--mind</code> before <code>--geno</code>, so it matches the reversed order.<sup><a href="#src-2">2</a></sup> More on this, with a widget: <a href="qc-missingness.html#order">step 1 · Order of the filters</a>.</p>
+<p>In the lab, <code>--mind 0.01</code> on the raw data removes <span data-card="imiss_raw_gt_0_01">?</span> people, against <span data-card="mind_removed">?</span> in the practical's order. Besides the planted degraded samples it removes the planted low-quality samples, whose missing calls sit mostly in the bad SNPs, and an ordinary person just above 1%. The <code>wc -l</code> lines show that the reversed order keeps fewer people and slightly more SNPs: the people it removed carried some of the missing calls that pushed SNPs over 1%.</p>
+</div></details>
+
+<details class="q"><summary>What if you test Hardy–Weinberg equilibrium in everyone (ALL rows) instead of controls?</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk '$3 == "ALL" &amp;&amp; $9 &lt; 1e-6 { print $2 }' ${analysis_dir}/toy.geno0.01.mind0.01.hwe &gt; ${analysis_dir}/hwe_all.txt
+<span class="prompt">$ </span>awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-6 { print $2 }' ${analysis_dir}/toy.geno0.01.mind0.01.hwe &gt; ${analysis_dir}/hwe_unaff.txt
+<span class="prompt">$ </span>wc -l ${analysis_dir}/hwe_all.txt ${analysis_dir}/hwe_unaff.txt
+<span class="prompt">$ </span>awk 'FILENAME ~ /hwe_unaff/ { u[$1] = 1; next } !($1 in u)' ${analysis_dir}/hwe_unaff.txt ${analysis_dir}/hwe_all.txt</pre>
+<p>The last command prints the SNPs that fail in everyone but not in controls. On your own computer <code>grep -v -w -F -f ${analysis_dir}/hwe_unaff.txt ${analysis_dir}/hwe_all.txt</code> does the same (<code>-f</code> reads the patterns from a file, <code>-F</code> takes them literally, <code>-w</code> matches whole words, <code>-v</code> keeps the lines that match none); the lab's <code>grep</code> has no <code>-f</code>. For each, look at its three rows with <code>grep -w SNP_ID</code> on the <code>.hwe</code> file: a departure that shows in the <code>AFF</code> and <code>ALL</code> rows but not in <code>UNAFF</code> is the pattern of a true association with the disease, because selecting people with the disease changes their genotype frequencies at an associated SNP. Testing everyone (<code>--hwe 1e-6 include-nonctrl</code>) would remove that SNP and with it a real finding.<sup><a href="#src-3">3</a></sup> In real data, remember which people PLINK calls controls (<a href="plink-data.html#phenotype-column">The data · What column 6 holds</a>).</p>
+<p>In the lab, the last command prints <span data-card="sim_causal_snp">?</span>, the SNP that the simulation made causal: the risk allele raises the chance of being a case. Its <code>P</code> is <span data-card="hwe_causal_unaff_p">?</span> in the <code>UNAFF</code> row, <span data-card="hwe_causal_aff_p">?</span> in the <code>AFF</code> row and <span data-card="hwe_causal_all_p">?</span> in the <code>ALL</code> row: the controls are in equilibrium, and only the people with the disease depart from it.</p>
+</div></details>
+
+<details class="q"><summary>What if you skip LD pruning before the PCA?</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --maf 0.05 --pca --out ${analysis_dir}/toy.noprune
+<span class="prompt">$ </span>head -3 ${analysis_dir}/toy.noprune.eigenval ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenval</pre>
+<p>Without pruning, a region of strong LD contributes many SNPs that carry the same information. PCA finds directions of large shared variation, so a top PC can end up describing the genotypes in that one region rather than genome-wide ancestry, and its eigenvalue is inflated. Compare the first eigenvalues of the two runs, then plot the PCs of both (<a href="qc-pca.html">step 6</a> has the plots; the theory is in <a href="population-structure.html#ld-relatives">Population structure · LD and relatives</a>). The same logic is why relatedness and heterozygosity use pruned SNPs.</p>
+<p>In the lab, the first eigenvalue changes little and the second grows a lot. The cause is planted: a region of <span data-card="long_range_snps">?</span> SNPs on chromosome <span data-card="long_range_chr">?</span>, from <span data-card="long_range_start_mb">?</span> to <span data-card="long_range_end_mb">?</span> Mb, built like the 8p23.1 inversion, with two kinds of haplotype that never recombine with each other. Without pruning, PC<span data-card="pca_unpruned_inversion_pc">?</span> sorts people by how many inverted copies they carry (correlation <span data-card="pca_unpruned_inversion_r">?</span>). Pruning keeps <span data-card="long_range_snps_prune_in">?</span> of the region's <span data-card="long_range_snps_qc">?</span> SNPs left after step 1, and the region's strongest link is then with PC<span data-card="pca_pruned_inversion_pc">?</span> (correlation <span data-card="pca_pruned_inversion_r">?</span>).</p>
+</div></details>
+
+<details class="q"><summary>What if you forget to flip before the second merge?</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --bmerge ${reference_dir}/toy_1kg.bed ${reference_dir}/toy_1kg.bim ${reference_dir}/toy_1kg.fam \
+      --make-bed --out ${analysis_dir}/toy.noflip || true
+<span class="prompt">$ </span>ls ${analysis_dir}/toy.noflip*
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/toy.noflip --geno 0.1 --maf 0.05 --pca --out ${analysis_dir}/toy.noflip</pre>
+<p>The merge fails with the same "3+ alleles" error and leaves <code>toy.noflip-merge.missnp</code>, <code>toy.noflip-merge.fam</code> and a log, but no <code>.bed</code>. Because of <code>|| true</code> the line still reports success, and the trouble appears one command later: the PCA stops with <code>Error: Failed to open …/toy.noflip.bed.</code> In a script, check that each fileset exists before using it. Note what the flip never repairs: A/T and C/G SNPs never reach the <code>.missnp</code> list, so they merge whether or not their strands agree (<a href="qc-reference-pca.html#strand-problems">step 7 · Strand problems</a>).</p>
+</div></details>
+
+<details class="q"><summary>What if the removal list loses its quotation marks?</summary><div class="a">
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk '{ gsub(/"/, ""); print }' ${analysis_dir}/toy.remove.txt &gt; ${analysis_dir}/toy.remove.noquotes.txt
+<span class="prompt">$ </span>head -3 ${analysis_dir}/toy.remove.noquotes.txt
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --remove ${analysis_dir}/toy.remove.noquotes.txt \
+      --make-bed --out ${analysis_dir}/toy.noquotes</pre>
+<p>The toy data copy PennCATH's family IDs, which include the quotation marks as part of the ID. Without them no line of the list matches, PLINK reports that every person remains, and the command succeeds: nothing warns you that nobody was removed. The same happens when a list is written from R after <code>fread()</code> has stripped the quotes, or when it holds GrafAnc's new IDs instead of the original ones. Always compare the <code>--remove: N people remaining.</code> line with what you expected. In the lab it reads <code>--remove: <span data-card="qc_people">?</span> people remaining.</code>, the whole step 1 fileset.</p>
+</div></details>
+
+<h2 id="real-data">Do it for real: the whole pipeline on PennCATH <span class="tag core">Core</span></h2>
+
+<p>On your own computer, with the folders and variables from <a href="setup.html">Set up your computer</a> (<code>input_dir</code>, <code>reference_dir</code>, <code>analysis_dir</code>), the whole pipeline is the practical's commands with <code>penncath</code> as the prefix, followed by the exercise's commands. As one script:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="cm"># Steps 1–8: the practical</span>
+plink --bfile ${input_dir}/penncath --missing --out ${analysis_dir}/penncath
+plink --bfile ${input_dir}/penncath --geno 0.01 --make-bed --out ${analysis_dir}/penncath.geno0.01
+plink --bfile ${analysis_dir}/penncath.geno0.01 --missing --out ${analysis_dir}/penncath.geno0.01
+plink --bfile ${analysis_dir}/penncath.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/penncath.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --hardy --out ${analysis_dir}/penncath.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/penncath.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --extract ${analysis_dir}/penncath.geno0.01.mind0.01.prune.in \
+      --genome --out ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3
+plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --het --extract ${analysis_dir}/penncath.geno0.01.mind0.01.prune.in \
+      --out ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3
+plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --extract ${analysis_dir}/penncath.geno0.01.mind0.01.prune.in \
+      --maf 0.05 --pca --out ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3
+<span class="cm"># Step 7 (merge, flip, merge, PCA) and step 8 (unique IDs, GrafAnc): see their pages for the commands</span>
+
+<span class="cm"># The exercise, with the rules chosen on this page</span>
+awk 'FNR == 1 { next }
+     NR == FNR { r = ($5 - $3) / $5; s += r; ss += r * r; n++; next }
+     { m = s / n; sd = sqrt((ss - n * m * m) / (n - 1)); r = ($5 - $3) / $5
+       if (r &lt; m - 3 * sd || r &gt; m + 3 * sd) print $1, $2 }' \
+    ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.het ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.het \
+    &gt; ${analysis_dir}/fail_het.txt
+awk 'NR == FNR { if (FNR &gt; 1) fmiss[$1 " " $2] = $6; next }
+     FNR &gt; 1 &amp;&amp; $10 &gt; 0.1875 { print $1, $2, $3, $4, $10, fmiss[$1 " " $2], fmiss[$3 " " $4] }' \
+    ${analysis_dir}/penncath.geno0.01.imiss ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.genome \
+    &gt; ${analysis_dir}/related_pairs.txt
+awk 'FILENAME ~ /fail_het/ { het[$1 " " $2] = 1; next }
+     !(($1 " " $2) in het) &amp;&amp; !(($3 " " $4) in het) { print ($6 &gt;= $7 ? $1 " " $2 : $3 " " $4) }' \
+    ${analysis_dir}/fail_het.txt ${analysis_dir}/related_pairs.txt | sort -u &gt; ${analysis_dir}/fail_related.txt
+cat ${analysis_dir}/fail_het.txt ${analysis_dir}/fail_related.txt | sort -u &gt; ${analysis_dir}/penncath.remove.txt
+plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --remove ${analysis_dir}/penncath.remove.txt \
+      --hwe 1e-6 --make-bed --out ${analysis_dir}/penncath.qc</pre>
+<p>Step 7's and step 8's commands are on <a href="qc-reference-pca.html#real-data">their</a> <a href="qc-grafanc.html#real-data">pages</a>; they write no list that the final command uses, but they are part of the report. GrafAnc runs only on Linux: on a Mac or a Windows computer use Docker or WSL as <a href="setup.html">Set up your computer</a> describes.</p>
+
+<p>The site's scripts can run steps 1–8 for you (<a href="setup.html#scripts">Set up your computer · Or run the downloadable scripts</a>). <a href="scripts/qc_pipeline.sh"><code>qc_pipeline.sh</code></a> runs the practical's PLINK and GrafAnc commands in the same folder layout, including step 7's merge, flip and second merge and step 8's GrafAnc (natively on Linux, through Docker on a Mac). <a href="scripts/qc_plots.R"><code>qc_plots.R</code></a> then reads the reports in <code>analysis_dir</code>, prints the practical's counts and saves its plots as PNG files in <code>analysis_dir/plots/</code>. Neither makes the exercise's decisions: run the exercise's commands from the script above after the pipeline. Both scripts state that their author could not run PLINK or GrafAnc, so read every log they leave.</p>
+
+<p><strong>What to compare.</strong></p>
+<ul>
+  <li><strong>The starting point.</strong> PennCATH's PLINK log lists 1,401 people (937 males, 464 females) and 861,473 variants, with 463 cases, 470 controls (in PLINK's terms) and 468 missing phenotypes; the practical reports 1,380 people after step 1.<sup><a href="#src-1">1</a>,<a href="#src-6">6</a></sup> Check both in your own logs before going on.</li>
+  <li><strong>Each row of your report.</strong> The same table as the widget's, from your logs and lists: the rule, the count and the source. The practical's own expectations are statements, not numbers: for heterozygosity and relatedness "a well-justified analysis may conclude that no samples need to be excluded", and GrafAnc should assign more than 99% of samples to EUR, "with a small number assigned to the MEN (Middle East and North Africa) group".<sup><a href="#src-1">1</a></sup></li>
+  <li><strong>The controls.</strong> <code>--hwe</code> tests the people coded 1 who remain after step 1 and <code>--remove</code> (470 before QC). What code 1 means in this copy of PennCATH: <a href="plink-data.html#phenotype-column">The data · What column 6 holds</a>.</li>
+  <li><strong>The final log.</strong> <code>--remove: N people remaining.</code> must equal 1,380 minus the lines of your removal list; if it equals 1,380, no ID matched.</li>
+</ul>
+
+<p><strong>How the real data differ from the toy data.</strong> PennCATH has 1,401 people and 861,473 SNPs, far more than the toy data, so every command takes longer than in the lab, and GrafAnc compares them with its full reference of 282,424 SNPs. The toy data were simulated small enough to run in a web page, with features planted at known people and SNPs so that each step finds something; the real data contain whatever the study's samples and genotyping produced, and the step pages' "What to look at" lists say what to check in each output.</p>
+<p>The toy study has <span data-card="study_people">?</span> people and <span data-card="study_snps">?</span> SNPs (<a href="practical-overview.html#toy-dataset">The practical · The toy dataset</a>). Its planted problems: SNPs and samples with many missing calls, <span data-card="hwe_planted">?</span> SNPs with genotyping artifacts, <span data-card="sim_related_pairs">?</span> pairs of relatives, a contaminated sample, a child of two relatives, <span data-card="sim_palindromic_swapped">?</span> A/T and C/G SNPs on the opposite strand, and a causal SNP. <span data-card="sim_european_like">?</span> of its people are European-like and the rest were drawn from other ancestries or made admixed, so that steps 5–8 have something to find.</p>
+
+<aside class="callout pitfall" id="pitfalls">
+  <div class="callout-title"><span class="badge">Pitfalls</span> Common mistakes in the exercise</div>
+  <ul>
+    <li><strong>IDs that do not match.</strong> <code>--remove</code> compares IDs as text. PennCATH's and the toy data's family IDs include quotation marks; a list without them, or one with GrafAnc's new IDs, removes nobody, and PLINK does not warn. Check the <code>people remaining</code> line every time.</li>
+    <li><strong>Writing lists from R.</strong> <code>fread()</code> strips the quotation marks by default. Read with <code>fread(path, quote = "")</code> and write with <code>fwrite(x, path, sep = " ", quote = FALSE, col.names = FALSE)</code>, or build lists with awk from PLINK's own output.</li>
+    <li><strong><code>NR == FNR</code> with a file that may be empty.</strong> The idiom means "the first file" only if that file has at least one line; an empty first list makes the program treat the second file as the first. Recognize the file by name (<code>FILENAME ~ /…/</code>).</li>
+    <li><strong>The wrong input fileset.</strong> The final command starts from <code>toy.geno0.01.mind0.01</code>: not the pruned SNPs, not the <code>uniqueIDs</code> fileset, not the merged file with the reference people.</li>
+    <li><strong>Removing more people than needed.</strong> Removing both members of a related pair, or a partner of a person who is removed anyway, loses data for no gain.</li>
+    <li><strong>Forgetting <code>--make-bed</code>.</strong> Without it the filters apply to that one run and nothing is written.</li>
+    <li><strong>Choosing rules after seeing association results.</strong> Fix every threshold from the QC statistics, write it in the report, and keep it.</li>
+  </ul>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>Only step 1 of the practical removes anything; the exercise turns the other steps' statistics into rules, chosen and justified before any association test.</li>
+    <li>People who fail go into a list of family and individual IDs, built with awk from PLINK's own output; SNPs are filtered by <code>--hwe</code> in controls.</li>
+    <li>One command, <code>plink --bfile … --remove … --hwe … --make-bed</code>, makes the cleaned fileset; PLINK applies <code>--remove</code> before <code>--hwe</code>, so the test runs on the people who remain.</li>
+    <li>Genetic-ancestry results are flagged, not used to remove people, unless a restriction was scientifically justified and prespecified.</li>
+    <li>A QC report gives each step's rule, what it removed and the log line or file behind each number; checking that the numbers add up catches silent mistakes such as IDs that match nobody.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>After Task 6, how many people does toy.remove.txt list, and how many people are in toy.qc.fam? Show with the shell that the numbers add up.</summary><div class="a"><p>Run <code>wc -l ${analysis_dir}/toy.remove.txt ${analysis_dir}/toy.geno0.01.mind0.01.fam ${analysis_dir}/toy.qc.fam</code>. The step 1 fileset's count minus the list's count should equal the count of <code>toy.qc.fam</code>, and the log line <code>--remove: N people remaining.</code> should show the same N. A smaller difference means some IDs in the list matched nobody (quotes, or new IDs from step 8); <code>sort -u</code> in Task 6 makes sure that a person listed twice is counted once. With the worked solution the list holds the <span data-card="het_outliers_3sd">?</span> people of <code>fail_het.txt</code> and the <span data-card="sim_related_pairs">?</span> of <code>fail_related.txt</code>, <span data-card="exercise_removed">?</span> people in all, so <code>toy.qc.fam</code> has <span data-card="exercise_people">?</span> lines: the step 1 fileset's <span data-card="qc_people">?</span> less <span data-card="exercise_removed">?</span>.</p></div></details>
+  <details class="q"><summary>Which SNPs did --hwe 1e-6 remove from the toy data? Are they the SNPs that Task 2 counted?</summary><div class="a"><p>List the SNPs of the step 1 fileset that are missing from the cleaned one: <code>awk 'NR == FNR { k[$2] = 1; next } !($2 in k) { print $2 }' ${analysis_dir}/toy.qc.bim ${analysis_dir}/toy.geno0.01.mind0.01.bim</code> (the first file is never empty here). Compare with <code>awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-6 { print $2 }' ${analysis_dir}/toy.geno0.01.mind0.01.hwe</code>. They usually agree; a difference comes from the people removed in the same command, whose genotypes were in Task 2's test but not in the final one. In the lab, with the worked solution, both commands print the same <span data-card="hwe_planted">?</span> SNPs: <span data-card="hwe_planted_ids">?</span>.</p></div></details>
+  <details class="q"><summary>Why does the final command start from toy.geno0.01.mind0.01 and not from toy.geno0.01.mind0.01.uniqueIDs, which step 8 made?</summary><div class="a"><p>The removal lists hold the IDs of the step 1 fileset, written from the <code>.het</code>, <code>.genome</code> and <code>.imiss</code> files, which all use those IDs. The <code>uniqueIDs</code> fileset has new individual IDs (such as <code>"10002_1"</code>), so none of the listed IDs would match and nobody would be removed. The new IDs exist only because GrafAnc needs unique individual IDs.</p></div></details>
+  <details class="q"><summary>A person fails the heterozygosity rule and is also in three pairs with PI_HAT above 0.1875. What do you remove, and why?</summary><div class="a"><p>Remove that person and skip the three pairs. A sample contaminated with a second person's DNA has extra heterozygous calls and shares alleles with many people, so it produces spurious "relatives"; once it is removed, those pairs no longer exist. Removing its partners as well would lose three people whose data may be fine. Check afterwards that no genuine pair is left unresolved.</p></div></details>
+  <details class="q"><summary>Why put --remove and --hwe in the same command instead of running --hwe first and --remove in a second command?</summary><div class="a"><p>PLINK applies <code>--remove</code> before <code>--hwe</code> within one run, so the Hardy–Weinberg test uses only the controls who remain. With <code>--hwe</code> first, people who are about to be removed, such as a contaminated control, would still take part in the test and could push SNPs below the threshold. The order of operations is fixed; the order of the flags on the command line does not change it.</p></div></details>
+  <details class="q"><summary>A colleague's final log says "--remove: 1380 people remaining." for PennCATH, although their list has 12 lines. What went wrong?</summary><div class="a"><p>No ID in the list matched: 1,380 is the number of people before the removal (after step 1). Likely causes are a list written from R without the quotation marks that PennCATH's family IDs carry, a list built from GrafAnc's output with the new individual IDs, or the columns in the wrong order. Compare the first line of the list with the matching line of the <code>.fam</code> file, character by character.</p></div></details>
+  <details class="q"><summary>The practical says a well-justified analysis may remove nobody for heterozygosity. When is that the right conclusion?</summary><div class="a"><p>When no person is far from the rest, or when the people who are far from the rest are explained by genetic ancestry rather than by a technical problem: for example, people whose heterozygosity is high because their ancestry differs from the sample's majority, whose <code>F</code> is shifted for the same reason, and whose missingness and relatedness are normal. Such people are kept and the analysis adjusts for structure; removing them would discard valid data and narrow the study's population.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/order" target="_blank" rel="noopener">Order of operations</a> <span class="src">· PLINK 1.9 documentation</span> <span class="why">Which filter PLINK applies first, whatever the order on the command line.</span></li>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/filter" target="_blank" rel="noopener">Input filtering</a> <span class="src">· PLINK 1.9 documentation</span> <span class="why"><code>--keep</code>, <code>--remove</code>, <code>--hwe</code> and their modifiers.</span></li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Data quality control in genetic case-control association studies</a> <span class="src">· Anderson et al. 2010, Nature Protocols</span> <span class="why">A complete QC protocol with PLINK commands, thresholds and the reasoning behind them.</span></li>
+    <li><a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">A tutorial on conducting genome-wide association studies: quality control and statistical analysis</a> <span class="src">· Marees et al. 2018</span> <span class="why">QC step by step with scripts, from raw data to association tests.</span></li>
+    <li><a href="https://doi.org/10.1002/0471142905.hg0119s68" target="_blank" rel="noopener">Quality control procedures for genome-wide association studies</a> <span class="src">· Turner et al. 2011, Current Protocols in Human Genetics</span> <span class="why">QC as practiced in a large consortium, sample and SNP checks in order.</span></li>
+    <li><a href="https://doi.org/10.1002/gepi.20516" target="_blank" rel="noopener">Quality control and quality assurance in genotypic data for genome-wide association studies</a> <span class="src">· Laurie et al. 2010, Genetic Epidemiology</span> <span class="why">How a genotyping center checks data, including duplicates, batches and sample identity.</span></li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">DCEG Statistical Genetics Workshop. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">Session 1 practical: quality control</a>, the exercise, QC steps 1–8 and the R code for heterozygosity (<code>01_qc.Rmd</code>).</li>
+    <li id="src-2">Chang C. PLINK 1.9 documentation: <a href="https://www.cog-genomics.org/plink/1.9/order" target="_blank" rel="noopener">Order of operations</a> and <a href="https://www.cog-genomics.org/plink/1.9/basic_stats#ibc" target="_blank" rel="noopener">--het</a>.</li>
+    <li id="src-3">Chang C. PLINK 1.9 documentation: <a href="https://www.cog-genomics.org/plink/1.9/filter" target="_blank" rel="noopener">Input filtering</a> (<code>--remove</code>, <code>--hwe</code>, <code>include-nonctrl</code>).</li>
+    <li id="src-4">Anderson CA, Pettersson FH, Clarke GM, Cardon LR, Morris AP, Zondervan KT. Data quality control in genetic case-control association studies. <em>Nat Protoc</em>. 2010;5:1564–1573. <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-5">Marees AT, de Kluiver H, Stringer S, et al. A tutorial on conducting genome-wide association studies: quality control and statistical analysis. <em>Int J Methods Psychiatr Res</em>. 2018;27:e1608. <a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">doi:10.1002/mpr.1608</a></li>
+    <li id="src-6">PLINK 1.9 log of the workshop's <code>penncath</code> files (<code>penncath.log</code>, written when the files were made): people, sexes, phenotype counts and variants.</li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

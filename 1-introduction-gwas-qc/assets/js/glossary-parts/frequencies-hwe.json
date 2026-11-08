@@ -1,0 +1,487 @@
+[
+  {
+    "id": "null-hypothesis",
+    "term": "Null hypothesis",
+    "aka": [
+      "H0"
+    ],
+    "short": "The precise statement about a population that a statistical test looks for evidence against, for example that a SNP's genotype frequencies are p², 2pq and q². A test cannot prove it; it can only show that the data would be unusual if it were true.",
+    "long": "<p>A test asks how probable data at least as extreme as the observed data would be if the null hypothesis were true; that probability is the p-value. Rejecting the null hypothesis whenever the p-value falls below a significance level fixed in advance keeps the rate of false positives at that level. In Lecture 1 the null hypotheses are Hardy–Weinberg proportions at a SNP (QC step 2) and no association between a SNP and the trait (the GWAS itself).</p>",
+    "l1": "Page 5 builds the Hardy–Weinberg test from its null hypothesis; association tests use the null hypothesis of no association at every SNP.",
+    "see": [
+      "test-statistic",
+      "p-value",
+      "significance-level",
+      "hwe"
+    ],
+    "links": [
+      {
+        "t": "OpenIntro Statistics (free textbook), chapter on foundations for inference",
+        "u": "https://www.openintro.org/book/os/"
+      }
+    ],
+    "match": [
+      "null hypothesis",
+      "null hypotheses"
+    ],
+    "noPlural": true,
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "test-statistic",
+    "term": "Test statistic",
+    "aka": [],
+    "short": "A number computed from the data that measures how far they are from what the null hypothesis predicts, such as Pearson's chi-square statistic. Its distribution when the null hypothesis is true turns it into a p-value.",
+    "long": "<p>For a Hardy–Weinberg test at a SNP, \\(X^2 = \\sum (O - E)^2/E\\) compares observed with expected genotype counts; it equals \\(n\\hat{F}^2\\), the number of people times the squared shortfall of heterozygotes. For the MTHFR counts of slide 74, \\(X^2 = 0.47\\). Association tests use other statistics, such as a z-score, with the same logic.</p>",
+    "l1": "Page 5 computes Pearson's statistic for MTHFR and the ABO blood group.",
+    "see": [
+      "null-hypothesis",
+      "p-value",
+      "chi-square-test"
+    ],
+    "links": [],
+    "match": [
+      "test statistic"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "p-value",
+    "term": "p-value",
+    "aka": [
+      "P value"
+    ],
+    "short": "The probability, if the null hypothesis were true, of a test statistic at least as extreme as the one observed. A small p-value means that the data would be unusual under the null hypothesis; it is not the probability that the null hypothesis is true.",
+    "long": "<p>When the null hypothesis is true, a continuous test's p-value is equally likely to fall anywhere between 0 and 1, so a share \\(t\\) of tests fall below any threshold \\(t\\); for a discrete test, such as the exact HWE test, at most that share. Across \\(M\\) tests about \\(Mt\\) fall below \\(t\\) by chance, which is why genome-wide work uses thresholds such as 10⁻⁶ for QC and 5 × 10⁻⁸ for association. On this site \\(p\\) in an equation is an allele frequency, so p-values are written in words.</p>",
+    "l1": "The P column of PLINK's .hwe report (QC step 2) and of association results; page 5 explains how it is computed.",
+    "see": [
+      "null-hypothesis",
+      "significance-level",
+      "mid-p-value",
+      "multiple-testing",
+      "qq-plot"
+    ],
+    "links": [
+      {
+        "t": "Wasserstein & Lazar 2016: the ASA statement on p-values",
+        "u": "https://doi.org/10.1080/00031305.2016.1154108"
+      }
+    ],
+    "match": [
+      "p-value",
+      "p value"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "chi-square-test",
+    "term": "Chi-square test (Pearson's)",
+    "aka": [
+      "Pearson's chi-square test",
+      "χ² test"
+    ],
+    "short": "A test that compares observed counts with the counts expected under a null hypothesis through X² = Σ(O − E)²/E, and reads the p-value from a chi-square distribution. The approximation needs expected counts of about 5 or more.",
+    "long": "<p>For Hardy–Weinberg proportions at a SNP the expected counts are \\(n\\hat{p}^2\\), \\(2n\\hat{p}\\hat{q}\\) and \\(n\\hat{q}^2\\), and the statistic has 1 degree of freedom. For the MTHFR counts of slide 74, \\(X^2 = 0.47\\) and the p-value is 0.49. When an allele is rare the expected number of rare homozygotes is far below 5 and the test gives far too many small p-values, which is why PLINK reports the exact test.</p>",
+    "l1": "Page 5 computes it for MTHFR and ABO and compares it with the exact test.",
+    "see": [
+      "exact-test",
+      "chi-square-distribution",
+      "degrees-of-freedom",
+      "expected-count",
+      "hwe"
+    ],
+    "links": [
+      {
+        "t": "Wigginton et al. 2005: when the chi-square HWE test misleads",
+        "u": "https://doi.org/10.1086/429864"
+      }
+    ],
+    "match": [
+      "chi-square test",
+      "chi-squared test",
+      "chi-square goodness-of-fit test"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "exact-test",
+    "term": "Exact test",
+    "aka": [
+      "exact HWE test"
+    ],
+    "short": "A test whose p-value adds the exact probabilities of all possible outcomes, given fixed totals, that are no more probable than the observed one, instead of using a large-sample approximation. PLINK's Hardy–Weinberg test is an exact test that holds the number of people and the allele counts fixed.",
+    "long": "<p>Given \\(n\\) people carrying \\(m_1\\) copies of allele 1, the probability of \\(n_{12}\\) heterozygotes under Hardy–Weinberg proportions is \\(2^{n_{12}}\\, n!\\, m_1!\\, m_2!/(n_{11}!\\, n_{12}!\\, n_{22}!\\, (2n)!)\\) (Levene 1949). Only a few tables are possible when an allele is rare, so the test is conservative and has a smallest attainable p-value: with 2 copies of an allele among 100 people it is 0.005. The mid-p value makes it less conservative.</p>",
+    "l1": "Slide 83 and the practical's <code>--hardy</code> output use the exact HWE test; page 5 derives it and QC step 2 reads its output.",
+    "see": [
+      "hwe",
+      "chi-square-test",
+      "mid-p-value",
+      "p-value"
+    ],
+    "links": [
+      {
+        "t": "Wigginton, Cutler & Abecasis 2005",
+        "u": "https://doi.org/10.1086/429864"
+      }
+    ],
+    "match": [
+      "exact test",
+      "exact HWE test"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "degrees-of-freedom",
+    "term": "Degrees of freedom (df)",
+    "aka": [
+      "df"
+    ],
+    "short": "The number of independent ways the data can depart from the null hypothesis; it picks the chi-square distribution that gives the p-value. For a test of fit it is the number of categories, minus 1, minus the number of parameters estimated from the data.",
+    "long": "<p>A Hardy–Weinberg test at a SNP has 3 genotype counts that add up to \\(n\\) and one allele frequency estimated from the same data: \\(3 - 1 - 1 = 1\\) degree of freedom. With \\(K\\) alleles there are \\(K(K - 1)/2\\): 3 for the ABO blood group. The 5% cutoff of the chi-square distribution is 3.84 with 1 degree of freedom and 7.81 with 3.</p>",
+    "l1": "Page 5 explains why the HWE test has 1 degree of freedom at a SNP.",
+    "see": [
+      "chi-square-test",
+      "chi-square-distribution"
+    ],
+    "links": [],
+    "match": [
+      "degrees of freedom",
+      "degree of freedom"
+    ],
+    "noPlural": true,
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "expected-count",
+    "term": "Expected count",
+    "aka": [
+      "expected frequency"
+    ],
+    "short": "The number of observations that a null hypothesis predicts in a category: the total number times the category's probability. Under Hardy–Weinberg proportions the expected number of heterozygotes among n people is 2npq.",
+    "long": "<p>Expected counts need not be whole numbers. For the 766 MTHFR genotypes of slide 74 they are 338.2 CC, 341.5 CT and 86.2 TT, against 334, 350 and 82 observed. The chi-square approximation is trusted when every expected count is at least about 5; at a SNP with a rare allele the expected number of rare homozygotes is often far below 1.</p>",
+    "l1": "Page 5 computes expected genotype counts; PLINK's .hwe report gives the expected heterozygote frequency as E(HET).",
+    "see": [
+      "chi-square-test",
+      "hwe"
+    ],
+    "links": [],
+    "match": [
+      "expected count"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "standard-error",
+    "term": "Standard error (SE)",
+    "aka": [
+      "SE"
+    ],
+    "short": "The standard deviation of an estimate over repeated samples of the same size from the same population: how much the estimate would vary from one sample to the next. For an allele frequency in Hardy–Weinberg proportions it is √(p(1 − p)/2n).",
+    "long": "<p>For MTHFR (1,532 allele copies, frequency of C 0.664) the standard error is \\(\\sqrt{0.664 \\times 0.336/1{,}532} = 0.012\\). It shrinks with the square root of the sample size: four times as many people halve it. A shortfall of heterozygotes \\(F\\) multiplies the variance by \\(1 + F\\). In association results the SE column plays the same role for an effect estimate.</p>",
+    "l1": "Page 5 derives the standard error of an allele frequency and simulates it.",
+    "see": [
+      "standard-deviation",
+      "sampling-distribution",
+      "confidence-interval"
+    ],
+    "links": [],
+    "match": [
+      "standard error"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "confidence-interval",
+    "term": "Confidence interval",
+    "aka": [
+      "CI"
+    ],
+    "short": "A range computed from the data by a rule that captures the true value in a stated share of samples, usually 95%. The usual 95% interval is the estimate plus or minus 1.96 standard errors.",
+    "long": "<p>The 95% describes the rule, not one interval: a given interval either contains the true value or does not. For the MTHFR frequency of C, \\(0.664 \\pm 1.96 \\times 0.0121\\) gives 0.641 to 0.688. For rare alleles this plus-or-minus (Wald) interval can extend below 0 and contains the true value too rarely; Wilson's interval is better.</p>",
+    "l1": "Page 5 computes intervals for allele frequencies and shows how often they contain the true value.",
+    "see": [
+      "standard-error",
+      "wald-interval",
+      "wilson-interval"
+    ],
+    "links": [],
+    "match": [
+      "confidence interval"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "maximum-likelihood-estimate",
+    "term": "Maximum-likelihood estimate (MLE)",
+    "aka": [
+      "maximum-likelihood estimation",
+      "MLE"
+    ],
+    "short": "The value of an unknown parameter that makes the observed data most probable under a model. For an allele frequency it is the allele count divided by the number of allele copies.",
+    "long": "<p>It is found by maximizing the likelihood or the log-likelihood, often by setting the derivative to zero: for the binomial likelihood of an allele count this gives \\(\\hat{p} = (2n_{11} + n_{12})/2n\\). When no formula exists, an iterative method such as the EM algorithm (gene counting for ABO blood groups) finds it. In large samples the estimate is close to normal, with variance equal to one over the curvature of the log-likelihood at its peak.</p>",
+    "l1": "Page 5 derives the allele-frequency estimate as a maximum-likelihood estimate; page 6 estimates haplotype frequencies the same way.",
+    "see": [
+      "likelihood",
+      "em-algorithm",
+      "standard-error"
+    ],
+    "links": [],
+    "match": [
+      "maximum-likelihood estimate",
+      "maximum likelihood estimate",
+      "maximum-likelihood estimation",
+      "maximum likelihood estimation"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "binomial-distribution",
+    "term": "Binomial distribution",
+    "aka": [],
+    "short": "The distribution of the number of successes in N independent trials that each succeed with the same probability p. Its mean is Np and its variance Np(1 − p).",
+    "long": "<p>Under Hardy–Weinberg proportions the number of copies of an allele among \\(2n\\) allele copies is binomial with \\(N = 2n\\), and a person's genotype, 0, 1 or 2 copies, is binomial with \\(N = 2\\), which gives \\(q^2\\), \\(2pq\\) and \\(p^2\\) (slide 82). With more than two alleles the multinomial distribution takes its place.</p>",
+    "l1": "Slide 82; page 5 uses it for the likelihood and the standard error of an allele frequency.",
+    "see": [
+      "hwe",
+      "standard-error",
+      "maximum-likelihood-estimate"
+    ],
+    "links": [],
+    "match": [
+      "binomial distribution"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "normal-distribution",
+    "term": "Normal distribution",
+    "aka": [
+      "Gaussian distribution"
+    ],
+    "short": "The bell-shaped distribution described by a mean and a standard deviation; 95% of its values lie within 1.96 standard deviations of the mean. Sums of many independent pieces, such as binomial counts with many trials, are close to normal.",
+    "long": "<p>The standard normal distribution has mean 0 and standard deviation 1. Squaring a standard normal variable gives the chi-square distribution with 1 degree of freedom, which is why the 5% cutoff 3.84 equals \\(1.96^2\\).</p>",
+    "l1": "Page 5 uses it for confidence intervals and compares it with simulated allele frequencies.",
+    "see": [
+      "standard-deviation",
+      "confidence-interval",
+      "chi-square-distribution"
+    ],
+    "links": [],
+    "match": [
+      "normal distribution",
+      "Gaussian distribution"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "standard-deviation",
+    "term": "Standard deviation (SD)",
+    "aka": [
+      "SD"
+    ],
+    "short": "A measure of spread: the square root of the variance, the average squared distance of values from their mean. It is in the same units as the values.",
+    "long": "<p>The standard deviation of an estimate over repeated samples is called its standard error.</p>",
+    "l1": "Page 5 compares the standard deviation of simulated allele frequencies with the standard-error formula.",
+    "see": [
+      "variance",
+      "standard-error"
+    ],
+    "links": [],
+    "match": [
+      "standard deviation"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "variance",
+    "term": "Variance",
+    "aka": [],
+    "short": "A measure of spread: the average squared distance of values from their mean. Its square root is the standard deviation.",
+    "long": "<p>A binomial count of \\(N\\) trials with success probability \\(p\\) has variance \\(Np(1 - p)\\). A person's number of copies of an allele has variance \\(2pq\\) in Hardy–Weinberg proportions and \\(2pq(1 + F)\\) when heterozygotes fall short by \\(F\\).</p>",
+    "l1": "Page 5 derives the variance of an allele-frequency estimate.",
+    "see": [
+      "standard-deviation",
+      "standard-error",
+      "variance-explained"
+    ],
+    "links": [],
+    "match": [
+      "variance"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "sampling-distribution",
+    "term": "Sampling distribution",
+    "aka": [],
+    "short": "The distribution of an estimate or test statistic over repeated samples of the same size from the same population. The standard deviation of an estimate's sampling distribution is its standard error.",
+    "long": "<p>A test's null distribution is the sampling distribution of its statistic when the null hypothesis is true. The sampling widget on page 5 draws 2,000 samples to show the sampling distribution of an allele frequency.</p>",
+    "l1": "Page 5 simulates the sampling distribution of an allele frequency.",
+    "see": [
+      "standard-error",
+      "null-hypothesis"
+    ],
+    "links": [],
+    "match": [
+      "sampling distribution",
+      "null distribution"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "chi-square-distribution",
+    "term": "Chi-square distribution",
+    "aka": [
+      "χ² distribution"
+    ],
+    "short": "The distribution of a sum of squares of independent standard normal variables; the number of squares is its degrees of freedom. With 1 degree of freedom, 5% of it lies above 3.84.",
+    "long": "<p>Pearson's chi-square statistic follows it approximately when the null hypothesis is true and the expected counts are large. The 5% cutoffs are 3.84 (1 degree of freedom), 5.99 (2) and 7.81 (3).</p>",
+    "l1": "Page 5 reads Hardy–Weinberg p-values from it; association tests with 1 degree of freedom use the same distribution.",
+    "see": [
+      "chi-square-test",
+      "degrees-of-freedom",
+      "normal-distribution"
+    ],
+    "links": [],
+    "match": [
+      "chi-square distribution",
+      "chi-squared distribution"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "gene-counting",
+    "term": "Gene counting",
+    "aka": [],
+    "short": "An iterative method for estimating allele frequencies when some genotypes cannot be told apart, as with ABO blood groups: split each ambiguous group into genotypes by their Hardy–Weinberg frequencies, count alleles, and repeat. It is an EM algorithm.",
+    "long": "<p>Described by Ceppellini, Siniscalco and Smith in 1955. For the 3,117 people of slide 73, grouped by blood group, it converges in 10 rounds from equal starting values to allele frequencies of 0.286 (A), 0.103 (B) and 0.612 (O). The same idea estimates haplotype frequencies from genotypes.</p>",
+    "l1": "Page 5 explains it and runs it step by step in a widget.",
+    "see": [
+      "em-algorithm",
+      "abo-blood-group",
+      "hwe",
+      "maximum-likelihood-estimate"
+    ],
+    "links": [
+      {
+        "t": "Ceppellini, Siniscalco & Smith 1955",
+        "u": "https://doi.org/10.1111/j.1469-1809.1955.tb01360.x"
+      }
+    ],
+    "match": [
+      "gene counting"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "significance-level",
+    "term": "Significance level (α)",
+    "aka": [
+      "alpha",
+      "level of significance"
+    ],
+    "short": "The p-value threshold, chosen before the test, below which the null hypothesis is rejected. It is the largest acceptable probability of a false positive for one test, often 0.05.",
+    "long": "<p>Running many tests multiplies the expected number of false positives, so genome-wide work uses much smaller levels: 10⁻⁶ or less for the Hardy–Weinberg filter in QC, and 5 × 10⁻⁸ for association.</p>",
+    "l1": "Page 5 introduces it with the Hardy–Weinberg test.",
+    "see": [
+      "p-value",
+      "null-hypothesis",
+      "multiple-testing",
+      "bonferroni-correction"
+    ],
+    "links": [],
+    "match": [
+      "significance level",
+      "level of significance"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "wald-interval",
+    "term": "Wald interval",
+    "aka": [],
+    "short": "The confidence interval estimate ± 1.96 standard errors, with the standard error computed at the estimate. It is accurate for common alleles in large samples but fails for rare ones: it can extend below 0.",
+    "long": "<p>For 3 copies of an allele among 200 copies it runs from −0.002 to 0.032; with no copies it collapses to the single value 0. Wilson's interval avoids both problems.</p>",
+    "l1": "Page 5 compares it with Wilson's interval in a simulation.",
+    "see": [
+      "confidence-interval",
+      "wilson-interval",
+      "standard-error"
+    ],
+    "links": [
+      {
+        "t": "Brown, Cai & DasGupta 2001",
+        "u": "https://doi.org/10.1214/ss/1009213286"
+      }
+    ],
+    "match": [
+      "Wald interval",
+      "Wald confidence interval"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "wilson-interval",
+    "term": "Wilson score interval",
+    "aka": [
+      "Wilson interval"
+    ],
+    "short": "A confidence interval for a proportion that keeps every value for which the observed proportion lies within 1.96 standard errors computed at that value. It never leaves the range 0 to 1 and stays close to 95% coverage for rare alleles.",
+    "long": "<p>Its center is \\((m + 1.92)/(N + 3.84)\\) for \\(m\\) successes in \\(N\\) trials, the estimate pulled toward 0.5. For 3 copies of an allele among 200 copies it runs from 0.005 to 0.043, and for 0 copies from 0 to 0.019. Proposed by E. B. Wilson in 1927.</p>",
+    "l1": "Page 5 gives its formula and simulates its coverage.",
+    "see": [
+      "confidence-interval",
+      "wald-interval"
+    ],
+    "links": [
+      {
+        "t": "Wilson 1927",
+        "u": "https://doi.org/10.1080/01621459.1927.10502953"
+      }
+    ],
+    "match": [
+      "Wilson score interval",
+      "Wilson interval",
+      "Wilson’s score interval",
+      "Wilson’s interval",
+      "Wilson's interval"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "genotype-relative-risk",
+    "term": "Genotype relative risk",
+    "aka": [],
+    "short": "The risk of a disease for people with a given genotype divided by the risk for people with a reference genotype, usually no copy of the risk allele.",
+    "long": "<p>Patterns of genotype relative risks define genetic models: multiplicative (1, r, r²), recessive (1, 1, r) and dominant (1, r, r). Among cases, a multiplicative pattern keeps Hardy–Weinberg proportions, while recessive and dominant patterns produce too many homozygotes or heterozygotes, which is why quality control tests Hardy–Weinberg equilibrium in controls.</p>",
+    "l1": "Page 5 uses it to show why QC tests the controls.",
+    "see": [
+      "relative-risk",
+      "hwe",
+      "recessive",
+      "dominant"
+    ],
+    "links": [],
+    "match": [
+      "genotype relative risk"
+    ],
+    "owner": "frequencies-hwe"
+  },
+  {
+    "id": "antigen",
+    "term": "Antigen",
+    "aka": [],
+    "short": "A molecular structure that the immune system can recognize. The A and B antigens are sugars on the surface of red blood cells that define the ABO blood groups.",
+    "long": "<p>A person makes antibodies against the ABO antigens they lack: a group O person makes anti-A and anti-B antibodies. A blood test detects antigens, so it sees blood groups, not genotypes: it cannot tell AA from AO.</p>",
+    "l1": "Slide 71 and page 5 (the ABO blood group).",
+    "see": [
+      "abo-blood-group",
+      "codominant"
+    ],
+    "links": [],
+    "match": [
+      "antigen"
+    ],
+    "owner": "frequencies-hwe"
+  }
+]

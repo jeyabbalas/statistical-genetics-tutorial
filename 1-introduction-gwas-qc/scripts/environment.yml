@@ -1,0 +1,40 @@
+# environment.yml: a conda environment with the programs that the Lecture 1 practical uses.
+#
+# Written for "Statistical genetics, Lecture 1", page "Set up your computer" (setup.html#conda).
+# The practical itself is the DCEG Statistical Genetics Workshop's Session 1 QC practical,
+# src/01_qc.Rmd in https://github.com/DCEG-workshops/statgen_workshop_tutorial.
+#
+# Create it:   conda env create -f environment.yml      (mamba env create -f environment.yml is faster)
+# Use it:      conda activate statgen-workshop
+# Check it:    bash setup_check.sh
+#
+# Apple Silicon Macs: Bioconda builds PLINK 1.9 for Linux (linux-64) and Intel Macs (osx-64) only,
+# so the file as it stands cannot be solved for osx-arm64. Either
+#   (a) build the whole environment for Intel Macs; it then runs under Rosetta 2:
+#         CONDA_SUBDIR=osx-64 conda env create -f environment.yml
+#         conda activate statgen-workshop
+#         conda config --env --set subdir osx-64
+#   or (b) leave PLINK out and install the official PLINK 1.9 build for macOS, which runs natively
+#       (setup.html#plink):
+#         grep -v 'plink' environment.yml > environment-arm64.yml
+#         conda env create -f environment-arm64.yml
+#
+# Versions were checked against conda-forge and Bioconda in November 2026; this file has not been
+# solved or installed by its author.
+name: statgen-workshop
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - plink=1.90b6.21   # PLINK 1.9 from Bioconda; the program is called plink
+  - r-base=4.6
+  - r-tidyverse       # dplyr, ggplot2, readr and the rest; glue comes with it
+  - r-data.table      # fread()
+  - r-glue
+  - r-rmarkdown       # knit the practical's .Rmd outside RStudio
+  - r-knitr
+  - pandoc            # rmarkdown needs it to write the HTML report
+  - git
+  - curl
+  - unzip
+  - htslib            # the library GrafAnc's Linux program is linked against (setup.html#grafanc)

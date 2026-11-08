@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Designing a GWAS and producing its data · Lecture 1</title>
+<meta name="description" content="What a genome-wide association study is, how its people are chosen, how many are needed (statistical power), and how genotypes are measured, quality-controlled and imputed: the first half of Uffelmann et al. 2021, with a power calculator and an imputation demonstration.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<!-- Widgets for this page, one file each: assets/js/widgets/PAGEKEY-NAME.js -->
+<script defer src="assets/js/widgets/gwas-design-power.js"></script>
+<script defer src="assets/js/widgets/gwas-design-imputation.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="gwas-design"]. */
+body[data-page="gwas-design"] .mental-model figure figcaption { font-size: 0.85rem; color: var(--fg-muted); margin-top: 6px; }
+body[data-page="gwas-design"] table.designs td:first-child { white-space: nowrap; }
+body[data-page="gwas-design"] .timeline { list-style: none; padding-left: 0; margin: 0; }
+body[data-page="gwas-design"] .timeline li { padding: 6px 0 6px 14px; border-left: 3px solid var(--border); margin-left: 4px; }
+body[data-page="gwas-design"] .timeline li + li { margin-top: 2px; }
+body[data-page="gwas-design"] .timeline .yr { font-weight: 700; color: var(--fg); margin-right: 6px; }
+</style>
+</head>
+<body data-page="gwas-design">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part C · GWAS from start to finish · Page 8 of 23</p>
+  <h1>Designing a GWAS and producing its data</h1>
+  <p class="lede">A genome-wide association study (GWAS) measures the genotypes of thousands of people at hundreds of thousands of single-nucleotide polymorphisms (SNPs: positions in the genome where people carry different DNA letters), records a trait for the same people, and tests every SNP for a difference in the trait between genotypes. This page follows the first half of the session’s reading, Uffelmann et al. 2021: what a GWAS is and what it has found, whom to study, how many people are needed, and how genotypes are measured, cleaned and filled in before the first test is run.</p>
+  <div class="chips">
+    <span class="chip core">Reading: Introduction, Experimentation, Boxes 1–2, Tables 1–2</span>
+    <span class="chip time">≈ 60 min</span>
+    <span class="chip data">Shows up in the data as: .bed/.bim/.fam files, a phenotype column, covariates, imputed dosages</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">A GWAS is eight steps, and the first four build the tables that every test reads</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 262" role="img" aria-labelledby="mmw-t mmw-d">
+<title id="mmw-t">The eight steps of a GWAS; this page covers steps a to d</title>
+<desc id="mmw-d">Eight boxes in reading order: a data collection, b genotyping, c quality control, d imputation, e association test, f meta-analysis, g replication, h post-GWAS analyses. Steps a to d, which produce the analysis-ready data, are highlighted.</desc>
+<defs><marker id="mmw-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<g opacity="1">
+<rect x="16" y="16" width="170" height="96" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="34" cy="36" r="11" fill="var(--accent)"/>
+<text x="34" y="40.5" class="t-b" text-anchor="middle" style="fill:#fff">a</text>
+<text x="52" y="41" class="t-b">Data collection</text>
+<text x="26" y="65" class="t-sm">Recruit people; record</text>
+<text x="26" y="81" class="t-sm">phenotype and covariates</text>
+<text x="176" y="103" class="t-xs" text-anchor="end">Page 8</text>
+</g>
+<line x1="187" y1="64.0" x2="202" y2="64.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="1">
+<rect x="204" y="16" width="170" height="96" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="222" cy="36" r="11" fill="var(--accent)"/>
+<text x="222" y="40.5" class="t-b" text-anchor="middle" style="fill:#fff">b</text>
+<text x="240" y="41" class="t-b">Genotyping</text>
+<text x="214" y="65" class="t-sm">Array or sequencing</text>
+<text x="214" y="81" class="t-sm">gives genotype calls</text>
+<text x="364" y="103" class="t-xs" text-anchor="end">Page 8</text>
+</g>
+<line x1="375" y1="64.0" x2="390" y2="64.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="1">
+<rect x="392" y="16" width="170" height="96" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="410" cy="36" r="11" fill="var(--accent)"/>
+<text x="410" y="40.5" class="t-b" text-anchor="middle" style="fill:#fff">c</text>
+<text x="428" y="41" class="t-b">Quality control</text>
+<text x="402" y="65" class="t-sm">Remove bad SNPs and</text>
+<text x="402" y="81" class="t-sm">people; relatives, ancestry</text>
+<text x="552" y="103" class="t-xs" text-anchor="end">Pages 8, 11–23</text>
+</g>
+<line x1="563" y1="64.0" x2="578" y2="64.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="1">
+<rect x="580" y="16" width="170" height="96" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="598" cy="36" r="11" fill="var(--accent)"/>
+<text x="598" y="40.5" class="t-b" text-anchor="middle" style="fill:#fff">d</text>
+<text x="616" y="41" class="t-b">Imputation</text>
+<text x="590" y="65" class="t-sm">Phase; infer untyped SNPs</text>
+<text x="590" y="81" class="t-sm">from reference haplotypes</text>
+<text x="740" y="103" class="t-xs" text-anchor="end">Page 8</text>
+</g>
+<g opacity="0.62">
+<rect x="16" y="150" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="34" cy="170" r="11" fill="var(--fg-faint)"/>
+<text x="34" y="174.5" class="t-b" text-anchor="middle" style="fill:#fff">e</text>
+<text x="52" y="175" class="t-b">Association test</text>
+<text x="26" y="199" class="t-sm">One regression per SNP,</text>
+<text x="26" y="215" class="t-sm">adjusted for covariates</text>
+<text x="176" y="237" class="t-xs" text-anchor="end">Page 9</text>
+</g>
+<line x1="187" y1="198.0" x2="202" y2="198.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="0.62">
+<rect x="204" y="150" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="222" cy="170" r="11" fill="var(--fg-faint)"/>
+<text x="222" y="174.5" class="t-b" text-anchor="middle" style="fill:#fff">f</text>
+<text x="240" y="175" class="t-b">Meta-analysis</text>
+<text x="214" y="199" class="t-sm">Combine the summary</text>
+<text x="214" y="215" class="t-sm">statistics of cohorts</text>
+<text x="364" y="237" class="t-xs" text-anchor="end">Page 9</text>
+</g>
+<line x1="375" y1="198.0" x2="390" y2="198.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="0.62">
+<rect x="392" y="150" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="410" cy="170" r="11" fill="var(--fg-faint)"/>
+<text x="410" y="174.5" class="t-b" text-anchor="middle" style="fill:#fff">g</text>
+<text x="428" y="175" class="t-b">Replication</text>
+<text x="402" y="199" class="t-sm">Confirm in independent</text>
+<text x="402" y="215" class="t-sm">people</text>
+<text x="552" y="237" class="t-xs" text-anchor="end">Page 9</text>
+</g>
+<line x1="563" y1="198.0" x2="578" y2="198.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="0.62">
+<rect x="580" y="150" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="598" cy="170" r="11" fill="var(--fg-faint)"/>
+<text x="598" y="174.5" class="t-b" text-anchor="middle" style="fill:#fff">h</text>
+<text x="616" y="175" class="t-b">Post-GWAS</text>
+<text x="590" y="199" class="t-sm">Fine-map; genes; scores,</text>
+<text x="590" y="215" class="t-sm">MR, genetic correlation</text>
+<text x="740" y="237" class="t-xs" text-anchor="end">Pages 9–10</text>
+</g>
+<path d="M665.0,113 V129 H101.0 V147" fill="none" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+</svg>
+<svg class="only-narrow" viewBox="0 0 320 542" role="img" aria-labelledby="mmn-t mmn-d">
+<title id="mmn-t">The eight steps of a GWAS; this page covers steps a to d</title>
+<desc id="mmn-d">Eight boxes in reading order: a data collection, b genotyping, c quality control, d imputation, e association test, f meta-analysis, g replication, h post-GWAS analyses. Steps a to d, which produce the analysis-ready data, are highlighted.</desc>
+<defs><marker id="mmn-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<g opacity="1">
+<rect x="8" y="6" width="304" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="28" cy="33.0" r="11" fill="var(--accent)"/>
+<text x="28" y="37.5" class="t-b" text-anchor="middle" style="fill:#fff">a</text>
+<text x="48" y="28" class="t-b">Data collection</text>
+<text x="304" y="28" class="t-xs" text-anchor="end">Page 8</text>
+<text x="48" y="47" class="t-sm">Recruit; record phenotype, covariates</text>
+</g>
+<line x1="28" y1="61" x2="28" y2="72" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="1">
+<rect x="8" y="74" width="304" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="28" cy="101.0" r="11" fill="var(--accent)"/>
+<text x="28" y="105.5" class="t-b" text-anchor="middle" style="fill:#fff">b</text>
+<text x="48" y="96" class="t-b">Genotyping</text>
+<text x="304" y="96" class="t-xs" text-anchor="end">Page 8</text>
+<text x="48" y="115" class="t-sm">Array or sequencing gives genotype calls</text>
+</g>
+<line x1="28" y1="129" x2="28" y2="140" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="1">
+<rect x="8" y="142" width="304" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="28" cy="169.0" r="11" fill="var(--accent)"/>
+<text x="28" y="173.5" class="t-b" text-anchor="middle" style="fill:#fff">c</text>
+<text x="48" y="164" class="t-b">Quality control</text>
+<text x="304" y="164" class="t-xs" text-anchor="end">Pages 8, 11–23</text>
+<text x="48" y="183" class="t-sm">Remove bad SNPs and people</text>
+</g>
+<line x1="28" y1="197" x2="28" y2="208" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="1">
+<rect x="8" y="210" width="304" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="28" cy="237.0" r="11" fill="var(--accent)"/>
+<text x="28" y="241.5" class="t-b" text-anchor="middle" style="fill:#fff">d</text>
+<text x="48" y="232" class="t-b">Imputation</text>
+<text x="304" y="232" class="t-xs" text-anchor="end">Page 8</text>
+<text x="48" y="251" class="t-sm">Infer untyped SNPs from a panel</text>
+</g>
+<line x1="28" y1="265" x2="28" y2="276" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="278" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="305.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="309.5" class="t-b" text-anchor="middle" style="fill:#fff">e</text>
+<text x="48" y="300" class="t-b">Association test</text>
+<text x="304" y="300" class="t-xs" text-anchor="end">Page 9</text>
+<text x="48" y="319" class="t-sm">One regression per SNP, with covariates</text>
+</g>
+<line x1="28" y1="333" x2="28" y2="344" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="346" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="373.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="377.5" class="t-b" text-anchor="middle" style="fill:#fff">f</text>
+<text x="48" y="368" class="t-b">Meta-analysis</text>
+<text x="304" y="368" class="t-xs" text-anchor="end">Page 9</text>
+<text x="48" y="387" class="t-sm">Combine cohorts' summary statistics</text>
+</g>
+<line x1="28" y1="401" x2="28" y2="412" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="414" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="441.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="445.5" class="t-b" text-anchor="middle" style="fill:#fff">g</text>
+<text x="48" y="436" class="t-b">Replication</text>
+<text x="304" y="436" class="t-xs" text-anchor="end">Page 9</text>
+<text x="48" y="455" class="t-sm">Confirm in independent people</text>
+</g>
+<line x1="28" y1="469" x2="28" y2="480" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="482" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="509.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="513.5" class="t-b" text-anchor="middle" style="fill:#fff">h</text>
+<text x="48" y="504" class="t-b">Post-GWAS</text>
+<text x="304" y="504" class="t-xs" text-anchor="end">Pages 9–10</text>
+<text x="48" y="523" class="t-sm">Fine-map; genes; scores, MR</text>
+</g>
+</svg>
+    <figcaption>The steps of a GWAS, a to h. This page covers steps a–d; <a href="gwas-analysis.html">page 9</a> covers e–h and <a href="gwas-applications.html">page 10</a> what is done with the results. <span class="fig-credit">Drawn for this lecture, following Fig. 1 of Uffelmann et al. 2021.</span></figcaption>
+  </figure>
+  <p class="mm-statement">Steps a–d turn people into two aligned tables: a genotype matrix \(\mathbf{G}\) with \(N\) rows (people) and \(M\) columns (SNPs), holding 0, 1 or 2 copies of an allele or an imputed dosage between 0 and 2, and a phenotype vector \(\mathbf{y}\) with covariates \(\mathbf{W}\) in the same row order. The association test only reads these tables, so a mistake in design, measurement or cleaning becomes a mistake in every result.</p>
+  <ul class="mm-hooks">
+    <li><strong>Question.</strong> A GWAS tests every SNP, without a candidate gene chosen in advance, for a difference in a trait between genotypes; twenty years of GWAS have found many thousands of associated regions, most with small effects.</li>
+    <li><strong>People.</strong> The design (case–control, cohort, biobank, families, isolated populations) and the way people are recruited decide who is in the rows and which biases come with them.</li>
+    <li><strong>Numbers.</strong> The power to detect one SNP grows with \(N \cdot 2p(1-p)\,\beta^2\) and must clear a threshold of 5 × 10⁻⁸, so small effects need tens to hundreds of thousands of people.</li>
+    <li><strong>Genotypes.</strong> Arrays measure up to a few million chosen SNPs; exome and genome sequencing read nearly all variants in their target, rare ones included (Box 1).</li>
+    <li><strong>Clean.</strong> Quality control removes unreliable rows (people) and columns (SNPs) and finds relatives and ancestry; it is this session’s practical.</li>
+    <li><strong>Fill in.</strong> Imputation infers unmeasured SNPs from haplotypes shared with a sequenced reference panel and reports a dosage and an INFO score for each (Box 2).</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and Part B</div>
+  <p>This page uses SNPs, genotypes and allele frequencies (<a href="snp-data.html">page 4</a>, <a href="frequencies-hwe.html">page 5</a>), linkage disequilibrium (<a href="linkage-disequilibrium.html">page 6</a>) and population structure (<a href="population-structure.html">page 7</a>). Lecture 0 shows how arrays and sequencing read DNA (<a href="../0-biological-foundations/samples-to-genotypes.html">From a blood sample to genotypes</a>), how traits are measured (<a href="../0-biological-foundations/phenotypes.html">Measuring phenotypes</a>) and what the files look like (<a href="../0-biological-foundations/the-data.html">What genotype–phenotype data looks like</a>).</p>
+</aside>
+
+<h2 id="what-a-gwas-is">What a GWAS is and what it has found <span class="tag core">Core</span></h2>
+
+<p>A GWAS asks, for each of many SNPs across the genome, whether people with different genotypes at that SNP differ in a trait. The trait, or phenotype, is either a measurement such as height or LDL cholesterol (a quantitative trait) or a yes/no status such as having coronary artery disease (a binary trait, with cases and controls). The reading describes a GWAS as testing “for differences in the allele frequency of genetic variants between individuals who are ancestrally similar but differ phenotypically”<sup><a href="#src-1">1</a></sup>. For a binary trait this is a comparison of allele frequencies between cases and controls; for a quantitative trait it is a regression of the trait on the number of copies of one allele. <a href="gwas-analysis.html#association-test">Page 9</a> works through both tests.</p>
+
+<p>“Genome-wide” means that the measured SNPs cover the genome densely enough that almost every common variant is either measured or correlated with a measured SNP through linkage disequilibrium (LD, the correlation between alleles at nearby positions; <a href="linkage-disequilibrium.html">page 6</a>). No gene is chosen in advance: the same test is run at every SNP, and the price of running about a million independent tests is a strict significance threshold, p &lt; 5 × 10⁻⁸ (<a href="gwas-analysis.html#multiple-testing">page 9</a>). The output is one row per SNP with an effect size, a standard error and a p-value. Because neighboring SNPs are correlated, significant SNPs come in blocks, which the reading calls genomic risk loci<sup><a href="#src-1">1</a></sup>.</p>
+
+<p>A GWAS finds associations, not causes. An associated SNP may change the trait itself, or it may be correlated through LD with the variant that does, or the association may be produced by a confounder such as ancestry. Pages <a href="gwas-analysis.html#confounding">9</a> and <a href="gwas-applications.html#limitations">10</a> show how each of these is examined.</p>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> From 146 people to 5.4 million</div>
+  <ul class="timeline">
+    <li><span class="yr">2005</span>One of the first GWAS genotyped 116,204 SNPs in 96 people with age-related macular degeneration (a loss of central vision in older adults) and 50 controls. One common SNP in an intron of the complement factor H gene (<i>CFH</i>) was associated with p &lt; 10⁻⁷; people homozygous for the risk allele had an odds ratio of 7.4 (95% confidence interval 2.9–19). Resequencing the gene found a protein-changing variant in LD with it, Y402H (tyrosine to histidine at amino acid 402)<sup><a href="#src-2">2</a></sup>.</li>
+    <li><span class="yr">2007</span>The Wellcome Trust Case Control Consortium (WTCCC) genotyped about 500,000 SNPs on the Affymetrix 500K array in about 2,000 cases of each of seven diseases (bipolar disorder, coronary artery disease, Crohn’s disease, hypertension, rheumatoid arthritis, type 1 and type 2 diabetes) and 3,000 shared controls, and reported 24 independent association signals at p &lt; 5 × 10⁻⁷<sup><a href="#src-3">3</a></sup>.</li>
+    <li><span class="yr">2021</span>The reading counts more than 5,700 GWAS of more than 3,300 traits, some with more than a million participants<sup><a href="#src-1">1</a></sup>.</li>
+    <li><span class="yr">2022</span>A GWAS of height in 5.4 million people of diverse ancestries found 12,111 independent significant SNPs clustered in 7,209 segments that cover about 21% of the genome. Together they explain 40% of the variance in height in people of European ancestry but only about 10–20% in other ancestries<sup><a href="#src-4">4</a></sup>.</li>
+    <li><span class="yr">2026</span>On 29 October 2026 the NHGRI-EBI GWAS Catalog held 7,892 publications, 1,205,644 top associations and 226,087 sets of full summary statistics<sup><a href="#src-5">5</a></sup>.</li>
+  </ul>
+</aside>
+
+<p>Twenty years of results taught three lessons that shape pages 8–10<sup><a href="#src-1">1</a>, <a href="#src-6">6</a></sup>. Most traits are influenced by thousands of causal variants, each with a small effect (they are polygenic). Many variants are associated with several traits (pleiotropy). And associations arrive as blocks of correlated SNPs, so at the end of a GWAS the causal variant, and often the gene, is unknown. Associations can also differ between ancestries. Some loci did open up biology: <i>FTO</i> for obesity, <i>PTPN22</i> for several autoimmune diseases, and the IL-12/IL-23 signaling pathway in Crohn’s disease, which supported clinical trials of drugs that block that pathway<sup><a href="#src-1">1</a></sup>.</p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Introduction</div>
+  <p>The introduction defines a GWAS, lists what its results are used for (biology, heritability, genetic correlations, risk prediction, drug development and causal inference between risk factors and outcomes; <a href="gwas-applications.html">page 10</a>) and names the field’s central problem: turning associations into biology when effects are small, shared across traits and spread over LD blocks.</p>
+</aside>
+
+<h2 id="study-design">Whom to study: designs, recruitment and phenotypes <span class="tag core">Core</span></h2>
+
+<p>Step a decides which rows the genotype matrix will have. Two choices come first: the kind of trait, and how people are sampled.</p>
+
+<h3 id="trait-types">Quantitative and binary traits</h3>
+
+<p>A quantitative trait is measured on everyone: height in centimetres, LDL cholesterol in mmol/L, body mass index. A binary trait splits people into cases and controls. Many diseases are recorded as binary but arise from an underlying continuous risk; the liability threshold model (<a href="../0-biological-foundations/genotype-to-phenotype.html#architecture">Lecture 0</a>) treats a case as a person whose unobserved liability exceeds a threshold. Turning a measured quantitative trait into a binary one (for example “high blood pressure” from blood-pressure readings) throws away information and lowers power. Outcomes with dates, such as age at diagnosis, can be analyzed as time-to-event outcomes with Cox regression.</p>
+
+<h3 id="designs">Five ways to sample people</h3>
+
+<div class="table-wrap">
+<table class="compact stack designs">
+  <caption>GWAS designs, following the reading’s sections “Selecting study populations” and “Populations used in GWAS”<sup><a href="#src-1">1</a></sup>.</caption>
+  <thead><tr><th scope="col">Design</th><th scope="col">Who is sampled</th><th scope="col">Strength</th><th scope="col">Weakness</th></tr></thead>
+  <tbody>
+    <tr><td>Case–control</td><td data-label="Who is sampled">People with the disease (cases) and people without it (controls), recruited separately</td><td data-label="Strength">Many cases even for an uncommon disease, so high power per person genotyped</td><td data-label="Weakness">Controls must match cases in ancestry and genotyping; the case fraction is set by design, not by the population</td></tr>
+    <tr><td>Population cohort</td><td data-label="Who is sampled">A sample of a population, measured at entry and followed over time</td><td data-label="Strength">Every trait is measured on everyone; outcomes arise after measurement</td><td data-label="Weakness">Few cases of uncommon diseases; the people who join differ from those who do not</td></tr>
+    <tr><td>Biobank</td><td data-label="Who is sampled">A very large cohort with stored samples, questionnaires, measurements and linked health records (Table 2)</td><td data-label="Strength">Hundreds of traits in the same people; genotypes already available</td><td data-label="Weakness">Volunteers are a selected group; record-based diagnoses are noisy</td></tr>
+    <tr><td>Family-based</td><td data-label="Who is sampled">Parent–child trios, siblings or larger families</td><td data-label="Strength">Comparisons within a family are immune to confounding by ancestry and separate direct from indirect genetic effects</td><td data-label="Weakness">Needs more people for the same power; families are harder to recruit</td></tr>
+    <tr><td>Isolated population</td><td data-label="Who is sampled">A population that went through a founder event and stayed isolated</td><td data-label="Strength">Some variants rare elsewhere are common; long-range LD helps imputation</td><td data-label="Weakness">Findings may not replicate elsewhere; many relatives in the sample</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><strong>Case–control studies.</strong> Cases are selected so that they make up a much larger share of the sample than of the population, and analyses must allow for this; for example, adjusting for covariates that predict disease status can lower power in such samples<sup><a href="#src-1">1</a>, <a href="#src-7">7</a></sup>. The odds ratio, the effect measure of a case–control study, is not distorted by this sampling, but the share of cases in the sample is not the prevalence, so absolute risks cannot be read from it. Controls can be screened (checked to be free of the disease) or taken from a population cohort without screening. Unscreened controls include cases at the population frequency \(K\). The allele-frequency difference between cases and controls then shrinks by the factor \(1-K\), and the noncentrality parameter of the test (defined in the <a href="#power">next section</a>) by \((1-K)^2\): for \(K = 1\%\) the loss is 2%, for \(K = 10\%\) it is 19%. Cases and controls should be genotyped together on the same array; when they are not, the genotyping batch becomes a covariate and quality control must look for batch differences<sup><a href="#src-1">1</a></sup>.</p>
+
+<p><strong>Families.</strong> Early GWAS used families often because well-phenotyped twin and family cohorts existed<sup><a href="#src-1">1</a></sup>. The transmission disequilibrium test (TDT) looks at parents who are heterozygous (carry one copy of each allele) and counts how often each allele is passed to an affected child<sup><a href="#src-8">8</a></sup>. Without an association each allele is transmitted half the time; which allele a parent transmits is decided by meiosis, so it cannot be influenced by the family’s ancestry or environment. With \(b\) transmissions of one allele and \(c\) of the other, \((b-c)^2/(b+c)\) is compared with a chi-square distribution with one degree of freedom. Mixed models such as GEMMA, SAIGE and REGENIE use both within-family and between-family information, so they are not fully protected against confounding by ancestry<sup><a href="#src-1">1</a></sup>.</p>
+
+<p>Family data also separate a person’s own (direct) genetic effects from indirect genetic effects, which act through relatives. In 21,637 Icelanders with at least one genotyped parent, a polygenic score for educational attainment computed from the alleles the parents did <em>not</em> transmit still predicted the child’s education, with an effect 29.9% as large as that of the transmitted alleles<sup><a href="#src-9">9</a></sup>. In 178,086 siblings from 19 cohorts, effects estimated within sibships were smaller than population estimates for height, educational attainment, age at first birth, number of children, cognitive ability, depressive symptoms and smoking<sup><a href="#src-10">10</a></sup>. A related design, GWAS by proxy, uses relatives’ diagnoses reported by participants: a person whose parent had a disease counts as a partial case, which adds power for late-onset diseases but relies on self-reported family history<sup><a href="#src-11">11</a>, <a href="#src-1">1</a></sup>.</p>
+
+<p><strong>Isolated populations.</strong> A population that began from a small number of founders and then exchanged few migrants with its neighbors carries some variants at much higher frequency than elsewhere, has long stretches of LD that make imputation accurate (especially when some of its members are in the reference panel), and has many relatives, so mixed models are used<sup><a href="#src-1">1</a></sup>. Its discoveries can be hard to replicate in other populations if the variant is rare there. In Sardinia, variants in <i>APOA5</i> were associated with triglyceride levels<sup><a href="#src-12">12</a></sup>; variants in the same gene associated with myocardial infarction in other European populations supported the finding<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="biobanks">Biobanks (Table 2)</h3>
+
+<p>A biobank genotypes tens of thousands to millions of people who were not selected for one disease and records many traits through questionnaires, measurements and linked electronic health records. UK Biobank, with about 500,000 participants aged 40–69 at recruitment<sup><a href="#src-13">13</a></sup>, has made GWAS of hundreds of traits possible (Lecture 0 has a <a href="../0-biological-foundations/uk-biobank.html">whole page</a> on it). Most early biobanks were of European-ancestry populations; the reading’s Table 2 lists resources from other populations as well.</p>
+
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Biobanks and large population studies with genotypes and phenotypes, after Table 2 of the reading<sup><a href="#src-1">1</a></sup>. The ancestry column uses the reading’s descriptions; they are population labels, not genetic measurements (<a href="../0-biological-foundations/ancestry.html#descriptors">Lecture 0 · population descriptors</a>).</caption>
+  <thead><tr><th scope="col">Resource</th><th scope="col">Ancestry, as described</th><th scope="col">Who takes part</th></tr></thead>
+  <tbody>
+    <tr><td>UK Biobank</td><td data-label="Ancestry, as described">Predominantly white British</td><td data-label="Who takes part">Volunteers from the general population of the UK<sup><a href="#src-13">13</a></sup></td></tr>
+    <tr><td>BioBank Japan</td><td data-label="Ancestry, as described">Japanese</td><td data-label="Who takes part">Patients with one or more of 47 diseases, recruited at hospitals<sup><a href="#src-14">14</a></sup></td></tr>
+    <tr><td>China Kadoorie Biobank</td><td data-label="Ancestry, as described">Chinese</td><td data-label="Who takes part">Adults from the general population of ten regions of China</td></tr>
+    <tr><td>Genes &amp; Health</td><td data-label="Ancestry, as described">British South Asian</td><td data-label="Who takes part">Volunteers of British Bangladeshi and British Pakistani heritage</td></tr>
+    <tr><td>H3Africa</td><td data-label="Ancestry, as described">Various African ancestries</td><td data-label="Who takes part">Participants of many studies run by the Human Heredity and Health in Africa consortium</td></tr>
+    <tr><td>BioMe</td><td data-label="Ancestry, as described">Multiple ancestries (New York)</td><td data-label="Who takes part">Patients of a New York hospital system, linked to their health records</td></tr>
+    <tr><td>TOPMed</td><td data-label="Ancestry, as described">Multiple ancestries (USA)</td><td data-label="Who takes part">Participants of existing heart, lung, blood and sleep studies whose genomes were sequenced<sup><a href="#src-15">15</a></sup></td></tr>
+    <tr><td>Million Veteran Program</td><td data-label="Ancestry, as described">Multiple ancestries (USA)</td><td data-label="Who takes part">US military veterans who use the Veterans Affairs health system</td></tr>
+    <tr><td>All of Us</td><td data-label="Ancestry, as described">Multiple ancestries (USA)</td><td data-label="Who takes part">Volunteers across the USA, with priority for groups under-represented in research</td></tr>
+    <tr><td>23andMe</td><td data-label="Ancestry, as described">Multiple ancestries (USA)</td><td data-label="Who takes part">Customers of a direct-to-consumer genetic testing company who consent to research</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="recruitment-bias">Recruitment, selection and collider bias</h3>
+
+<p>Who joins a study is not random. UK Biobank volunteers are on average healthier, wealthier and more educated than the UK population<sup><a href="#src-16">16</a></sup>, and a hospital-based resource such as BioBank Japan selects people by disease<sup><a href="#src-14">14</a></sup>. Selection matters for associations, not only for averages, when the reason for joining is affected by two variables an analysis cares about. Restricting an analysis to the people who joined then conditions on a common effect of both variables (a collider), which creates an association between them among participants even if there is none in the population. The reading calls this collider bias<sup><a href="#src-1">1</a></sup>.</p>
+
+<figure class="fig">
+  <div class="fig-body">
+<svg viewBox="0 0 360 212" width="420" role="img" aria-labelledby="fcol-t fcol-d">
+<title id="fcol-t">Collider bias from selective participation</title>
+<desc id="fcol-d">Two boxes at the top, a genotype at a SNP and a person's health and education, both have arrows into a box below, taking part in the study. A dashed curve joins the two top boxes, labeled induced association among participants.</desc>
+<defs><marker id="fcol-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<path d="M85,44 Q180,4 275,44" fill="none" stroke="var(--pitfall)" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="180" y="14" class="t-sm" text-anchor="middle" style="fill:var(--pitfall)">induced association among participants</text>
+<rect x="10" y="44" width="150" height="40" rx="8" fill="#fff" stroke="#5a6370"/>
+<text x="85" y="68" class="t" text-anchor="middle">Genotype at a SNP</text>
+<rect x="200" y="44" width="150" height="40" rx="8" fill="#fff" stroke="#5a6370"/>
+<text x="275" y="68" class="t" text-anchor="middle">Health, education</text>
+<line x1="85" y1="85" x2="150" y2="145" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fcol-arr)"/>
+<line x1="275" y1="85" x2="210" y2="145" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fcol-arr)"/>
+<rect x="105" y="148" width="150" height="40" rx="8" fill="var(--pitfall-soft)" stroke="var(--pitfall)" stroke-width="2"/>
+<text x="180" y="172" class="t" text-anchor="middle">Takes part in study</text>
+<text x="180" y="205" class="t-xs" text-anchor="middle">the analysis keeps only the people in this box</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">Selection on a common effect creates an association.</span> If a genotype and good health both make people more likely to join a study, then among participants the carriers of the genotype need good health less often to have joined, so genotype and health become negatively associated in the data even when they are independent in the population. <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<p>Ancestry needs attention at the design stage, before any statistics. The reading’s example is a GWAS of “using chopsticks regularly”: cases would come more often from East Asian populations than controls, so SNPs whose allele frequencies differ between East Asian and other populations, including alleles of the human leukocyte antigen (HLA) genes, would appear associated with chopstick use. Culture, not dexterity, links the two<sup><a href="#src-1">1</a></sup>. Cases and controls should therefore be matched for ancestry, and the analysis adds principal components of the genotypes as covariates (<a href="population-structure.html">page 7</a>; <a href="gwas-analysis.html#confounding">page 9</a>). People of different ancestries can be analyzed together as long as the structure is modeled<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="phenotypes">Defining the phenotype</h3>
+
+<p>The phenotype column is the output of a measurement process (<a href="../0-biological-foundations/phenotypes.html#case-definition">Lecture 0 · case definitions</a>). Three problems recur:</p>
+<ul>
+  <li><strong>Misclassification.</strong> Some cases are recorded as controls or the reverse, for example when a diagnosis code is missing from a health record. Misclassified people move both groups’ allele frequencies toward each other, so effect estimates shrink toward zero and power falls.</li>
+  <li><strong>Harmonization.</strong> Combining cohorts requires the same definition, units and transformation in each (for example LDL cholesterol in mmol/L, adjusted for statin use in the same way). A meta-analysis is only as consistent as its phenotypes (<a href="gwas-analysis.html#meta-analysis">page 9</a>).</li>
+  <li><strong>Proxy phenotypes.</strong> When the trait of interest is measured in too few people, an easier, correlated trait measured in many people can stand in for it: educational attainment for cognitive performance<sup><a href="#src-17">17</a></sup>, or depressive symptoms for a clinical diagnosis of depression<sup><a href="#src-1">1</a></sup>. A proxy has genetic influences of its own, so a locus found for the proxy still has to be checked for the target trait.</li>
+</ul>
+<p>The reading’s Outlook adds a trade-off: minimal phenotyping (one or two questions in a very large sample) gains power quickly, while deep phenotyping (many symptoms or measurements per person) separates traits that a single diagnosis lumps together<sup><a href="#src-1">1</a></sup>.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> The case fraction of a study is not a risk</div>
+  <p>PennCATH, the practical’s dataset, recruited people having coronary angiography and compared people with and without coronary artery disease (<a href="practical-overview.html">page 11</a>); in the workshop’s copy of the files, the phenotype column of the <code>.fam</code> file does not code that comparison (<a href="plink-data.html#phenotype-column">page 12 · what column 6 holds</a>). Its share of cases is set by the recruitment, not by how common the disease is. Odds ratios from such a sample estimate the population odds ratio, but the proportion of cases among carriers of an allele is not anyone’s risk; absolute risks need the population incidence from elsewhere (<a href="gwas-applications.html#polygenic-scores">page 10</a>).</p>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Experimentation: “Selecting study populations”, “Populations used in GWAS”, Table 2</div>
+  <p>The reading’s Experimentation section opens with the workflow of Fig. 1 and warns that biases can enter at every step. “Selecting study populations” covers resources, recruitment, collider bias, ancestry (the chopsticks example) and proxy phenotypes; “Populations used in GWAS” covers population-based case–control and cohort designs, family-based designs, isolated populations and biobanks. Table 2 lists biobanks and their ancestries.</p>
+</aside>
+
+<h2 id="power">How many people: sample size and statistical power <span class="tag core">Core</span></h2>
+
+<p>A test can make two kinds of error. A type 1 error declares an association that does not exist (a false positive); its probability is the significance level \(\alpha\), set to \(5 \times 10^{-8}\) per SNP in a GWAS for reasons given on <a href="gwas-analysis.html#multiple-testing">page 9</a>. A type 2 error misses an association that does exist. Statistical power is the probability of not missing it: the chance that a SNP with a given true effect reaches p &lt; \(\alpha\) in a study of a given size. Power is computed before data are collected, to choose the number of people \(N\), with tools such as CaTS<sup><a href="#src-18">18</a></sup>, the Genetic Power Calculator<sup><a href="#src-19">19</a></sup> or the GAS Power Calculator<sup><a href="#src-20">20</a></sup>.</p>
+
+<p>The test for one SNP (<a href="gwas-analysis.html#association-test">page 9</a>) divides the estimated effect by its standard error: \(z = \hat{\beta}/\SE(\hat{\beta})\). If the SNP has no effect, \(z\) follows the standard normal distribution (mean 0, standard deviation 1). If it has an effect, \(z\) is still close to normal with standard deviation 1, but its mean moves away from 0 to \(\sqrt{\lambda}\). The number \(\lambda\) is the noncentrality parameter; equivalently, the average of \(z^2\) is \(1 + \lambda\). Everything about power follows from \(\lambda\).</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \lambda = \frac{N \cdot 2p(1-p)\,\beta^2}{\sigma^2} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\lambda\)</dt><dd>The noncentrality parameter of the test for one SNP: the square of the expected \(z\). Zero when the SNP has no effect.</dd>
+    <dt>\(N\)</dt><dd>Number of people with both a genotype and a trait value.</dd>
+    <dt>\(p\)</dt><dd>Frequency of the effect allele (the counted allele) in the sample, between 0 and 1.</dd>
+    <dt>\(2p(1-p)\)</dt><dd>Variance of the genotype \(g \in \{0, 1, 2\}\) (copies of the effect allele per person) under Hardy–Weinberg equilibrium.</dd>
+    <dt>\(\beta\)</dt><dd>True change in the trait per copy of the effect allele, in trait units (here trait standard deviations).</dd>
+    <dt>\(\sigma^2\)</dt><dd>Residual variance of the trait: the variance left after removing the SNP’s effect (about 1 for a standardized trait).</dd>
+  </dl>
+  <p class="eq-intuition">The numerator \(2p(1-p)\beta^2\) is the variance of the trait explained by the SNP, so \(\lambda\) is \(N\) times the ratio of explained to unexplained variance. Doubling \(N\) doubles \(\lambda\); halving \(\beta\) divides it by 4; a SNP with \(p = 0.5\) gives \(2p(1-p) = 0.5\), almost three times the 0.18 of a SNP with \(p = 0.1\) and the same \(\beta\). Worked number: \(p = 0.3\) and \(\beta = 0.05\) standard deviations give \(2p(1-p)\beta^2 = 0.42 \times 0.0025 = 0.00105\) (0.1% of the variance), so 20,000 people give \(\lambda \approx 21\).</p>
+</div>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \text{power} \approx \Phi\!\left(\sqrt{\lambda} - c_{\alpha}\right) \]</div>
+  <dl class="eq-terms">
+    <dt>\(\Phi\)</dt><dd>The cumulative distribution function of the standard normal: \(\Phi(x)\) is the probability that a standard normal variable is below \(x\).</dd>
+    <dt>\(c_{\alpha}\)</dt><dd>The critical value: \(|z|\) must exceed it for p &lt; \(\alpha\) in a two-sided test. \(c_{\alpha} = 1.96\) for \(\alpha = 0.05\) and \(5.45\) for \(\alpha = 5 \times 10^{-8}\).</dd>
+    <dt>\(\sqrt{\lambda}\)</dt><dd>The mean of \(z\) under the alternative (the true effect).</dd>
+  </dl>
+  <p class="eq-intuition">Power is the probability that \(z\), centered at \(\sqrt{\lambda}\), lands beyond \(c_{\alpha}\). (The exact two-sided power adds \(\Phi(-\sqrt{\lambda} - c_{\alpha})\), the chance of a significant result with the wrong sign, which is negligible here.) When \(\sqrt{\lambda} = c_{\alpha}\), power is 50%. For 80% power, \(\sqrt{\lambda}\) must be \(0.84\) above \(c_{\alpha}\): at \(\alpha = 5 \times 10^{-8}\), \(\lambda = (5.45 + 0.84)^2 = 39.6\). With 0.00105 of the variance explained per person, that needs \(N = 39.6 / 0.00105 \approx 37{,}700\) people. At \(\alpha = 0.05\), \(\lambda = 7.85\) and \(N \approx 7{,}500\): the genome-wide threshold multiplies the sample size by about 5.</p>
+</div>
+
+<p>For a case–control study the same logic applies with the log of the odds ratio in place of \(\beta\). The variance of a 0/1 outcome with case fraction \(\phi\) is \(\phi(1-\phi)\), which is largest for a balanced design.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} \lambda \approx{}& N\,\phi(1-\phi) \\ &\times 2\bar{p}(1-\bar{p})\,(\ln \mathrm{OR})^2 \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(N\)</dt><dd>Total number of people, cases plus controls.</dd>
+    <dt>\(\phi\)</dt><dd>Fraction of the \(N\) people who are cases, between 0 and 1.</dd>
+    <dt>\(\bar{p}\)</dt><dd>Frequency of the effect allele in all \(N\) people.</dd>
+    <dt>\(\mathrm{OR}\)</dt><dd>Odds ratio per copy of the effect allele; \(\ln \mathrm{OR}\) is the effect on the log-odds scale that logistic regression estimates.</dd>
+  </dl>
+  <p class="eq-intuition">This is the quantitative-trait formula with \(\beta\) replaced by \(\ln \mathrm{OR}\) and \(1/\sigma^2\) replaced by \(\phi(1-\phi)\); it holds for small effects. A balanced study has \(\phi(1-\phi) = 0.25\); with 10% cases it is 0.09, so the same \(N\) gives 36% of the \(\lambda\). Worked number: \(\mathrm{OR} = 1.2\), control allele frequency 0.30 (so \(\bar{p} \approx 0.32\)) and \(\phi = 0.5\) give \(\lambda/N = 0.25 \times 0.435 \times 0.0332 = 0.00362\), so 80% power at \(5 \times 10^{-8}\) needs \(39.6/0.00362 \approx 10{,}950\) people, about 5,475 cases and 5,475 controls. The exact allelic test used by the GAS calculator gives almost the same number.</p>
+</div>
+
+<div class="widget" id="w-power">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Power to detect one SNP, and the people needed for 80% power</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The equations above give the same numbers: 80% power at 5 × 10⁻⁸ needs a noncentrality parameter of 39.6.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The power curve is flat near zero and then rises steeply: with the default quantitative trait (\(p = 0.3\), \(\beta = 0.05\)), 10,000 people give about 1% power, 20,000 give 19% and 37,700 give 80%. Switch the threshold to 0.05 and the 80% point moves to about 7,500 people. Halve \(\beta\) and the required \(N\) quadruples. In case–control mode, lower the share of cases to 10% and the required \(N\) almost triples. The preset “OR 3, \(p_0\) = 0.2” needs only about 300 people, which is why the 2005 study of 146 people could find <i>CFH</i>: its effect was large.</p>
+
+<p>Two consequences shape the rest of the course. First, the effects of most common variants are small (odds ratios of 1.05–1.2, or a few hundredths of a standard deviation), so the reading notes that most traits need more than 10,000 people for reproducible results, and the largest GWAS now include millions<sup><a href="#src-1">1</a></sup>. Second, power for one SNP is not power for a study. A trait influenced by thousands of small-effect SNPs is studied with power below 50% for most of them, so each GWAS finds a fraction of them, more as \(N\) grows, and the effects of the SNPs that pass the threshold are overestimated (the winner’s curse, <a href="gwas-applications.html#limitations">page 10</a>). A study split into a discovery and a replication stage is more powerful when the two stages are analyzed jointly than when the second only replicates the first<sup><a href="#src-18">18</a></sup>.</p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> “Selecting study populations” and “Accounting for false discovery”</div>
+  <p>The reading mentions power calculations with CaTS or GPC in one sentence and treats the 5 × 10⁻⁸ threshold and replication under “Accounting for false discovery”. The equations above are the ones those calculators use; <a href="gwas-analysis.html#multiple-testing">page 9</a> derives the threshold.</p>
+</aside>
+
+<h2 id="genotyping">Measuring genotypes: arrays and sequencing (Box 1) <span class="tag core">Core</span></h2>
+
+<p>Step b produces the genotype calls. Three technologies are used; Lecture 0 shows how each one reads DNA (<a href="../0-biological-foundations/samples-to-genotypes.html#comparison">Lecture 0 · comparing arrays, imputation, exomes and genomes</a>).</p>
+
+<p><strong>Genotyping arrays</strong> (microarrays) carry probes for a fixed list of SNPs, typically several hundred thousand to a few million. For each person and SNP the array measures two fluorescence intensities, one per allele, and a calling algorithm turns them into a genotype 0, 1 or 2 or a missing call. Arrays are the most common choice for GWAS because they cost much less per person than sequencing<sup><a href="#src-1">1</a></sup>. The practical’s PennCATH data has 861,473 SNPs per person<sup><a href="#src-21">21</a></sup>; the 2005 study above used 116,204 and the WTCCC about 500,000<sup><a href="#src-2">2</a>, <a href="#src-3">3</a></sup>.</p>
+
+<p>Most SNPs on an array are tag SNPs: SNPs chosen so that, through LD, they stand in for the many variants nearby that were not put on the array (<a href="linkage-disequilibrium.html">page 6</a>; <a href="../0-biological-foundations/haplotypes-ld.html#tag-snps">Lecture 0 · tag SNPs</a>). Tagging has a cost that can be computed. If a causal SNP is not on the array and a measured SNP is correlated with it with \(r^2\), the test at the measured SNP has noncentrality \(r^2 \lambda\), where \(\lambda\) is the noncentrality the causal SNP would have given. A tag with \(r^2 = 0.8\) therefore behaves like a test of the causal SNP in 80% of the people. Arrays also carry protein-changing variants, known disease variants and SNPs that distinguish ancestries. Because LD extends over shorter distances in genomes of recent African ancestry, a tag set chosen for European-ancestry genomes captures less of their variation.</p>
+
+<p><strong>Whole-exome sequencing (WES)</strong> reads the protein-coding exons, about 1–2% of the genome, and <strong>whole-genome sequencing (WGS)</strong> reads nearly every base. Both find variants of every frequency, including variants never seen before, which an array cannot. The reading expects WGS to become the method of choice as its cost falls<sup><a href="#src-1">1</a></sup>. When the reading was written, exomes were available for 50,000 UK Biobank participants<sup><a href="#src-1">1</a></sup>; exomes of 454,787 participants<sup><a href="#src-22">22</a></sup> and genomes of 490,640 participants<sup><a href="#src-23">23</a></sup> have since been published. In a consortium, genotyping every cohort on the same platform avoids differences that imputation and quality control must otherwise remove<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="box1">Common and rare variants (Box 1)</h3>
+
+<p>Box 1 of the reading makes three points<sup><a href="#src-1">1</a></sup>. Strictly, WES and WGS studies are also genome-wide association studies, but “GWAS” usually means a study of common variants measured by arrays and imputation. Whether a variant is common or rare depends on the population and cannot be carried over between populations. And the threshold for “common” has moved: it was usually a minor allele frequency (MAF, the frequency of the less common allele) above 10%, but as samples grow it can be as low as 1%, because what matters for a stable test is a minimum minor allele count, for example at least 100 people carrying the minor allele.</p>
+
+<p>The minor allele count is \(2N \times \mathrm{MAF}\). With 1,000 people, a variant with MAF 1% has about 20 copies in the sample, too few for a reliable test; with 500,000 people, a variant with MAF 0.1% has about 1,000. Lecture 0 and slide 88 use fixed cut-offs instead: common if MAF is at least 5%, low-frequency from 1% to 5%, rare below 1% (<a href="../0-biological-foundations/allele-frequencies.html#afs">Lecture 0 · the allele frequency spectrum</a>). Rare variants are carried by so few people that they are usually tested in aggregate, for example all rare protein-changing variants in one gene together in a burden test, and their analysis raises new problems for ancestry adjustment and imputation<sup><a href="#src-1">1</a></sup>.</p>
+
+<figure class="fig scroll-x" style="--min-w: 560px">
+  <div class="fig-body">
+<svg viewBox="0 0 640 282" role="img" aria-labelledby="ffreq-t ffreq-d">
+<title id="ffreq-t">Which technology measures variants of which frequency</title>
+<desc id="ffreq-d">A horizontal axis of minor allele frequency on a log scale from 0.01% to 50%, with bands for rare (below 1%), low-frequency (1 to 5%) and common (5% and above) variants, and a dashed line at 10%, Box 1's usual cut-off for common. Four bars: array SNPs cover common variants and a few chosen rarer ones; array plus imputation covers common variants well and rarer ones with falling accuracy; exome sequencing covers all frequencies but only exons; genome sequencing covers all frequencies across the genome.</desc>
+<defs><linearGradient id="ffreq-fade" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#59a14f" stop-opacity="0.04"/><stop offset="1" stop-color="#59a14f" stop-opacity="0.85"/></linearGradient></defs>
+<rect x="170" y="30" width="237.9" height="34" fill="var(--bg-sunk)" stroke="#d9dee5"/>
+<rect x="407.9" y="30" width="83.15" height="34" fill="#fbf6e0" stroke="#d9dee5"/>
+<rect x="491.05" y="30" width="118.95" height="34" fill="var(--accent-soft)" stroke="#d9dee5"/>
+<text x="288.95" y="51" class="t-sm" text-anchor="middle">rare (below 1%)</text>
+<text x="449.5" y="45" class="t-xs" text-anchor="middle">low-frequency</text>
+<text x="449.5" y="58" class="t-xs" text-anchor="middle">(1–5%)</text>
+<text x="568.4" y="45" class="t-xs" text-anchor="middle">common</text>
+<text x="568.4" y="58" class="t-xs" text-anchor="middle">(≥ 5%)</text>
+<line x1="526.86" y1="20" x2="526.86" y2="94" stroke="var(--pitfall)" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text x="521" y="18" class="t-xs" text-anchor="end" style="fill:var(--pitfall)">Box 1’s usual cut-off for “common”: 10%</text>
+<line x1="170" y1="88" x2="610" y2="88" stroke="#5a6370"/>
+<line x1="170" y1="88" x2="170" y2="94" stroke="#5a6370"/><text x="170" y="107" class="t-xs" text-anchor="middle">0.01%</text>
+<line x1="288.95" y1="88" x2="288.95" y2="94" stroke="#5a6370"/><text x="288.95" y="107" class="t-xs" text-anchor="middle">0.1%</text>
+<line x1="407.9" y1="88" x2="407.9" y2="94" stroke="#5a6370"/><text x="407.9" y="107" class="t-xs" text-anchor="middle">1%</text>
+<line x1="491.05" y1="88" x2="491.05" y2="94" stroke="#5a6370"/><text x="491.05" y="107" class="t-xs" text-anchor="middle">5%</text>
+<text x="531" y="107" class="t-xs" text-anchor="start" style="fill:var(--pitfall)">10%</text>
+<line x1="610" y1="88" x2="610" y2="94" stroke="#5a6370"/><text x="610" y="107" class="t-xs" text-anchor="middle">50%</text>
+<text x="390" y="124" class="t-sm" text-anchor="middle">minor allele frequency (log scale)</text>
+<text x="160" y="152" class="t-sm" text-anchor="end">Array, typed SNPs</text>
+<rect x="288.95" y="138" width="118.95" height="22" fill="#4e79a7" fill-opacity="0.25"/>
+<rect x="407.9" y="138" width="202.1" height="22" fill="#4e79a7"/>
+<text x="508.95" y="153" class="t-xs" text-anchor="middle" style="fill:#fff">chosen common SNPs</text>
+<text x="348.4" y="153" class="t-xs" text-anchor="middle" style="fill:var(--fg)">a few chosen rare</text>
+<text x="160" y="186" class="t-sm" text-anchor="end">Array + imputation</text>
+<rect x="170" y="172" width="237.9" height="22" fill="url(#ffreq-fade)"/>
+<rect x="407.9" y="172" width="202.1" height="22" fill="#59a14f"/>
+<text x="300" y="187" class="t-xs" text-anchor="middle" style="fill:var(--fg)">accuracy falls with frequency</text>
+<text x="508.95" y="187" class="t-xs" text-anchor="middle" style="fill:#fff">well imputed</text>
+<text x="160" y="220" class="t-sm" text-anchor="end">Exome sequencing</text>
+<rect x="170" y="206" width="440" height="22" fill="#f28e2b" fill-opacity="0.35"/>
+<text x="390" y="221" class="t-xs" text-anchor="middle" style="fill:var(--fg)">all frequencies, protein-coding exons only (about 1–2% of the genome)</text>
+<text x="160" y="254" class="t-sm" text-anchor="end">Genome sequencing</text>
+<rect x="170" y="240" width="440" height="22" fill="#e15759" fill-opacity="0.35"/>
+<text x="390" y="255" class="t-xs" text-anchor="middle" style="fill:var(--fg)">all frequencies, nearly the whole genome</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">Which technology sees which variants.</span> Arrays measure chosen SNPs, mostly common ones; imputation from a reference panel extends them to rarer variants with falling accuracy (to about 0.1% with large panels, <a href="#imputation">below</a>); sequencing reads variants of every frequency in its target. The dashed line marks the 10% cut-off for “common” that Box 1 calls usual; the colored bands are the cut-offs used in Lecture 0. <span class="fig-credit">Drawn for this lecture, from Box 1 of Uffelmann et al. 2021 and Lecture 0.</span></figcaption>
+</figure>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> “Genotyping” and Box 1, “Common and rare variants”</div>
+  <p>The reading compares arrays, WES and WGS in one paragraph and puts the definition of common and rare variants in Box 1, noting that most of what it says about design and quality control applies to rare-variant studies too. The field map of slide 29, which places linkage studies, rare-variant studies and GWAS by allele frequency and effect size, is explained on <a href="field-map.html">page 2</a>.</p>
+</aside>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 52 · Session 7 covers rare-variant association studies</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-052.jpg" alt="Lecture 1, slide 52: Session 7, November 4. A row of boxes joined by arrows, Linkage Studies (grayed out), Genome-Wide Association Studies, Post-GWAS Studies and Rare Variant Association Studies; a Population Genetics box above feeds into the last one, which is labeled hypothesis-driven and agnostic association studies" loading="lazy"><figcaption>Lecture 1 · slide 52</figcaption></figure>
+    <div><p>The rare variants of Box 1 get their own session. Because each is carried by few people, they are tested in groups, such as all rare variants of one gene: hypothesis-driven when the genes or variant sets are chosen in advance, agnostic when every gene is tested. The arrow from population genetics marks that how rare a variant is, and whether it is shared between populations, follows from population history (<a href="../0-biological-foundations/allele-frequencies.html#differences">Lecture 0 · why allele frequencies differ</a>).</p></div>
+  </div>
+</aside>
+
+<h2 id="data-and-qc">The input data and quality control <span class="tag core">Core</span></h2>
+
+<h3 id="input-data">What the data look like</h3>
+
+<p>The reading lists the inputs of a GWAS: anonymized identifiers, coded family relations, sex, phenotype, covariates, the genotype calls and the genotyping batch of each person<sup><a href="#src-1">1</a></sup>. In PLINK’s binary format these become three files and, usually, two text tables (<a href="plink-data.html">page 12</a> takes them apart byte by byte):</p>
+<ul>
+  <li><code>.fam</code>: one line per person (row of \(\mathbf{G}\)): family ID, individual ID, father, mother, sex, phenotype.</li>
+  <li><code>.bim</code>: one line per SNP (column of \(\mathbf{G}\)): chromosome, SNP identifier, genetic position, base-pair position, allele 1, allele 2.</li>
+  <li><code>.bed</code>: the genotype matrix itself, 2 bits per genotype, SNP by SNP.</li>
+  <li>A phenotype file and a covariate file (age, sex, principal components, batch), one row per person, joined to the <code>.fam</code> by the two IDs.</li>
+</ul>
+
+<figure class="fig scroll-x" style="--min-w: 600px">
+  <div class="fig-body">
+<svg viewBox="0 0 680 300" role="img" aria-labelledby="fdata-t fdata-d">
+<title id="fdata-t">The analysis-ready tables of a GWAS</title>
+<desc id="fdata-d">Left: a genotype matrix with one row per person and one column per SNP; each cell holds 0, 1 or 2 copies of the counted allele, a few cells are missing. The rows are described by the .fam file and the columns by the .bim file. Right: a phenotype column (a disease: 1 = case, 0 = control) and covariate columns (age, sex, first principal components, genotyping batch) for the same rows. All values are simulated.</desc>
+<defs><marker id="fdata-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<text x="100" y="22" class="t-b">Genotype matrix G</text>
+<text x="100" y="38" class="t-sm">.bed file: 0, 1 or 2 copies of allele A1</text>
+<rect x="100" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="118" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="136" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="154" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="172" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="190" y="46" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="208" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="226" y="46" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="244" y="46" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="262" y="46" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="280" y="46" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="298" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="316" y="46" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="352" y="46" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="370" y="46" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="100" y="64" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="118" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="136" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="154" y="64" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="172" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="190" y="64" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="208" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="226" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="244" y="64" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="262" y="64" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="280" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="298" y="64" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="316" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="352" y="64" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="370" y="64" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="100" y="82" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="118" y="82" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="136" y="82" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="154" y="82" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="172" y="82" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="190" y="82" width="18" height="18" fill="#fff" stroke="#b9c1cc" stroke-dasharray="2 2"/>
+<rect x="208" y="82" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="226" y="82" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="244" y="82" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="262" y="82" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="280" y="82" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="298" y="82" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="316" y="82" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="82" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="352" y="82" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="370" y="82" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="100" y="100" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="118" y="100" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="136" y="100" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="154" y="100" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="172" y="100" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="190" y="100" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="208" y="100" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="226" y="100" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="244" y="100" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="262" y="100" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="280" y="100" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="298" y="100" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="316" y="100" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="100" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="352" y="100" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="370" y="100" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="100" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="118" y="118" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="136" y="118" width="18" height="18" fill="#fff" stroke="#b9c1cc" stroke-dasharray="2 2"/>
+<rect x="154" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="172" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="190" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="208" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="226" y="118" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="244" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="262" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="280" y="118" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="298" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="316" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="352" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="370" y="118" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="100" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="118" y="136" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="136" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="154" y="136" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="172" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="190" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="208" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="226" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="244" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="262" y="136" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="280" y="136" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="298" y="136" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="316" y="136" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="334" y="136" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="352" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="370" y="136" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="100" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="118" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="136" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="154" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="172" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="190" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="208" y="154" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="226" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="244" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="262" y="154" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="280" y="154" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="298" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="316" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="154" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="352" y="154" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="370" y="154" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="100" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="118" y="172" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="136" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="154" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="172" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="190" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="208" y="172" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="226" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="244" y="172" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="262" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="280" y="172" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="298" y="172" width="18" height="18" fill="#fff" stroke="#b9c1cc" stroke-dasharray="2 2"/>
+<rect x="316" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="172" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="352" y="172" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="370" y="172" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="100" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="118" y="190" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="136" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="154" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="172" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="190" y="190" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="208" y="190" width="18" height="18" fill="var(--g2)" stroke="#fff"/>
+<rect x="226" y="190" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="244" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="262" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="280" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="298" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="316" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="190" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="352" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="370" y="190" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="100" y="208" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="118" y="208" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="136" y="208" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="154" y="208" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="172" y="208" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="190" y="208" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="208" y="208" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="226" y="208" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="244" y="208" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="262" y="208" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="280" y="208" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="298" y="208" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="316" y="208" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="334" y="208" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<rect x="352" y="208" width="18" height="18" fill="var(--g0)" stroke="#fff"/>
+<rect x="370" y="208" width="18" height="18" fill="var(--g1)" stroke="#fff"/>
+<line x1="88" y1="46" x2="88" y2="226" stroke="#5a6370" stroke-width="1.2" marker-start="url(#fdata-arr)" marker-end="url(#fdata-arr)"/>
+<text x="80" y="130.0" class="t-sm" text-anchor="end">N rows</text>
+<text x="80" y="145.0" class="t-sm" text-anchor="end">= people</text>
+<text x="80" y="160.0" class="t-xs" text-anchor="end">(.fam lines)</text>
+<line x1="100" y1="238" x2="388" y2="238" stroke="#5a6370" stroke-width="1.2" marker-start="url(#fdata-arr)" marker-end="url(#fdata-arr)"/>
+<text x="244.0" y="256" class="t-sm" text-anchor="middle">M columns = SNPs (.bim lines)</text>
+<rect x="100" y="267" width="14" height="14" fill="var(--g0)" stroke="#b9c1cc"/>
+<text x="119" y="278" class="t-sm">0</text>
+<rect x="152" y="267" width="14" height="14" fill="var(--g1)" stroke="#b9c1cc"/>
+<text x="171" y="278" class="t-sm">1</text>
+<rect x="204" y="267" width="14" height="14" fill="var(--g2)" stroke="#b9c1cc"/>
+<text x="223" y="278" class="t-sm">2</text>
+<rect x="256" y="267" width="14" height="14" fill="#fff" stroke="#b9c1cc" stroke-dasharray="2 2"/>
+<text x="275" y="278" class="t-sm">missing call</text>
+<text x="414" y="22" class="t-b">Phenotype y and covariates W</text>
+<text x="414" y="38" class="t-sm">.fam or pheno.txt; covar.txt</text>
+<rect x="414" y="46" width="30" height="180" fill="#fbf6e0" stroke="#d9dee5"/>
+<text x="429.0" y="244" class="t-xs" text-anchor="middle">case</text>
+<text x="429.0" y="59" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<text x="429.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<text x="429.0" y="95" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="429.0" y="113" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<text x="429.0" y="131" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="429.0" y="149" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<text x="429.0" y="167" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<text x="429.0" y="185" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="429.0" y="203" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="429.0" y="221" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="448" y="46" width="34" height="180" fill="#f6f7f9" stroke="#d9dee5"/>
+<text x="465.0" y="244" class="t-xs" text-anchor="middle">age</text>
+<text x="465.0" y="59" class="t-xs" text-anchor="middle" style="fill:var(--fg)">40</text>
+<text x="465.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">68</text>
+<text x="465.0" y="95" class="t-xs" text-anchor="middle" style="fill:var(--fg)">61</text>
+<text x="465.0" y="113" class="t-xs" text-anchor="middle" style="fill:var(--fg)">58</text>
+<text x="465.0" y="131" class="t-xs" text-anchor="middle" style="fill:var(--fg)">68</text>
+<text x="465.0" y="149" class="t-xs" text-anchor="middle" style="fill:var(--fg)">56</text>
+<text x="465.0" y="167" class="t-xs" text-anchor="middle" style="fill:var(--fg)">66</text>
+<text x="465.0" y="185" class="t-xs" text-anchor="middle" style="fill:var(--fg)">44</text>
+<text x="465.0" y="203" class="t-xs" text-anchor="middle" style="fill:var(--fg)">62</text>
+<text x="465.0" y="221" class="t-xs" text-anchor="middle" style="fill:var(--fg)">70</text>
+<rect x="486" y="46" width="30" height="180" fill="#f6f7f9" stroke="#d9dee5"/>
+<text x="501.0" y="244" class="t-xs" text-anchor="middle">sex</text>
+<text x="501.0" y="59" class="t-xs" text-anchor="middle" style="fill:var(--fg)">2</text>
+<text x="501.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="501.0" y="95" class="t-xs" text-anchor="middle" style="fill:var(--fg)">2</text>
+<text x="501.0" y="113" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="501.0" y="131" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="501.0" y="149" class="t-xs" text-anchor="middle" style="fill:var(--fg)">2</text>
+<text x="501.0" y="167" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="501.0" y="185" class="t-xs" text-anchor="middle" style="fill:var(--fg)">2</text>
+<text x="501.0" y="203" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<text x="501.0" y="221" class="t-xs" text-anchor="middle" style="fill:var(--fg)">1</text>
+<rect x="520" y="46" width="50" height="180" fill="#f6f7f9" stroke="#d9dee5"/>
+<text x="545.0" y="244" class="t-xs" text-anchor="middle">PC1</text>
+<text x="545.0" y="59" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.023</text>
+<text x="545.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.017</text>
+<text x="545.0" y="95" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.025</text>
+<text x="545.0" y="113" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.018</text>
+<text x="545.0" y="131" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.012</text>
+<text x="545.0" y="149" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.020</text>
+<text x="545.0" y="167" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.036</text>
+<text x="545.0" y="185" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.007</text>
+<text x="545.0" y="203" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.038</text>
+<text x="545.0" y="221" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.038</text>
+<rect x="574" y="46" width="50" height="180" fill="#f6f7f9" stroke="#d9dee5"/>
+<text x="599.0" y="244" class="t-xs" text-anchor="middle">PC2</text>
+<text x="599.0" y="59" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.002</text>
+<text x="599.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.023</text>
+<text x="599.0" y="95" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.025</text>
+<text x="599.0" y="113" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.004</text>
+<text x="599.0" y="131" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.034</text>
+<text x="599.0" y="149" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.006</text>
+<text x="599.0" y="167" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.000</text>
+<text x="599.0" y="185" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.036</text>
+<text x="599.0" y="203" class="t-xs" text-anchor="middle" style="fill:var(--fg)">−0.011</text>
+<text x="599.0" y="221" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.023</text>
+<rect x="628" y="46" width="40" height="180" fill="#f6f7f9" stroke="#d9dee5"/>
+<text x="648.0" y="244" class="t-xs" text-anchor="middle">batch</text>
+<text x="648.0" y="59" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b2</text>
+<text x="648.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b3</text>
+<text x="648.0" y="95" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b1</text>
+<text x="648.0" y="113" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b2</text>
+<text x="648.0" y="131" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b1</text>
+<text x="648.0" y="149" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b2</text>
+<text x="648.0" y="167" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b2</text>
+<text x="648.0" y="185" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b2</text>
+<text x="648.0" y="203" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b1</text>
+<text x="648.0" y="221" class="t-xs" text-anchor="middle" style="fill:var(--fg)">b2</text>
+<text x="414" y="278" class="t-sm">Same rows, same order, joined by FID and IID</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">The analysis-ready tables.</span> A genotype matrix with one row per person and one column per SNP, and the phenotype and covariates in the same row order. Each association test (<a href="gwas-analysis.html">page 9</a>) regresses the phenotype column on one genotype column plus the covariate columns. <span class="illustrative">Simulated</span> <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> How big the tables are</div>
+  <p>The practical’s PennCATH data has 1,401 people and 861,473 SNPs<sup><a href="#src-21">21</a></sup>. Its <code>.bed</code> file stores each SNP in \(\lceil 1{,}401/4 \rceil = 351\) bytes (four genotypes per byte) after a 3-byte header, so it is \(3 + 351 \times 861{,}473 = 302{,}377{,}026\) bytes, about 302 MB; the text <code>.bim</code> is about 24 MB and the <code>.fam</code> 26 kB<sup><a href="#src-24">24</a></sup>. A biobank is another scale: UK Biobank’s imputed data cover about 488,000 people and about 96 million variants<sup><a href="#src-13">13</a></sup>. At 2 bits per genotype that would be about \(4.7 \times 10^{13}\) genotypes or 11.7 terabytes, which is why imputed data are stored as compressed genotype probabilities (BGEN files, <a href="../0-biological-foundations/the-data.html#bgen-files">Lecture 0</a>), split by chromosome, and analyzed in parallel on computer clusters or cloud platforms<sup><a href="#src-1">1</a></sup>.</p>
+</aside>
+
+<aside class="callout lab">
+  <div class="callout-title"><span class="badge">Run it</span> Count the rows and columns yourself</div>
+  <p>With the PennCATH files in the current folder (<a href="setup.html">page 14</a> shows how to get them):</p>
+  <span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>wc -l penncath.fam penncath.bim      <span class="cm"># lines = people, SNPs</span>
+<span class="prompt">$ </span>ls -l penncath.bed                   <span class="cm"># bytes = 3 + 351 × number of SNPs</span></pre>
+  <span class="output-label">Output (abridged)</span>
+<pre class="output">    1401 penncath.fam
+  861473 penncath.bim
+-rw-r--r--  1 you  staff  302377026  penncath.bed</pre>
+</aside>
+
+<h3 id="qc-steps">Quality control: which rows and columns to trust</h3>
+
+<p>Step c removes errors before they reach the test. The reading separates wet-laboratory checks (genotype calling, DNA sample switches) from checks on the called genotypes: removing SNPs that are rare or monomorphic (one allele only), that are missing in too many people or that deviate from Hardy–Weinberg equilibrium, and removing people whose recorded sex does not match the sex inferred from the X and Y chromosomes<sup><a href="#src-1">1</a></sup>. PLINK performs most of these steps<sup><a href="#src-1">1</a>, <a href="#src-25">25</a>, <a href="#src-26">26</a></sup>. Each check computes one statistic per row or per column, looks at its distribution, applies a threshold and records what was removed: the pattern of the practical (<a href="practical-overview.html">page 11</a>).</p>
+
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Quality-control checks, what each one finds, and where the practical runs it. Thresholds are the practical’s<sup><a href="#src-21">21</a></sup>; other studies choose their own<sup><a href="#src-27">27</a></sup>.</caption>
+  <thead><tr><th scope="col">Check</th><th scope="col">Statistic</th><th scope="col">What a failure suggests</th><th scope="col">Practical</th></tr></thead>
+  <tbody>
+    <tr><td>SNP call rate</td><td data-label="Statistic">Fraction of people with a missing call at the SNP</td><td data-label="What a failure suggests">Probes that cluster poorly; the SNP’s calls are unreliable</td><td data-label="Practical"><a href="qc-missingness.html">Step 1</a> (<code>--geno 0.01</code>)</td></tr>
+    <tr><td>Person call rate</td><td data-label="Statistic">Fraction of SNPs missing in the person</td><td data-label="What a failure suggests">Poor DNA quality or a failed array</td><td data-label="Practical"><a href="qc-missingness.html">Step 1</a> (<code>--mind 0.01</code>)</td></tr>
+    <tr><td>Hardy–Weinberg</td><td data-label="Statistic">Test of genotype counts against \(p^2\), \(2pq\), \(q^2\)</td><td data-label="What a failure suggests">Genotype-calling errors (also selection or mixed populations)</td><td data-label="Practical"><a href="qc-hwe.html">Step 2</a> (<code>--hardy</code>)</td></tr>
+    <tr><td>LD pruning</td><td data-label="Statistic">\(r^2\) between nearby SNPs</td><td data-label="What a failure suggests">Not a failure: builds a set of nearly independent SNPs for the next checks</td><td data-label="Practical"><a href="qc-ld-pruning.html">Step 3</a></td></tr>
+    <tr><td>Relatedness</td><td data-label="Statistic">PI_HAT, the estimated proportion of the genome shared identical by descent</td><td data-label="What a failure suggests">Duplicates, relatives or sample mix-ups</td><td data-label="Practical"><a href="qc-relatedness.html">Step 4</a></td></tr>
+    <tr><td>Heterozygosity</td><td data-label="Statistic">Share of a person’s SNPs that are heterozygous</td><td data-label="What a failure suggests">Contamination (too high), inbreeding (too low), or ancestry differences</td><td data-label="Practical"><a href="qc-heterozygosity.html">Step 5</a></td></tr>
+    <tr><td>Ancestry</td><td data-label="Statistic">Principal components; reference-based assignment</td><td data-label="What a failure suggests">People whose genetic ancestry differs from the rest; structure to adjust for</td><td data-label="Practical"><a href="qc-pca.html">Steps 6</a>–<a href="qc-grafanc.html">8</a></td></tr>
+    <tr><td>Sex check</td><td data-label="Statistic">X-chromosome heterozygosity and Y calls versus recorded sex</td><td data-label="What a failure suggests">Sample swaps or data-entry errors</td><td data-label="Practical">Not in the practical</td></tr>
+    <tr><td>Allele frequency</td><td data-label="Statistic">Minor allele frequency or count</td><td data-label="What a failure suggests">Too rare for a stable test; monomorphic SNPs carry no information</td><td data-label="Practical">Used before PCA (<code>--maf 0.05</code>)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Ancestry is handled iteratively: principal component analysis of the genotypes first identifies and removes outlying people, then is recomputed, and the leading components become covariates in the association test<sup><a href="#src-1">1</a>, <a href="#src-28">28</a></sup>. Relatedness and ancestry must be accounted for in every genetic study, because otherwise they produce false positive or false negative signals, inflate SNP-based heritability, bias polygenic scores and bias Mendelian randomization<sup><a href="#src-1">1</a></sup>. The practical notes checks it does not run: sex-chromosome concordance, duplicate and identity checks, batch effects, allele and genome-build harmonization, differential missingness between cases and controls, comparison with external allele frequencies and quality control after imputation<sup><a href="#src-21">21</a></sup>. Consortia run standard pipelines such as RICOPILI, or the pipelines built into imputation servers<sup><a href="#src-1">1</a></sup>.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 46 · Session 1 covers GWAS data management and quality control</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-046.jpg" alt="Lecture 1, slide 46: a box labeled Genome-Wide Association Studies with the note 'Data management. Quality control, quality assessment', marked as today's session, next to boxes for basic concepts and population genetics" loading="lazy"><figcaption>Lecture 1 · slide 46</figcaption></figure>
+    <div><p>The course map puts this session at the start of the GWAS box: managing the data and checking its quality. The lecture defines the population-genetic quantities that the checks use (allele frequencies, Hardy–Weinberg equilibrium, LD, population structure: <a href="frequencies-hwe.html">pages 5</a>–<a href="population-structure.html">7</a>), and the practical runs eight of the checks in the table above. Session 2 starts from the cleaned data with the association test (<a href="gwas-analysis.html">page 9</a>).</p></div>
+  </div>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> “Data processing” and Fig. 1c</div>
+  <p>The reading lists the input files and the main quality-control steps in one paragraph, names PLINK as the standard tool and refers to Table 1 for others; Fig. 1c shows people clustered on two principal components by genetic substructure. The same section asks for cluster or cloud computing and for per-cohort processing in consortia.</p>
+</aside>
+
+<h2 id="imputation">Imputation: filling in unmeasured SNPs (Box 2) <span class="tag core">Core</span></h2>
+
+<p>Step d estimates genotypes at variants the array did not measure. It works because people share long stretches of chromosome inherited from common ancestors: a stretch of a study participant’s chromosome that matches, at the measured SNPs, a stretch of a sequenced person’s chromosome very likely matches it at the unmeasured variants in between too. Imputation needs three ingredients: the study participants’ haplotypes, a reference panel of sequenced haplotypes, and a model of how the two match.</p>
+
+<h3 id="phasing">Phasing: from genotypes to haplotypes</h3>
+
+<p>A genotype says how many copies of each allele a person has at each SNP, not which alleles sit together on the chromosome inherited from the mother and on the one inherited from the father. A haplotype is the sequence of alleles along one of those two chromosomes. Phasing estimates the two haplotypes of each person from the genotypes of many people, using the fact that common haplotypes recur in the population (<a href="../0-biological-foundations/samples-to-genotypes.html#phasing">Lecture 0 · phasing</a>). Its errors are switch errors: places where the estimated haplotypes jump from one parental chromosome to the other.</p>
+
+<h3 id="reference-panels">Reference panels</h3>
+
+<p>A reference panel is a set of haplotypes from sequenced genomes. The larger and the more similar in ancestry to the study it is, the rarer the variants it can impute<sup><a href="#src-1">1</a></sup>:</p>
+<ul>
+  <li><strong>1000 Genomes Project</strong>: 2,504 people from 26 populations on five continents<sup><a href="#src-29">29</a></sup>.</li>
+  <li><strong>Haplotype Reference Consortium (HRC)</strong>: 64,976 haplotypes at 39,235,157 SNPs from 20 studies, predominantly of European ancestry, accurate down to a minor allele frequency of about 0.1%<sup><a href="#src-30">30</a></sup>.</li>
+  <li><strong>TOPMed</strong>: sequenced genomes of multiple ancestries, more than 90,000 when the reading was written<sup><a href="#src-1">1</a>, <a href="#src-15">15</a></sup>; its third release covers 133,597 people<sup><a href="#src-31">31</a></sup>.</li>
+  <li><strong>UK Biobank</strong>: a panel built in 2026 from 490,319 sequenced participants, which phases and imputes most global populations more accurately than TOPMed, for variants down to a minor allele frequency of 0.01%<sup><a href="#src-31">31</a></sup>.</li>
+</ul>
+
+<h3 id="copying-model">How missing genotypes are inferred: the copying model</h3>
+
+<figure class="fig scroll-x" style="--min-w: 520px">
+  <div class="fig-body">
+<svg viewBox="0 0 540 312" role="img" aria-labelledby="fimp-t fimp-d">
+<title id="fimp-t">Imputation copies untyped alleles from matching reference haplotypes</title>
+<desc id="fimp-d">Six reference haplotypes at twelve SNPs. A study haplotype was typed at six SNPs. At SNPs 1 to 6 its typed alleles match reference haplotype 2, at SNPs 7 to 12 they match reference haplotype 5 (a recombination between SNPs 6 and 7). The untyped alleles are copied from those two haplotypes. All alleles are made up.</desc>
+<text x="150" y="18" class="t-sm">SNP 1</text>
+<text x="510" y="18" class="t-sm" text-anchor="end">SNP 12</text>
+<text x="140" y="49" class="t-sm" text-anchor="end">Reference haplotype 1</text>
+<rect x="150" y="34" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="164.0" y="49" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="180" y="34" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="194.0" y="49" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="210" y="34" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="224.0" y="49" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="240" y="34" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="254.0" y="49" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="270" y="34" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="284.0" y="49" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="300" y="34" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="314.0" y="49" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="330" y="34" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="344.0" y="49" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="360" y="34" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="374.0" y="49" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="390" y="34" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="404.0" y="49" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="420" y="34" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="434.0" y="49" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="450" y="34" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="464.0" y="49" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="480" y="34" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="494.0" y="49" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<text x="140" y="77" class="t-sm" text-anchor="end">Reference haplotype 2</text>
+<rect x="150" y="62" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="164.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="180" y="62" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="194.0" y="77" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="210" y="62" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="224.0" y="77" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="240" y="62" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="254.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="270" y="62" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="284.0" y="77" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="300" y="62" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="314.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="330" y="62" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="344.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="360" y="62" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="374.0" y="77" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="390" y="62" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="404.0" y="77" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="420" y="62" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="434.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="450" y="62" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="464.0" y="77" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="480" y="62" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="494.0" y="77" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<text x="140" y="105" class="t-sm" text-anchor="end">Reference haplotype 3</text>
+<rect x="150" y="90" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="164.0" y="105" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="180" y="90" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="194.0" y="105" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="210" y="90" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="224.0" y="105" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="240" y="90" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="254.0" y="105" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="270" y="90" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="284.0" y="105" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="300" y="90" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="314.0" y="105" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="330" y="90" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="344.0" y="105" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="360" y="90" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="374.0" y="105" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="390" y="90" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="404.0" y="105" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="420" y="90" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="434.0" y="105" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="450" y="90" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="464.0" y="105" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="480" y="90" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="494.0" y="105" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<text x="140" y="133" class="t-sm" text-anchor="end">Reference haplotype 4</text>
+<rect x="150" y="118" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="164.0" y="133" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="180" y="118" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="194.0" y="133" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="210" y="118" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="224.0" y="133" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="240" y="118" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="254.0" y="133" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="270" y="118" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="284.0" y="133" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="300" y="118" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="314.0" y="133" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="330" y="118" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="344.0" y="133" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="360" y="118" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="374.0" y="133" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="390" y="118" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="404.0" y="133" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="420" y="118" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="434.0" y="133" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="450" y="118" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="464.0" y="133" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="480" y="118" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="494.0" y="133" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<text x="140" y="161" class="t-sm" text-anchor="end">Reference haplotype 5</text>
+<rect x="150" y="146" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="164.0" y="161" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="180" y="146" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="194.0" y="161" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="210" y="146" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="224.0" y="161" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="240" y="146" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="254.0" y="161" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="270" y="146" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="284.0" y="161" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="300" y="146" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="314.0" y="161" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="330" y="146" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="344.0" y="161" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="360" y="146" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="374.0" y="161" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="390" y="146" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="404.0" y="161" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="420" y="146" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="434.0" y="161" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="450" y="146" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="464.0" y="161" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="480" y="146" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="494.0" y="161" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<text x="140" y="189" class="t-sm" text-anchor="end">Reference haplotype 6</text>
+<rect x="150" y="174" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="164.0" y="189" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="180" y="174" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="194.0" y="189" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="210" y="174" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="224.0" y="189" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="240" y="174" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="254.0" y="189" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="270" y="174" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="284.0" y="189" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="300" y="174" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="314.0" y="189" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="330" y="174" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="344.0" y="189" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="360" y="174" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="374.0" y="189" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="390" y="174" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="404.0" y="189" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="420" y="174" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="434.0" y="189" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="450" y="174" width="28" height="22" fill="var(--g2)" stroke="#d9dee5"/>
+<text x="464.0" y="189" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="480" y="174" width="28" height="22" fill="var(--g0)" stroke="#d9dee5"/>
+<text x="494.0" y="189" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="147" y="59" width="184" height="28" rx="4" fill="none" stroke="var(--q2)" stroke-width="2.5"/>
+<rect x="327" y="143" width="184" height="28" rx="4" fill="none" stroke="var(--q2)" stroke-width="2.5"/>
+<text x="140" y="239" class="t-sm" text-anchor="end">Study haplotype, typed</text>
+<text x="140" y="279" class="t-sm" text-anchor="end">After imputation</text>
+<rect x="150" y="224" width="28" height="22" fill="var(--g0)" stroke="#5a6370"/>
+<text x="164.0" y="239" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="150" y="264" width="28" height="22" fill="var(--g0)" stroke="#5a6370"/>
+<text x="164.0" y="279" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="180" y="224" width="28" height="22" fill="#fff" stroke="#b9c1cc" stroke-dasharray="3 2"/>
+<text x="194.0" y="239" class="t-xs" text-anchor="middle">?</text>
+<rect x="180" y="264" width="28" height="22" fill="var(--g2)" stroke="var(--q2)" stroke-width="2" stroke-dasharray="3 2"/>
+<text x="194.0" y="279" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="210" y="224" width="28" height="22" fill="var(--g2)" stroke="#5a6370"/>
+<text x="224.0" y="239" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="210" y="264" width="28" height="22" fill="var(--g2)" stroke="#5a6370"/>
+<text x="224.0" y="279" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="240" y="224" width="28" height="22" fill="#fff" stroke="#b9c1cc" stroke-dasharray="3 2"/>
+<text x="254.0" y="239" class="t-xs" text-anchor="middle">?</text>
+<rect x="240" y="264" width="28" height="22" fill="var(--g0)" stroke="var(--q2)" stroke-width="2" stroke-dasharray="3 2"/>
+<text x="254.0" y="279" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="270" y="224" width="28" height="22" fill="#fff" stroke="#b9c1cc" stroke-dasharray="3 2"/>
+<text x="284.0" y="239" class="t-xs" text-anchor="middle">?</text>
+<rect x="270" y="264" width="28" height="22" fill="var(--g2)" stroke="var(--q2)" stroke-width="2" stroke-dasharray="3 2"/>
+<text x="284.0" y="279" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="300" y="224" width="28" height="22" fill="var(--g0)" stroke="#5a6370"/>
+<text x="314.0" y="239" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="300" y="264" width="28" height="22" fill="var(--g0)" stroke="#5a6370"/>
+<text x="314.0" y="279" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="330" y="224" width="28" height="22" fill="#fff" stroke="#b9c1cc" stroke-dasharray="3 2"/>
+<text x="344.0" y="239" class="t-xs" text-anchor="middle">?</text>
+<rect x="330" y="264" width="28" height="22" fill="var(--g0)" stroke="var(--q2)" stroke-width="2" stroke-dasharray="3 2"/>
+<text x="344.0" y="279" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="360" y="224" width="28" height="22" fill="var(--g2)" stroke="#5a6370"/>
+<text x="374.0" y="239" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="360" y="264" width="28" height="22" fill="var(--g2)" stroke="#5a6370"/>
+<text x="374.0" y="279" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="390" y="224" width="28" height="22" fill="#fff" stroke="#b9c1cc" stroke-dasharray="3 2"/>
+<text x="404.0" y="239" class="t-xs" text-anchor="middle">?</text>
+<rect x="390" y="264" width="28" height="22" fill="var(--g0)" stroke="var(--q2)" stroke-width="2" stroke-dasharray="3 2"/>
+<text x="404.0" y="279" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="420" y="224" width="28" height="22" fill="var(--g2)" stroke="#5a6370"/>
+<text x="434.0" y="239" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="420" y="264" width="28" height="22" fill="var(--g2)" stroke="#5a6370"/>
+<text x="434.0" y="279" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="450" y="224" width="28" height="22" fill="#fff" stroke="#b9c1cc" stroke-dasharray="3 2"/>
+<text x="464.0" y="239" class="t-xs" text-anchor="middle">?</text>
+<rect x="450" y="264" width="28" height="22" fill="var(--g0)" stroke="var(--q2)" stroke-width="2" stroke-dasharray="3 2"/>
+<text x="464.0" y="279" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0</text>
+<rect x="480" y="224" width="28" height="22" fill="var(--g2)" stroke="#5a6370"/>
+<text x="494.0" y="239" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="480" y="264" width="28" height="22" fill="var(--g2)" stroke="#5a6370"/>
+<text x="494.0" y="279" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<line x1="328" y1="28" x2="328" y2="292" stroke="var(--q2)" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="328" y="306" class="t-xs" text-anchor="middle">switch of copied haplotype</text>
+<rect x="150" y="316" width="14" height="14" fill="#fff" stroke="var(--q2)" stroke-width="2" stroke-dasharray="3 2"/>
+<text x="170" y="327" class="t-xs">copied (imputed) allele</text>
+<rect x="320" y="316" width="14" height="14" fill="#fff" stroke="#5a6370"/>
+<text x="340" y="327" class="t-xs">typed allele</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">Imputation copies alleles from matching reference haplotypes.</span> The study haplotype was typed at six of twelve SNPs. Its typed alleles match reference haplotype 2 on the left and reference haplotype 5 on the right, so its untyped alleles are copied from those two haplotypes, with one switch between them. Real software weighs every reference haplotype by probability instead of choosing one. <span class="illustrative">Simulated</span> <span class="fig-credit">Drawn for this lecture, following Fig. 1d of Uffelmann et al. 2021.</span></figcaption>
+</figure>
+
+<p>The Li–Stephens model<sup><a href="#src-32">32</a></sup> describes a study haplotype as a mosaic of the \(K\) reference haplotypes: along the chromosome it copies one reference haplotype, and between neighboring SNPs it occasionally switches to another, at the rate at which recombination would have broken the shared stretch. The model is a hidden Markov model: the hidden state at SNP \(j\) is the reference haplotype \(Z_j\) being copied, the observations are the study haplotype’s typed alleles, and the forward–backward algorithm computes, for every SNP, the probability of copying each reference haplotype given all typed alleles. IMPUTE, MaCH/Minimac and Beagle are built on this model or its relatives<sup><a href="#src-33">33</a></sup>.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} P(Z_{j+1} = k' \mid Z_j = k) \\ = \begin{cases} 1-\rho_j+\rho_j/K & k' = k \\ \rho_j/K & k' \neq k \end{cases} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(Z_j\)</dt><dd>The reference haplotype copied at SNP \(j\), one of \(1, \dots, K\).</dd>
+    <dt>\(K\)</dt><dd>Number of haplotypes in the reference panel (twice the number of sequenced people).</dd>
+    <dt>\(\rho_j\)</dt><dd>Probability of a switch between SNP \(j\) and SNP \(j+1\), between 0 and 1. It grows with the genetic distance (recombination) between the two SNPs and shrinks as \(K\) grows.</dd>
+    <dt>\(k, k'\)</dt><dd>Reference haplotypes copied at SNP \(j\) and SNP \(j+1\).</dd>
+  </dl>
+  <p class="eq-intuition">With probability \(1-\rho_j\) nothing happens and the same haplotype is copied; with probability \(\rho_j\) a new haplotype is drawn at random from all \(K\), which can by chance be the same one (hence \(+\rho_j/K\)). A typed allele that differs from the copied haplotype’s allele has a small probability \(\varepsilon\) (a mutation or genotyping error), so a single mismatch does not rule a haplotype out. When \(\rho_j\) is near 0 the model insists on one haplotype for the whole region; when \(\rho_j\) is near 1 every SNP is independent and the typed SNPs say nothing about the untyped ones.</p>
+</div>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \hat{h}_{ij} = \sum_{k=1}^{K} \gamma_{ijk}\, h_{kj} \\ d_{ij} = \hat{h}^{(1)}_{ij} + \hat{h}^{(2)}_{ij} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(h_{kj}\)</dt><dd>Allele of reference haplotype \(k\) at untyped SNP \(j\): 1 for the counted allele, 0 for the other.</dd>
+    <dt>\(\gamma_{ijk}\)</dt><dd>Probability, from the forward–backward algorithm, that haplotype \(i\) copies reference haplotype \(k\) at SNP \(j\), given all typed alleles; the \(K\) values sum to 1.</dd>
+    <dt>\(\hat{h}_{ij}\)</dt><dd>Probability that study haplotype \(i\) carries the counted allele at SNP \(j\).</dd>
+    <dt>\(d_{ij}\)</dt><dd>The dosage: the expected number of copies of the counted allele in person \(i\) at SNP \(j\), between 0 and 2, summed over the person’s two haplotypes \((1)\) and \((2)\).</dd>
+  </dl>
+  <p class="eq-intuition">The imputed allele is a vote of the reference haplotypes, weighted by how well each matches the person’s typed alleles nearby. If one haplotype matches far better than the others, \(\gamma\) puts nearly all weight on it and the dosage is close to 0, 1 or 2. If haplotypes that disagree at SNP \(j\) match equally well, the dosage lands in between, for example 0.6. Association tests use the dosage directly, which keeps this uncertainty instead of rounding it away (<a href="../0-biological-foundations/samples-to-genotypes.html#dosage">Lecture 0 · dosages</a>).</p>
+</div>
+
+<div class="widget" id="w-imputation">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Impute a study haplotype from a reference panel (simplified Li–Stephens model)</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The figure above shows the same idea for one haplotype.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The study person’s typed SNPs (every second SNP by default) are matched to the reference haplotypes. The stacked colored bars under each haplotype show, at every SNP, the probability that it copies each reference haplotype (the colors of the panel rows), and the untyped alleles take their probabilities from those haplotypes. With the defaults the mean INFO is about 0.8. Reduce the panel to 4 haplotypes and the mean INFO drops to about 0.5, because the person’s haplotypes are less likely to have a close match in the panel. Put every fourth SNP on the array instead of every second and it drops to about 0.5 again. Set the switch probability \(\rho\) to its maximum and the INFO scores fall to about 0: the typed SNPs no longer tell the model anything about their neighbors. Tick “Show true genotypes” to compare the dosages with the truth. This is a simplified model on simulated haplotypes; real software uses genetic maps, thousands of reference haplotypes and faster algorithms.</p>
+
+<h3 id="info-score">Dosages, genotype probabilities and the INFO score</h3>
+
+<p>For each person and imputed SNP the software reports three genotype probabilities \(P(g = 0)\), \(P(g = 1)\), \(P(g = 2)\) and the dosage \(d = P(g = 1) + 2P(g = 2)\). For each SNP it reports a quality score that measures how much information the imputation retained. The INFO score of IMPUTE is one version; MaCH and Minimac report a similar \(r^2\) (<a href="../0-biological-foundations/samples-to-genotypes.html#imputation-quality">Lecture 0 · imputation quality</a>).</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \mathrm{INFO}_j = 1 - \frac{\sum_{i=1}^{N} \Var(g_{ij} \mid \text{data})}{2N\,\hat{p}_j(1-\hat{p}_j)} \]</div>
+  <dl class="eq-terms">
+    <dt>\(N\)</dt><dd>Number of imputed people.</dd>
+    <dt>\(\Var(g_{ij} \mid \text{data})\)</dt><dd>Uncertainty about person \(i\)’s genotype at SNP \(j\) after imputation: \(E[g^2] - d^2\), computed from the three genotype probabilities. Zero if one genotype has probability 1.</dd>
+    <dt>\(\hat{p}_j\)</dt><dd>Allele frequency estimated from the dosages, \(\sum_i d_{ij} / (2N)\).</dd>
+    <dt>\(2N\hat{p}_j(1-\hat{p}_j)\)</dt><dd>The total genotype variance expected if the imputation knew nothing beyond the allele frequency (under Hardy–Weinberg equilibrium).</dd>
+  </dl>
+  <p class="eq-intuition">INFO is 1 minus the fraction of the genotype variance that remains uncertain. If every genotype is certain the sum is 0 and INFO is 1; if the imputation can only guess the population frequency for everyone, each person’s variance is \(2\hat{p}(1-\hat{p})\) and INFO is 0. INFO approximates the squared correlation between dosage and true genotype, so a SNP with INFO 0.8 imputed in \(N\) people carries about as much information for an association test as \(0.8N\) directly genotyped people<sup><a href="#src-33">33</a></sup>. Worked number: 1,000 people with \(\hat{p} = 0.25\) give \(2N\hat{p}(1-\hat{p}) = 375\); if the variances sum to 75, INFO is \(1 - 75/375 = 0.8\).</p>
+</div>
+
+<h3 id="imputation-workflow">The imputation workflow (Box 2)</h3>
+
+<p>Box 2 of the reading lists the steps, which servers such as the Michigan Imputation Server<sup><a href="#src-34">34</a></sup> and the TOPMed Imputation Server run as a pipeline, and which tools such as IMPUTE2, Beagle, MaCH and SHAPEIT2 run locally<sup><a href="#src-1">1</a></sup>:</p>
+<ol>
+  <li>Phase each person’s genotypes into two haplotypes.</li>
+  <li>Decide whether downstream analyses will use hard calls (the most probable genotype) or dosages that keep the uncertainty.</li>
+  <li>Choose a reference panel that matches the study’s ancestry.</li>
+  <li>Put the study data and the panel on the same genome build (the same coordinate system; <a href="snp-data.html">page 4</a>).</li>
+  <li>Check strands, resolve differences between genotyping platforms, and consider removing strand-ambiguous SNPs (A/T and C/G SNPs, whose two alleles are complementary).</li>
+  <li>Compare allele frequencies and LD patterns between the study and the panel, and investigate SNPs that disagree.</li>
+  <li>Impute, distributing chromosome chunks over many computers or using a server.</li>
+  <li>Check imputation quality and remove poorly imputed SNPs, for example those with INFO below 0.7.</li>
+</ol>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> What imputation produces</div>
+  <p>Imputation turns about a million typed SNPs into tens of millions of variants per person: about 96 million in UK Biobank<sup><a href="#src-13">13</a></sup>. The output is one file per chromosome, either a VCF with a dosage (<code>DS</code>) and genotype probabilities (<code>GP</code>) per person and an <code>R2</code> or <code>INFO</code> value per variant, or a BGEN file with compressed probabilities. Association software reads the dosages, and the quality score travels with each variant into the summary statistics (the GWAS Catalog format has an <code>info</code> column; <a href="gwas-analysis.html#summary-statistics">page 9</a>).</p>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> An imputed SNP is an estimate, and its quality depends on ancestry</div>
+  <p>Imputation quality falls with allele frequency and with the distance between the study’s ancestry and the panel’s. A panel of predominantly European-ancestry haplotypes imputes rare variants poorly in people of other ancestries, and regions with unusual LD, such as the HLA region on chromosome 6, need specialized methods (<a href="gwas-analysis.html#fine-mapping">page 9</a>). Filter on the quality score, and compare quality across ancestry groups before combining them.</p>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Box 2, “Imputation workflow”, and Fig. 1d</div>
+  <p>Box 2 is the checklist above; the main text names the 1000 Genomes and TOPMed panels, the Michigan and TOPMed imputation servers and the RICOPILI pipeline. Fig. 1d shows four people’s alleles at six SNPs, with SNP1 and SNP3 imputed from the others. The reading treats imputation as part of “Data processing”, before the association test.</p>
+</aside>
+
+<h2 id="tools">Open-access tools for each stage (Table 1) <span class="tag optional">Optional</span></h2>
+
+<p>Table 1 of the reading lists free software for every stage of a GWAS. The version below groups the same tools by stage with a one-line description of each; the stages after imputation are explained on <a href="gwas-analysis.html">page 9</a> and <a href="gwas-applications.html">page 10</a><sup><a href="#src-1">1</a></sup>.</p>
+
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Software by stage, after Table 1 of the reading.</caption>
+  <thead><tr><th scope="col">Stage</th><th scope="col">Tools</th><th scope="col">What they do</th></tr></thead>
+  <tbody>
+    <tr><td>Quality control</td><td data-label="Tools"><a href="https://www.cog-genomics.org/plink/1.9/" target="_blank" rel="noopener">PLINK 1.9</a>, <a href="https://www.cog-genomics.org/plink/2.0/" target="_blank" rel="noopener">PLINK 2</a>, RICOPILI, SMARTPCA, FlashPCA2</td><td data-label="What they do">Filter SNPs (Hardy–Weinberg, call rate, allele frequency) and people (sex, call rate, heterozygosity, relatedness); compute principal components (SMARTPCA, and the faster FlashPCA2); RICOPILI runs a consortium pipeline</td></tr>
+    <tr><td>Imputation</td><td data-label="Tools">IMPUTE2, Beagle, MaCH/Minimac</td><td data-label="What they do">Impute untyped genotypes from an ancestry-matched reference panel; Minimac uses pre-phased haplotypes, which is faster</td></tr>
+    <tr><td>Association</td><td data-label="Tools">PLINK, SNPTEST, GEMMA, SAIGE, BOLT-LMM, REGENIE, BGENIE, fastGWA</td><td data-label="What they do">Regression per SNP; mixed models for relatedness and very large samples (SAIGE for binary traits, BOLT-LMM, REGENIE, fastGWA); BGENIE for UK Biobank’s BGEN files</td></tr>
+    <tr><td>Fine-mapping</td><td data-label="Tools">CAVIAR, PAINTOR, SuSiE, FINEMAP</td><td data-label="What they do">Probability that each SNP in a locus is causal, from summary statistics and LD; PAINTOR adds functional annotations</td></tr>
+    <tr><td>Meta-analysis</td><td data-label="Tools">GWAMA, METAL</td><td data-label="What they do">Combine cohorts’ summary statistics with fixed- or random-effects models</td></tr>
+    <tr><td>Variant annotation</td><td data-label="Tools">VEP, ANNOVAR, FUMA</td><td data-label="What they do">Effect of each variant on genes, transcripts, proteins and regulatory regions; FUMA adds chromatin interactions and plots</td></tr>
+    <tr><td>Gene sets and enrichment</td><td data-label="Tools">MAGMA, DEPICT, LDSC</td><td data-label="What they do">Gene-based and gene-set tests; prioritized genes and pathways; heritability partitioned by functional category</td></tr>
+    <tr><td>Molecular QTLs</td><td data-label="Tools">QTLtools</td><td data-label="What they do">Find genetic variants associated with molecular traits such as gene expression</td></tr>
+    <tr><td>Genetic correlation</td><td data-label="Tools">LDSC, GCTA, SumHer, SUPERGNOVA, ρ-HESS, LAVA, GenomicSEM</td><td data-label="What they do">Genome-wide, local and multivariate genetic correlations, from summary statistics or (GCTA) genotypes</td></tr>
+    <tr><td>Causality</td><td data-label="Tools">Mendelian randomization packages</td><td data-label="What they do">Causal effect of one trait on another from summary statistics</td></tr>
+    <tr><td>Polygenic scores</td><td data-label="Tools">PRSice, PRS-CS, LDpred/LDpred2, SBayesR</td><td data-label="What they do">Clumping and thresholding (PRSice) or Bayesian shrinkage of SNP effects (the others)</td></tr>
+    <tr><td>Transcriptome-wide association</td><td data-label="Tools">FUSION, PrediXcan, SMR</td><td data-label="What they do">Predict gene expression from genotypes and test it against the trait; SMR tests whether expression mediates an association</td></tr>
+  </tbody>
+</table>
+</div>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>A GWAS tests every SNP for a difference in a trait between genotypes. It finds associated loci, not causal variants or genes; most effects are small and many loci are shared between traits.</li>
+    <li>The design decides who is in the data: case–control studies maximize cases, cohorts and biobanks measure many traits, families separate direct from indirect effects and resist confounding by ancestry, isolated populations enrich some rare variants. Recruitment can create collider bias; ancestry must be matched or modeled.</li>
+    <li>Power depends on the noncentrality parameter \(\lambda = N \cdot 2p(1-p)\beta^2/\sigma^2\) (for case–control studies, \(N\phi(1-\phi)\,2\bar{p}(1-\bar{p})(\ln \mathrm{OR})^2\)); 80% power at 5 × 10⁻⁸ needs \(\lambda \approx 39.6\).</li>
+    <li>Arrays measure hundreds of thousands to millions of chosen tag SNPs; exomes and genomes read variants of every frequency. Box 1: “common” is population-specific and depends on sample size through the minor allele count.</li>
+    <li>Quality control removes unreliable SNPs and people and finds relatives and ancestry before any test; the practical runs eight of these checks.</li>
+    <li>Imputation copies alleles from reference haplotypes that match a person’s typed SNPs; it reports dosages between 0 and 2 and an INFO score per SNP, and SNPs with INFO below about 0.7 are usually removed (Box 2).</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A GWAS is often called hypothesis-free. What does it test instead of a hypothesis about one gene, and what does that cost?</summary><div class="a"><p>It tests the same null hypothesis (no association) at every measured or imputed SNP, so no gene has to be chosen in advance. The cost is multiple testing: about a million independent tests are run, so each must reach p &lt; 5 × 10⁻⁸ instead of 0.05 to keep false positives rare, and that threshold multiplies the sample size needed for the same power by about five.</p></div></details>
+  <details class="q"><summary>A quantitative trait is standardized to variance 1. A SNP has effect-allele frequency 0.2 and an effect of 0.1 standard deviations per allele. About how many people give 80% power at 5 × 10⁻⁸, and at 0.05?</summary><div class="a"><p>The variance explained is \(2p(1-p)\beta^2 = 2 \times 0.2 \times 0.8 \times 0.01 = 0.0032\), so each person adds about 0.0032 to \(\lambda\). At 5 × 10⁻⁸ we need \(\lambda = 39.6\): \(N \approx 39.6 / 0.0032 \approx 12{,}400\). At 0.05 we need \(\lambda = 7.85\): \(N \approx 2{,}450\).</p></div></details>
+  <details class="q"><summary>A case–control study uses population controls without screening them, and the disease has a prevalence of 10%. By how much must the number of people grow to keep the same power?</summary><div class="a"><p>About 10% of the “controls” are cases, so the control allele frequency moves toward the case frequency and the difference between groups shrinks by the factor \(1 - 0.1 = 0.9\). The noncentrality parameter depends on the squared difference, so it shrinks by \(0.9^2 = 0.81\). To restore it, \(N\) must grow by \(1/0.81 \approx 1.23\): about 23% more people. For a disease with 1% prevalence the loss is only 2%.</p></div></details>
+  <details class="q"><summary>A causal SNP is not on the array. The best measured SNP has \(r^2 = 0.6\) with it. How does this change the sample size needed?</summary><div class="a"><p>The test at the measured SNP has noncentrality \(r^2\lambda = 0.6\lambda\). To reach the same \(\lambda\) as a direct test, the study needs \(1/0.6 \approx 1.7\) times as many people. Imputation from a good reference panel, which may recover the causal SNP itself with high quality, avoids most of this loss.</p></div></details>
+  <details class="q"><summary>A study of volunteers finds that a SNP associated with educational attainment is also associated with lower rates of a disease among participants. Why might this association not exist in the population?</summary><div class="a"><p>If both higher educational attainment (influenced by the SNP) and good health make people more likely to volunteer, the analysis conditions on a common effect of both, participation. Among volunteers, carriers of the allele needed good health less often to join, so carrier status and disease become associated among participants even if they are independent in the population: collider bias. Checking the association in a less selected sample, or modeling participation, addresses it.</p></div></details>
+  <details class="q"><summary>An imputed SNP has \(\hat{p} = 0.25\) in 1,000 people and the per-person genotype variances sum to 150. What is its INFO score, would it pass Box 2’s filter, and how many directly genotyped people is it worth?</summary><div class="a"><p>\(2N\hat{p}(1-\hat{p}) = 2 \times 1{,}000 \times 0.25 \times 0.75 = 375\), so INFO \(= 1 - 150/375 = 0.6\). It is below the 0.7 threshold of Box 2 and would usually be removed. Its information for an association test is roughly that of \(0.6 \times 1{,}000 = 600\) directly genotyped people.</p></div></details>
+  <details class="q"><summary>You want to test variants with a minor allele frequency of 0.05% in 50,000 people. Which technology measures them, and can each be tested on its own?</summary><div class="a"><p>Exome sequencing (if the variants are in protein-coding exons) or genome sequencing; an array measures few such rare variants, and imputation at 0.05% is unreliable except with very large, ancestry-matched panels. The minor allele count is \(2 \times 50{,}000 \times 0.0005 = 50\) copies, below the 100 carriers that Box 1 gives as a typical minimum, so the variants are usually tested together, for example per gene in a burden test.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.genome.gov/about-genomics/fact-sheets/Genome-Wide-Association-Studies-Fact-Sheet" target="_blank" rel="noopener">Genome-wide association studies fact sheet</a> <span class="src">· NHGRI</span> <span class="level intro">intro</span> — a one-page description of what a GWAS is, with the history of the GWAS Catalog.</li>
+    <li><a href="https://csg.sph.umich.edu/abecasis/gas_power_calculator/" target="_blank" rel="noopener">GAS Power Calculator</a> <span class="src">· University of Michigan</span> <span class="level intro">intro</span> — the case–control power calculator that the widget above was checked against; try your own designs.</li>
+    <li><a href="https://doi.org/10.1016/j.ajhg.2017.06.005" target="_blank" rel="noopener">10 years of GWAS discovery</a> <span class="src">· Visscher et al., Am J Hum Genet 2017</span> <span class="level intermediate">intermediate</span> — what GWAS found in their first decade and what it taught about genetic architecture; one of the session’s readings.</li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Data quality control in genetic case–control association studies</a> <span class="src">· Anderson et al., Nat Protoc 2010</span> <span class="level intermediate">intermediate</span> — the step-by-step protocol behind most QC pipelines, with PLINK commands and plots.</li>
+    <li><a href="https://doi.org/10.1038/nrg2796" target="_blank" rel="noopener">Genotype imputation for genome-wide association studies</a> <span class="src">· Marchini &amp; Howie, Nat Rev Genet 2010</span> <span class="level advanced">advanced</span> — the copying model, quality scores and how to test imputed genotypes, in depth.</li>
+    <li><a href="https://imputationserver.sph.umich.edu/" target="_blank" rel="noopener">Michigan Imputation Server</a> <span class="src">· University of Michigan</span> <span class="level intermediate">intermediate</span> — the documentation explains each step of Box 2 as the server runs it, including the quality-control report.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Uffelmann E, Huang QQ, Munung NS, de Vries J, Okada Y, Martin AR, Martin HC, Lappalainen T, Posthuma D. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-2">Klein RJ, et al. Complement factor H polymorphism in age-related macular degeneration. <em>Science</em>. 2005;308:385–389. <a href="https://doi.org/10.1126/science.1109557" target="_blank" rel="noopener">doi:10.1126/science.1109557</a></li>
+    <li id="src-3">Wellcome Trust Case Control Consortium. Genome-wide association study of 14,000 cases of seven common diseases and 3,000 shared controls. <em>Nature</em>. 2007;447:661–678. <a href="https://doi.org/10.1038/nature05911" target="_blank" rel="noopener">doi:10.1038/nature05911</a></li>
+    <li id="src-4">Yengo L, et al. A saturated map of common genetic variants associated with human height. <em>Nature</em>. 2022;610:704–712. <a href="https://doi.org/10.1038/s41586-022-05275-y" target="_blank" rel="noopener">doi:10.1038/s41586-022-05275-y</a></li>
+    <li id="src-5">Sollis E, et al. The NHGRI-EBI GWAS Catalog: knowledgebase and deposition resource. <em>Nucleic Acids Res</em>. 2023;51:D977–D985. Counts from the <a href="https://www.ebi.ac.uk/gwas/" target="_blank" rel="noopener">GWAS Catalog home page</a>, release of 29 October 2026. <a href="https://doi.org/10.1093/nar/gkac1010" target="_blank" rel="noopener">doi:10.1093/nar/gkac1010</a></li>
+    <li id="src-6">Visscher PM, et al. 10 years of GWAS discovery: biology, function, and translation. <em>Am J Hum Genet</em>. 2017;101:5–22. <a href="https://doi.org/10.1016/j.ajhg.2017.06.005" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2017.06.005</a></li>
+    <li id="src-7">Pirinen M, Donnelly P, Spencer CCA. Including known covariates can reduce power to detect genetic effects in case–control studies. <em>Nat Genet</em>. 2012;44:848–851. <a href="https://doi.org/10.1038/ng.2346" target="_blank" rel="noopener">doi:10.1038/ng.2346</a></li>
+    <li id="src-8">Spielman RS, McGinnis RE, Ewens WJ. Transmission test for linkage disequilibrium: the insulin gene region and insulin-dependent diabetes mellitus (IDDM). <em>Am J Hum Genet</em>. 1993;52:506–516. <a href="https://pubmed.ncbi.nlm.nih.gov/8447318/" target="_blank" rel="noopener">PubMed 8447318</a></li>
+    <li id="src-9">Kong A, et al. The nature of nurture: effects of parental genotypes. <em>Science</em>. 2018;359:424–428. <a href="https://doi.org/10.1126/science.aan6877" target="_blank" rel="noopener">doi:10.1126/science.aan6877</a></li>
+    <li id="src-10">Howe LJ, et al. Within-sibship genome-wide association analyses decrease bias in estimates of direct genetic effects. <em>Nat Genet</em>. 2022;54:581–592. <a href="https://doi.org/10.1038/s41588-022-01062-7" target="_blank" rel="noopener">doi:10.1038/s41588-022-01062-7</a></li>
+    <li id="src-11">Liu JZ, Erlich Y, Pickrell JK. Case–control association mapping by proxy using family history of disease. <em>Nat Genet</em>. 2017;49:325–331. <a href="https://doi.org/10.1038/ng.3766" target="_blank" rel="noopener">doi:10.1038/ng.3766</a></li>
+    <li id="src-12">Sidore C, et al. Genome sequencing elucidates Sardinian genetic architecture and augments association analyses for lipid and blood inflammatory markers. <em>Nat Genet</em>. 2015;47:1272–1281. <a href="https://doi.org/10.1038/ng.3368" target="_blank" rel="noopener">doi:10.1038/ng.3368</a></li>
+    <li id="src-13">Bycroft C, et al. The UK Biobank resource with deep phenotyping and genomic data. <em>Nature</em>. 2018;562:203–209. <a href="https://doi.org/10.1038/s41586-018-0579-z" target="_blank" rel="noopener">doi:10.1038/s41586-018-0579-z</a></li>
+    <li id="src-14">Nagai A, et al. Overview of the BioBank Japan Project: study design and profile. <em>J Epidemiol</em>. 2017;27:S2–S8. <a href="https://doi.org/10.1016/j.je.2016.12.005" target="_blank" rel="noopener">doi:10.1016/j.je.2016.12.005</a></li>
+    <li id="src-15">Taliun D, et al. Sequencing of 53,831 diverse genomes from the NHLBI TOPMed Program. <em>Nature</em>. 2021;590:290–299. <a href="https://doi.org/10.1038/s41586-021-03205-y" target="_blank" rel="noopener">doi:10.1038/s41586-021-03205-y</a></li>
+    <li id="src-16">Fry A, et al. Comparison of sociodemographic and health-related characteristics of UK Biobank participants with those of the general population. <em>Am J Epidemiol</em>. 2017;186:1026–1034. <a href="https://doi.org/10.1093/aje/kwx246" target="_blank" rel="noopener">doi:10.1093/aje/kwx246</a></li>
+    <li id="src-17">Rietveld CA, et al. Common genetic variants associated with cognitive performance identified using the proxy-phenotype method. <em>Proc Natl Acad Sci USA</em>. 2014;111:13790–13794. <a href="https://doi.org/10.1073/pnas.1404623111" target="_blank" rel="noopener">doi:10.1073/pnas.1404623111</a></li>
+    <li id="src-18">Skol AD, Scott LJ, Abecasis GR, Boehnke M. Joint analysis is more efficient than replication-based analysis for two-stage genome-wide association studies. <em>Nat Genet</em>. 2006;38:209–213. <a href="https://doi.org/10.1038/ng1706" target="_blank" rel="noopener">doi:10.1038/ng1706</a></li>
+    <li id="src-19">Purcell S, Cherny SS, Sham PC. Genetic Power Calculator: design of linkage and association genetic mapping studies of complex traits. <em>Bioinformatics</em>. 2003;19:149–150. <a href="https://doi.org/10.1093/bioinformatics/19.1.149" target="_blank" rel="noopener">doi:10.1093/bioinformatics/19.1.149</a></li>
+    <li id="src-20">Johnson JL, Abecasis GR. GAS Power Calculator: web-based power calculator for genetic association studies. <em>bioRxiv</em>. 2017:164343. Calculator at <a href="https://csg.sph.umich.edu/abecasis/gas_power_calculator/" target="_blank" rel="noopener">csg.sph.umich.edu</a>. <a href="https://doi.org/10.1101/164343" target="_blank" rel="noopener">doi:10.1101/164343</a></li>
+    <li id="src-21">DCEG Statistical Genetics Workshop. Session 1 practical: quality control of the PennCATH data (<code>01_qc.Rmd</code>). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">workshop page</a></li>
+    <li id="src-22">Backman JD, et al. Exome sequencing and analysis of 454,787 UK Biobank participants. <em>Nature</em>. 2021;599:628–634. <a href="https://doi.org/10.1038/s41586-021-04103-z" target="_blank" rel="noopener">doi:10.1038/s41586-021-04103-z</a></li>
+    <li id="src-23">UK Biobank Whole-Genome Sequencing Consortium. Whole-genome sequencing of 490,640 UK Biobank participants. <em>Nature</em>. 2025;645:692–701. <a href="https://doi.org/10.1038/s41586-025-09272-9" target="_blank" rel="noopener">doi:10.1038/s41586-025-09272-9</a></li>
+    <li id="src-24">Chang C. PLINK 1.9 file formats: .bed, .bim, .fam, .assoc.linear and .assoc.logistic. <a href="https://www.cog-genomics.org/plink/1.9/formats" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/formats</a></li>
+    <li id="src-25">Purcell S, et al. PLINK: a tool set for whole-genome association and population-based linkage analyses. <em>Am J Hum Genet</em>. 2007;81:559–575. <a href="https://doi.org/10.1086/519795" target="_blank" rel="noopener">doi:10.1086/519795</a></li>
+    <li id="src-26">Chang CC, et al. Second-generation PLINK: rising to the challenge of larger and richer datasets. <em>GigaScience</em>. 2015;4:7. <a href="https://doi.org/10.1186/s13742-015-0047-8" target="_blank" rel="noopener">doi:10.1186/s13742-015-0047-8</a></li>
+    <li id="src-27">Anderson CA, et al. Data quality control in genetic case–control association studies. <em>Nat Protoc</em>. 2010;5:1564–1573. <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-28">Price AL, et al. Principal components analysis corrects for stratification in genome-wide association studies. <em>Nat Genet</em>. 2006;38:904–909. <a href="https://doi.org/10.1038/ng1847" target="_blank" rel="noopener">doi:10.1038/ng1847</a></li>
+    <li id="src-29">1000 Genomes Project Consortium (Auton A, et al.). A global reference for human genetic variation. <em>Nature</em>. 2015;526:68–74. <a href="https://doi.org/10.1038/nature15393" target="_blank" rel="noopener">doi:10.1038/nature15393</a></li>
+    <li id="src-30">McCarthy S, et al. A reference panel of 64,976 haplotypes for genotype imputation. <em>Nat Genet</em>. 2016;48:1279–1283. <a href="https://doi.org/10.1038/ng.3643" target="_blank" rel="noopener">doi:10.1038/ng.3643</a></li>
+    <li id="src-31">Wienbrandt L, et al. A haplotype reference panel constructed from 490,319 UK Biobank genomes improves genotype imputation for global populations. <em>Nat Genet</em>. 2026 (online 30 October 2026). <a href="https://doi.org/10.1038/s41588-026-02819-0" target="_blank" rel="noopener">doi:10.1038/s41588-026-02819-0</a></li>
+    <li id="src-32">Li N, Stephens M. Modeling linkage disequilibrium and identifying recombination hotspots using single-nucleotide polymorphism data. <em>Genetics</em>. 2003;165:2213–2233. <a href="https://doi.org/10.1093/genetics/165.4.2213" target="_blank" rel="noopener">doi:10.1093/genetics/165.4.2213</a></li>
+    <li id="src-33">Marchini J, Howie B. Genotype imputation for genome-wide association studies. <em>Nat Rev Genet</em>. 2010;11:499–511. <a href="https://doi.org/10.1038/nrg2796" target="_blank" rel="noopener">doi:10.1038/nrg2796</a></li>
+    <li id="src-34">Das S, et al. Next-generation genotype imputation service and methods. <em>Nat Genet</em>. 2016;48:1284–1287. <a href="https://doi.org/10.1038/ng.3656" target="_blank" rel="noopener">doi:10.1038/ng.3656</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The tools: PLINK, R packages, GrafAnc and friends · Lecture 1</title>
+<meta name="description" content="What PLINK 1.9, R with tidyverse, data.table and glue, GrafAnc and the supporting tools do in the practical: how each works, what it reads and writes, the exact flags and functions used, and the order in which PLINK applies its operations.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<!-- Widgets for this page, one file each: assets/js/widgets/PAGEKEY-NAME.js -->
+<script defer src="assets/js/widgets/tools-plink-builder.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="tools"]. */
+body[data-page="tools"] .argv td:first-child { color: var(--fg-muted); width: 4.5em; }
+body[data-page="tools"] table.argv td { white-space: normal; }
+body[data-page="tools"] .cmd-anatomy .cmd-line { white-space: normal; line-height: 1.5; padding-bottom: 4px; }
+body[data-page="tools"] .cmd-anatomy .cmd-line .part { display: inline-block; max-width: 100%; margin: 0 2px 16px 0; overflow-wrap: anywhere; }
+body[data-page="tools"] article :is(p, li, dd, dt, td, caption) > code { overflow-wrap: anywhere; }
+body[data-page="tools"] table.order td:first-child { font-variant-numeric: tabular-nums; color: var(--fg-muted); white-space: nowrap; }
+body[data-page="tools"] .log-notes dt { white-space: normal; }
+/* PLINK command builder */
+body[data-page="tools"] #w-plink-builder .pb-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin-bottom: 10px; }
+body[data-page="tools"] #w-plink-builder .pb-field { display: flex; flex-direction: column; align-items: stretch; gap: 3px; font-size: 0.86rem; font-weight: 600; color: var(--fg-muted); min-width: 0; flex: 1 1 260px; }
+body[data-page="tools"] #w-plink-builder .pb-field select, body[data-page="tools"] #w-plink-builder .pb-field input { width: 100%; max-width: 100%; min-width: 0; font-weight: 400; color: var(--fg); }
+body[data-page="tools"] #w-plink-builder .pb-out { flex: 3 1 300px; }
+body[data-page="tools"] #w-plink-builder .pb-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0 0 12px; }
+@media (max-width: 860px) { body[data-page="tools"] #w-plink-builder .pb-groups { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="tools"] #w-plink-builder fieldset.pb-group { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px 8px; margin: 0; min-width: 0; }
+body[data-page="tools"] #w-plink-builder fieldset.pb-group legend { font-size: 0.78rem; font-weight: 700; color: var(--fg-muted); padding: 0 4px; }
+body[data-page="tools"] #w-plink-builder .pb-opt { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 3px 0; font-size: 0.9rem; }
+body[data-page="tools"] #w-plink-builder .pb-opt label { gap: 6px; }
+body[data-page="tools"] #w-plink-builder .pb-opt input[type="checkbox"] { width: 1.05em; height: 1.05em; }
+body[data-page="tools"] #w-plink-builder .pb-par input { font-size: 0.86rem; padding: 2px 5px; }
+body[data-page="tools"] #w-plink-builder .pb-file { font-size: 0.78rem; }
+body[data-page="tools"] #w-plink-builder .pb-results { border-top: 1px dashed var(--border); padding-top: 6px; }
+body[data-page="tools"] #w-plink-builder .pb-h { font-size: 0.74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-muted); margin: 12px 0 4px; }
+body[data-page="tools"] #w-plink-builder pre.pb-cmd { margin: 0; font-size: 0.82rem; }
+body[data-page="tools"] #w-plink-builder .pb-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; }
+@media (max-width: 700px) { body[data-page="tools"] #w-plink-builder .pb-two { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="tools"] #w-plink-builder ul.pb-files, body[data-page="tools"] #w-plink-builder ul.pb-notes { margin: 0; padding-left: 1.1em; font-size: 0.86rem; }
+body[data-page="tools"] #w-plink-builder ul.pb-files code { overflow-wrap: anywhere; word-break: break-word; font-size: 0.8rem; }
+body[data-page="tools"] #w-plink-builder li.pb-cond { opacity: 0.8; font-style: italic; }
+body[data-page="tools"] #w-plink-builder ol.pb-steps { margin: 0; padding-left: 1.5em; font-size: 0.88rem; }
+body[data-page="tools"] #w-plink-builder ol.pb-steps code { overflow-wrap: anywhere; word-break: break-word; font-size: 0.8rem; }
+body[data-page="tools"] #w-plink-builder li.pb-warn { color: #7a4705; }
+body[data-page="tools"] #w-plink-builder li.pb-bad, body[data-page="tools"] #w-plink-builder p.pb-bad { color: var(--pitfall); font-weight: 600; }
+body[data-page="tools"] #w-plink-builder p.pb-bad { margin: 6px 0 0; font-size: 0.86rem; }
+body[data-page="tools"] #w-plink-builder dl.pb-doc { margin: 0; font-size: 0.88rem; }
+body[data-page="tools"] #w-plink-builder dl.pb-doc dt { margin-top: 6px; }
+body[data-page="tools"] #w-plink-builder dl.pb-doc dd { margin: 2px 0 0 1em; }
+</style>
+</head>
+<body data-page="tools">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Page 13 of 23</p>
+  <h1>The tools: PLINK, R packages, GrafAnc and friends</h1>
+  <p class="lede">The practical runs about twenty commands with three programs. PLINK 1.9 reads the genotype files and computes every quality-control statistic. R reads the text tables that PLINK writes and turns them into histograms, scatter plots and counts. GrafAnc places each person relative to a set of reference populations and assigns a genetic ancestry group. A shell starts all three, and git, conda, Homebrew or Docker install them. This page explains each tool: what it is for, how it works inside, what it reads and writes, and the exact flags and functions the practical uses.</p>
+  <div class="chips">
+    <span class="chip core">Practical: all eight steps</span>
+    <span class="chip time">≈ 60 min</span>
+    <span class="chip data">Shows up in the data as: commands, .log files and report tables</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Programs pass files: PLINK writes tables, R reads them, GrafAnc adds one more</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 356" role="img" aria-labelledby="mm-t mm-d">
+<title id="mm-t">How the practical's tools pass files to each other</title>
+<desc id="mm-d">A PLINK fileset (.bed, .bim, .fam) goes into PLINK 1.9, where flags choose operations, a fixed order applies them and --out names every file. PLINK writes report tables (.imiss, .lmiss, .hwe, .het, .prune.in, .genome, .eigenvec) and new filesets; a new fileset becomes the input of the next command. R reads the report tables with fread, reshapes them with dplyr and plots them with ggplot2, giving plots and counts. A fileset with unique sample IDs goes into GrafAnc, which compares genotypes at 282,424 ancestry SNPs with reference populations and writes a table of scores and group codes that R also reads. Along the bottom: the bash shell starts every program and expands the folder variables input_dir, reference_dir and analysis_dir; git, conda, Homebrew and Docker install the programs.</desc>
+<defs><marker id="mm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<rect x="12" y="52" width="130" height="104" rx="8" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="77" y="74" class="t-b" text-anchor="middle">Genotype fileset</text>
+<text x="77" y="98" class="t-mono" text-anchor="middle">penncath.bed</text>
+<text x="77" y="118" class="t-mono" text-anchor="middle">penncath.bim</text>
+<text x="77" y="138" class="t-mono" text-anchor="middle">penncath.fam</text>
+<line x1="142" y1="104" x2="174" y2="104" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="176" y="40" width="170" height="128" rx="8" fill="#fff" stroke="#2f3b4c" stroke-width="1.5"/>
+<text x="261" y="64" class="t-h" text-anchor="middle">PLINK 1.9</text>
+<text x="261" y="88" class="t-sm" text-anchor="middle">flags choose operations</text>
+<text x="261" y="108" class="t-sm" text-anchor="middle">a fixed order applies them</text>
+<text x="261" y="128" class="t-sm" text-anchor="middle">--out names every file</text>
+<text x="261" y="152" class="t-sm" text-anchor="middle">one pass over the data</text>
+<rect x="382" y="16" width="170" height="140" rx="8" fill="#fbf6e0" stroke="#d9c98a"/>
+<text x="467" y="38" class="t-b" text-anchor="middle">Report tables</text>
+<text x="467" y="60" class="t-mono" text-anchor="middle">.imiss .lmiss</text>
+<text x="467" y="80" class="t-mono" text-anchor="middle">.hwe .het</text>
+<text x="467" y="100" class="t-mono" text-anchor="middle">.prune.in</text>
+<text x="467" y="120" class="t-mono" text-anchor="middle">.genome</text>
+<text x="467" y="140" class="t-mono" text-anchor="middle">.eigenvec</text>
+<rect x="382" y="176" width="170" height="50" rx="8" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="467" y="196" class="t-b" text-anchor="middle">New fileset</text>
+<text x="467" y="216" class="t-mono" text-anchor="middle">.bed .bim .fam</text>
+<line x1="346" y1="88" x2="380" y2="80" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<line x1="346" y1="146" x2="380" y2="192" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<path d="M382,208 H77 V158" fill="none" stroke="#4e79a7" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#mm-arr)"/>
+<text x="229" y="200" class="t-sm" text-anchor="middle">input of the next command</text>
+<rect x="588" y="40" width="160" height="112" rx="8" fill="#fff" stroke="#1f5a96" stroke-width="1.5"/>
+<text x="668" y="64" class="t-h" text-anchor="middle">R</text>
+<text x="668" y="88" class="t-sm" text-anchor="middle">fread() reads</text>
+<text x="668" y="108" class="t-sm" text-anchor="middle">dplyr reshapes</text>
+<text x="668" y="128" class="t-sm" text-anchor="middle">ggplot2 plots</text>
+<line x1="552" y1="86" x2="586" y2="94" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="372" y="250" width="190" height="52" rx="8" fill="#f1f8ef" stroke="#59a14f" stroke-width="1.5"/>
+<text x="467" y="270" class="t-b" text-anchor="middle">GrafAnc</text>
+<text x="467" y="290" class="t-sm" text-anchor="middle">282,424 SNPs → scores, group</text>
+<line x1="467" y1="226" x2="467" y2="248" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<text x="474" y="242" class="t-sm">unique IDs</text>
+<line x1="562" y1="262" x2="616" y2="154" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<text x="596" y="226" class="t-sm">table</text>
+<line x1="688" y1="152" x2="688" y2="248" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="618" y="250" width="130" height="52" rx="8" fill="#fff" stroke="#1f5a96"/>
+<text x="683" y="272" class="t-b" text-anchor="middle">Plots and</text>
+<text x="683" y="290" class="t-b" text-anchor="middle">counts</text>
+<rect x="12" y="314" width="736" height="38" rx="6" fill="#f6f7f9" stroke="#d9dee5"/>
+<text x="24" y="330" class="t-sm">Shell (bash): starts every program and expands ${input_dir}, ${reference_dir} and ${analysis_dir} into folder paths.</text>
+<text x="24" y="346" class="t-sm">git, conda, Homebrew and Docker install the programs; htslib is the C library that GrafAnc is linked against.</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 300 606" role="img" aria-labelledby="mm-t2 mm-d2">
+<title id="mm-t2">How the practical's tools pass files to each other</title>
+<desc id="mm-d2">Top to bottom: a PLINK fileset goes into PLINK 1.9, which writes report tables and new filesets. Report tables go to R, which makes plots and counts. A fileset with unique IDs goes to GrafAnc, whose table R also reads. At the bottom: the bash shell starts every program and expands the folder variables; git, conda, Homebrew and Docker install the programs.</desc>
+<defs><marker id="mm-arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<rect x="8" y="6" width="284" height="52" rx="8" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="150" y="27" class="t-b" text-anchor="middle">Genotype fileset</text>
+<text x="150" y="48" class="t-mono" text-anchor="middle">.bed  .bim  .fam</text>
+<line x1="150" y1="58" x2="150" y2="76" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr2)"/>
+<rect x="8" y="78" width="284" height="84" rx="8" fill="#fff" stroke="#2f3b4c" stroke-width="1.5"/>
+<text x="150" y="100" class="t-h" text-anchor="middle">PLINK 1.9</text>
+<text x="150" y="120" class="t-sm" text-anchor="middle">flags choose operations</text>
+<text x="150" y="137" class="t-sm" text-anchor="middle">a fixed order applies them</text>
+<text x="150" y="154" class="t-sm" text-anchor="middle">--out names every file</text>
+<line x1="75" y1="162" x2="75" y2="184" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr2)"/>
+<line x1="225" y1="162" x2="225" y2="184" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr2)"/>
+<rect x="8" y="186" width="134" height="126" rx="8" fill="#fbf6e0" stroke="#d9c98a"/>
+<text x="75" y="206" class="t-b" text-anchor="middle">Report tables</text>
+<text x="75" y="226" class="t-mono" text-anchor="middle">.imiss .lmiss</text>
+<text x="75" y="244" class="t-mono" text-anchor="middle">.hwe .het</text>
+<text x="75" y="262" class="t-mono" text-anchor="middle">.prune.in</text>
+<text x="75" y="280" class="t-mono" text-anchor="middle">.genome</text>
+<text x="75" y="298" class="t-mono" text-anchor="middle">.eigenvec</text>
+<rect x="158" y="186" width="134" height="64" rx="8" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="225" y="206" class="t-b" text-anchor="middle">New fileset</text>
+<text x="225" y="226" class="t-mono" text-anchor="middle">.bed .bim .fam</text>
+<text x="225" y="243" class="t-sm" text-anchor="middle">next command's input</text>
+<line x1="225" y1="250" x2="225" y2="330" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr2)"/>
+<text x="232" y="294" class="t-sm">unique IDs</text>
+<line x1="75" y1="312" x2="75" y2="330" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr2)"/>
+<rect x="8" y="332" width="134" height="88" rx="8" fill="#fff" stroke="#1f5a96" stroke-width="1.5"/>
+<text x="75" y="354" class="t-h" text-anchor="middle">R</text>
+<text x="75" y="374" class="t-sm" text-anchor="middle">fread() reads</text>
+<text x="75" y="392" class="t-sm" text-anchor="middle">dplyr reshapes</text>
+<text x="75" y="410" class="t-sm" text-anchor="middle">ggplot2 plots</text>
+<rect x="158" y="332" width="134" height="88" rx="8" fill="#f1f8ef" stroke="#59a14f" stroke-width="1.5"/>
+<text x="225" y="354" class="t-b" text-anchor="middle">GrafAnc</text>
+<text x="225" y="374" class="t-sm" text-anchor="middle">282,424 SNPs</text>
+<text x="225" y="392" class="t-sm" text-anchor="middle">→ scores and a</text>
+<text x="225" y="410" class="t-sm" text-anchor="middle">group code</text>
+<line x1="158" y1="376" x2="144" y2="376" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr2)"/>
+<line x1="75" y1="420" x2="75" y2="440" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr2)"/>
+<rect x="8" y="442" width="284" height="38" rx="8" fill="#fff" stroke="#1f5a96"/>
+<text x="150" y="466" class="t-b" text-anchor="middle">Plots and counts</text>
+<rect x="8" y="496" width="284" height="104" rx="6" fill="#f6f7f9" stroke="#d9dee5"/>
+<text x="150" y="516" class="t-sm" text-anchor="middle">Shell (bash): starts every program</text>
+<text x="150" y="532" class="t-sm" text-anchor="middle">and expands ${input_dir},</text>
+<text x="150" y="548" class="t-sm" text-anchor="middle">${reference_dir}, ${analysis_dir}</text>
+<text x="150" y="570" class="t-sm" text-anchor="middle">git, conda, Homebrew, Docker:</text>
+<text x="150" y="586" class="t-sm" text-anchor="middle">install the programs</text>
+</svg>
+  </figure>
+  <p class="mm-statement">Every tool in the practical reads files and writes files. PLINK turns a genotype fileset into report tables and new filesets, R turns report tables into plots and counts, and GrafAnc turns a fileset into a table of ancestry scores. The shell starts every program, and three folder variables decide where each file lives.</p>
+  <ul class="mm-hooks">
+    <li><strong>The shell runs every command.</strong> A command line is a program name followed by arguments; the shell replaces variables such as <code>${analysis_dir}</code> by folder paths before the program starts.</li>
+    <li><strong>PLINK: one command, one pass, a fixed order.</strong> Flags choose the operations, PLINK applies them in its own fixed order whatever order you type them in, and <code>--out</code> names every file it writes.</li>
+    <li><strong>R: read, reshape, plot.</strong> <code>fread()</code> reads PLINK's space-padded tables, dplyr filters rows and adds columns, and ggplot2 maps columns to the axes of a plot.</li>
+    <li><strong>GrafAnc: distances to reference populations.</strong> For each person on their own, it compares the genotypes at up to 282,424 selected SNPs with the allele frequencies of reference populations and reports scores and a group code.</li>
+    <li><strong>Supporting tools install and fetch.</strong> git copies repositories, conda, Homebrew and Docker install programs, htslib lets GrafAnc read VCF input, and bcftools works on VCF files.</li>
+    <li><strong>One lookup table</strong> maps each QC task to its tool, its command or function, and its output file.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and the previous page</div>
+  <p>The genotype files are introduced in <a href="../0-biological-foundations/the-data.html#plink-files">Lecture 0 · PLINK binary filesets</a> and taken apart byte by byte on <a href="plink-data.html">The data: PLINK .bed, .bim and .fam files</a>. <a href="../0-biological-foundations/lecture-1-bridge.html#practical">Lecture 0 · The practical, decoded</a> walks through the eight QC steps, and <a href="../0-biological-foundations/ancestry.html#admixture-models">Lecture 0 · Model-based estimates</a> introduces GrafAnc.</p>
+</aside>
+
+<h2 id="shell">The shell: how a typed line becomes a program run <span class="tag core">Core</span></h2>
+<p>A <dfn>terminal</dfn> is a window where you type commands and read their text output: Terminal on macOS, Windows Terminal for Linux under Windows, or the Terminal tab of RStudio. The program inside the terminal that reads each line is the <dfn>shell</dfn>. The practical's code chunks run in bash, the standard shell on Linux; macOS terminals start zsh by default, which treats every command on this page the same way.</p>
+<p>Before anything runs, the shell rewrites the line in four steps:</p>
+<ol>
+  <li>It joins a line that ends in a backslash <code>\</code> with the next line, so one long command can be typed over several lines.</li>
+  <li>It replaces each variable reference such as <code>${analysis_dir}</code> with the variable's value.</li>
+  <li>It splits the result into words at spaces.</li>
+  <li>It treats the first word as the program's name and looks for a file of that name in each folder listed in the <code>PATH</code> variable, in order. The remaining words become the program's <em>arguments</em>.</li>
+</ol>
+<p>Take the practical's first command and suppose the three folder variables hold the paths that <a href="setup.html#layout">Set up your computer</a> creates:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>input_dir=$HOME/statgen-workshop/data/inputs/penncath_withPheno
+<span class="prompt">$ </span>analysis_dir=$HOME/statgen-workshop/analysis
+<span class="prompt">$ </span>plink --bfile ${input_dir}/penncath --missing --out ${analysis_dir}/penncath</pre>
+<p>For a user whose home folder is <code>/home/ana</code>, PLINK receives exactly these words. Programs number them from 0, so this table is the argument vector that PLINK's code reads:</p>
+<div class="table-wrap">
+<table class="mono compact argv">
+  <caption>The argument vector PLINK receives for the first command (home folder /home/ana)</caption>
+  <thead><tr><th>Index</th><th>Word</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>plink</td></tr>
+    <tr><td>1</td><td>--bfile</td></tr>
+    <tr><td>2</td><td><code class="wrap">/home/ana/statgen-workshop/data/inputs/penncath_withPheno/penncath</code></td></tr>
+    <tr><td>3</td><td>--missing</td></tr>
+    <tr><td>4</td><td>--out</td></tr>
+    <tr><td>5</td><td><code class="wrap">/home/ana/statgen-workshop/analysis/penncath</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p>PLINK never sees <code>${input_dir}</code>; it sees a path. If the variable is not set, the shell substitutes an empty string, PLINK receives <code>/penncath</code>, and it stops with an error that it cannot open <code>/penncath.bed</code>. That is the most common failure when people copy the practical's commands into a new terminal.</p>
+
+<h3 id="variables">Variables, the environment and the working directory</h3>
+<p>An <dfn>environment variable</dfn> is a named value that a process passes on to every program it starts. In bash, <code>export analysis_dir=…</code> sets one for the current shell and its children, and <code>${analysis_dir}</code> reads it; in R, <code>Sys.setenv()</code> sets one and <code>Sys.getenv()</code> reads it. <code>PATH</code> and <code>HOME</code> are environment variables that every system sets. The practical defines <code>input_dir</code>, <code>reference_dir</code> and <code>analysis_dir</code> in R and then calls <code>Sys.setenv()</code>, because each bash chunk of an R Markdown document is run as a new bash process started by R: it inherits R's environment but nothing that an earlier bash chunk set.<sup><a href="#src-18">18</a></sup> In a terminal you set the variables once per session, or put the <code>export</code> lines in your shell's start-up file (<a href="setup.html#translator">Set up your computer</a> writes them for you).</p>
+<p>The <dfn>working directory</dfn> is the folder a process is running in. A relative path such as <code>analysis/penncath.imiss</code> is looked up from it; <code>cd</code> changes it in the shell, <code>setwd()</code> in R. The practical writes every path in full from the three variables, so its commands work from any folder. The one exception is <code>cd ${analysis_dir}</code> before <code>git clone</code>, which makes the copied repository land in the analysis folder.</p>
+
+<h3 id="exit-status">Exit status: how a script knows a command failed</h3>
+<p>Every program ends by returning a whole number to the shell: 0 for success, anything else for failure. <code>a &amp;&amp; b</code> runs <code>b</code> only if <code>a</code> succeeded; <code>a || b</code> runs <code>b</code> only if <code>a</code> failed. The practical writes its first merge as <code>plink … --bmerge … || true</code>: that merge is expected to fail (step 7), and <code>true</code> is a program that does nothing and succeeds, so the line as a whole succeeds and knitting continues to the next chunk.</p>
+
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Every piece of shell syntax the practical uses</caption>
+  <thead><tr><th>Syntax</th><th>What it does</th><th>Where in the practical</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Syntax"><code>${analysis_dir}</code></td><td data-label="What it does">Replaced by the variable's value</td><td data-label="Where">Every command</td></tr>
+    <tr><td data-label="Syntax"><code>\</code> at the end of a line</td><td data-label="What it does">The command continues on the next line</td><td data-label="Where">Long PLINK commands</td></tr>
+    <tr><td data-label="Syntax"><code>cmd &gt; file</code></td><td data-label="What it does">Writes the command's output to a file, replacing its contents</td><td data-label="Where"><code>awk … &gt; penncath.updateIDs.txt</code></td></tr>
+    <tr><td data-label="Syntax"><code>cmd || true</code></td><td data-label="What it does">Ignores a failure of <code>cmd</code></td><td data-label="Where">First <code>--bmerge</code></td></tr>
+    <tr><td data-label="Syntax"><code>if [ ! -d dir ]; then …; fi</code></td><td data-label="What it does">Runs the commands only if the folder does not exist</td><td data-label="Where">Clone GrafAnc only once</td></tr>
+    <tr><td data-label="Syntax"><code>[ -f file ]</code></td><td data-label="What it does">Tests whether a regular file exists</td><td data-label="Where">Decompress the GrafAnc reference file only once</td></tr>
+    <tr><td data-label="Syntax"><code>export NAME=value</code></td><td data-label="What it does">Sets an environment variable for this shell and the programs it starts</td><td data-label="Where"><code>GRAFPATH</code> for GrafAnc</td></tr>
+    <tr><td data-label="Syntax"><code>awk '{ … }' file</code></td><td data-label="What it does">Runs a small program on each line; <code>$1</code>, <code>$2</code> are the line's whitespace-separated fields</td><td data-label="Where">Building unique sample IDs</td></tr>
+    <tr><td data-label="Syntax"><code>ls</code>, <code>head</code>, <code>which</code>, <code>du -sh</code></td><td data-label="What it does">List a folder; show a file's first 10 lines; show which program a name runs; show a folder's disk use</td><td data-label="Where">Data overview, PLINK check, wrap-up</td></tr>
+    <tr><td data-label="Syntax"><code>module load plink/1.9</code></td><td data-label="What it does">Biowulf only: adds a program's folder to <code>PATH</code></td><td data-label="Where">Before RStudio starts; not needed on your computer</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The one dense line is the awk program in step 8, which turns each line of the <code>.fam</code> file into a line of the ID-update file. PennCATH's family IDs are written with double quotes in the file and every individual ID is <code>1</code>, so the individual IDs are not unique:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>head -2 ${input_dir}/penncath.fam
+<span class="no-copy">"10002" 1 0 0 1 1
+"10004" 1 0 0 2 1</span>
+<span class="prompt">$ </span>awk '{ gsub("\"", "", $1); print "\"" $1 "\"", $2, "\"" $1 "\"", "\"" $1 "_" $2 "\"" }' \
+      ${input_dir}/penncath.fam | head -2
+<span class="no-copy">"10002" 1 "10002" "10002_1"
+"10004" 1 "10004" "10004_1"</span></pre>
+<p><code>gsub("\"", "", $1)</code> deletes the quote characters from field 1, the family ID. <code>print</code> then writes four fields separated by spaces: the old family ID with its quotes put back (so that it matches the <code>.fam</code> file exactly), the old individual ID, the same family ID as the new family ID, and a new individual ID that joins the two, <code>"10002_1"</code>. These are the four columns that <code>--update-ids</code> expects. Here the program runs on the first lines of the input <code>.fam</code> file to show what it does; the practical runs it on the filtered file and writes every line to <code>penncath.updateIDs.txt</code>.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Invisible characters break commands</div>
+  <p>A backslash continues a line only if it is the very last character: a space after it ends the command there, and the next line runs as a separate, broken command. A path that contains a space is split into two arguments unless it is quoted (<code>"${analysis_dir}"</code>); the practical's paths have no spaces, and the folder layout on <a href="setup.html#layout">Set up your computer</a> keeps it that way. A script saved with Windows line endings (carriage return plus line feed) makes bash report <code>$'\r': command not found</code>; save scripts with Unix line endings.</p>
+</aside>
+
+<h2 id="plink">PLINK 1.9: how it works and how to read a command <span class="tag core">Core</span></h2>
+<p><dfn>PLINK</dfn> is a free, open-source command-line program for genotype data. It reads and writes genotype files, filters people and variants, computes the statistics that quality control needs (missing-call rates, allele frequencies, Hardy–Weinberg tests, linkage disequilibrium, relatedness, principal components) and runs association tests. Every QC statistic in the practical comes from PLINK 1.9.</p>
+
+<h3 id="plink-history">Where PLINK comes from</h3>
+<p>Shaun Purcell and colleagues released PLINK in 2007 as a "tool set for whole-genome association and population-based linkage analyses"; version 1.07 was the last of that line.<sup><a href="#src-3">3</a></sup> Christopher Chang then rewrote its internals as PLINK 1.9, published in 2015 as "second-generation PLINK". It keeps the command-line interface and the file formats of 1.07, and replaces the algorithms with ones that work on many genotypes per processor instruction; for several commands the authors report speedups that "frequently exceed two, and sometimes even three, orders of magnitude".<sup><a href="#src-2">2</a></sup> After years of numbered beta versions, PLINK 1.9.0 was released as stable on 27 September 2026.<sup><a href="#src-4">4</a></sup> The practical's input files were written in 2023 by version 1.90b7, as their <code>.log</code> file shows below. PLINK 2.0 is a separate, newer program with its own file format (<a href="#plink2">see below</a>).</p>
+
+<h3 id="plink-bits">Why it is fast: two bits per genotype</h3>
+<p>A genotype call at a diallelic SNP has four possible values: two homozygous genotypes, the heterozygous genotype, and "missing". Four values fit in two bits, so the <code>.bed</code> file stores four calls per byte, with all the people's calls for one variant stored next to each other (the byte-level layout is on <a href="plink-data.html">The data: PLINK files inside out</a>). That fixes the size of the file:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \text{bytes} = 3 + m \left\lceil \frac{n}{4} \right\rceil \]</div>
+  <dl class="eq-terms">
+    <dt>\(3\)</dt><dd>The header: two "magic number" bytes that identify a PLINK <code>.bed</code> file and one byte saying that variants are stored one after another.</dd>
+    <dt>\(m\)</dt><dd>The number of variants, one per line of the <code>.bim</code> file.</dd>
+    <dt>\(n\)</dt><dd>The number of people, one per line of the <code>.fam</code> file.</dd>
+    <dt>\(\lceil n/4 \rceil\)</dt><dd>Bytes per variant: \(n/4\) rounded up to a whole number, because each variant starts on a new byte and unused bit pairs at the end are padding.</dd>
+  </dl>
+  <p class="eq-intuition">Four people share a byte, so the file grows by one byte per variant for every four people. PennCATH has \(n = 1401\) people, so each variant takes \(\lceil 1401/4 \rceil = 351\) bytes; with \(m = 861{,}473\) variants the file has \(3 + 861{,}473 \times 351 = 302{,}377{,}026\) bytes, exactly the size of <code>penncath.bed</code>. The 1000 Genomes reference fileset has 2,504 people and 17,490 SNPs: \(3 + 17{,}490 \times 626 = 10{,}948{,}743\) bytes, again exactly its size. A file of any other size is truncated or corrupt, which makes this a quick check of a download.</p>
+</div>
+<p>PLINK keeps the genotypes in memory in the same two-bit form and processes them 64 bits, that is 32 calls, at a time. Counting the missing calls of a variant shows how. In the <code>.bed</code> code a missing call is the bit pair <code>01</code>: low bit 1, high bit 0. For a 64-bit word <code>w</code>, the expression <code>w &amp; ~(w &gt;&gt; 1) &amp; 0x5555555555555555</code> leaves a 1 exactly in the low bit of every pair that reads <code>01</code>, and a single population-count (popcount) instruction counts those 1 bits. PLINK 1.9's function <code>count_01()</code> does precisely this, so one pass of three bitwise operations and a popcount handles 32 people.<sup><a href="#src-14">14</a></sup> Distances between people for <code>--genome</code> and the r² values for <code>--indep-pairwise</code> are computed with similar bit tricks.<sup><a href="#src-2">2</a></sup></p>
+
+<figure class="fig scroll-x" style="--min-w: 560px">
+  <div class="fig-body">
+<svg viewBox="0 0 620 230" role="img" aria-labelledby="bits-t bits-d">
+<title id="bits-t">Counting missing calls in one 64-bit word</title>
+<desc id="bits-d">Sixteen two-bit genotype codes for people 1 to 16: 00, 10, 11, 00, 01, 10, 00, 00, 11, 10, 00, 01, 00, 10, 00, 01. Codes 01 (missing) are at people 5, 12 and 16. Below, the mask after the bitwise operations has a 1 only at those three people. A popcount of the mask gives 3 missing calls.</desc>
+<text x="10" y="20" class="t-b">One variant, one 64-bit word: 32 people's calls (the first 16 drawn)</text>
+<text x="10" y="56" class="t-sm">person</text>
+<text x="10" y="86" class="t-sm">2-bit code</text>
+<text x="10" y="148" class="t-sm">mask</text>
+<g font-family="ui-monospace, Menlo, Consolas, monospace">
+<g id="bits-cells">
+<rect x="86" y="66" width="30" height="30" fill="#eef3f8" stroke="#b9c1cc"/><text x="101" y="86" class="t-mono" text-anchor="middle">00</text>
+<rect x="118" y="66" width="30" height="30" fill="#8fbfe0" stroke="#b9c1cc"/><text x="133" y="86" class="t-mono" text-anchor="middle">10</text>
+<rect x="150" y="66" width="30" height="30" fill="#1f5a96" stroke="#b9c1cc"/><text x="165" y="86" class="t-mono" text-anchor="middle" style="fill:#fff">11</text>
+<rect x="182" y="66" width="30" height="30" fill="#eef3f8" stroke="#b9c1cc"/><text x="197" y="86" class="t-mono" text-anchor="middle">00</text>
+<rect x="214" y="66" width="30" height="30" fill="#fff" stroke="#b42318" stroke-width="2"/><text x="229" y="86" class="t-mono" text-anchor="middle" style="fill:#b42318">01</text>
+<rect x="246" y="66" width="30" height="30" fill="#8fbfe0" stroke="#b9c1cc"/><text x="261" y="86" class="t-mono" text-anchor="middle">10</text>
+<rect x="278" y="66" width="30" height="30" fill="#eef3f8" stroke="#b9c1cc"/><text x="293" y="86" class="t-mono" text-anchor="middle">00</text>
+<rect x="310" y="66" width="30" height="30" fill="#eef3f8" stroke="#b9c1cc"/><text x="325" y="86" class="t-mono" text-anchor="middle">00</text>
+<rect x="342" y="66" width="30" height="30" fill="#1f5a96" stroke="#b9c1cc"/><text x="357" y="86" class="t-mono" text-anchor="middle" style="fill:#fff">11</text>
+<rect x="374" y="66" width="30" height="30" fill="#8fbfe0" stroke="#b9c1cc"/><text x="389" y="86" class="t-mono" text-anchor="middle">10</text>
+<rect x="406" y="66" width="30" height="30" fill="#eef3f8" stroke="#b9c1cc"/><text x="421" y="86" class="t-mono" text-anchor="middle">00</text>
+<rect x="438" y="66" width="30" height="30" fill="#fff" stroke="#b42318" stroke-width="2"/><text x="453" y="86" class="t-mono" text-anchor="middle" style="fill:#b42318">01</text>
+<rect x="470" y="66" width="30" height="30" fill="#eef3f8" stroke="#b9c1cc"/><text x="485" y="86" class="t-mono" text-anchor="middle">00</text>
+<rect x="502" y="66" width="30" height="30" fill="#8fbfe0" stroke="#b9c1cc"/><text x="517" y="86" class="t-mono" text-anchor="middle">10</text>
+<rect x="534" y="66" width="30" height="30" fill="#eef3f8" stroke="#b9c1cc"/><text x="549" y="86" class="t-mono" text-anchor="middle">00</text>
+<rect x="566" y="66" width="30" height="30" fill="#fff" stroke="#b42318" stroke-width="2"/><text x="581" y="86" class="t-mono" text-anchor="middle" style="fill:#b42318">01</text>
+</g>
+</g>
+<g class="t-sm" text-anchor="middle">
+<text x="101" y="56" class="t-sm" text-anchor="middle">1</text><text x="133" y="56" class="t-sm" text-anchor="middle">2</text><text x="165" y="56" class="t-sm" text-anchor="middle">3</text><text x="197" y="56" class="t-sm" text-anchor="middle">4</text><text x="229" y="56" class="t-sm" text-anchor="middle">5</text><text x="261" y="56" class="t-sm" text-anchor="middle">6</text><text x="293" y="56" class="t-sm" text-anchor="middle">7</text><text x="325" y="56" class="t-sm" text-anchor="middle">8</text><text x="357" y="56" class="t-sm" text-anchor="middle">9</text><text x="389" y="56" class="t-sm" text-anchor="middle">10</text><text x="421" y="56" class="t-sm" text-anchor="middle">11</text><text x="453" y="56" class="t-sm" text-anchor="middle">12</text><text x="485" y="56" class="t-sm" text-anchor="middle">13</text><text x="517" y="56" class="t-sm" text-anchor="middle">14</text><text x="549" y="56" class="t-sm" text-anchor="middle">15</text><text x="581" y="56" class="t-sm" text-anchor="middle">16</text>
+</g>
+<text x="86" y="116" class="t-sm">w &amp; ~(w &gt;&gt; 1) &amp; 0x5555…: keep a 1 where the pair is 01</text>
+<g>
+<rect x="86" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="101" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="118" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="133" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="150" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="165" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="182" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="197" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="214" y="128" width="30" height="30" fill="#fde7e5" stroke="#b42318" stroke-width="2"/><text x="229" y="148" class="t-mono" text-anchor="middle">1</text>
+<rect x="246" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="261" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="278" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="293" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="310" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="325" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="342" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="357" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="374" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="389" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="406" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="421" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="438" y="128" width="30" height="30" fill="#fde7e5" stroke="#b42318" stroke-width="2"/><text x="453" y="148" class="t-mono" text-anchor="middle">1</text>
+<rect x="470" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="485" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="502" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="517" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="534" y="128" width="30" height="30" fill="#f6f7f9" stroke="#d9dee5"/><text x="549" y="148" class="t-mono" text-anchor="middle">0</text>
+<rect x="566" y="128" width="30" height="30" fill="#fde7e5" stroke="#b42318" stroke-width="2"/><text x="581" y="148" class="t-mono" text-anchor="middle">1</text>
+</g>
+<text x="86" y="182" class="t-b">popcount(mask) = 3 missing calls among these 16 people</text>
+<rect x="86" y="198" width="14" height="14" fill="#eef3f8" stroke="#b9c1cc"/><text x="105" y="210" class="t-sm">00 homozygous, allele 1</text>
+<rect x="250" y="198" width="14" height="14" fill="#8fbfe0" stroke="#b9c1cc"/><text x="269" y="210" class="t-sm">10 heterozygous</text>
+<rect x="372" y="198" width="14" height="14" fill="#1f5a96" stroke="#b9c1cc"/><text x="391" y="210" class="t-sm">11 homozygous, allele 2</text>
+<rect x="534" y="198" width="14" height="14" fill="#fff" stroke="#b42318" stroke-width="2"/><text x="553" y="210" class="t-sm">01 missing</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">Counting missing calls 32 at a time.</span> Each cell is one person's two-bit code at one variant (codes as defined in the PLINK 1.9 <code>.bed</code> format; allele 1 and allele 2 are the fifth and sixth columns of the <code>.bim</code> file). Three bitwise operations turn the word into a mask with a 1 at every missing call, and one popcount instruction counts them. The codes shown are made up for the illustration; the operations are those of PLINK 1.9's <code>count_01()</code>.<sup><a href="#src-14">14</a></sup> <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<h3 id="plink-anatomy">Anatomy of a command</h3>
+<p>A PLINK command is the program name followed by flags. A <em>flag</em> starts with two dashes and may be followed by parameters, separated by spaces. Here is the practical's sample-missingness filter, broken into its parts:</p>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/penncath.geno0.01</span> <span class="part" data-n="3">--mind 0.01</span> <span class="part" data-n="4">--make-bed</span> <span class="part" data-n="5">--out ${analysis_dir}/penncath.geno0.01.mind0.01</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code> — the program. The shell finds it in a folder on <code>PATH</code>.</li>
+    <li><code>--bfile PREFIX</code> — the input: PLINK reads <code>PREFIX.bed</code>, <code>PREFIX.bim</code> and <code>PREFIX.fam</code>. Give the prefix without an extension.</li>
+    <li><code>--mind 0.01</code> — a filter with one parameter: remove every person whose missing-call rate is greater than 0.01. Without the number the threshold is 0.1.</li>
+    <li><code>--make-bed</code> — an output command: write the people and variants that are left as a new fileset.</li>
+    <li><code>--out PREFIX</code> — the prefix of every file this run writes: <code>PREFIX.bed</code>, <code>.bim</code>, <code>.fam</code>, <code>.log</code> and, if anyone is removed, <code>.irem</code>. Without <code>--out</code> the prefix is <code>plink</code>.</li>
+  </ol>
+</div>
+<p>Five rules cover every command in the practical:</p>
+<ul>
+  <li><strong>The order of flags on the line does not matter.</strong> PLINK reads all of them first and then works in its own fixed order (next section).</li>
+  <li><strong>One run reads one fileset</strong> (plus, with <code>--bmerge</code>, a second one to merge in) <strong>and writes files with one prefix.</strong> The practical's file names record the steps applied so far (<code>penncath.geno0.01.mind0.01</code>), so the name of a file tells you what was done to it.</li>
+  <li><strong>Filters do nothing lasting on their own.</strong> <code>--geno</code>, <code>--mind</code>, <code>--maf</code>, <code>--hwe</code>, <code>--extract</code> and <code>--remove</code> change the data only inside the current run; a report or <code>--make-bed</code> in the same command must use the result. A run with filters and nothing else prints "Warning: No output requested" and stops.</li>
+  <li><strong>Reports change nothing.</strong> <code>--missing</code>, <code>--hardy</code>, <code>--het</code>, <code>--genome</code>, <code>--pca</code> and <code>--indep-pairwise</code> write tables or lists; the fileset stays as it was.</li>
+  <li><strong>Every run writes a log.</strong> <code>PREFIX.log</code> holds the command, the counts PLINK printed and any warnings.</li>
+</ul>
+<p>Two more flags matter on a laptop or a small cloud machine. By default PLINK reserves half of the computer's memory for its workspace and runs multithreaded steps on every processor core; <code>--memory 4000</code> caps the workspace at 4,000 MB and <code>--threads 2</code> limits it to two cores.<sup><a href="#src-12">12</a></sup></p>
+
+<h3 id="plink-order">The order of operations</h3>
+<p>PLINK 1.9 applies operations in an order fixed by its documentation, not by the command line.<sup><a href="#src-1">1</a></sup> This table lists that order for every flag the practical uses:</p>
+<div class="table-wrap">
+<table class="compact order">
+  <caption>PLINK 1.9's order of operations, restricted to the flags in the practical</caption>
+  <thead><tr><th>#</th><th>Flag</th><th>What happens at this point</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>--out</code></td><td>The log file starts; the output prefix is fixed.</td></tr>
+    <tr><td>2</td><td><code>--bmerge</code></td><td>The second fileset is merged into the first <em>before anything else</em>. If the merge fails, PLINK writes the conflicting variants to a <code>.missnp</code> file and stops.</td></tr>
+    <tr><td>3</td><td><code>--bfile</code></td><td>The fileset (or the freshly merged one) is read.</td></tr>
+    <tr><td>4</td><td><code>--flip</code></td><td>Listed variants are strand-flipped.</td></tr>
+    <tr><td>5</td><td><code>--extract</code></td><td>Variants not in the list are dropped.</td></tr>
+    <tr><td>6</td><td><code>--update-ids</code></td><td>Sample IDs are replaced.</td></tr>
+    <tr><td>7</td><td><code>--keep</code>, <code>--remove</code></td><td>People are kept or dropped by ID.</td></tr>
+    <tr><td>8</td><td><code>--mind</code></td><td>People with too many missing calls are dropped.</td></tr>
+    <tr><td>9</td><td>(automatic)</td><td>Allele frequencies are computed in the remaining founders.</td></tr>
+    <tr><td>10</td><td><code>--missing</code></td><td>The missingness reports are written.</td></tr>
+    <tr><td>11</td><td><code>--geno</code></td><td>Variants with too many missing calls are dropped.</td></tr>
+    <tr><td>12</td><td><code>--hardy</code>, <code>--hwe</code></td><td>The Hardy–Weinberg report is written, then the <code>--hwe</code> filter is applied.</td></tr>
+    <tr><td>13</td><td><code>--maf</code></td><td>Variants with a low minor allele frequency are dropped.</td></tr>
+    <tr><td>14</td><td><code>--pca</code></td><td>The relationship matrix and its principal components are computed.</td></tr>
+    <tr><td>15</td><td><code>--make-bed</code></td><td>The remaining data are written as a new fileset.</td></tr>
+    <tr><td>16</td><td><code>--indep-pairwise</code></td><td>The LD-pruning lists are written.</td></tr>
+    <tr><td>17</td><td><code>--genome</code></td><td>Pairwise IBD estimates are written.</td></tr>
+    <tr><td>18</td><td><code>--het</code></td><td>Per-person homozygosity and F are written.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Five consequences explain choices in the practical:</p>
+<ul>
+  <li><strong><code>--mind</code> runs before <code>--geno</code>.</strong> In one command, each person's missing rate would be computed over all variants, including the badly genotyped ones that <code>--geno</code> is about to remove, so more people would fail. The practical therefore removes bad variants in one command and bad samples in the next.</li>
+  <li><strong>The <code>--missing</code> report reflects the data after <code>--mind</code> and before <code>--geno</code></strong> when they share a command; the practical runs <code>--missing</code> on its own, so its reports describe the input as it is.</li>
+  <li><strong><code>--extract</code> acts early</strong>, so everything later in the run (<code>--maf</code>, <code>--pca</code>, <code>--genome</code>, <code>--het</code>) sees only the pruned variants.</li>
+  <li><strong><code>--maf</code> runs before <code>--pca</code></strong>, so the practical's principal components use only variants with minor allele frequency of at least 0.05.</li>
+  <li><strong><code>--make-bed</code> comes before the LD-pruning, IBD and heterozygosity reports</strong>, and those reports never change the saved fileset: pruning only writes lists, which a later command applies with <code>--extract</code>.</li>
+</ul>
+
+<h3 id="plink-log">Read the .log file</h3>
+<p>Every run writes its screen output to <code>PREFIX.log</code>. This is the log that came with the practical's input data, written when the workshop rewrote the PennCATH fileset with <code>--make-bed</code>:<sup><a href="#src-17">17</a></sup></p>
+<span class="output-label">penncath.log</span>
+<pre class="output">PLINK v1.90b7 64-bit (16 Jan 2023)
+Options in effect:
+  --bfile ../penncath/penncath
+  --make-bed
+  --out penncath
+
+Hostname: ccad2
+Working directory: /mnt/nfs/gigantor/ifs/DCEG/Projects/CoherentLogic/statgen_workshop_tutorial/data/penncath_withPheno
+Start time: Tue Aug  8 17:43:31 2023
+
+Random number seed: 1691531011
+515899 MB RAM detected; reserving 257949 MB for main workspace.
+861473 variants loaded from .bim file.
+1401 people (937 males, 464 females) loaded from .fam.
+933 phenotype values loaded from .fam.
+Using 1 thread (no multithreaded calculations invoked).
+Before main variant filters, 1401 founders and 0 nonfounders present.
+Calculating allele frequencies... done.
+Total genotyping rate is 0.977517.
+861473 variants and 1401 people pass filters and QC.
+Among remaining phenotypes, 463 are cases and 470 are controls.  (468
+phenotypes are missing.)
+--make-bed to penncath.bed + penncath.bim + penncath.fam ... done.
+
+End time: Tue Aug  8 17:43:35 2023</pre>
+<dl class="cols-doc log-notes">
+  <dt>PLINK v1.90b7 …</dt><dd>The version and build date. Report it in your methods; results of some commands differ between versions.</dd>
+  <dt>Options in effect</dt><dd>The flags as PLINK understood them, one per line. If a flag you typed is missing here, PLINK did not read it.</dd>
+  <dt>Random number seed</dt><dd>The seed for steps that use random numbers (none in this run). <code>--seed</code> fixes it so that such steps repeat exactly.</dd>
+  <dt>515899 MB RAM detected …</dt><dd>The default: half of the machine's memory reserved as workspace. This ran on a server with about 504 GB of memory.</dd>
+  <dt>861473 variants …</dt><dd>One per line of the <code>.bim</code> file.</dd>
+  <dt>1401 people (937 males, 464 females)</dt><dd>One per line of the <code>.fam</code> file, with the sex column (column 5) summarized. People with sex code 0 would be counted as ambiguous and listed in a <code>.nosex</code> file.</dd>
+  <dt>933 phenotype values …</dt><dd>People whose phenotype (column 6) is not missing.</dd>
+  <dt>1401 founders and 0 nonfounders</dt><dd>A <a class="term" href="glossary.html#founder">founder</a> is a person whose father and mother IDs in the <code>.fam</code> file are both 0; anyone with a parent ID filled in is a nonfounder, even if that parent is not in the file. Allele frequencies, <code>--maf</code>, <code>--hardy</code> and <code>--indep-pairwise</code> use founders only; here everyone is a founder.</dd>
+  <dt>Total genotyping rate is 0.977517</dt><dd>The share of the 1,401 × 861,473 genotype calls that are not missing: 2.25% of calls are missing in the raw data.</dd>
+  <dt>… pass filters and QC</dt><dd>What is left after the run's filters. This run had none, so nothing was removed. When a filter acts, a line such as "… variants removed due to missing genotype data (--geno)." appears before this one.</dd>
+  <dt>463 are cases and 470 are controls</dt><dd>PLINK counts phenotype code 2 as a case and code 1 as a control; 468 people have a missing phenotype (−9). What the codes stand for in this copy of PennCATH is not what the words suggest: <a href="plink-data.html#phenotype-column">The data · What column 6 holds</a> compares them with the study's clinical table.</dd>
+  <dt>--make-bed to …</dt><dd>The files written, which are named by <code>--out</code>.</dd>
+</dl>
+
+<h3 id="plink-flags">Every flag in the practical</h3>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>The PLINK 1.9 flags of the practical, with the files they write and their defaults</caption>
+  <thead><tr><th>Flag</th><th>The practical uses</th><th>What it does</th><th>Writes</th><th>Default and notes</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Flag"><code>--bfile</code></td><td data-label="Practical">every step</td><td data-label="What it does">Reads a binary fileset</td><td data-label="Writes">—</td><td data-label="Notes">Prefix only, no extension</td></tr>
+    <tr><td data-label="Flag"><code>--out</code></td><td data-label="Practical">every step</td><td data-label="What it does">Names the outputs</td><td data-label="Writes"><code>.log</code> and every other file</td><td data-label="Notes">Default prefix <code>plink</code></td></tr>
+    <tr><td data-label="Flag"><code>--missing</code></td><td data-label="Practical"><a href="qc-missingness.html">step 1</a></td><td data-label="What it does">Missing calls per person and per variant</td><td data-label="Writes"><code>.imiss</code>, <code>.lmiss</code></td><td data-label="Notes">Removes nothing</td></tr>
+    <tr><td data-label="Flag"><code>--geno</code></td><td data-label="Practical"><code>0.01</code> (step 1); <code>0.1</code> (step 7)</td><td data-label="What it does">Drops variants with missing rate &gt; threshold</td><td data-label="Writes">—</td><td data-label="Notes">Default 0.1</td></tr>
+    <tr><td data-label="Flag"><code>--mind</code></td><td data-label="Practical"><code>0.01</code> (step 1)</td><td data-label="What it does">Drops people with missing rate &gt; threshold</td><td data-label="Writes"><code>.irem</code> if anyone is dropped</td><td data-label="Notes">Default 0.1; runs before <code>--geno</code></td></tr>
+    <tr><td data-label="Flag"><code>--make-bed</code></td><td data-label="Practical">steps 1, 7, 8</td><td data-label="What it does">Saves the remaining data</td><td data-label="Writes"><code>.bed</code>, <code>.bim</code>, <code>.fam</code></td><td data-label="Notes">Needed to keep a filter, flip or ID change</td></tr>
+    <tr><td data-label="Flag"><code>--hardy</code></td><td data-label="Practical"><a href="qc-hwe.html">step 2</a></td><td data-label="What it does">Hardy–Weinberg exact test for every variant</td><td data-label="Writes"><code>.hwe</code></td><td data-label="Notes">Rows ALL, AFF (code 2), UNAFF (code 1) for case/control data; founders only</td></tr>
+    <tr><td data-label="Flag"><code>--hwe</code></td><td data-label="Practical">exercise</td><td data-label="What it does">Drops variants with exact-test p-value below the threshold</td><td data-label="Writes">—</td><td data-label="Notes">Only people coded 1 (UNAFF) for case/control data</td></tr>
+    <tr><td data-label="Flag"><code>--indep-pairwise</code></td><td data-label="Practical"><code>50 5 0.3</code> (<a href="qc-ld-pruning.html">step 3</a>)</td><td data-label="What it does">LD pruning: window of 50 variants, step 5, r² threshold 0.3</td><td data-label="Writes"><code>.prune.in</code>, <code>.prune.out</code></td><td data-label="Notes">Writes lists only; founders only</td></tr>
+    <tr><td data-label="Flag"><code>--extract</code></td><td data-label="Practical"><code>.prune.in</code> (steps 4–6)</td><td data-label="What it does">Keeps only the listed variants</td><td data-label="Writes">—</td><td data-label="Notes"><code>--exclude</code> does the opposite</td></tr>
+    <tr><td data-label="Flag"><code>--genome</code></td><td data-label="Practical"><a href="qc-relatedness.html">step 4</a></td><td data-label="What it does">IBD estimates for every pair of people</td><td data-label="Writes"><code>.genome</code></td><td data-label="Notes">n(n − 1)/2 rows; autosomes only</td></tr>
+    <tr><td data-label="Flag"><code>--het</code></td><td data-label="Practical"><a href="qc-heterozygosity.html">step 5</a></td><td data-label="What it does">Observed and expected homozygous counts, F</td><td data-label="Writes"><code>.het</code></td><td data-label="Notes">Autosomes only</td></tr>
+    <tr><td data-label="Flag"><code>--maf</code></td><td data-label="Practical"><code>0.05</code> (steps 6–7)</td><td data-label="What it does">Drops variants with minor allele frequency below the threshold</td><td data-label="Writes">—</td><td data-label="Notes">Default 0.01; founders only</td></tr>
+    <tr><td data-label="Flag"><code>--pca</code></td><td data-label="Practical"><a href="qc-pca.html">steps 6</a>–<a href="qc-reference-pca.html">7</a></td><td data-label="What it does">Principal components of the genetic relationship matrix</td><td data-label="Writes"><code>.eigenvec</code>, <code>.eigenval</code></td><td data-label="Notes">20 components by default; <code>.eigenvec</code> has no header</td></tr>
+    <tr><td data-label="Flag"><code>--bmerge</code></td><td data-label="Practical">1000 Genomes panel (<a href="qc-reference-pca.html">step 7</a>)</td><td data-label="What it does">Merges a second fileset: union of people and of variants</td><td data-label="Writes">merged fileset, or <code>PREFIX-merge.missnp</code> on failure</td><td data-label="Notes">Exits with an error status on failure</td></tr>
+    <tr><td data-label="Flag"><code>--flip</code></td><td data-label="Practical"><code>.missnp</code> list (step 7)</td><td data-label="What it does">A↔T, C↔G for the listed variants</td><td data-label="Writes">—</td><td data-label="Notes">Saved only with <code>--make-bed</code></td></tr>
+    <tr><td data-label="Flag"><code>--update-ids</code></td><td data-label="Practical"><code>penncath.updateIDs.txt</code> (<a href="qc-grafanc.html">step 8</a>)</td><td data-label="What it does">Replaces family and individual IDs</td><td data-label="Writes">—</td><td data-label="Notes">Four columns: old FID, old IID, new FID, new IID</td></tr>
+    <tr><td data-label="Flag"><code>--remove</code></td><td data-label="Practical">exercise</td><td data-label="What it does">Drops the listed people</td><td data-label="Writes">—</td><td data-label="Notes"><code>--keep</code> does the opposite</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="muted">Defaults and file names are from the PLINK 1.9 documentation.<sup><a href="#src-5">5</a>, <a href="#src-6">6</a>, <a href="#src-7">7</a>, <a href="#src-8">8</a>, <a href="#src-9">9</a>, <a href="#src-10">10</a>, <a href="#src-11">11</a></sup> The statistics behind each report are explained on the QC step pages linked in the table.</p>
+
+<h3 id="plink-builder">Try it: build a command</h3>
+<p>Pick an input fileset, tick operations and choose an output prefix. The widget writes the command, lists the files PLINK would read and write, and puts the operations in the order PLINK 1.9 applies them. It does not run PLINK; it follows the documentation.</p>
+<div class="widget" id="w-plink-builder">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Build a PLINK 1.9 command</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The tables above list every flag of the practical, the files it writes and the order in which PLINK applies it.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Load "Not in the practical · --geno and --mind in one command": <code>--geno</code> was typed first, yet the order list puts <code>--mind</code> first. Load "Step 7 · first merge with 1000 Genomes": the merge happens before the input is read, and a failure writes <code>…merge1kgenomes-merge.missnp</code>, the very file that the next command's <code>--flip</code> reads. In "Step 7 · flip the conflicting SNPs", untick <code>--make-bed</code>: the flip would no longer be saved. Tick a filter and nothing else: PLINK would write only its log.</p>
+
+<h2 id="plink2">PLINK 2.0: what changed, and why the practical uses 1.9 <span class="tag optional">Optional</span></h2>
+<p>PLINK 2.0 (program name <code>plink2</code>) is a redesign by the same developer, still labeled beta (Beta 1.4 of 7 November 2026 at the time of writing).<sup><a href="#src-15">15</a></sup> Its native format is the <code>.pgen</code>/<code>.pvar</code>/<code>.psam</code> fileset, which can hold imputed dosages and variants with more than two alleles; it still reads and writes PLINK 1 filesets. Many flags keep their names (<code>--extract</code>, <code>--geno</code>, <code>--mind</code>, <code>--maf</code>, <code>--hwe</code>, <code>--indep-pairwise</code>, <code>--pca</code>, <code>--flip</code>, <code>--update-ids</code>, <code>--make-bed</code>), but the reports change:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>The practical's PLINK 1.9 commands and their PLINK 2.0 counterparts</caption>
+  <thead><tr><th>Practical (PLINK 1.9)</th><th>PLINK 2.0</th><th>What differs</th></tr></thead>
+  <tbody>
+    <tr><td data-label="PLINK 1.9"><code>--missing</code> → <code>.imiss</code>, <code>.lmiss</code></td><td data-label="PLINK 2.0"><code>--missing</code> → <code>.smiss</code>, <code>.vmiss</code></td><td data-label="Differs">File names and column names</td></tr>
+    <tr><td data-label="PLINK 1.9"><code>--hardy</code> → <code>.hwe</code> with ALL, AFF, UNAFF rows</td><td data-label="PLINK 2.0"><code>--hardy</code> → <code>.hardy</code></td><td data-label="Differs">One row per variant; no automatic controls-only row (select controls with <code>--keep-if</code>)</td></tr>
+    <tr><td data-label="PLINK 1.9"><code>--het</code> → <code>.het</code></td><td data-label="PLINK 2.0"><code>--het</code> → <code>.het</code></td><td data-label="Differs">F is computed from heterozygote counts, 1 − observed/expected heterozygous; different columns</td></tr>
+    <tr><td data-label="PLINK 1.9"><code>--genome</code> → <code>.genome</code> (Z0, Z1, Z2, PI_HAT)</td><td data-label="PLINK 2.0">no <code>--genome</code>; <code>--make-king-table</code> → <code>.kin0</code></td><td data-label="Differs">KING-robust kinship coefficients instead of IBD probabilities; <code>--king-cutoff</code> removes relatives</td></tr>
+    <tr><td data-label="PLINK 1.9"><code>--bmerge</code></td><td data-label="PLINK 2.0"><code>--pmerge</code>, <code>--pmerge-list</code></td><td data-label="Differs">Stricter rules for matching variants</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The practical stays with 1.9 because its relatedness step uses <code>--genome</code>, which PLINK 2.0 does not have, and because its R code reads 1.9's file names and columns (<code>.imiss</code>, <code>UNAFF</code> rows of <code>.hwe</code>, <code>PI_HAT</code>, <code>Z0</code>, <code>Z1</code>). For new projects with large or imputed data, PLINK 2.0 is the better tool; its downloads are on the PLINK 2.0 page, one build per operating system and processor type (for example <code>plink2_mac_arm64_20261107.zip</code> for Apple Silicon Macs).</p>
+
+<h2 id="r">R: read PLINK's tables, reshape them, plot them <span class="tag core">Core</span></h2>
+<p>R is a programming language and environment for statistics and graphics. In the practical it has one job: read the text tables that PLINK and GrafAnc write, compute a few counts and summaries, and draw histograms and scatter plots. Base R can do all of this, but the practical uses three add-on <em>packages</em> (collections of functions that others have written and published on CRAN, R's package archive): the <dfn>tidyverse</dfn>, a set of packages that share one design for tables and plots,<sup><a href="#src-19">19</a></sup> <dfn>data.table</dfn> and <dfn>glue</dfn>.</p>
+<p>A package is installed once per computer and R version, and loaded in every new R session:</p>
+<span class="code-label r">R</span>
+<pre class="code"><span class="cm"># once: download from CRAN and install (a few minutes; see Set up your computer)</span>
+install.packages(c(<span class="str">"tidyverse"</span>, <span class="str">"data.table"</span>, <span class="str">"glue"</span>))
+
+<span class="cm"># every session: load into the current R session</span>
+library(tidyverse)
+library(data.table)
+library(glue)</pre>
+<p><code>library(tidyverse)</code> loads nine packages at once: ggplot2, dplyr, tidyr, readr, purrr, tibble, stringr, forcats and lubridate. It then prints which of their functions <em>mask</em> (take precedence over) functions of the same name loaded earlier, for example <code>dplyr::filter()</code> over <code>stats::filter()</code>. Loading data.table afterwards prints similar messages, because data.table also defines functions such as <code>first()</code>, <code>last()</code> and <code>between()</code>. These messages are expected; <code>package::function()</code> calls a specific package's version when it matters. The practical repeats the three <code>library()</code> lines at the start of later sections so that each section also works when run on its own.</p>
+
+<h3 id="fread">data.table and fread: read any PLINK report in one call</h3>
+<p>Every R step of the practical starts with <code>fread()</code> from data.table. It reads a delimited text file into a table and decides the format by sampling lines of the file: which character separates the columns, whether the first line is a header, and the type of each column (integer, number or text). PLINK 1.9 pads its reports with runs of spaces so that the columns line up; when the separator is a space, <code>fread()</code> treats a run of spaces as one separator and ignores spaces at the start and end of a line, so these files read without options.<sup><a href="#src-20">20</a></sup> The result is a <code>data.table</code>, which is also an ordinary R data frame, so the tidyverse functions below work on it.</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>The files the practical reads into R</caption>
+  <thead><tr><th>File (in <code>analysis_dir</code>)</th><th>Written by</th><th>Header</th><th>Columns the practical uses</th></tr></thead>
+  <tbody>
+    <tr><td data-label="File"><code>penncath.lmiss</code></td><td data-label="Written by"><code>--missing</code></td><td data-label="Header">yes</td><td data-label="Columns"><code>F_MISS</code> per variant</td></tr>
+    <tr><td data-label="File"><code>penncath.geno0.01.imiss</code></td><td data-label="Written by"><code>--missing</code></td><td data-label="Header">yes</td><td data-label="Columns"><code>F_MISS</code> per person</td></tr>
+    <tr><td data-label="File"><code>….mind0.01.hwe</code></td><td data-label="Written by"><code>--hardy</code></td><td data-label="Header">yes</td><td data-label="Columns"><code>TEST</code>, <code>P</code></td></tr>
+    <tr><td data-label="File"><code>….LD0.3.genome</code></td><td data-label="Written by"><code>--genome</code></td><td data-label="Header">yes</td><td data-label="Columns"><code>PI_HAT</code>, <code>Z0</code>, <code>Z1</code></td></tr>
+    <tr><td data-label="File"><code>….LD0.3.het</code></td><td data-label="Written by"><code>--het</code></td><td data-label="Header">yes</td><td data-label="Columns"><code>O(HOM)</code>, <code>N(NM)</code>, <code>F</code></td></tr>
+    <tr><td data-label="File"><code>….LD0.3.eigenvec</code>, <code>….merge1kgenomes.eigenvec</code></td><td data-label="Written by"><code>--pca</code></td><td data-label="Header"><strong>no</strong></td><td data-label="Columns"><code>V1</code> (family ID), <code>V3</code>–<code>V5</code> (PC1–PC3)</td></tr>
+    <tr><td data-label="File"><code>akt/data/integrated_call_samples_v3.20130502.ALL.panel</code></td><td data-label="Written by">1000 Genomes Project</td><td data-label="Header">yes, tab-separated</td><td data-label="Columns"><code>sample</code>, <code>super_pop</code></td></tr>
+    <tr><td data-label="File"><code>penncath_grafanc_out.txt</code></td><td data-label="Written by">GrafAnc</td><td data-label="Header">yes, tab-separated</td><td data-label="Columns"><code>AncGroupID</code>, <code>GD1</code>, <code>GD2</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p>Two details of these files trip up new R users:</p>
+<ul>
+  <li><strong>No header in <code>.eigenvec</code>.</strong> PLINK writes this file without a header line unless asked to with <code>--pca header</code>.<sup><a href="#src-13">13</a></sup> <code>fread()</code> then names the columns <code>V1</code>, <code>V2</code>, … in order: family ID, individual ID, then the 20 principal components. That is why the practical writes <code>rename(PC1 = V3, PC2 = V4)</code>.</li>
+  <li><strong>Column names with parentheses.</strong> <code>O(HOM)</code> and <code>N(NM)</code> are not valid R names, because R would read <code>O(HOM)</code> as a call of a function <code>O</code>. Enclose such names in backticks: <code>`N(NM)` - `O(HOM)`</code>.</li>
+</ul>
+<p>data.table also has its own compact syntax, <code>DT[i, j, by]</code>: <code>i</code> selects rows, <code>j</code> computes something from the columns, and <code>by</code> groups. <code>.N</code> means "number of rows".</p>
+<span class="code-label r">R</span>
+<pre class="code">variant_miss &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.lmiss"</span>))
+variant_miss[F_MISS &gt; <span class="kw">0.01</span>, .N]                 <span class="cm"># number of variants with more than 1% missing calls</span>
+variant_miss[, .N, by = .(above = F_MISS &gt; <span class="kw">0.01</span>)]  <span class="cm"># both counts, as a two-row table</span></pre>
+<p>The second line gives the same two counts as the practical's <code>mutate()</code> + <code>group_by()</code> + <code>tally()</code> pipeline in the next section; which style to use is a matter of taste. data.table is also fast on large tables: it reads with several processor threads and modifies tables in place instead of copying them.</p>
+
+<h3 id="tidyverse">dplyr and the pipe: one verb per step</h3>
+<p><dfn>dplyr</dfn>, the tidyverse's package for manipulating tables, gives each common operation its own function, named by a verb. Each takes a table as its first argument and returns a new table:</p>
+<dl class="cols-doc">
+  <dt><code>filter(TEST == "UNAFF")</code></dt><dd>Keep the rows for which the condition is true (here the Hardy–Weinberg rows for PLINK's controls, the people coded 1).</dd>
+  <dt><code>mutate(het_rate = …)</code></dt><dd>Add a column computed from other columns, or replace one.</dd>
+  <dt><code>group_by(x)</code> + <code>tally()</code> or <code>summarise()</code></dt><dd>Split the rows into groups by the values of <code>x</code> and count or summarize each group.</dd>
+  <dt><code>count(x, sort = TRUE)</code></dt><dd>Shortcut for <code>group_by(x)</code> + <code>tally()</code>, largest group first.</dd>
+  <dt><code>rename(PC1 = V3)</code>, <code>select(…)</code></dt><dd>Rename columns; keep only some columns.</dd>
+  <dt><code>left_join(y, by = c("V1" = "sample"))</code></dt><dd>Add the columns of table <code>y</code> to each row whose <code>V1</code> matches <code>y$sample</code>; rows without a match get <code>NA</code>.</dd>
+  <dt><code>if_else(cond, yes, no)</code>, <code>recode(x, `1` = "AFR", …)</code></dt><dd>Choose a value by condition; replace listed values by others.</dd>
+</dl>
+<p>The <dfn>pipe operator</dfn> <code>%&gt;%</code> chains these steps: <code>x %&gt;% f(y)</code> means <code>f(x, y)</code>, so a pipeline reads from top to bottom in the order the steps happen. R 4.1 added a built-in pipe, <code>|&gt;</code>, which works the same way in code like the practical's. This pipeline counts the variants above the practical's 1% threshold:</p>
+<span class="code-label r">R</span>
+<pre class="code">variant_miss %&gt;%
+  mutate(above_1pct = F_MISS &gt; <span class="kw">0.01</span>) %&gt;%   <span class="cm"># TRUE or FALSE for each variant</span>
+  count(above_1pct)                          <span class="cm"># one row per value, with column n</span></pre>
+<p>tidyr, another tidyverse package, reshapes columns. The <code>GENO</code> column of a <code>.hwe</code> file packs three genotype counts into one text field such as <code>12/345/678</code> (homozygous allele 1, heterozygous, homozygous allele 2); <code>separate()</code> splits it into three numeric columns, and newer versions of tidyr also offer <code>separate_wider_delim()</code> for the same job:</p>
+<span class="code-label r">R</span>
+<pre class="code">hwe &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.hwe"</span>)) %&gt;%
+  filter(TEST == <span class="str">"UNAFF"</span>) %&gt;%
+  separate(GENO, into = c(<span class="str">"n11"</span>, <span class="str">"n12"</span>, <span class="str">"n22"</span>), sep = <span class="str">"/"</span>, convert = <span class="kw">TRUE</span>)</pre>
+<p>The counts \(n_{11}, n_{12}, n_{22}\) are those of the Hardy–Weinberg test on <a href="qc-hwe.html">Step 2</a>.</p>
+
+<h3 id="ggplot2">ggplot2: a plot is data, aesthetics and layers</h3>
+<p><dfn>ggplot2</dfn> builds a plot from parts joined with <code>+</code>, following Wickham's "layered grammar of graphics":<sup><a href="#src-21">21</a></sup></p>
+<ul>
+  <li><code>ggplot(data, aes(x = F_MISS))</code> names the table and the <em>aesthetic mappings</em>: which column goes on the x axis, the y axis, or sets color.</li>
+  <li><code>geom_histogram()</code>, <code>geom_point()</code> add <em>layers</em>, the marks drawn. A histogram cuts the x axis into 30 bins by default and prints a message saying so; give <code>bins =</code> or <code>binwidth =</code> to choose.</li>
+  <li><code>labs(title = …)</code>, <code>xlim(0, 1)</code>, <code>theme_classic()</code> set titles, axis ranges and the overall look.</li>
+</ul>
+<p>Layers are drawn in order, and each can use its own data. The practical's reference-PCA plot uses this: a first <code>geom_point()</code> layer draws the 1000 Genomes samples colored by <code>super_pop</code>, and a second layer draws the PennCATH samples (whose <code>super_pop</code> is <code>NA</code> after the join) in black on top. In R Markdown a plot appears in the knitted document; in a script, <code>ggsave("plots/pc1_pc2.png", width = 6, height = 4)</code> writes the last plot to a file.</p>
+
+<h3 id="glue">glue: put values into text</h3>
+<p><dfn>glue</dfn> builds a string from text and R expressions in braces: <code>glue("{n} variants have F_MISS above 0.01")</code> replaces <code>{n}</code> with the value of <code>n</code>. The practical loads glue, but none of its R code calls it. It is handy for building file names from a threshold, for example <code>file.path(analysis_dir, glue("penncath.geno{geno}.lmiss"))</code> with <code>geno &lt;- 0.01</code>.<sup><a href="#src-22">22</a></sup></p>
+
+<h3 id="r-python">The same reads in R and in Python</h3>
+<p>If you work in Python, pandas does what data.table and dplyr do, and matplotlib or seaborn draws the plots. The tabs below switch together; they assume <code>analysis_dir</code> is set as on <a href="setup.html#layout">Set up your computer</a>. This code has not been run on the PennCATH files for this page, so treat it as a template; it uses only the file formats documented by PLINK.</p>
+<div class="tabset" data-group="lang">
+  <section class="tab-panel" data-label="R">
+<span class="code-label r">R · sample missingness (.imiss)</span>
+<pre class="code">library(tidyverse); library(data.table)
+analysis_dir &lt;- Sys.getenv(<span class="str">"analysis_dir"</span>, file.path(Sys.getenv(<span class="str">"HOME"</span>), <span class="str">"statgen-workshop/analysis"</span>))
+
+imiss &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.imiss"</span>))
+imiss %&gt;% count(above_1pct = F_MISS &gt; <span class="kw">0.01</span>)</pre>
+  </section>
+  <section class="tab-panel" data-label="Python">
+<span class="code-label python">Python · sample missingness (.imiss)</span>
+<pre class="code"><span class="kw">import</span> os
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+analysis_dir = os.environ.get(<span class="str">"analysis_dir"</span>, os.path.expanduser(<span class="str">"~/statgen-workshop/analysis"</span>))
+
+imiss = pd.read_csv(f<span class="str">"{analysis_dir}/penncath.geno0.01.imiss"</span>, sep=<span class="str">r"\s+"</span>)
+(imiss[<span class="str">"F_MISS"</span>] &gt; <span class="kw">0.01</span>).value_counts()</pre>
+  </section>
+</div>
+<p><code>sep=r"\s+"</code> tells pandas that any run of spaces separates columns, which is what PLINK writes.</p>
+<div class="tabset" data-group="lang">
+  <section class="tab-panel" data-label="R">
+<span class="code-label r">R · Hardy–Weinberg tests, UNAFF rows (.hwe)</span>
+<pre class="code">hwe &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.hwe"</span>))
+hwe_ctrl &lt;- hwe[TEST == <span class="str">"UNAFF"</span>]          <span class="cm"># data.table row selection</span>
+sum(hwe_ctrl$P &lt; <span class="kw">1e-8</span>)                     <span class="cm"># variants below the practical's example threshold</span>
+ggplot(hwe_ctrl, aes(x = P)) + geom_histogram(bins = <span class="kw">50</span>) + theme_classic()</pre>
+  </section>
+  <section class="tab-panel" data-label="Python">
+<span class="code-label python">Python · Hardy–Weinberg tests, UNAFF rows (.hwe)</span>
+<pre class="code"><span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+hwe = pd.read_csv(f<span class="str">"{analysis_dir}/penncath.geno0.01.mind0.01.hwe"</span>, sep=<span class="str">r"\s+"</span>)
+hwe_ctrl = hwe[hwe[<span class="str">"TEST"</span>] == <span class="str">"UNAFF"</span>]
+(hwe_ctrl[<span class="str">"P"</span>] &lt; <span class="kw">1e-8</span>).sum()
+hwe_ctrl[<span class="str">"P"</span>].plot.hist(bins=<span class="kw">50</span>)
+plt.savefig(<span class="str">"hwe_p.png"</span>, dpi=<span class="kw">150</span>)</pre>
+  </section>
+</div>
+<div class="tabset" data-group="lang">
+  <section class="tab-panel" data-label="R">
+<span class="code-label r">R · heterozygosity outliers (.het)</span>
+<pre class="code">het &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.LD0.3.het"</span>)) %&gt;%
+  mutate(het_rate = (`N(NM)` - `O(HOM)`) / `N(NM)`)     <span class="cm"># backticks around names with parentheses</span>
+het %&gt;% filter(abs(het_rate - mean(het_rate)) &gt; <span class="kw">3</span> * sd(het_rate))</pre>
+  </section>
+  <section class="tab-panel" data-label="Python">
+<span class="code-label python">Python · heterozygosity outliers (.het)</span>
+<pre class="code">het = pd.read_csv(f<span class="str">"{analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.het"</span>, sep=<span class="str">r"\s+"</span>)
+het[<span class="str">"het_rate"</span>] = (het[<span class="str">"N(NM)"</span>] - het[<span class="str">"O(HOM)"</span>]) / het[<span class="str">"N(NM)"</span>]
+z = (het[<span class="str">"het_rate"</span>] - het[<span class="str">"het_rate"</span>].mean()) / het[<span class="str">"het_rate"</span>].std()
+het[z.abs() &gt; <span class="kw">3</span>]</pre>
+  </section>
+</div>
+<p>R's <code>sd()</code> and pandas' <code>.std()</code> both divide by \(n - 1\), so the two versions flag the same people.</p>
+<div class="tabset" data-group="lang">
+  <section class="tab-panel" data-label="R">
+<span class="code-label r">R · principal components with reference labels (.eigenvec + panel)</span>
+<pre class="code">pcs &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.merge1kgenomes.eigenvec"</span>))
+setnames(pcs, c(<span class="str">"FID"</span>, <span class="str">"IID"</span>, paste0(<span class="str">"PC"</span>, <span class="kw">1</span>:<span class="kw">20</span>)))          <span class="cm"># --pca writes 20 PCs by default</span>
+panel &lt;- fread(file.path(analysis_dir, <span class="str">"akt/data/integrated_call_samples_v3.20130502.ALL.panel"</span>))
+pcs &lt;- pcs %&gt;% left_join(select(panel, sample, super_pop), by = c(<span class="str">"FID"</span> = <span class="str">"sample"</span>))
+
+ggplot(pcs, aes(PC1, PC2)) +
+  geom_point(data = filter(pcs, !is.na(super_pop)), aes(color = super_pop), alpha = <span class="kw">0.5</span>) +
+  geom_point(data = filter(pcs, is.na(super_pop)), color = <span class="str">"black"</span>) +
+  theme_classic()</pre>
+  </section>
+  <section class="tab-panel" data-label="Python">
+<span class="code-label python">Python · principal components with reference labels (.eigenvec + panel)</span>
+<pre class="code">cols = [<span class="str">"FID"</span>, <span class="str">"IID"</span>] + [f<span class="str">"PC{k}"</span> <span class="kw">for</span> k <span class="kw">in</span> range(<span class="kw">1</span>, <span class="kw">21</span>)]
+pcs = pd.read_csv(f<span class="str">"{analysis_dir}/penncath.geno0.01.mind0.01.merge1kgenomes.eigenvec"</span>,
+                  sep=<span class="str">r"\s+"</span>, header=<span class="kw">None</span>, names=cols, dtype={<span class="str">"FID"</span>: str, <span class="str">"IID"</span>: str})
+panel = pd.read_csv(f<span class="str">"{analysis_dir}/akt/data/integrated_call_samples_v3.20130502.ALL.panel"</span>,
+                    sep=<span class="str">"\t"</span>, usecols=[<span class="str">"sample"</span>, <span class="str">"super_pop"</span>])
+pcs = pcs.merge(panel, left_on=<span class="str">"FID"</span>, right_on=<span class="str">"sample"</span>, how=<span class="str">"left"</span>)
+
+fig, ax = plt.subplots()
+<span class="kw">for</span> pop, grp <span class="kw">in</span> pcs.dropna(subset=[<span class="str">"super_pop"</span>]).groupby(<span class="str">"super_pop"</span>):
+    ax.scatter(grp[<span class="str">"PC1"</span>], grp[<span class="str">"PC2"</span>], s=<span class="kw">4</span>, alpha=<span class="kw">0.5</span>, label=pop)
+study = pcs[pcs[<span class="str">"super_pop"</span>].isna()]
+ax.scatter(study[<span class="str">"PC1"</span>], study[<span class="str">"PC2"</span>], s=<span class="kw">4</span>, color=<span class="str">"black"</span>, label=<span class="str">"PennCATH"</span>)
+ax.legend(); fig.savefig(<span class="str">"pc1_pc2_ref.png"</span>, dpi=<span class="kw">150</span>)</pre>
+  </section>
+</div>
+<p>The join works because the 1000 Genomes samples in the reference fileset use the sample name (for example <code>HG00096</code>) as both family and individual ID, and the panel file lists the same names in its <code>sample</code> column. PennCATH's family IDs do not occur in the panel, so their <code>super_pop</code> is missing, which is what the two layers use to tell the groups apart.</p>
+
+<h2 id="python">Python's tools for the same jobs <span class="tag optional">Optional</span></h2>
+<p>For readers who know the Python data stack, these are the equivalents and the one trap:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Python counterparts of the practical's R tools</caption>
+  <thead><tr><th>Job</th><th>R (practical)</th><th>Python</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Job">Read a PLINK report</td><td data-label="R"><code>data.table::fread()</code></td><td data-label="Python"><code>pandas.read_csv(path, sep=r"\s+")</code></td></tr>
+    <tr><td data-label="Job">Filter, add columns, count</td><td data-label="R">dplyr verbs joined by the pipe operator; <code>DT[i, j, by]</code></td><td data-label="Python">boolean indexing, <code>assign()</code>, <code>groupby()</code>, <code>value_counts()</code></td></tr>
+    <tr><td data-label="Job">Plot</td><td data-label="R">ggplot2</td><td data-label="Python">matplotlib; seaborn for grouped and colored plots</td></tr>
+    <tr><td data-label="Job">Arrays and linear algebra</td><td data-label="R">base R matrices</td><td data-label="Python">numpy</td></tr>
+    <tr><td data-label="Job">Principal components</td><td data-label="R">PLINK <code>--pca</code></td><td data-label="Python"><code>sklearn.decomposition.PCA</code> on a genotype matrix</td></tr>
+    <tr><td data-label="Job">Read <code>.bed</code> genotypes</td><td data-label="R">(not needed in the practical)</td><td data-label="Python">pandas-plink</td></tr>
+  </tbody>
+</table>
+</div>
+<p><strong>Principal components from scikit-learn versus PLINK.</strong> Write \(X\) for the \(n \times m\) matrix of standardized genotypes, one row per person and one column per SNP: each count of the counted allele minus its column mean \(2\hat{p}_j\), divided by \(\sqrt{2\hat{p}_j(1 - \hat{p}_j)}\). PLINK 1.9's <code>--pca</code> computes the genetic relationship matrix \(XX^{\mathsf{T}}/m\), finds its top eigenvectors, and writes them to <code>.eigenvec</code> with each column scaled to length 1, with the matching eigenvalues in <code>.eigenval</code>.<sup><a href="#src-11">11</a>,<a href="#src-14">14</a></sup> scikit-learn's <code>PCA().fit_transform(X)</code> returns the projections of the people onto the same directions. The two are related by:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ t_{ik} \approx \pm\, u_{ik} \sqrt{m\, \lambda_k} \]</div>
+  <dl class="eq-terms">
+    <dt>\(i\)</dt><dd>A person, \(1, \ldots, n\).</dd>
+    <dt>\(k\)</dt><dd>A principal component, \(1, \ldots, 20\) for PLINK's default.</dd>
+    <dt>\(t_{ik}\)</dt><dd>scikit-learn's score of person \(i\) on component \(k\): column \(k\) of <code>fit_transform(X)</code>.</dd>
+    <dt>\(u_{ik}\)</dt><dd>PLINK's value for person \(i\) in column \(k + 2\) of the <code>.eigenvec</code> file. Over all \(n\) people, the squares of a column add up to 1.</dd>
+    <dt>\(m\)</dt><dd>Number of SNPs used, after <code>--extract</code>, <code>--maf</code> and any other filters in the command.</dd>
+    <dt>\(\lambda_k\)</dt><dd>Line \(k\) of the <code>.eigenval</code> file: the \(k\)-th largest eigenvalue of the relationship matrix.</dd>
+    <dt>\(\pm\)</dt><dd>The sign of each eigenvector is arbitrary, so a component may come out mirrored.</dd>
+  </dl>
+  <p class="eq-intuition">Both programs decompose the same matrix \(X\). Its singular value decomposition \(X = USV^{\mathsf{T}}\) gives scikit-learn's scores as \(US\) and the relationship matrix as \(XX^{\mathsf{T}}/m = U (S^2/m) U^{\mathsf{T}}\), so PLINK's eigenvectors are the columns of \(U\) and its eigenvalues are \(s_k^2/m\); solving for the singular value gives \(s_k = \sqrt{m\lambda_k}\). Because each PLINK column has length 1, its values shrink as the sample grows: their root mean square is \(1/\sqrt{n}\), which for 1,380 people is \(1/\sqrt{1380} \approx 0.027\). As an illustration with made-up numbers, \(m = 100{,}000\) SNPs and \(\lambda_1 = 10\) give \(\sqrt{m\lambda_1} = 1000\), so a PLINK value of 0.03 corresponds to a scikit-learn score of about 30. The relation is approximate because PLINK computes the diagonal of the relationship matrix with a slightly different estimator, and because a Python analysis must first fill in missing genotypes (for example with the column mean).</p>
+</div>
+<p>A quick check that you are reading PLINK's file correctly: the squares of each PC column add up to 1, which <code>colSums(as.matrix(pcs[, 3:22])^2)</code> in R or <code>(pcs.iloc[:, 2:22] ** 2).sum()</code> in Python shows.</p>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> pandas-plink counts the other allele</div>
+  <p>pandas-plink's <code>read_plink(prefix)</code> returns the <code>.bim</code> table, the <code>.fam</code> table and the genotypes as a variants × people array. It calls the two allele columns of the <code>.bim</code> file <code>a0</code> and <code>a1</code>, so its <code>a0</code> is PLINK's allele 1 and its <code>a1</code> is PLINK's allele 2, and a genotype value of 2 means two copies of <code>a1</code>.<sup><a href="#src-31">31</a></sup> Its numbers therefore count PLINK's allele 2, usually the major allele, while PLINK's own allele counts (for example <code>--recode A</code>) count allele 1. Compare one SNP's genotype counts with the <code>GENO</code> column of the <code>.hwe</code> file before combining the two.</p>
+</aside>
+
+<h2 id="grafanc">GrafAnc: ancestry groups from distances to reference populations <span class="tag core">Core</span></h2>
+<p>GrafAnc is a command-line program by Yumi Jin and colleagues at the University of Pennsylvania that assigns each person to a genetic ancestry group and estimates three ancestry proportions.<sup><a href="#src-23">23</a>,<a href="#src-24">24</a></sup> It succeeds GRAF-pop, which the same first author developed at NCBI.<sup><a href="#src-25">25</a></sup> The version in the practical is 1.0.0 of 18 May 2025, released under the MIT license. Unlike the PCA of steps 6 and 7, it needs no merge with a reference panel: the reference information ships with the program as a table of allele frequencies.</p>
+
+<h3 id="grafanc-inputs">What goes in</h3>
+<ul>
+  <li><strong>A genotype file:</strong> a PLINK binary fileset (given as its prefix) or a VCF file. Variants are matched by rsID or by chromosome position in genome build GRCh37 or GRCh38; GrafAnc works out which on its own. PennCATH's variant IDs are rsIDs.</li>
+  <li><strong>282,424 ancestry SNPs</strong>, chosen by the authors and already thinned for linkage disequilibrium, so no LD pruning is needed. Missing SNPs lower the accuracy without biasing the estimates; the documentation asks for at least 10,000 genotyped ancestry SNPs per person for continental groups and 50,000 for subcontinental ones, and GrafAnc gives no result below 100.<sup><a href="#src-23">23</a></sup></li>
+  <li><strong>One person at a time.</strong> Each person's result depends only on that person's genotypes, so relatives and duplicates do no harm, files can be split and the results combined, and missing calls need not be filtered first.</li>
+  <li><strong>Unique sample names.</strong> GrafAnc names each person by the individual ID, column 2 of the <code>.fam</code> file, and warns about duplicates. Every PennCATH individual ID is <code>1</code>, which is why step 8 first runs <code>--update-ids</code> (the awk program in <a href="#shell">the shell section</a>).</li>
+</ul>
+<p>The reference table, <code>cpp/data/AncSnpPopAFs.txt</code>, has one line per ancestry SNP: chromosome, position in GRCh37 and GRCh38, rs number, the two alleles, and the allele frequency in each of 26 reference populations. The first three, labeled <code>UKBBEUR</code>, <code>UKBBAFR</code> and <code>UKBBEAS</code>, are the European (E), African (F) and East Asian (A) references of the continental scores; the others (from Nigeria, Ghana, … Finland, Italy, France, Poland, and groups of UK Biobank participants) serve the subcontinental scores. The repository stores the table compressed (28 MB); GrafAnc reads the decompressed text (75.5 MB), which is why the practical runs <code>gunzip</code> once.</p>
+
+<h3 id="grafanc-method">How it computes</h3>
+<p><strong>Step 1: a distance to each reference population.</strong> For each person and each reference population, GrafAnc asks how probable the person's genotypes are under that population's allele frequencies, assuming Hardy–Weinberg proportions, and averages the negative log-probability over SNPs:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ D_{ik} = -\frac{1}{m_i} \sum_{j=1}^{m_i} \ln \Pr(g_{ij} \mid p_{jk}) \]</div>
+  <dl class="eq-terms">
+    <dt>\(i\)</dt><dd>A person in the input file.</dd>
+    <dt>\(k\)</dt><dd>A reference population; for the continental scores, E, F or A.</dd>
+    <dt>\(m_i\)</dt><dd>Number of ancestry SNPs at which person \(i\) has a genotype call (SNPs at which population \(k\)'s frequency is exactly 0 or 1 are skipped).</dd>
+    <dt>\(g_{ij}\)</dt><dd>Number of copies, 0, 1 or 2, that person \(i\) carries at SNP \(j\) of the allele whose frequency the table lists.</dd>
+    <dt>\(p_{jk}\)</dt><dd>Frequency of that allele in population \(k\).</dd>
+    <dt>\(\Pr(g \mid p)\)</dt><dd>Hardy–Weinberg genotype probability: \(p^2\) for \(g = 2\), \(2p(1 - p)\) for \(g = 1\), \((1 - p)^2\) for \(g = 0\).</dd>
+    <dt>\(D_{ik}\)</dt><dd>Genetic distance of person \(i\) from population \(k\); 0 would mean every genotype had probability 1.</dd>
+  </dl>
+  <p class="eq-intuition">A genotype that is common in population \(k\) has a probability near 1 and adds little to the sum; a genotype that is rare there adds a lot. At a SNP where the allele has frequency 0.9 in E and 0.1 in F, a person with two copies adds \(-\ln 0.81 = 0.21\) to the sum for E and \(-\ln 0.01 = 4.61\) to the sum for F. Dividing by \(m_i\) makes distances comparable between people genotyped at different numbers of SNPs. This is the distance of GRAF-pop, the program's predecessor.<sup><a href="#src-25">25</a></sup></p>
+</div>
+<p><strong>Step 2: a position in the E–F–A triangle.</strong> GrafAnc also computes the distances expected for a typical member of E, of F and of A over the same SNPs. These three expected points form a triangle, and the person's three distances form a fourth point. After rotating the points so that the triangle lies flat, GrafAnc expresses the person's position by <dfn>barycentric coordinates</dfn> \(\lambda_{\mathrm{E}}, \lambda_{\mathrm{F}}, \lambda_{\mathrm{A}}\): three weights that add up to 1 and give the point as a weighted average of the triangle's corners. <code>GD1</code> and <code>GD2</code> are those weights applied to a fixed triangle, so every dataset is drawn on the same axes; <code>GD3</code> is the person's distance from the plane of the triangle.<sup><a href="#src-23">23</a></sup></p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} \mathrm{GD} &amp;= \lambda_{\mathrm{E}} \mathbf{v}_{\mathrm{E}} + \lambda_{\mathrm{F}} \mathbf{v}_{\mathrm{F}} + \lambda_{\mathrm{A}} \mathbf{v}_{\mathrm{A}} \\ P_{\mathrm{e}} &amp;= \frac{100 \max(0, \lambda_{\mathrm{E}})}{\sum_{k} \max(0, \lambda_k)} \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\mathrm{GD}\)</dt><dd>The person's point (<code>GD1</code>, <code>GD2</code>).</dd>
+    <dt>\(\mathbf{v}_{\mathrm{E}}, \mathbf{v}_{\mathrm{F}}, \mathbf{v}_{\mathrm{A}}\)</dt><dd>The fixed corners: E = (1.4758, 1.4370), F = (1.0800, 1.1000), A = (1.7045, 1.1000) in (<code>GD1</code>, <code>GD2</code>) coordinates.</dd>
+    <dt>\(\lambda_{\mathrm{E}}, \lambda_{\mathrm{F}}, \lambda_{\mathrm{A}}\)</dt><dd>Barycentric coordinates, with \(\lambda_{\mathrm{E}} + \lambda_{\mathrm{F}} + \lambda_{\mathrm{A}} = 1\). GrafAnc reports \(100\lambda\) as <code>RawPe</code>, <code>RawPf</code>, <code>RawPa</code>.</dd>
+    <dt>\(k\)</dt><dd>Runs over E, F and A in the sum.</dd>
+    <dt>\(P_{\mathrm{e}}\)</dt><dd>The reported <code>Pe</code>, in percent; <code>Pf</code> and <code>Pa</code> are defined the same way.</dd>
+  </dl>
+  <p class="eq-intuition">Inside the triangle all three weights lie between 0 and 1, and they are the reported percentages directly. At a corner one weight is 1; on an edge the weight of the opposite corner is 0. Outside the triangle one weight turns negative; <code>Pe</code>, <code>Pf</code>, <code>Pa</code> set it to 0 and rescale the other two to add to 100, while the raw columns keep it. Because F and A share \(\mathrm{GD2} = 1.1\), the European weight depends on <code>GD2</code> alone: \(\lambda_{\mathrm{E}} = (\mathrm{GD2} - 1.1)/0.337\). For a person at (1.2779, 1.2685) this gives \(\lambda_{\mathrm{E}} = 0.1685/0.337 = 0.5\), and then \(\lambda_{\mathrm{F}} = 0.5\), \(\lambda_{\mathrm{A}} = 0\) reproduce \(\mathrm{GD1} = 0.5 \times 1.4758 + 0.5 \times 1.08 = 1.2779\): Pe = 50, Pf = 50, Pa = 0, the midpoint of the E–F edge.</p>
+</div>
+
+<figure class="fig" style="max-width: 560px">
+  <div class="fig-body">
+<svg viewBox="0 0 380 272" role="img" aria-label="The GrafAnc reference triangle in GD1 and GD2 coordinates. Corner F at GD1 1.08, GD2 1.10; corner A at 1.7045, 1.10; corner E at 1.4758, 1.437. The midpoint of the E–F edge has Pe 50, Pf 50, Pa 0. The centroid has Pe, Pf and Pa about 33 each.">
+<g stroke="#9aa4b1" stroke-width="1">
+<line x1="40" y1="230" x2="350" y2="230"/>
+<line x1="40" y1="230" x2="40" y2="44"/>
+<line x1="40" y1="230" x2="40" y2="235"/><line x1="116" y1="230" x2="116" y2="235"/><line x1="192" y1="230" x2="192" y2="235"/><line x1="268" y1="230" x2="268" y2="235"/><line x1="344" y1="230" x2="344" y2="235"/>
+<line x1="35" y1="194" x2="40" y2="194"/><line x1="35" y1="158" x2="40" y2="158"/><line x1="35" y1="122" x2="40" y2="122"/><line x1="35" y1="86" x2="40" y2="86"/><line x1="35" y1="50" x2="40" y2="50"/>
+</g>
+<g class="t-sm" text-anchor="middle">
+<text x="40" y="248" class="t-sm" text-anchor="middle">1.0</text><text x="116" y="248" class="t-sm" text-anchor="middle">1.2</text><text x="192" y="248" class="t-sm" text-anchor="middle">1.4</text><text x="268" y="248" class="t-sm" text-anchor="middle">1.6</text><text x="344" y="248" class="t-sm" text-anchor="middle">1.8</text>
+</g>
+<text x="32" y="198" class="t-sm" text-anchor="end">1.1</text><text x="32" y="162" class="t-sm" text-anchor="end">1.2</text><text x="32" y="126" class="t-sm" text-anchor="end">1.3</text><text x="32" y="90" class="t-sm" text-anchor="end">1.4</text><text x="32" y="54" class="t-sm" text-anchor="end">1.5</text>
+<text x="350" y="266" class="t-b" text-anchor="end">GD1</text>
+<text x="46" y="36" class="t-b">GD2</text>
+<polygon points="70.4,194 307.7,194 220.8,72.7" fill="#eef3f8" stroke="#1f5a96" stroke-width="1.5"/>
+<circle cx="70.4" cy="194" r="4" fill="#1f5a96"/><circle cx="307.7" cy="194" r="4" fill="#1f5a96"/><circle cx="220.8" cy="72.7" r="4" fill="#1f5a96"/>
+<text x="220.8" y="62" class="t-sm" text-anchor="middle">E (1.4758, 1.4370)</text>
+<text x="66" y="214" class="t-sm">F (1.08, 1.10)</text>
+<text x="312" y="214" class="t-sm" text-anchor="end">A (1.7045, 1.10)</text>
+<line x1="118" y1="106" x2="143" y2="130" stroke="#b42318" stroke-width="1"/>
+<circle cx="145.6" cy="133.3" r="4.5" fill="#b42318"/>
+<text x="56" y="90" class="t-sm">midpoint of E–F:</text>
+<text x="56" y="103" class="t-sm">Pe 50, Pf 50, Pa 0</text>
+<circle cx="199.6" cy="153.6" r="4.5" fill="#6b4fa0"/>
+<text x="199.6" y="174" class="t-sm" text-anchor="middle">centroid: about 33 each</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">The fixed triangle behind GD1, GD2 and Pe, Pf, Pa.</span> Corners from the GrafAnc documentation; the two marked points follow from the barycentric formula above. A person below the F–A edge has a negative raw European weight, so <code>RawPe</code> is negative and <code>Pe</code> is 0. <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<p><strong>Step 3: subcontinental scores.</strong> Each of the fifteen columns <code>EA1</code>–<code>EA4</code>, <code>AF1</code>–<code>AF3</code>, <code>EU1</code>–<code>EU3</code>, <code>SA1</code>, <code>SA2</code> and <code>IC1</code>–<code>IC3</code> compares two of the reference populations. For each SNP it takes the logarithm of the ratio of the person's genotype probabilities under the two populations' frequencies, averages over SNPs, and rescales the average so that a typical member of the first population scores −1 and a typical member of the second scores +1.<sup><a href="#src-23">23</a></sup></p>
+<p><strong>Step 4: a group by fixed rules.</strong> <code>AncGroupID</code> comes from a sequence of hand-set thresholds on these scores, checked in order. In the source code, for example, a person with <code>Pa</code> above 15 and <code>Pf</code> above 15 who has not matched the earlier Oceania and South Asia rules is assigned 800 (multi-ancestry); a person with <code>EU1</code> below 1.6 and <code>IC2</code> below −0.25 enters the Europe and Middle East branch, where <code>IC3</code> below 3.5 − 3.1 × <code>EU1</code> means Europe, and <code>EU2</code>, <code>EU3</code> then pick the European subgroup.<sup><a href="#src-23">23</a></sup> The first digit of the code is the continental group, which is what the practical's <code>AncGroupID %/% 100</code> extracts (integer division by 100).</p>
+
+<h3 id="grafanc-output">What comes out</h3>
+<p>One tab-separated line per person with 27 columns:</p>
+<dl class="cols-doc">
+  <dt><code>Sample</code></dt><dd>The individual ID from the <code>.fam</code> file.</dd>
+  <dt><code>SNPs</code></dt><dd>Number of ancestry SNPs with a genotype call (the documentation writes <code>#SNPs</code>; the program writes <code>SNPs</code>).</dd>
+  <dt><code>GD1</code>, <code>GD2</code>, <code>GD3</code></dt><dd>Continental coordinates (step 2). The practical plots <code>GD1</code> against <code>GD2</code>.</dd>
+  <dt><code>EA1</code>…<code>IC3</code></dt><dd>The fifteen subcontinental scores (step 3).</dd>
+  <dt><code>Pe</code>, <code>Pf</code>, <code>Pa</code></dt><dd>European, African and East Asian proportions in percent, each between 0 and 100, adding to 100.</dd>
+  <dt><code>RawPe</code>, <code>RawPf</code>, <code>RawPa</code></dt><dd>The same before negative weights are set to 0; can be below 0 or above 100.</dd>
+  <dt><code>AncGroupID</code></dt><dd>The assigned group, a three-digit code.</dd>
+</dl>
+<div class="table-wrap">
+<table class="compact">
+  <caption>GrafAnc group codes: continental groups, and the subgroups of Europe and of the Middle East and North Africa</caption>
+  <thead><tr><th>Code</th><th>Group</th><th>Code</th><th>Subgroup</th></tr></thead>
+  <tbody>
+    <tr><td>100</td><td>AFR · African</td><td>301</td><td>Finland</td></tr>
+    <tr><td>200</td><td>MEN · Middle East and North Africa</td><td>302</td><td>Northern Europe</td></tr>
+    <tr><td>300</td><td>EUR · European</td><td>303</td><td>Western Europe</td></tr>
+    <tr><td>400</td><td>SAS · South Asian</td><td>304</td><td>Southern Europe</td></tr>
+    <tr><td>500</td><td>EAS · East Asian</td><td>305</td><td>Northeastern Europe</td></tr>
+    <tr><td>600</td><td>AMR · American</td><td>306</td><td>Southeastern Europe</td></tr>
+    <tr><td>700</td><td>OCN · Oceania</td><td>307, 308</td><td>Balkans; other Europe</td></tr>
+    <tr><td>800</td><td>MIX · Multi-ancestry</td><td>201, 202, 203</td><td>Northern Africa; Middle East 1; Middle East 2</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The documentation lists all 41 group codes with the UK Biobank countries of birth and the 1000 Genomes and HGDP populations that fall into each, and it warns that "there are no clear boundaries between human populations": a group label describes genetic similarity to those reference samples, not a person's ethnicity or identity. The practical expects more than 99% of PennCATH to be assigned EUR, spread over several European subgroups, and a few people MEN.<sup><a href="#src-16">16</a></sup></p>
+<p>How precise is a score? The documentation estimated the standard deviation of each score by deleting genotypes at random in 1000 Genomes data:<sup><a href="#src-23">23</a></sup></p>
+<div class="eq-block">
+  <div class="eq-display">\[ \sigma \approx a + \frac{b}{\sqrt{n}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\sigma\)</dt><dd>Standard deviation of a score caused by which SNPs happen to be genotyped.</dd>
+    <dt>\(n\)</dt><dd>Number of ancestry SNPs with a genotype call: the <code>SNPs</code> column.</dd>
+    <dt>\(a, b\)</dt><dd>Constants fitted for each score and listed in the documentation; for <code>GD2</code>, \(a = -0.0001\) and \(b = 0.95\).</dd>
+  </dl>
+  <p class="eq-intuition">Each score is an average over SNPs, and the standard deviation of an average falls as one over the square root of the number of terms; \(a\) is a small correction from the fit. For <code>GD2</code> at \(n = 10{,}000\), \(\sigma = -0.0001 + 0.95/100 = 0.0094\). Since \(\lambda_{\mathrm{E}} = (\mathrm{GD2} - 1.1)/0.337\), that is \(0.0094/0.337 \approx 0.028\) in \(\lambda_{\mathrm{E}}\), or about 2.8 percentage points of <code>Pe</code>. With all 282,424 SNPs it falls to about 0.5 points.</p>
+</div>
+
+<h3 id="grafanc-build">Running it: the binary, GRAFPATH, bcftools and the workshop patch</h3>
+<ul>
+  <li><strong>Linux only.</strong> The repository includes a ready-built program, <code>bin/grafanc</code>, for 64-bit Linux, and the practical runs that file. The source code uses Linux-specific system interfaces (it reads the machine's memory size with <code>sysinfo()</code> and finds its own location through <code>/proc/self/exe</code>), so it does not compile on macOS or Windows. On those systems run it in Docker or in WSL (<a href="setup.html#grafanc">Set up your computer</a>).</li>
+  <li><strong><code>GRAFPATH</code>.</strong> GrafAnc looks for <code>AncSnpPopAFs.txt</code> in the current folder, next to the executable, in <code>../cpp/data</code> relative to it, and finally under the folder named by the environment variable <code>GRAFPATH</code>. The practical sets <code>GRAFPATH=${analysis_dir}/grafanc/cpp</code> so the search ends in <code>cpp/data</code>.</li>
+  <li><strong>Why <code>module load bcftools/1.23</code>?</strong> GrafAnc never runs bcftools. Its makefile links it against <dfn>htslib</dfn>, the C library for reading VCF and other sequencing formats on which bcftools is built, and its README says htslib must be installed. Loading the bcftools module on Biowulf most likely makes that library available to the ready-built program. This is our inference from the files; the practical does not give the reason.</li>
+  <li><strong>The workshop patch.</strong> The workshop's Docker image (<code>ghcr.io/dceg-workshops/graftools</code>) builds GrafAnc from source with a small patch.<sup><a href="#src-26">26</a></sup> The patch rewrites the output step, which in the original builds each line with <code>sprintf()</code> writing into the same buffer it reads from (behavior the C standard leaves undefined) and can stop early when some people have too few SNPs; it frees arrays with <code>delete[]</code>; and it makes the program exit with status 0 after a successful run. The original returns 1 on success and 0 on most errors, the reverse of the convention in <a href="#exit-status">Exit status</a>. In the practical this does no harm, because the chunk's last command, <code>head</code>, succeeds; in a script that stops at the first failure it matters (<a href="setup.html#scripts">the downloadable pipeline</a> allows for it).</li>
+</ul>
+
+<h2 id="helpers">The supporting tools <span class="tag core">Core</span></h2>
+<dl class="cols-doc">
+  <dt><dfn>git</dfn></dt><dd>A version-control program: it records the history of a set of files, and a <em>repository</em> is such a set with its history. The practical uses one command, <code>git clone URL</code>, which copies a repository, history included, into a new folder. The GrafAnc repository holds about 71 MB of files plus a similar amount of history, and decompressing the reference table adds 47 MB, more than the "roughly 30 MB" the practical's wrap-up mentions; <code>git clone --depth 1</code> skips the history.</dd>
+  <dt><dfn>akt</dfn></dt><dd>Illumina's Ancestry and Kinship Toolkit, a program for ancestry and relatedness from sequencing data.<sup><a href="#src-27">27</a></sup> The practical runs none of it: it clones the repository (now archived) only for one file, <code>data/integrated_call_samples_v3.20130502.ALL.panel</code>. That 55 KB tab-separated table, published by the 1000 Genomes Project, lists the 2,504 samples with their population, super-population and sex: 661 AFR, 347 AMR, 504 EAS, 503 EUR and 489 SAS. The same file can be downloaded directly from the 1000 Genomes FTP site.<sup><a href="#src-28">28</a></sup></dd>
+  <dt><dfn>bcftools</dfn> and htslib</dt><dd>bcftools reads, filters, merges and summarizes VCF and BCF files; htslib is the C library underneath it and underneath samtools.<sup><a href="#src-29">29</a></sup> The practical does not run bcftools; see the GrafAnc notes above for why it loads the module.</dd>
+  <dt><dfn>conda</dfn>, mamba and Bioconda</dt><dd>conda installs programs and libraries, not only Python packages, into separate <em>environments</em>, folders that each hold their own versions; mamba is a faster program with the same commands. Packages come from <em>channels</em>: conda-forge for R and its packages, and <dfn>Bioconda</dfn> for bioinformatics programs such as PLINK, bcftools and htslib.<sup><a href="#src-30">30</a></sup> Bioconda's PLINK 1.9 is built for Linux and Intel Macs only; <a href="setup.html#conda">Set up your computer</a> shows how to handle Apple Silicon.</dd>
+  <dt><dfn>Homebrew</dfn></dt><dd>A package manager for macOS (and Linux) that installs programs with <code>brew install</code>. Its formula <code>plink1</code> installs PLINK 1.9 built for both Intel and Apple Silicon; it conflicts with PuTTY, a remote-login program that also installs a command called <code>plink</code>.</dd>
+  <dt><dfn>Docker</dfn></dt><dd>Runs a program inside a <em>container</em>: an isolated process with its own Linux file system, created from an <em>image</em> that bundles the program with everything it needs. <code>docker run --rm -v HOSTFOLDER:/work IMAGE COMMAND</code> runs one command and lets it read and write the host folder as <code>/work</code>. On macOS and Windows, Docker Desktop runs the containers inside a Linux virtual machine; an image built for Intel processors (<code>linux/amd64</code>) runs on Apple Silicon under emulation, more slowly.</dd>
+  <dt><dfn>R Markdown</dfn> and Quarto</dt><dd>An R Markdown file (<code>.Rmd</code>) mixes text with code <em>chunks</em> marked <code>```{r}</code> or <code>```{bash}</code>. <em>Knitting</em> it runs the chunks in order and writes a report with the code, its output and the plots. All R chunks share one R session, but each bash chunk runs as a new bash process, which is why the practical passes its paths through <code>Sys.setenv()</code>.<sup><a href="#src-18">18</a></sup> Quarto, Posit's newer publishing system, runs the same chunks and can render <code>.Rmd</code> files too.</dd>
+</dl>
+
+<h2 id="map">Which tool does what: one table <span class="tag core">Core</span></h2>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Every task in the practical, the tool that does it, and what it leaves behind</caption>
+  <thead><tr><th>Task</th><th>Tool</th><th>Command or function</th><th>Output</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Task">Check the inputs and PLINK</td><td data-label="Tool">shell</td><td data-label="Command"><code>ls ${input_dir}</code>; <code>which plink</code>; <code>plink --version</code></td><td data-label="Output">listing; path; version</td></tr>
+    <tr><td data-label="Task">Missing-call rates</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--missing</code></td><td data-label="Output"><code>.imiss</code>, <code>.lmiss</code></td></tr>
+    <tr><td data-label="Task">Drop bad variants, then bad samples</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--geno 0.01 --make-bed</code>, then <code>--mind 0.01 --make-bed</code></td><td data-label="Output">two new filesets</td></tr>
+    <tr><td data-label="Task">Hardy–Weinberg tests</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--hardy</code></td><td data-label="Output"><code>.hwe</code></td></tr>
+    <tr><td data-label="Task">List of roughly independent SNPs</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--indep-pairwise 50 5 0.3</code></td><td data-label="Output"><code>.prune.in</code>, <code>.prune.out</code></td></tr>
+    <tr><td data-label="Task">Relatedness</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--extract … --genome</code></td><td data-label="Output"><code>.genome</code></td></tr>
+    <tr><td data-label="Task">Heterozygosity</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--extract … --het</code></td><td data-label="Output"><code>.het</code></td></tr>
+    <tr><td data-label="Task">Study-only PCA</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--extract … --maf 0.05 --pca</code></td><td data-label="Output"><code>.eigenvec</code>, <code>.eigenval</code></td></tr>
+    <tr><td data-label="Task">Merge with 1000 Genomes</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--bmerge</code>; <code>--flip</code>; <code>--bmerge</code> again</td><td data-label="Output"><code>-merge.missnp</code>; flipped fileset; merged fileset</td></tr>
+    <tr><td data-label="Task">PCA with the reference</td><td data-label="Tool">PLINK</td><td data-label="Command"><code>--geno 0.1 --maf 0.05 --pca</code></td><td data-label="Output"><code>.eigenvec</code>, <code>.eigenval</code></td></tr>
+    <tr><td data-label="Task">Reference population labels</td><td data-label="Tool">git (or curl)</td><td data-label="Command"><code>git clone https://github.com/Illumina/akt.git</code></td><td data-label="Output">panel file</td></tr>
+    <tr><td data-label="Task">Unique sample IDs</td><td data-label="Tool">awk, PLINK</td><td data-label="Command"><code>awk '{…}'</code>; <code>--update-ids … --make-bed</code></td><td data-label="Output"><code>updateIDs.txt</code>; <code>.uniqueIDs</code> fileset</td></tr>
+    <tr><td data-label="Task">Ancestry groups</td><td data-label="Tool">git, GrafAnc</td><td data-label="Command"><code>git clone …/grafanc.git</code>; <code>gunzip</code>; <code>grafanc PREFIX OUTFILE</code></td><td data-label="Output"><code>penncath_grafanc_out.txt</code></td></tr>
+    <tr><td data-label="Task">Read, count, plot</td><td data-label="Tool">R</td><td data-label="Command"><code>fread()</code>, dplyr verbs, <code>ggplot()</code></td><td data-label="Output">tables and plots in the knitted report</td></tr>
+    <tr><td data-label="Task">Disk use</td><td data-label="Tool">shell</td><td data-label="Command"><code>du -sh ${analysis_dir}</code></td><td data-label="Output">folder size</td></tr>
+  </tbody>
+</table>
+</div>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>The shell turns a typed line into a program name and a list of arguments; PLINK sees paths, never <code>${variables}</code>, and a non-zero exit status means failure.</li>
+    <li>PLINK 1.9 stores four genotypes per byte, so a <code>.bed</code> file has exactly \(3 + m\lceil n/4 \rceil\) bytes, and it processes 32 genotypes per 64-bit operation.</li>
+    <li>One PLINK run reads one fileset, applies its flags in a fixed documented order (<code>--mind</code> before <code>--geno</code>, merge first, <code>--make-bed</code> before the reports), and writes files that all share the <code>--out</code> prefix, including a <code>.log</code>.</li>
+    <li>R reads every report with <code>fread()</code>; <code>.eigenvec</code> has no header (columns <code>V1</code>, <code>V2</code>, …), and names like <code>O(HOM)</code> need backticks.</li>
+    <li>GrafAnc places each person in a fixed E–F–A triangle from Hardy–Weinberg distances to reference allele frequencies, turns the position into <code>Pe</code>, <code>Pf</code>, <code>Pa</code>, and assigns <code>AncGroupID</code> by fixed rules. It runs on Linux only.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Someone shortens step 1 to <code>plink --bfile penncath --geno 0.01 --mind 0.01 --make-bed --out clean</code>. Which filter acts first, and why might more people be removed than in the practical?</summary><div class="a"><p><code>--mind</code> acts first: PLINK applies sample filters before variant filters whatever the order on the command line. Each person's missing rate is then computed over all variants, including the badly genotyped ones that <code>--geno</code> would have removed, so rates are higher and more people exceed 0.01. The practical runs <code>--geno</code> and <code>--mind</code> as two separate commands for this reason.</p></div></details>
+  <details class="q"><summary>A fileset has 3,884 people and 17,490 SNPs. How many bytes must its <code>.bed</code> file have?</summary><div class="a"><p>Each SNP takes \(\lceil 3884/4 \rceil = 971\) bytes, so the file has \(3 + 17{,}490 \times 971 = 16{,}982{,}793\) bytes. Any other size means a truncated or corrupt file.</p></div></details>
+  <details class="q"><summary>Why does the practical keep only the rows with <code>TEST == "UNAFF"</code> from the <code>.hwe</code> file?</summary><div class="a"><p>For case/control data PLINK 1.9's <code>--hardy</code> writes three rows per variant: all founders (ALL), cases (AFF) and controls (UNAFF). A SNP associated with the disease can legitimately depart from Hardy–Weinberg proportions in cases, so the QC check uses controls; PLINK's <code>--hwe</code> filter also tests controls only.</p></div></details>
+  <details class="q"><summary>Why does <code>mutate(het_rate = (N(NM) - O(HOM)) / N(NM))</code> fail, and what fixes it?</summary><div class="a"><p>R reads <code>N(NM)</code> as a call of a function named <code>N</code> with argument <code>NM</code>. Column names that are not valid R names must be enclosed in backticks: <code>(`N(NM)` - `O(HOM)`) / `N(NM)`</code>.</p></div></details>
+  <details class="q"><summary>The first <code>--bmerge</code> fails. Which new files are in <code>analysis_dir</code>, and why does the practical end the command with <code>|| true</code>?</summary><div class="a"><p>PLINK writes <code>penncath.geno0.01.mind0.01.merge1kgenomes-merge.missnp</code>, the list of variants with apparent three-allele conflicts, and the run's <code>.log</code>, but no merged fileset. It exits with a non-zero status, which would stop the knitting; <code>|| true</code> replaces that status with success so the next chunk, which flips the listed SNPs, can run.</p></div></details>
+  <details class="q"><summary>GrafAnc reports <code>GD1</code> = 1.4201 and <code>GD2</code> = 1.2123 for a person. What are <code>Pe</code>, <code>Pf</code> and <code>Pa</code>?</summary><div class="a"><p>\(\lambda_{\mathrm{E}} = (1.2123 - 1.1)/0.337 = 0.333\). Then \(\lambda_{\mathrm{A}} = (1.4201 - 0.333 \times 1.4758 - 0.667 \times 1.08)/0.6245 = 0.333\), where 0.6245 is the distance from F to A along <code>GD1</code>, and \(\lambda_{\mathrm{F}} = 1 - 0.333 - 0.333 = 0.333\). All three are about 33: the point is the centroid of the triangle.</p></div></details>
+  <details class="q"><summary>The practical loads the bcftools module before running GrafAnc, yet never calls bcftools. What is the most likely reason?</summary><div class="a"><p>GrafAnc is linked against htslib, the library bcftools is built on, and its README says htslib must be installed. On Biowulf, loading the bcftools module most likely makes that shared library available to the ready-built GrafAnc program. The practical does not state the reason; this is an inference.</p></div></details>
+  <details class="q"><summary>A PLINK <code>.eigenvec</code> value is 0.03 while scikit-learn gives about 30 for the same person and component. Is one of them wrong?</summary><div class="a"><p>Not necessarily. PLINK writes eigenvectors scaled to length 1; scikit-learn writes projections, which are larger by \(\sqrt{m\lambda_k}\) (up to sign). With \(m\lambda_k = 10^6\) the factor is 1000. Check that the squares of each PLINK column add up to 1.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://swcarpentry.github.io/shell-novice/" target="_blank" rel="noopener">The Unix Shell</a> <span class="src">· Software Carpentry</span> <span class="level intro">intro</span> — a hands-on lesson on files, paths, pipes, variables and scripts.</li>
+    <li><a href="https://r4ds.hadley.nz/" target="_blank" rel="noopener">R for Data Science, 2nd edition</a> <span class="src">· Wickham, Çetinkaya-Rundel and Grolemund</span> <span class="level intro">intro</span> — the tidyverse, dplyr, tidyr and ggplot2 from the ground up; free online.</li>
+    <li><a href="https://rdatatable.gitlab.io/data.table/articles/datatable-intro.html" target="_blank" rel="noopener">Introduction to data.table</a> <span class="src">· data.table vignette</span> <span class="level intro">intro</span> — the <code>DT[i, j, by]</code> syntax with worked examples.</li>
+    <li><a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">A tutorial on conducting genome-wide association studies: quality control and statistical analysis</a> <span class="src">· Marees et al., Int J Methods Psychiatr Res 2018</span> <span class="level intermediate">intermediate</span> — a PLINK-based QC walkthrough with scripts, close to the practical's steps.</li>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/" target="_blank" rel="noopener">PLINK 1.9 documentation</a> <span class="src">· Chang and Purcell</span> <span class="level intermediate">intermediate</span> — every flag, file format and default; start from the order-of-operations page.</li>
+    <li><a href="https://github.com/jimmy-penn/grafanc/blob/master/GrafAncDocumentation.md" target="_blank" rel="noopener">GrafAnc documentation</a> <span class="src">· Jin et al.</span> <span class="level intermediate">intermediate</span> — inputs, all 41 group codes, plotting and reliability tables.</li>
+    <li><a href="https://doi.org/10.1186/s13742-015-0047-8" target="_blank" rel="noopener">Second-generation PLINK</a> <span class="src">· Chang et al., GigaScience 2015</span> <span class="level advanced">advanced</span> — the bit-level algorithms behind PLINK 1.9's speed.</li>
+    <li><a href="https://doi.org/10.1016/j.xhgg.2025.100530" target="_blank" rel="noopener">GrafAnc: reliable and reproducible inference of continental and regional population structure</a> <span class="src">· Jin et al., HGG Advances 2026</span> <span class="level advanced">advanced</span> — how the reference populations, scores and group rules were built and validated.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">PLINK 1.9 documentation. Order of operations. <a href="https://www.cog-genomics.org/plink/1.9/order" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/order</a></li>
+    <li id="src-2">Chang CC, Chow CC, Tellier LCAM, Vattikuti S, Purcell SM, Lee JJ. Second-generation PLINK: rising to the challenge of larger and richer datasets. <em>GigaScience</em>. 2015;4:7. <a href="https://doi.org/10.1186/s13742-015-0047-8" target="_blank" rel="noopener">doi:10.1186/s13742-015-0047-8</a></li>
+    <li id="src-3">Purcell S, Neale B, Todd-Brown K, et al. PLINK: a tool set for whole-genome association and population-based linkage analyses. <em>Am J Hum Genet</em>. 2007;81(3):559–575. <a href="https://doi.org/10.1086/519795" target="_blank" rel="noopener">doi:10.1086/519795</a></li>
+    <li id="src-4">PLINK 1.9 home page: downloads and version history. <a href="https://www.cog-genomics.org/plink/1.9/" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/</a></li>
+    <li id="src-5">PLINK 1.9 documentation. Output file list. <a href="https://www.cog-genomics.org/plink/1.9/output" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/output</a></li>
+    <li id="src-6">PLINK 1.9 documentation. Input filtering (<code>--extract</code>, <code>--remove</code>, <code>--geno</code>, <code>--mind</code>, <code>--maf</code>, <code>--hwe</code>). <a href="https://www.cog-genomics.org/plink/1.9/filter" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/filter</a></li>
+    <li id="src-7">PLINK 1.9 documentation. Data management (<code>--make-bed</code>, <code>--bmerge</code>, <code>--flip</code>, <code>--update-ids</code>). <a href="https://www.cog-genomics.org/plink/1.9/data" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/data</a></li>
+    <li id="src-8">PLINK 1.9 documentation. Basic statistics (<code>--missing</code>, <code>--hardy</code>, <code>--het</code>). <a href="https://www.cog-genomics.org/plink/1.9/basic_stats" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/basic_stats</a></li>
+    <li id="src-9">PLINK 1.9 documentation. Linkage disequilibrium (<code>--indep-pairwise</code>). <a href="https://www.cog-genomics.org/plink/1.9/ld" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/ld</a></li>
+    <li id="src-10">PLINK 1.9 documentation. Identity by descent (<code>--genome</code>). <a href="https://www.cog-genomics.org/plink/1.9/ibd" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/ibd</a></li>
+    <li id="src-11">PLINK 1.9 documentation. Population stratification (<code>--pca</code>). <a href="https://www.cog-genomics.org/plink/1.9/strat" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/strat</a></li>
+    <li id="src-12">PLINK 1.9 documentation. Miscellaneous (<code>--memory</code>, <code>--threads</code>, <code>--seed</code>). <a href="https://www.cog-genomics.org/plink/1.9/other" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/other</a></li>
+    <li id="src-13">PLINK 1.9 documentation. File formats. <a href="https://www.cog-genomics.org/plink/1.9/formats" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/formats</a></li>
+    <li id="src-14">Chang CC. plink-ng source code, PLINK 1.9 directory: <code>count_01()</code> in <code>plink_common.c</code>; <code>--pca</code> output and <code>--bmerge</code> file names in <code>plink_calc.c</code> and <code>plink_data.c</code>. <a href="https://github.com/chrchang/plink-ng/tree/master/1.9" target="_blank" rel="noopener">github.com/chrchang/plink-ng</a></li>
+    <li id="src-15">PLINK 2.0 home page, downloads and documentation. <a href="https://www.cog-genomics.org/plink/2.0/" target="_blank" rel="noopener">cog-genomics.org/plink/2.0/</a></li>
+    <li id="src-16">DCEG Statistical Genetics Workshop. Session 1 practical, <code>src/01_qc.Rmd</code>. <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/blob/main/src/01_qc.Rmd" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a></li>
+    <li id="src-17">DCEG Statistical Genetics Workshop. <code>penncath.log</code>, in the workshop's shared data folder (<code>data/workshop1/inputs/penncath_withPheno</code>). <a href="https://drive.google.com/drive/folders/1kVJH4tM8R8O0hITnvifCV-hoai-Mgn-b?usp=sharing" target="_blank" rel="noopener">Google Drive folder</a></li>
+    <li id="src-18">Xie Y, Dervieux C, Riederer E. <em>R Markdown Cookbook</em>. Section "Run shell scripts". <a href="https://bookdown.org/yihui/rmarkdown-cookbook/eng-bash.html" target="_blank" rel="noopener">bookdown.org/yihui/rmarkdown-cookbook/eng-bash.html</a></li>
+    <li id="src-19">Wickham H, Averick M, Bryan J, et al. Welcome to the tidyverse. <em>J Open Source Softw</em>. 2019;4(43):1686. <a href="https://doi.org/10.21105/joss.01686" target="_blank" rel="noopener">doi:10.21105/joss.01686</a></li>
+    <li id="src-20">data.table documentation: <code>fread</code>; and its source, <code>src/fread.c</code>. <a href="https://rdatatable.gitlab.io/data.table/reference/fread.html" target="_blank" rel="noopener">rdatatable.gitlab.io/data.table/reference/fread.html</a>; <a href="https://github.com/Rdatatable/data.table/blob/master/src/fread.c" target="_blank" rel="noopener">github.com/Rdatatable/data.table</a></li>
+    <li id="src-21">Wickham H. A layered grammar of graphics. <em>J Comput Graph Stat</em>. 2010;19(1):3–28. <a href="https://doi.org/10.1198/jcgs.2009.07098" target="_blank" rel="noopener">doi:10.1198/jcgs.2009.07098</a></li>
+    <li id="src-22">glue package documentation. <a href="https://glue.tidyverse.org/" target="_blank" rel="noopener">glue.tidyverse.org</a></li>
+    <li id="src-23">Jin Y, et al. GrafAnc repository: README, <code>GrafAncDocumentation.md</code>, reference table and C++ source (<code>SampleGenoAncestry.cpp</code>, <code>SampleGenoDist.cpp</code>, <code>GrafAnc.cpp</code>), version 1.0.0. <a href="https://github.com/jimmy-penn/grafanc" target="_blank" rel="noopener">github.com/jimmy-penn/grafanc</a></li>
+    <li id="src-24">Jin Y, Wang H, Naj AC, Wang L-S, Lee W-P. GrafAnc: reliable and reproducible inference of continental and regional population structure. <em>HGG Adv</em>. 2026;7(1):100530. <a href="https://doi.org/10.1016/j.xhgg.2025.100530" target="_blank" rel="noopener">doi:10.1016/j.xhgg.2025.100530</a></li>
+    <li id="src-25">Jin Y, Schäffer AA, Feolo M, Holmes JB, Kattman BL. GRAF-pop: a fast distance-based method to infer subject ancestry from multiple genotype datasets without principal components analysis. <em>G3 (Bethesda)</em>. 2019;9(8):2447–2461. <a href="https://doi.org/10.1534/g3.118.200925" target="_blank" rel="noopener">doi:10.1534/g3.118.200925</a></li>
+    <li id="src-26">DCEG Statistical Genetics Workshop. GrafAnc Docker recipe: <code>docker_images/GRAFTOOLS/Dockerfile</code> and <code>grafanc-output.patch</code>. <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/tree/main/docker_images/GRAFTOOLS" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a></li>
+    <li id="src-27">Arthur R, Schulz-Trieglaff O, Cox AJ, O'Connell J. AKT: ancestry and kinship toolkit. <em>Bioinformatics</em>. 2017;33(1):142–144. <a href="https://doi.org/10.1093/bioinformatics/btw576" target="_blank" rel="noopener">doi:10.1093/bioinformatics/btw576</a></li>
+    <li id="src-28">1000 Genomes Project. Sample panel file <code>integrated_call_samples_v3.20130502.ALL.panel</code>. <a href="https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel" target="_blank" rel="noopener">ftp.1000genomes.ebi.ac.uk</a></li>
+    <li id="src-29">Danecek P, Bonfield JK, Liddle J, et al. Twelve years of SAMtools and BCFtools. <em>GigaScience</em>. 2021;10(2):giab008. <a href="https://doi.org/10.1093/gigascience/giab008" target="_blank" rel="noopener">doi:10.1093/gigascience/giab008</a>; Bonfield JK, Marshall J, Danecek P, et al. HTSlib: C library for reading/writing high-throughput sequencing data. <em>GigaScience</em>. 2021;10(2):giab007. <a href="https://doi.org/10.1093/gigascience/giab007" target="_blank" rel="noopener">doi:10.1093/gigascience/giab007</a></li>
+    <li id="src-30">Grüning B, Dale R, Sjödin A, et al. Bioconda: sustainable and comprehensive software distribution for the life sciences. <em>Nat Methods</em>. 2018;15(7):475–476. <a href="https://doi.org/10.1038/s41592-018-0046-7" target="_blank" rel="noopener">doi:10.1038/s41592-018-0046-7</a></li>
+    <li id="src-31">pandas-plink source and documentation (<code>read_plink</code>). <a href="https://github.com/limix/pandas-plink" target="_blank" rel="noopener">github.com/limix/pandas-plink</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

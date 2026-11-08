@@ -1,0 +1,92 @@
+[
+  {
+    "id": "fam-file",
+    "term": ".fam file (PLINK sample file)",
+    "aka": ["PLINK sample information file"],
+    "short": "The text file of a PLINK binary fileset that lists the people, one line each in the order their genotypes are stored in the .bed file. It has no header and six columns: family ID, individual ID, father's ID, mother's ID, sex and phenotype.",
+    "long": "<p>The six columns are separated by spaces or tabs. Sex is coded 1 = male, 2 = female, 0 = unknown. A case–control phenotype is coded 1 = control, 2 = case, and −9 or 0 = missing; any other number makes PLINK read the column as a quantitative trait. Parents are given by their individual IDs, or 0 when they are not in the file.</p><p>The line number is what links a person to the genotypes: the first line of the .fam file is the first person in every SNP block of the .bed file. Sorting or editing the .fam file by hand therefore attaches genotypes to the wrong people.</p>",
+    "l1": "The practical's <code>penncath.fam</code> has 1,401 lines; page 12 shows them column by column.",
+    "see": ["plink-binary", "bim-file", "family-id", "individual-id", "plink-a1"],
+    "links": [
+      {"t": "PLINK 1.9 file formats: .fam", "u": "https://www.cog-genomics.org/plink/1.9/formats#fam"}
+    ],
+    "match": [".fam file", "fam file"],
+    "owner": "plink-data"
+  },
+  {
+    "id": "bim-file",
+    "term": ".bim file (PLINK variant file)",
+    "aka": ["PLINK extended map file"],
+    "short": "The text file of a PLINK binary fileset that lists the variants, one line each in the order their genotypes are stored in the .bed file. It has no header and six columns: chromosome, variant ID, genetic position, base-pair position, allele 1 (A1) and allele 2 (A2).",
+    "long": "<p>The genetic position (in morgans or centimorgans) is often 0. The base-pair position is 1-based on the genome build the data were made on. A1 is the allele whose copies PLINK counts; PLINK 1.9 makes it the minor (less frequent) allele whenever it writes a fileset, unless told to keep the order. A SNP at which only one allele was seen has a placeholder in the A1 column.</p><p>As with the .fam file, the line number is the link to the genotypes: line <em>j</em> of the .bim file describes the <em>j</em>th block of the .bed file.</p>",
+    "l1": "The practical's <code>penncath.bim</code> has 861,473 lines; page 12 shows them column by column.",
+    "see": ["plink-binary", "fam-file", "plink-a1", "snp-major", "genome-build"],
+    "links": [
+      {"t": "PLINK 1.9 file formats: .bim", "u": "https://www.cog-genomics.org/plink/1.9/formats#bim"}
+    ],
+    "match": [".bim file", "bim file"],
+    "owner": "plink-data"
+  },
+  {
+    "id": "snp-major",
+    "term": "SNP-major order",
+    "aka": ["variant-major order", "locus-major order"],
+    "short": "A layout of a genotype file in which all people's genotypes for the first SNP are stored together, then all people's genotypes for the second SNP, and so on. PLINK 1 .bed files use it; reading one SNP means reading one contiguous block.",
+    "long": "<p>The alternative, sample-major (individual-major) order, stores all SNPs of the first person, then all SNPs of the second person. Old PLINK versions could write it; the third byte of a .bed file says which layout follows (01 = SNP-major). PLINK 1.9 converts a sample-major file to SNP-major when it reads one.</p><p>SNP-major order suits association testing and SNP QC, which go through the data one SNP at a time: each SNP's block of ⌈<em>n</em>/4⌉ bytes can be read with one seek and one read.</p>",
+    "l1": "The third byte of <code>penncath.bed</code> is 01: the file is SNP-major (page 12).",
+    "see": ["plink-binary", "bim-file", "genotype-matrix"],
+    "links": [
+      {"t": "PLINK 1.9 file formats: .bed", "u": "https://www.cog-genomics.org/plink/1.9/formats#bed"}
+    ],
+    "match": ["SNP-major", "variant-major", "sample-major"],
+    "owner": "plink-data"
+  },
+  {
+    "id": "family-id",
+    "term": "family ID (FID)",
+    "aka": ["FID"],
+    "short": "The first column of a PLINK .fam file: a label shared by the members of one family. Together with the individual ID it identifies a person; in studies of unrelated people it is often the person's own study ID.",
+    "long": "<p>PLINK identifies a person by the pair (FID, IID), so two people may share an IID if their FIDs differ. Files of keep, remove and update lists therefore start with these two columns. Some PLINK reports join the two with an underscore (FID_IID), which is why the PLINK documentation advises against underscores inside IDs.</p>",
+    "l1": "In <code>penncath.fam</code> the FID is the person's study number, written with quotation marks as part of the ID (\"10002\").",
+    "see": ["individual-id", "fam-file"],
+    "links": [
+      {"t": "PLINK 1.9 file formats: .fam", "u": "https://www.cog-genomics.org/plink/1.9/formats#fam"}
+    ],
+    "match": ["family ID", "family IDs", "FID", "FIDs"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "plink-data"
+  },
+  {
+    "id": "individual-id",
+    "term": "individual ID (IID)",
+    "aka": ["within-family ID", "IID"],
+    "short": "The second column of a PLINK .fam file: the person's ID within their family. It cannot be 0, and the pair (family ID, individual ID) must be unique in a fileset.",
+    "long": "<p>Programs that ignore the family ID, such as GrafAnc, need the individual ID alone to be unique. The practical's step 8 therefore rewrites the IDs with <code>plink --update-ids</code>, which reads a file of four columns: old FID, old IID, new FID, new IID.</p>",
+    "l1": "Every IID in <code>penncath.fam</code> is 1; step 8 of the practical builds unique IIDs such as \"10002_1\".",
+    "see": ["family-id", "fam-file"],
+    "links": [
+      {"t": "PLINK 1.9: --update-ids", "u": "https://www.cog-genomics.org/plink/1.9/data#update_indiv"}
+    ],
+    "match": ["individual ID", "individual IDs", "within-family ID", "within-family IDs", "IID", "IIDs"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "plink-data"
+  },
+  {
+    "id": "plink-a1",
+    "term": "A1 and A2 (PLINK allele columns)",
+    "aka": ["allele 1 and allele 2 in PLINK"],
+    "short": "PLINK's names for the two alleles of a SNP: A1 is column 5 of the .bim file and A2 column 6. PLINK counts copies of A1 (0, 1 or 2), and PLINK 1.9 makes A1 the minor allele whenever it writes a fileset, unless --keep-allele-order is given.",
+    "long": "<p>A1 is not the reference-genome allele, not necessarily the allele that raises risk, and not fixed: if filtering changes which allele is rarer, the next <code>--make-bed</code> swaps A1 and A2 for that SNP and the 0/1/2 counts become 2/1/0. Compare results across files by checking the A1 column, not by assuming it.</p><p>Other software names the same two columns differently (for example a0/a1 in pandas-plink and alt/ref in the R package genio), and some count the second allele by default.</p>",
+    "l1": "Output files of the practical (.hwe, and .frq if you run --freq) report A1 and A2 for every SNP.",
+    "see": ["bim-file", "minor-allele", "effect-allele", "reference-allele"],
+    "links": [
+      {"t": "PLINK 1.9: --keep-allele-order", "u": "https://www.cog-genomics.org/plink/1.9/data#ax_allele"}
+    ],
+    "match": ["A1", "A2"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "plink-data"
+  }
+]

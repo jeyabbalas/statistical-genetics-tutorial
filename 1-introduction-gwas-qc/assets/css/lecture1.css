@@ -1,0 +1,120 @@
+/* ==========================================================================
+   Lecture 1 · additions to the shared design system
+   Loaded after ../0-biological-foundations/assets/css/site.css, which defines the tokens
+   (colors, radii, fonts) and the components shared by every lecture.
+   ========================================================================== */
+
+:root {
+  --reading: #8e3b76;       /* "In the reading" callouts (Uffelmann et al. 2021) */
+  --reading-soft: #fbf0f7;
+  --lab: #2f3b4c;           /* "Run it" callouts and terminals */
+  --lab-soft: #f1f4f8;
+  --term-bg: #12171f;       /* terminal background */
+  --term-fg: #e6edf3;
+  --term-muted: #8b98a8;
+  --term-green: #7ee2a8;
+  --term-yellow: #f2cc60;
+  --term-red: #ff8f87;
+  --term-blue: #8cc8ff;
+}
+
+/* ---------- Callout families added in Lecture 1 ---------- */
+.callout.reading { border-color: var(--reading); background: var(--reading-soft); }
+.callout.reading > .callout-title { color: #6e2a5a; }
+.callout.reading > .callout-title .badge { background: var(--reading); }
+.callout.lab { border-color: var(--lab); background: var(--lab-soft); }
+.callout.lab > .callout-title { color: #1f2937; }
+.callout.lab > .callout-title .badge { background: var(--lab); }
+/* Background from Lecture 0: a one-line pointer to the page that explains the biology */
+.callout.background { border-color: var(--mm); background: #fafaff; padding-top: 10px; }
+.callout.background > .callout-title { color: #2a2170; font-size: 0.9rem; }
+.callout.background > .callout-title .badge { background: var(--mm); }
+.callout.background p { font-size: 0.94rem; }
+
+/* ---------- Code blocks with copy buttons, labels, and expected output ---------- */
+.code-label { display: inline-block; font-family: var(--mono); font-size: 0.74rem; font-weight: 700; color: var(--fg-muted); background: var(--bg-sunk); border: 1px solid var(--border); border-bottom: 0; border-radius: 8px 8px 0 0; padding: 3px 10px; margin-top: 0.8em; }
+.code-label.r { color: #1f5a96; }
+.code-label.bash { color: #2f6b3a; }
+.code-label.python { color: #7a4705; }
+.code-label + .code-wrap > pre, .code-label + pre { margin-top: 0; border-top-left-radius: 0; }
+.code-wrap { position: relative; margin: 1em 0 1.3em; }
+.code-label + .code-wrap { margin-top: 0; }
+.code-wrap > pre { margin: 0; }
+pre.code { background: #f7f8fa; padding-right: 64px; }
+pre.code .prompt { color: var(--fg-faint); user-select: none; }
+pre.code .cm { color: #6a7685; }
+pre.code .kw { color: #8e3b76; font-weight: 600; }
+pre.code .flag { color: #1f5a96; }
+pre.code .str { color: #2f6b3a; }
+.copy-btn { position: absolute; top: 7px; right: 7px; font: inherit; font-size: 0.74rem; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--border-strong); background: #fff; color: var(--fg-muted); cursor: pointer; opacity: 0.85; }
+.copy-btn:hover { opacity: 1; color: var(--accent-hover); border-color: var(--accent); }
+/* Phones: long lines scroll sideways under an absolutely placed button, so start the code below it. */
+@media (max-width: 640px) { pre.code { padding-top: 38px; padding-right: 14px; } }
+pre.output { background: #fcfcf7; border-style: dashed; color: #2c333b; }
+.output-label { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6b5d1f; background: #fbf6e0; border: 1px dashed #d9c98a; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 2px 10px; margin-top: 0.6em; }
+.output-label + pre.output { margin-top: 0; border-top-left-radius: 0; }
+
+/* ---------- Command anatomy: one command, each part explained ----------
+   <div class="cmd-anatomy">
+     <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile toy</span> …</div>
+     <ol class="cmd-parts"><li><code>plink</code> — …</li> …</ol>
+   </div> */
+.cmd-anatomy { border: 1px solid var(--border); border-radius: var(--radius); margin: 1.2em 0 1.6em; overflow: hidden; }
+.cmd-anatomy .cmd-line { font-family: var(--mono); font-size: 0.9rem; background: var(--term-bg); color: var(--term-fg); padding: 14px 16px 18px; line-height: 2.1; overflow-x: auto; white-space: nowrap; }
+.cmd-anatomy .cmd-line .part { position: relative; padding: 2px 4px; border-radius: 4px; background: rgba(140, 200, 255, .12); border-bottom: 2px solid var(--term-blue); }
+.cmd-anatomy .cmd-line .part::after { content: attr(data-n); position: absolute; left: 50%; top: 100%; transform: translate(-50%, 2px); font-size: 0.62rem; font-weight: 800; color: var(--term-yellow); font-family: var(--font); line-height: 1; }
+.cmd-anatomy ol.cmd-parts { margin: 0; padding: 12px 18px 12px 40px; font-size: 0.92rem; background: var(--bg); }
+.cmd-anatomy ol.cmd-parts li { margin: 0.35em 0; }
+
+/* ---------- Step navigation for the practical ---------- */
+nav.step-nav { margin: 0.2em 0 1.6em; }
+nav.step-nav ol { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 0; margin: 0; }
+nav.step-nav li { margin: 0; }
+nav.step-nav a { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; font-size: 0.8rem; font-weight: 600; color: var(--fg-muted); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px 3px 4px; background: var(--bg); }
+nav.step-nav a:hover { border-color: var(--accent); color: var(--accent-hover); }
+nav.step-nav .sn { display: inline-flex; align-items: center; justify-content: center; width: 1.55em; height: 1.55em; border-radius: 50%; background: var(--bg-sunk); color: var(--fg-muted); font-size: 0.74rem; }
+nav.step-nav li.done .sn { background: var(--key-soft); color: var(--key); }
+nav.step-nav li.current a { border-color: var(--lab); color: #fff; background: var(--lab); }
+nav.step-nav li.current .sn { background: #fff; color: var(--lab); }
+
+/* ---------- Tab sets (operating systems, languages) ---------- */
+.tabset { margin: 1.2em 0 1.6em; border: 1px solid var(--border); border-radius: var(--radius); }
+.tabset > .tab-list { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px 6px 0; background: var(--bg-alt); border-bottom: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; }
+.tabset > .tab-list > button { font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--fg-muted); background: transparent; border: 1px solid transparent; border-bottom: 0; border-radius: 8px 8px 0 0; padding: 6px 14px; cursor: pointer; margin-bottom: -1px; }
+.tabset > .tab-list > button:hover { color: var(--fg); }
+.tabset > .tab-list > button[aria-selected="true"] { color: var(--accent-hover); background: var(--bg); border-color: var(--border); }
+.tabset > .tab-panel { padding: 4px 16px 6px; }
+.tabset > .tab-panel > :first-child { margin-top: 0.8em; }
+
+/* ---------- File trees ---------- */
+pre.tree { background: var(--bg); line-height: 1.45; }
+pre.tree .dir { color: var(--accent-hover); font-weight: 700; }
+pre.tree .note { color: var(--fg-faint); }
+
+/* ---------- Column glossary for output files: <dl class="cols-doc"> ---------- */
+dl.cols-doc { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0.8em 0 1.4em; font-size: 0.94rem; }
+dl.cols-doc > dt { font-family: var(--mono); font-size: 0.86rem; font-weight: 700; color: #1f2937; background: var(--bg-sunk); border-radius: 4px; padding: 1px 6px; align-self: start; }
+dl.cols-doc > dd { margin: 0; }
+@media (max-width: 560px) { dl.cols-doc { grid-template-columns: minmax(0, 1fr); gap: 2px; } dl.cols-doc > dd { margin: 0 0 8px 10px; } dl.cols-doc > dt { justify-self: start; } }
+
+/* ---------- Glossary page: Lecture 1 badge and scope switch ---------- */
+.gl-new { display: inline-block; margin-left: 8px; font-size: 0.66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: var(--lab); border-radius: 999px; padding: 1px 7px; vertical-align: 2px; }
+.gloss-scope { display: inline-flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--fg-muted); margin-top: 8px; cursor: pointer; }
+
+/* ---------- Comparison of two approaches side by side ---------- */
+.vs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 1.2em 0 1.6em; }
+.vs > div { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px 4px; background: var(--bg); min-width: 0; }
+.vs > div > h4 { margin: 0 0 6px; font-size: 0.98rem; }
+@media (max-width: 700px) { .vs { grid-template-columns: 1fr; } }
+
+/* ---------- "Expected results" table for runs on the real data ---------- */
+table.expect td:last-child { font-variant-numeric: tabular-nums; }
+
+/* ---------- Small helpers ---------- */
+.nowrap { white-space: nowrap; }
+.muted { color: var(--fg-muted); }
+.kbd { font-family: var(--mono); font-size: 0.82em; border: 1px solid var(--border-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--bg-alt); }
+.pill { display: inline-block; font-size: 0.74rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--border); background: var(--bg-alt); color: var(--fg-muted); }
+.pill.ok { color: var(--key); background: var(--key-soft); border-color: #b9e3cb; }
+.pill.bad { color: var(--pitfall); background: var(--pitfall-soft); border-color: #f6c9c4; }
+.after-widget { font-size: 0.95rem; }

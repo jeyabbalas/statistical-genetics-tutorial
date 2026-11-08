@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overview · Lecture 1</title>
+<meta name="description" content="Lecture 1 of a statistical genetics course for data scientists: genetic epidemiology, the population-genetic ideas behind GWAS, the GWAS from design to use, and a hands-on PLINK quality-control practical you can run in the browser.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<style>
+body[data-page="index"] .conventions { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px 14px; margin: 0.8em 0 1.2em; }
+body[data-page="index"] .conventions > div { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; background: var(--bg); font-size: 0.92rem; line-height: 1.5; }
+body[data-page="index"] .conventions .cv-head { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 2px; }
+body[data-page="index"] .cv-chip { font-size: 0.66rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #fff; border-radius: 999px; padding: 2px 8px; }
+body[data-page="index"] .mental-model svg a:hover > rect:first-child,
+body[data-page="index"] .mental-model svg a:focus-visible > rect:first-child { stroke: var(--accent); stroke-width: 2.5; }
+body[data-page="index"] .mental-model svg a:focus { outline: none; }
+body[data-page="index"] ol.pipeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 22px; }
+body[data-page="index"] ol.pipeline > li { position: relative; margin: 0; --c: var(--accent); }
+body[data-page="index"] ol.pipeline > li > a { display: block; height: 100%; box-sizing: border-box; border: 1px solid var(--border); border-top: 4px solid var(--c); border-radius: 8px; padding: 8px 10px 10px; text-decoration: none; color: var(--fg); background: #fff; font-size: 0.86rem; line-height: 1.4; }
+body[data-page="index"] ol.pipeline > li > a:hover { border-color: var(--c); }
+body[data-page="index"] ol.pipeline > li.hl > a { border-width: 2px; border-top-width: 4px; border-color: var(--c); background: var(--lab-soft); }
+body[data-page="index"] ol.pipeline .st-n { display: inline-flex; align-items: center; justify-content: center; width: 1.6em; height: 1.6em; border-radius: 50%; background: var(--c); color: #fff; font-weight: 700; font-size: 0.78rem; margin-right: 6px; vertical-align: 1px; }
+body[data-page="index"] ol.pipeline .st-t { font-weight: 700; }
+body[data-page="index"] ol.pipeline .st-d { display: block; margin-top: 4px; color: var(--fg-muted); }
+body[data-page="index"] ol.pipeline .st-p { display: block; margin-top: 6px; font-size: 0.78rem; font-weight: 700; color: var(--c); }
+body[data-page="index"] ol.pipeline > li::after { content: "→"; position: absolute; right: -17px; top: 50%; transform: translateY(-50%); color: var(--fg-faint); font-weight: 700; }
+body[data-page="index"] ol.pipeline > li:nth-child(4n)::after, body[data-page="index"] ol.pipeline > li:last-child::after { content: none; }
+@media (max-width: 700px) {
+  body[data-page="index"] ol.pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body[data-page="index"] ol.pipeline > li:nth-child(4n)::after { content: "→"; }
+  body[data-page="index"] ol.pipeline > li:nth-child(2n)::after { content: none; }
+}
+body[data-page="index"] .pipe-band { margin: 14px 0 0; padding: 8px 12px; border: 1px solid var(--data); background: var(--data-soft); border-radius: 8px; font-size: 0.88rem; line-height: 1.45; }
+body[data-page="index"] .pipe-band a { font-weight: 700; color: var(--data); }
+body[data-page="index"] .part-label { font-size: 0.8rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; margin: 1.4em 0 0.2em; }
+body[data-page="index"] .part-label.a { color: var(--mm); }
+body[data-page="index"] .part-label.b { color: var(--data); }
+body[data-page="index"] .part-label.c { color: var(--accent); }
+body[data-page="index"] .part-label.d { color: var(--lab); }
+body[data-page="index"] .part-label.w { color: var(--fg-muted); }
+body[data-page="index"] .card-grid { margin-top: 0.5em; }
+body[data-page="index"] .card .card-slides { display: block; margin-top: 6px; font-size: 0.78rem; color: var(--bridge); font-weight: 600; }
+body[data-page="index"] ol.qc-steps { list-style: none; padding: 0; margin: 12px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px; }
+body[data-page="index"] ol.qc-steps li { margin: 0; }
+body[data-page="index"] ol.qc-steps a { display: flex; gap: 10px; align-items: flex-start; text-decoration: none; color: var(--fg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; background: var(--bg); font-size: 0.9rem; line-height: 1.4; height: 100%; box-sizing: border-box; }
+body[data-page="index"] ol.qc-steps a:hover { border-color: var(--lab); }
+body[data-page="index"] ol.qc-steps strong { display: block; color: var(--lab); }
+body[data-page="index"] ol.qc-steps .sn { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--lab); color: #fff; font-weight: 700; font-size: 0.8rem; }
+body[data-page="index"] ul.checklist { list-style: none; padding-left: 0; display: grid; gap: 6px; }
+body[data-page="index"] ul.checklist > li { position: relative; padding-left: 1.8em; margin: 0; }
+body[data-page="index"] ul.checklist > li::before { content: ""; position: absolute; left: 0.1em; top: 0.3em; width: 0.95em; height: 0.95em; border: 2px solid var(--border-strong); border-radius: 3px; }
+</style>
+</head>
+<body data-page="index">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional" aria-current="page">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Start here · Overview</p>
+  <h1>Genetic epidemiology, GWAS and quality control</h1>
+  <p class="lede">Session 1 of the workshop asks how differences in DNA between people relate to differences in their health, and answers with one kind of study: the genome-wide association study (GWAS). A GWAS measures hundreds of thousands of positions in the genome in thousands of people, tests each position for a link with a trait, and only works if the measurements are cleaned first. This lecture covers the field, the population-genetic ideas the analysis depends on, the GWAS from design to use, and a hands-on practical that cleans a real dataset with PLINK, here also runnable in your browser.</p>
+  <div class="chips">
+    <span class="chip core">Workshop Session 1 · lecture, reading and practical</span>
+    <span class="chip">23 pages · 4 parts</span>
+    <span class="chip data">Practical: PLINK quality control, in your browser and on your computer</span>
+  </div>
+</header>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0</div>
+  <p>This lecture assumes the biology of <a href="../0-biological-foundations/index.html">Lecture 0</a>: what DNA, genes, alleles, genotypes and SNPs are, how they are inherited, and how a blood sample becomes a row of genotypes. If a word on these pages is new, hover over it for a definition, or read Lecture 0's <a href="../0-biological-foundations/lecture-1-bridge.html">Lecture 1 decoder</a>, which explains every slide of this lecture at a beginner's level.</p>
+</aside>
+
+<h2 id="how-to-use">How to use this site</h2>
+<p>Every page opens with a <strong>mental model</strong>: one figure and one sentence that hold the page's main ideas. The sections of the page follow the model's parts in order. If you remember the mental models, you can rebuild the rest. Each part of a page is marked by a colored box:</p>
+<div class="conventions">
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--mm)">Mental model</span></div>The figure and sentence to remember from a page.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--mm)">Background</span></div>The Lecture 0 pages to read first if the biology is new to you.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--bridge)">Slides</span></div>What a lecture slide shows, decoded, with a thumbnail. The title links to the <a href="slide-guide.html">slide guide</a>.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--reading)">In the reading</span></div>What the session's paper, Uffelmann et al. 2021, says on the topic.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--data)">In the data</span></div>Where the concept appears in real files, columns and outputs.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--lab)">Run it</span></div>A command to run, in the browser lab or on your own computer.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--key)">Key points</span></div>A short summary of what matters most.</div>
+  <div><div class="cv-head"><span class="cv-chip" style="background:var(--pitfall)">Pitfall</span></div>A mistake that is easy to make, and how to avoid it.</div>
+  <div><div class="cv-head"><span class="tag core">Core</span> <span class="tag optional">Optional</span></div>Core sections are needed for the rest of the course; optional sections add depth.</div>
+  <div><div class="cv-head">Underlined terms</div>Hover over a term with a dotted underline (or tap it once) to see its definition; click it (or tap again) to open its <a href="glossary.html">glossary</a> entry.</div>
+  <div><div class="cv-head">Equations</div>Every displayed equation is followed by <strong>Terms</strong>, which defines each symbol, and <strong>Intuition</strong>, which explains why the equation has its form.</div>
+  <div><div class="cv-head">Widgets and the lab</div>Figures and widgets marked <span class="illustrative">Simulated</span> show data drawn at random by a program, not measured; those marked <span class="illustrative">Illustrative</span> use made-up numbers. Real data are always cited. The practical's lab runs emulators of PLINK and GrafAnc on a simulated toy dataset; on the toy files the PLINK emulator writes the same files as real PLINK 1.9.0.</div>
+</div>
+
+<section class="mental-model" aria-labelledby="mm1">
+  <span class="mm-label">Mental model 1 · The matrix</span>
+  <h2 id="mm1" data-toc="Mental model 1: one matrix">One matrix holds the whole lecture</h2>
+  <figure class="fig scroll-x" style="--min-w: 740px">
+    <div class="fig-body bare">
+<svg viewBox="0 0 900 560" role="img" aria-labelledby="mx-t mx-d" style="min-width:740px">
+<title id="mx-t">One matrix holds the whole lecture</title>
+<desc id="mx-d">A genotype matrix with one row per person and one column per SNP; each cell holds 0, 1 or 2 copies of allele 1, and some cells are missing. To its right are the phenotype column and three covariate columns. Boxes around it say which statistics are computed on columns (allele frequency, call rate, Hardy–Weinberg test, linkage disequilibrium between neighboring columns), on rows (call rate, heterozygosity, relatedness between pairs of rows, population structure from all rows), that quality control removes failing rows and columns, and that the association test is run once per column. Each box names the pages and quality-control steps that teach it.</desc>
+<defs><marker id="mx-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker></defs>
+<a href="genetic-epidemiology.html" aria-label="Why build the matrix, pages 1 to 3">
+<rect x="10" y="10" width="280" height="150" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="10" y="10" width="6" height="150" rx="3" fill="var(--mm)"/>
+</a>
+<text x="26" y="34" class="t-h" text-anchor="start" style="fill:var(--mm)">WHY BUILD IT</text>
+<text x="26" y="58" class="t" text-anchor="start">The question, the people in</text>
+<text x="26" y="75" class="t" text-anchor="start">the rows, and how society</text>
+<text x="26" y="92" class="t" text-anchor="start">shapes what is measured and</text>
+<text x="26" y="109" class="t" text-anchor="start">how the results are read</text>
+<text x="26" y="126" class="t" text-anchor="start">→ pages 1–3 (Part A)</text>
+<a href="frequencies-hwe.html" aria-label="Columns are SNPs, pages 4 to 6, QC steps 1 to 3">
+<rect x="340" y="10" width="550" height="150" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="340" y="10" width="6" height="150" rx="3" fill="var(--data)"/>
+</a>
+<text x="356" y="34" class="t-h" text-anchor="start" style="fill:var(--data)">COLUMNS = SNPs</text>
+<text x="500" y="34" class="t-sm" text-anchor="start">hundreds of thousands to millions per study</text>
+<text x="356" y="58" class="t" text-anchor="start">One column: allele frequency, call rate and a</text>
+<text x="356" y="75" class="t" text-anchor="start">Hardy–Weinberg test  →  page 5 · QC steps 1–2</text>
+<text x="356" y="92" class="t" text-anchor="start">Neighboring columns are correlated: linkage</text>
+<text x="356" y="109" class="t" text-anchor="start">disequilibrium, r²  →  page 6 · QC step 3</text>
+<text x="356" y="146" class="t-sm" text-anchor="start">How a SNP becomes a column: alleles, strands, 0/1/2 coding  →  page 4</text>
+<a href="population-structure.html" aria-label="Rows are people, page 7, QC steps 1 and 4 to 8">
+<rect x="10" y="196" width="280" height="200" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="10" y="196" width="6" height="200" rx="3" fill="var(--lab)"/>
+</a>
+<text x="26" y="220" class="t-h" text-anchor="start" style="fill:var(--lab)">ROWS = PEOPLE</text>
+<text x="26" y="237" class="t-sm" text-anchor="start">hundreds to millions per study</text>
+<text x="26" y="260" class="t" text-anchor="start">One row: call rate and</text>
+<text x="26" y="277" class="t" text-anchor="start">heterozygosity  →  QC steps 1, 5</text>
+<text x="26" y="294" class="t" text-anchor="start">Pairs of rows: shared DNA,</text>
+<text x="26" y="311" class="t" text-anchor="start">relatedness  →  QC step 4</text>
+<text x="26" y="328" class="t" text-anchor="start">All rows: population structure,</text>
+<text x="26" y="345" class="t" text-anchor="start">principal components</text>
+<text x="26" y="362" class="t" text-anchor="start">→  page 7 · QC steps 6–8</text>
+<a href="practical-overview.html" aria-label="Cleaning rows and columns, Part D, pages 11 to 23">
+<rect x="10" y="420" width="280" height="130" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="10" y="420" width="6" height="130" rx="3" fill="var(--lab)"/>
+</a>
+<text x="26" y="444" class="t-h" text-anchor="start" style="fill:var(--lab)">CLEANING = PART D</text>
+<text x="26" y="468" class="t" text-anchor="start">Quality control removes the</text>
+<text x="26" y="485" class="t" text-anchor="start">rows and columns that fail</text>
+<text x="26" y="502" class="t" text-anchor="start">checks, before any test is run</text>
+<text x="26" y="519" class="t" text-anchor="start">→  pages 11–23</text>
+<a href="gwas-analysis.html" aria-label="One test per column, pages 8 to 10">
+<rect x="340" y="446" width="550" height="104" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="340" y="446" width="6" height="104" rx="3" fill="var(--accent)"/>
+</a>
+<text x="356" y="470" class="t-h" text-anchor="start" style="fill:var(--accent)">ONE TEST PER COLUMN</text>
+<text x="356" y="494" class="t" text-anchor="start">For each SNP j: regress the phenotype y on column j plus the</text>
+<text x="356" y="511" class="t" text-anchor="start">covariates → effect, standard error, p-value → Manhattan plot</text>
+<text x="356" y="528" class="t" text-anchor="start">→  pages 8–9 · use and share the results  →  page 10</text>
+<rect x="340" y="196" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="362" y="196" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="384" y="196" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="406" y="196" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="428" y="196" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="210" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="450" y="196" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="472" y="196" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="494" y="196" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="505.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="516" y="196" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="538" y="196" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="560" y="196" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="582" y="196" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="210" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="340" y="216" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="362" y="216" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="384" y="216" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="230" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="406" y="216" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="428" y="216" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="450" y="216" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="472" y="216" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="494" y="216" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="505.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="516" y="216" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="538" y="216" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="560" y="216" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="582" y="216" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="340" y="236" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="362" y="236" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="384" y="236" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="406" y="236" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="428" y="236" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="450" y="236" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="472" y="236" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="494" y="236" width="22" height="20" fill="#fff" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="505.0" y="250" class="t-xs" text-anchor="middle" style="fill:#b42318;font-size:9px;font-weight:700">NA</text>
+<rect x="516" y="236" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="538" y="236" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="250" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="560" y="236" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="582" y="236" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="340" y="256" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="270" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="362" y="256" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="270" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="384" y="256" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="270" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="406" y="256" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="428" y="256" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="450" y="256" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="472" y="256" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="494" y="256" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="505.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="516" y="256" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="538" y="256" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="560" y="256" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="582" y="256" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="340" y="276" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="362" y="276" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="384" y="276" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="406" y="276" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="428" y="276" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="450" y="276" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="472" y="276" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="290" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="494" y="276" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="505.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="516" y="276" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="538" y="276" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="560" y="276" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="582" y="276" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="340" y="296" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="362" y="296" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="384" y="296" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="406" y="296" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="428" y="296" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="450" y="296" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="472" y="296" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="494" y="296" width="22" height="20" fill="#fff" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="505.0" y="310" class="t-xs" text-anchor="middle" style="fill:#b42318;font-size:9px;font-weight:700">NA</text>
+<rect x="516" y="296" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="538" y="296" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="560" y="296" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="582" y="296" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="310" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="340" y="316" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="362" y="316" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="384" y="316" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="406" y="316" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="428" y="316" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="330" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="450" y="316" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="472" y="316" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="494" y="316" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="505.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="516" y="316" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="538" y="316" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="560" y="316" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="582" y="316" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="340" y="336" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="362" y="336" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="350" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="384" y="336" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="350" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="406" y="336" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="428" y="336" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="450" y="336" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="472" y="336" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="494" y="336" width="22" height="20" fill="#fff" stroke="#b9c1cc" stroke-width="0.8"/>
+<text x="505.0" y="350" class="t-xs" text-anchor="middle" style="fill:#b42318;font-size:9px;font-weight:700">NA</text>
+<rect x="516" y="336" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="538" y="336" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="350" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="560" y="336" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="582" y="336" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="340" y="356" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="362" y="356" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="384" y="356" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="406" y="356" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="428" y="356" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="450" y="356" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="472" y="356" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="494" y="356" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="505.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="516" y="356" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="538" y="356" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="560" y="356" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="582" y="356" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="340" y="376" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="351.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="362" y="376" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="373.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="384" y="376" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="395.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="406" y="376" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="417.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="428" y="376" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="439.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="450" y="376" width="22" height="20" fill="var(--g2)" stroke="#fff" stroke-width="1"/>
+<text x="461.0" y="390" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="472" y="376" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="483.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="494" y="376" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="505.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="516" y="376" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="527.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="538" y="376" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="549.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="560" y="376" width="22" height="20" fill="var(--g0)" stroke="#fff" stroke-width="1"/>
+<text x="571.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">0</text>
+<rect x="582" y="376" width="22" height="20" fill="var(--g1)" stroke="#fff" stroke-width="1"/>
+<text x="593.0" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="340" y="196" width="264" height="200" fill="none" stroke="#5a6370" stroke-width="1.2"/>
+<text x="351.0" y="410" class="t-xs" text-anchor="middle">1</text>
+<text x="373.0" y="410" class="t-xs" text-anchor="middle">2</text>
+<text x="395.0" y="410" class="t-xs" text-anchor="middle">3</text>
+<text x="417.0" y="410" class="t-xs" text-anchor="middle">4</text>
+<text x="439.0" y="410" class="t-xs" text-anchor="middle">5</text>
+<text x="461.0" y="410" class="t-xs" text-anchor="middle">6</text>
+<text x="483.0" y="410" class="t-xs" text-anchor="middle">7</text>
+<text x="505.0" y="410" class="t-xs" text-anchor="middle">8</text>
+<text x="527.0" y="410" class="t-xs" text-anchor="middle">9</text>
+<text x="549.0" y="410" class="t-xs" text-anchor="middle">10</text>
+<text x="571.0" y="410" class="t-xs" text-anchor="middle">…</text>
+<text x="593.0" y="410" class="t-xs" text-anchor="middle">m</text>
+<text x="335" y="210" class="t-xs" text-anchor="end">1</text>
+<text x="335" y="230" class="t-xs" text-anchor="end">2</text>
+<text x="335" y="250" class="t-xs" text-anchor="end">3</text>
+<text x="335" y="270" class="t-xs" text-anchor="end">4</text>
+<text x="335" y="290" class="t-xs" text-anchor="end">5</text>
+<text x="335" y="310" class="t-xs" text-anchor="end">6</text>
+<text x="335" y="330" class="t-xs" text-anchor="end">7</text>
+<text x="335" y="350" class="t-xs" text-anchor="end">8</text>
+<text x="335" y="370" class="t-xs" text-anchor="end">⋮</text>
+<text x="335" y="390" class="t-xs" text-anchor="end">n</text>
+<text x="472.0" y="426" class="t-sm" text-anchor="middle">SNPs (columns j = 1 … m)</text>
+<text x="303" y="296.0" class="t-sm" text-anchor="middle" transform="rotate(-90 303 296.0)">people (rows i = 1 … n)</text>
+<rect x="618" y="196" width="28" height="20" fill="var(--q4)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="210" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="618" y="216" width="28" height="20" fill="var(--q1)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="230" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="618" y="236" width="28" height="20" fill="var(--q4)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="250" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="618" y="256" width="28" height="20" fill="var(--q1)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="270" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="618" y="276" width="28" height="20" fill="#fff" stroke="#fff" stroke-width="1"/>
+<text x="632" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">−9</text>
+<rect x="618" y="296" width="28" height="20" fill="var(--q4)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="310" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="618" y="316" width="28" height="20" fill="var(--q1)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="330" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="618" y="336" width="28" height="20" fill="var(--q1)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="350" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="618" y="356" width="28" height="20" fill="var(--q4)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="370" class="t-xs" text-anchor="middle" style="fill:#fff">2</text>
+<rect x="618" y="376" width="28" height="20" fill="var(--q1)" stroke="#fff" stroke-width="1"/>
+<text x="632" y="390" class="t-xs" text-anchor="middle" style="fill:#fff">1</text>
+<rect x="618" y="196" width="28" height="200" fill="none" stroke="#5a6370" stroke-width="1.2"/>
+<text x="632" y="188" class="t-b" text-anchor="middle" style="font-style:italic">y</text>
+<rect x="658" y="196" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">61</text>
+<rect x="658" y="216" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">54</text>
+<rect x="658" y="236" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">67</text>
+<rect x="658" y="256" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">49</text>
+<rect x="658" y="276" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">58</text>
+<rect x="658" y="296" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">70</text>
+<rect x="658" y="316" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">45</text>
+<rect x="658" y="336" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">63</text>
+<rect x="658" y="356" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">52</text>
+<rect x="658" y="376" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="674" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">66</text>
+<text x="674" y="188" class="t-xs" text-anchor="middle">age</text>
+<rect x="690" y="196" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="690" y="216" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">2</text>
+<rect x="690" y="236" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="690" y="256" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="690" y="276" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">2</text>
+<rect x="690" y="296" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="690" y="316" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">2</text>
+<rect x="690" y="336" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<rect x="690" y="356" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">2</text>
+<rect x="690" y="376" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="706" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">1</text>
+<text x="706" y="188" class="t-xs" text-anchor="middle">sex</text>
+<rect x="722" y="196" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="210" class="t-xs" text-anchor="middle" style="fill:#1d2127">−0.8</text>
+<rect x="722" y="216" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="230" class="t-xs" text-anchor="middle" style="fill:#1d2127">0.3</text>
+<rect x="722" y="236" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="250" class="t-xs" text-anchor="middle" style="fill:#1d2127">−0.2</text>
+<rect x="722" y="256" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="270" class="t-xs" text-anchor="middle" style="fill:#1d2127">1.4</text>
+<rect x="722" y="276" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="290" class="t-xs" text-anchor="middle" style="fill:#1d2127">−0.5</text>
+<rect x="722" y="296" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="310" class="t-xs" text-anchor="middle" style="fill:#1d2127">0.1</text>
+<rect x="722" y="316" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="330" class="t-xs" text-anchor="middle" style="fill:#1d2127">−0.9</text>
+<rect x="722" y="336" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="350" class="t-xs" text-anchor="middle" style="fill:#1d2127">0.6</text>
+<rect x="722" y="356" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="370" class="t-xs" text-anchor="middle" style="fill:#1d2127">−0.1</text>
+<rect x="722" y="376" width="32" height="20" fill="var(--bg-alt)" stroke="#fff" stroke-width="1"/>
+<text x="738" y="390" class="t-xs" text-anchor="middle" style="fill:#1d2127">0.2</text>
+<text x="738" y="188" class="t-xs" text-anchor="middle">PC1</text>
+<rect x="658" y="196" width="96" height="200" fill="none" stroke="#5a6370" stroke-width="1.2"/>
+<text x="632" y="410" class="t-xs" text-anchor="middle">phenotype</text>
+<text x="706" y="410" class="t-xs" text-anchor="middle">covariates</text>
+<path d="M351.0,193 Q362.0,177 373.0,193" fill="none" stroke="var(--data)" stroke-width="1.6"/>
+<path d="M373.0,193 Q384.0,177 395.0,193" fill="none" stroke="var(--data)" stroke-width="1.6"/>
+<path d="M527.0,193 Q538.0,177 549.0,193" fill="none" stroke="var(--data)" stroke-width="1.6"/>
+<text x="384.0" y="178" class="t-xs" text-anchor="middle" style="fill:var(--data);font-weight:700">r²</text>
+<text x="538.0" y="178" class="t-xs" text-anchor="middle" style="fill:var(--data);font-weight:700">r²</text>
+<path d="M324,226.0 Q308,276.0 324,326.0" fill="none" stroke="var(--lab)" stroke-width="1.6"/>
+<line x1="472.0" y1="432" x2="472.0" y2="443" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mx-arr)"/>
+<rect x="778" y="202" width="14" height="14" fill="var(--g0)" stroke="#b9c1cc" stroke-width="0.7"/>
+<text x="798" y="213" class="t-xs" text-anchor="start">0 copies</text>
+<rect x="778" y="221" width="14" height="14" fill="var(--g1)" stroke="#b9c1cc" stroke-width="0.7"/>
+<text x="798" y="232" class="t-xs" text-anchor="start">1 copy</text>
+<rect x="778" y="240" width="14" height="14" fill="var(--g2)" stroke="#b9c1cc" stroke-width="0.7"/>
+<text x="798" y="251" class="t-xs" text-anchor="start">2 copies</text>
+<text x="798" y="270" class="t-xs" text-anchor="start">of allele 1</text>
+<rect x="778" y="278" width="14" height="14" fill="#fff" stroke="#b9c1cc" stroke-width="0.7"/>
+<text x="798" y="289" class="t-xs" text-anchor="start">missing call</text>
+<text x="798" y="308" class="t-xs" text-anchor="start"></text>
+<rect x="778" y="316" width="14" height="14" fill="var(--q4)" stroke="#b9c1cc" stroke-width="0.7"/>
+<text x="798" y="327" class="t-xs" text-anchor="start">y = 2: case</text>
+<rect x="778" y="335" width="14" height="14" fill="var(--q1)" stroke="#b9c1cc" stroke-width="0.7"/>
+<text x="798" y="346" class="t-xs" text-anchor="start">y = 1: control</text>
+<rect x="778" y="354" width="14" height="14" fill="#fff" stroke="#b9c1cc" stroke-width="0.7"/>
+<text x="798" y="365" class="t-xs" text-anchor="start">y = −9: missing</text>
+<text x="778" y="385" class="t-xs" text-anchor="start">Values are</text>
+<text x="778" y="398" class="t-xs" text-anchor="start">made up.</text>
+</svg>
+    </div>
+    <figcaption><span class="fig-title">The genotype matrix and what each part of the lecture computes on it.</span> Rows are people, columns are SNPs, and each cell counts copies of one allele (0, 1 or 2) or is missing. Click a box to go to the pages it names. <span class="fig-credit">Drawn for this lecture; values are made up.</span></figcaption>
+  </figure>
+  <p class="mm-statement">A GWAS stores its genotypes as a matrix with one row per person and one column per SNP, next to a column of phenotypes and a few columns of covariates. Almost everything in Lecture 1 is a statistic computed on that matrix: on one column, on neighboring columns, on one row, on pairs of rows, on all rows together, or, for the association test itself, on each column paired with the phenotype.</p>
+  <ul class="mm-hooks">
+    <li><strong>Why build it (Part A).</strong> Genetic epidemiology asks whether, how much and why genotype differences between people go with differences in their health. Which people fill the rows, and which traits fill the phenotype column, are scientific and social choices.</li>
+    <li><strong>Columns (Part B).</strong> One column gives an allele frequency and a Hardy–Weinberg test; neighboring columns are correlated by linkage disequilibrium.</li>
+    <li><strong>Rows (Part B).</strong> Rows differ systematically by ancestry; principal components of the matrix summarize that population structure.</li>
+    <li><strong>One test per column (Part C).</strong> A regression of the phenotype on each column, adjusted for covariates, gives an effect estimate and a p-value; a GWAS is millions of these.</li>
+    <li><strong>Cleaning rows and columns (Part D).</strong> Quality control removes columns and rows whose values cannot be trusted, and finds related people and ancestry groups before any test is run.</li>
+  </ul>
+</section>
+
+<section class="mental-model" aria-labelledby="mm2">
+  <span class="mm-label">Mental model 2 · The pipeline</span>
+  <h2 id="mm2" data-toc="Mental model 2: the GWAS pipeline">A GWAS is eight stages, and quality control is the fourth</h2>
+  <figure class="fig">
+    <div class="fig-body">
+      <ol class="pipeline" aria-label="The eight stages of a GWAS">
+        <li style="--c: var(--mm)"><a href="gwas-design.html"><span class="st-n">1</span><span class="st-t">Ask</span><span class="st-d">Choose a trait, the people to study and the design.</span><span class="st-p">Pages 1, 8</span></a></li>
+        <li><a href="gwas-design.html"><span class="st-n">2</span><span class="st-t">Recruit &amp; measure</span><span class="st-d">Enroll people; record phenotypes and covariates; collect DNA.</span><span class="st-p">Page 8</span></a></li>
+        <li><a href="plink-data.html"><span class="st-n">3</span><span class="st-t">Genotype</span><span class="st-d">An array or sequencing gives the genotype matrix, stored in PLINK files.</span><span class="st-p">Pages 4, 8, 12</span></a></li>
+        <li class="hl" style="--c: var(--lab)"><a href="practical-overview.html"><span class="st-n">4</span><span class="st-t">Quality control</span><span class="st-d">Remove bad SNPs and people; find relatives and ancestry. This session's practical.</span><span class="st-p">Pages 11–23</span></a></li>
+        <li><a href="gwas-design.html"><span class="st-n">5</span><span class="st-t">Impute</span><span class="st-d">Infer SNPs that were not measured from reference haplotypes.</span><span class="st-p">Page 8</span></a></li>
+        <li><a href="gwas-analysis.html"><span class="st-n">6</span><span class="st-t">Test</span><span class="st-d">One regression per SNP, adjusted for covariates.</span><span class="st-p">Page 9</span></a></li>
+        <li><a href="gwas-analysis.html"><span class="st-n">7</span><span class="st-t">Read results</span><span class="st-d">Manhattan and Q–Q plots, associated loci, fine-mapping.</span><span class="st-p">Page 9</span></a></li>
+        <li><a href="gwas-applications.html"><span class="st-n">8</span><span class="st-t">Use &amp; share</span><span class="st-d">Polygenic scores, causal tests, drug targets, summary statistics.</span><span class="st-p">Page 10</span></a></li>
+      </ol>
+      <p class="pipe-band no-autolink"><a href="frequencies-hwe.html">Used at every stage (Part B, pages 4–7)</a>: allele frequencies and Hardy–Weinberg tests (quality control, power) · linkage disequilibrium (tagging, imputation, pruning, fine-mapping) · population structure (confounding, principal components).</p>
+    </div>
+    <figcaption><span class="fig-title">The stages of a genome-wide association study.</span> The practical of this session is stage 4. Click a stage to open its page. <span class="fig-credit">Drawn for this lecture, following Fig. 1 of Uffelmann et al. 2021.</span></figcaption>
+  </figure>
+  <p class="mm-statement">A GWAS goes from a question to people and measurements, to a genotype matrix, to a cleaned matrix, to imputed genotypes, to one test per SNP, to a list of associated regions that is then interpreted and used. Errors made early cannot be fixed by a better test later, which is why the practical spends a whole session on stage 4.</p>
+</section>
+
+<h2 id="roadmap">Roadmap <span class="tag core">Core</span></h2>
+<p>The pages follow the lecture: Part A is slides 10–54, Part B is slides 55–124, Part C is the session's reading, and Part D is the practical. The <a href="slide-guide.html">slide guide</a> maps every slide to the section that explains it.</p>
+
+<p class="part-label a no-autolink">Part A · Genetic epidemiology</p>
+<div class="card-grid">
+  <a class="card" href="genetic-epidemiology.html"><span class="card-num">Page 1</span><span class="card-title">What genetic epidemiology does</span><span class="card-desc">What does genetic epidemiology study, and how have its findings become drugs, screening programs and tests of causes?</span><span class="card-slides">Slides 10–25</span></a>
+  <a class="card" href="field-map.html"><span class="card-num">Page 2</span><span class="card-title">The field map &amp; the course</span><span class="card-desc">Where did the field come from, what are its parts, and which session of the course covers each?</span><span class="card-slides">Slides 1–9, 26–30, 36–39, 44–54</span></a>
+  <a class="card" href="social-context.html"><span class="card-num">Page 3</span><span class="card-title">Social context</span><span class="card-desc">What does a GWAS of a social behavior find, who has been studied so far, and what history should a geneticist know?</span><span class="card-slides">Slides 31–35, 37, 40–43</span></a>
+</div>
+
+<p class="part-label b no-autolink">Part B · A few basic definitions</p>
+<div class="card-grid">
+  <a class="card" href="snp-data.html"><span class="card-num">Page 4</span><span class="card-title">From molecules to SNP data</span><span class="card-desc">How is a SNP named, located, coded as 0/1/2 and measured, and why do DNA strands cause errors when studies are combined?</span><span class="card-slides">Slides 55–70</span></a>
+  <a class="card" href="frequencies-hwe.html"><span class="card-num">Page 5</span><span class="card-title">Frequencies &amp; HWE tests</span><span class="card-desc">How is an allele frequency estimated from genotype counts, how precise is it, and how is Hardy–Weinberg equilibrium tested?</span><span class="card-slides">Slides 71–83</span></a>
+  <a class="card" href="linkage-disequilibrium.html"><span class="card-num">Page 6</span><span class="card-title">Linkage disequilibrium</span><span class="card-desc">Why are nearby SNPs correlated, and how are D, D′ and r² estimated when haplotypes are not observed?</span><span class="card-slides">Slides 84–86, 94–96, 107–124</span></a>
+  <a class="card" href="population-structure.html"><span class="card-num">Page 7</span><span class="card-title">Population structure &amp; PCA</span><span class="card-desc">Why do allele frequencies differ between populations, and how do STRUCTURE and principal components summarize it?</span><span class="card-slides">Slides 87–105</span></a>
+</div>
+
+<p class="part-label c no-autolink">Part C · GWAS from start to finish (the reading)</p>
+<div class="card-grid">
+  <a class="card" href="gwas-design.html"><span class="card-num">Page 8</span><span class="card-title">GWAS design &amp; data</span><span class="card-desc">How is a GWAS designed and powered, and how are its genotypes produced, cleaned and imputed?</span><span class="card-slides">Reading: Introduction, Experimentation, Boxes 1–2</span></a>
+  <a class="card" href="gwas-analysis.html"><span class="card-num">Page 9</span><span class="card-title">Association testing &amp; results</span><span class="card-desc">How is each SNP tested, how is confounding by ancestry handled, and how are Manhattan and Q–Q plots read?</span><span class="card-slides">Reading: Results, Figs 2–3</span></a>
+  <a class="card" href="gwas-applications.html"><span class="card-num">Page 10</span><span class="card-title">Applications &amp; limits</span><span class="card-desc">What are GWAS results used for, how are they shared, and what can they not tell us?</span><span class="card-slides">Reading: Applications to Outlook, Fig. 4</span></a>
+</div>
+
+<p class="part-label d no-autolink">Part D · Practical: quality control with PLINK</p>
+<div class="card-grid">
+  <a class="card" href="practical-overview.html"><span class="card-num">Page 11</span><span class="card-title">Practical overview</span><span class="card-desc">What does quality control find, and what are the eight steps of the practical?</span></a>
+  <a class="card" href="plink-data.html"><span class="card-num">Page 12</span><span class="card-title">PLINK files inside out</span><span class="card-desc">What is in the .bed, .bim and .fam files, down to the bits?</span></a>
+  <a class="card" href="tools.html"><span class="card-num">Page 13</span><span class="card-title">The tools in detail</span><span class="card-desc">What do PLINK, the R packages and GrafAnc do, and how are their commands built?</span></a>
+  <a class="card" href="setup.html"><span class="card-num">Page 14</span><span class="card-title">Set up your computer</span><span class="card-desc">How do I install the tools, get the data and run the practical without a cluster?</span></a>
+</div>
+<ol class="qc-steps">
+  <li><a href="qc-missingness.html"><span class="sn">1</span><span><strong>Missingness</strong> Which SNPs and people have too many missing calls?</span></a></li>
+  <li><a href="qc-hwe.html"><span class="sn">2</span><span><strong>Hardy–Weinberg</strong> Which SNPs depart from Hardy–Weinberg proportions in controls?</span></a></li>
+  <li><a href="qc-ld-pruning.html"><span class="sn">3</span><span><strong>LD pruning</strong> Which SNPs can be set aside so the rest are nearly uncorrelated?</span></a></li>
+  <li><a href="qc-relatedness.html"><span class="sn">4</span><span><strong>Relatedness</strong> Which pairs of people are duplicates or relatives?</span></a></li>
+  <li><a href="qc-heterozygosity.html"><span class="sn">5</span><span><strong>Heterozygosity</strong> Who has too many or too few heterozygous calls?</span></a></li>
+  <li><a href="qc-pca.html"><span class="sn">6</span><span><strong>PCA</strong> What are the main axes of genetic variation among the participants?</span></a></li>
+  <li><a href="qc-reference-pca.html"><span class="sn">7</span><span><strong>Reference PCA</strong> Where do the participants fall relative to 1000 Genomes samples?</span></a></li>
+  <li><a href="qc-grafanc.html"><span class="sn">8</span><span><strong>GrafAnc</strong> Which reference-based ancestry group is each person assigned to?</span></a></li>
+  <li><a href="qc-exercise.html"><span class="sn">✓</span><span><strong>Exercise</strong> Run the whole pipeline and decide what to keep.</span></a></li>
+</ol>
+
+<p class="part-label w no-autolink">Wrap-up</p>
+<div class="card-grid">
+  <a class="card" href="slide-guide.html"><span class="card-title">Slide guide</span><span class="card-desc">All 124 slides, each with a one-line summary and a link to the section that explains it.</span></a>
+  <a class="card" href="glossary.html"><span class="card-title">Glossary</span><span class="card-desc">Every term used in this lecture, with the pages that use it.</span></a>
+  <a class="card" href="resources.html"><span class="card-title">Learn more</span><span class="card-desc">Checked links to papers, books, software documentation, data portals and courses, by topic and level.</span></a>
+</div>
+
+<h2 id="practical" data-toc="The practical, two ways">The practical, two ways <span class="tag core">Core</span></h2>
+<p>The workshop's practical cleans the genotypes of the PennCATH study (1,401 people and 861,473 SNPs) with PLINK 1.9, makes plots in R, and assigns genetic ancestry with GrafAnc. The workshop runs it on NIH's Biowulf computer cluster. This site gives you two other ways to do it:</p>
+<div class="vs">
+  <div>
+    <h4>In your browser, on toy data</h4>
+    <p>Each step page embeds a terminal. Type the same commands as in the practical, with the file name <code>toy</code> in place of <code>penncath</code>; a JavaScript version of PLINK 1.9 runs them on a small simulated study and writes output files with PLINK's names and columns. Widgets plot those files, and an optional R console runs the practical's R code on them. Nothing to install.</p>
+  </div>
+  <div>
+    <h4>On your computer or a cloud machine, on the real data</h4>
+    <p><a href="setup.html">Set up your computer</a> installs PLINK, R and GrafAnc on macOS, Linux or Windows, or uses a cloud service, and downloads the PennCATH files. Each step page then gives the real commands and R code, and says what to look for in the output.</p>
+  </div>
+</div>
+<p>The toy dataset was built so that every quality-control step has something to find: SNPs and people with many missing calls, genotyping errors that break Hardy–Weinberg proportions, a duplicate and several relatives, a contaminated sample, people of several ancestries, and SNPs coded on the opposite DNA strand from the reference panel. The <a href="practical-overview.html#toy-data">description of the toy dataset</a> lists each one.</p>
+
+<h2 id="goals" data-toc="Learning goals">After this lecture you can… <span class="tag core">Core</span></h2>
+<ul class="checklist">
+  <li>Define epidemiology and genetic epidemiology, and describe three ways genetic findings have changed medicine or public health (<a href="genetic-epidemiology.html">page 1</a>).</li>
+  <li>Place a study in the map of the field, and explain why a GWAS of a behavior can reflect social structure (<a href="field-map.html">pages 2</a>–<a href="social-context.html">3</a>).</li>
+  <li>Read a SNP's name, position and alleles in a <code>.bim</code> file, code genotypes as 0/1/2, and recognize strand problems (<a href="snp-data.html">page 4</a>).</li>
+  <li>Estimate an allele frequency with its standard error, and test Hardy–Weinberg equilibrium by chi-square and exact tests (<a href="frequencies-hwe.html">page 5</a>).</li>
+  <li>Compute D, D′ and r² from haplotype frequencies, estimate them from genotypes, and explain why LD differs between populations (<a href="linkage-disequilibrium.html">page 6</a>).</li>
+  <li>Explain what principal components of a genotype matrix show and what they do not (<a href="population-structure.html">page 7</a>).</li>
+  <li>Describe the stages of a GWAS, compute its power, and read a Manhattan plot and a Q–Q plot (<a href="gwas-design.html">pages 8</a>–<a href="gwas-analysis.html">9</a>).</li>
+  <li>Explain how GWAS results feed polygenic scores, Mendelian randomization and drug discovery, and name their limits (<a href="gwas-applications.html">page 10</a>).</li>
+  <li>Run the eight quality-control steps with PLINK, read every output file, and justify each threshold (<a href="practical-overview.html">pages 11–23</a>).</li>
+</ul>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Uffelmann E, Huang QQ, Munung NS, de Vries J, Okada Y, Martin AR, Martin HC, Lappalainen T, Posthuma D. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-2">DCEG Statistical Genetics Workshop. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1" target="_blank" rel="noopener">Session 1: Introduction</a> and its <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">practical</a>; practical code at <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/tree/main/src" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a>.</li>
+    <li id="src-3">Chang CC, Chow CC, Tellier LC, Vattikuti S, Purcell SM, Lee JJ. Second-generation PLINK: rising to the challenge of larger and richer datasets. <em>GigaScience</em>. 2015;4:7. <a href="https://doi.org/10.1186/s13742-015-0047-8" target="_blank" rel="noopener">doi:10.1186/s13742-015-0047-8</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

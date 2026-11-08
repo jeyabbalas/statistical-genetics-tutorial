@@ -689,13 +689,9 @@ window.GLOSSARY_USAGE = {
 "effect-allele": [
 "index",
 "dna",
-"genes-expression",
 "variation",
 "allele-frequencies",
-"haplotypes-ld",
-"ancestry",
 "genotype-to-phenotype",
-"samples-to-genotypes",
 "the-data",
 "lecture-1-bridge"
 ],

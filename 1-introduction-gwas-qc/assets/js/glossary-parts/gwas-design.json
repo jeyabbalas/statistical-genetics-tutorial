@@ -1,0 +1,381 @@
+[
+ {
+  "id": "statistical-power",
+  "term": "Statistical power",
+  "aka": [
+   "power"
+  ],
+  "short": "The probability that a study detects an effect that truly exists: that a variant with a given true effect reaches the significance threshold. It rises with the number of people, the size of the effect and the allele frequency.",
+  "long": "<p>Power is one minus the probability of a type 2 error. For one SNP it depends only on the noncentrality parameter \\(\\lambda\\) and the threshold: at \\(5 \\times 10^{-8}\\), 80% power needs \\(\\lambda \\approx 39.6\\). For a quantitative trait \\(\\lambda \\approx N \\cdot 2p(1-p)\\beta^2/\\sigma^2\\), with \\(N\\) people, effect-allele frequency \\(p\\), effect \\(\\beta\\) per allele and trait variance \\(\\sigma^2\\), so a SNP with \\(p = 0.3\\) and \\(\\beta = 0.05\\) standard deviations needs about \\(39.6/(0.42 \\times 0.0025) \\approx 38{,}000\\) people.</p><p>Power is computed before a study, to choose its size, with tools such as the Genetic Power Calculator, CaTS or the GAS Power Calculator. A study with low power misses most real effects, and the effects it does find are overestimated (the winner’s curse).</p>",
+  "l1": "Page 8 (how many people) derives power from the noncentrality parameter and has a power calculator; page 10 shows how low power inflates significant estimates.",
+  "see": [
+   "type-1-error",
+   "type-2-error",
+   "noncentrality-parameter",
+   "significance-level",
+   "genome-wide-significance",
+   "effect-size",
+   "winners-curse"
+  ],
+  "links": [
+   {
+    "t": "Sham & Purcell 2014, Nat Rev Genet: statistical power and significance testing in large-scale genetic studies",
+    "u": "https://doi.org/10.1038/nrg3706"
+   },
+   {
+    "t": "Purcell, Cherny & Sham 2003, Bioinformatics: Genetic Power Calculator",
+    "u": "https://doi.org/10.1093/bioinformatics/19.1.149"
+   }
+  ],
+  "match": [
+   "statistical power",
+   "power"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "type-1-error",
+  "term": "Type 1 error (false positive)",
+  "aka": [
+   "type I error",
+   "false positive"
+  ],
+  "short": "Rejecting a null hypothesis that is true: in a GWAS, declaring that a variant is associated with a trait when it is not. For one test its probability is the significance level α.",
+  "long": "<p>The opposite mistake, missing a real association, is a type 2 error. Each test of a variant with no effect has probability \\(\\alpha\\) of a type 1 error, so a million such tests at \\(\\alpha = 0.05\\) would give about 50,000 false positives. GWAS therefore use \\(5 \\times 10^{-8}\\) per test, which keeps the probability of even one false positive across the genome near 5% (the family-wise error rate). Choosing among many analyses after seeing the results, or forming the hypothesis after the results are known, raises the real type 1 error rate above the stated \\(\\alpha\\).</p>",
+  "l1": "Page 5 meets it with the Hardy–Weinberg test; page 8 defines both kinds of error before computing power; page 9 explains the genome-wide threshold; page 10 (preregistration).",
+  "see": [
+   "type-2-error",
+   "significance-level",
+   "p-value",
+   "null-hypothesis",
+   "family-wise-error-rate",
+   "multiple-testing"
+  ],
+  "links": [],
+  "match": [
+   "type 1 error",
+   "type I error",
+   "type 1 error rate",
+   "type I error rate"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "type-2-error",
+  "term": "Type 2 error (false negative)",
+  "aka": [
+   "type II error",
+   "false negative"
+  ],
+  "short": "Failing to reject a null hypothesis that is false: in a GWAS, missing an association that exists. Its probability is one minus the power.",
+  "long": "<p>For a variant with a given true effect, the probability of a type 2 error falls as the sample grows. Most real effects on complex traits are small, so even large GWAS commit many type 2 errors: they find the variants with the largest effects first, and many variants with smaller effects stay below the threshold, which is part of the missing heritability.</p>",
+  "l1": "Page 8 (how many people: sample size and statistical power).",
+  "see": [
+   "type-1-error",
+   "statistical-power",
+   "missing-heritability"
+  ],
+  "links": [
+   {
+    "t": "Sham & Purcell 2014, Nat Rev Genet",
+    "u": "https://doi.org/10.1038/nrg3706"
+   }
+  ],
+  "match": [
+   "type 2 error",
+   "type II error"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "replication",
+  "term": "Replication (of an association)",
+  "aka": [
+   "replication study",
+   "replication sample",
+   "replication cohort"
+  ],
+  "short": "Testing an association found in one sample (the discovery sample) again in independent people, for the same trait, the same allele and the same direction of effect. An association that replicates is unlikely to be a chance finding or an artifact of one study.",
+  "long": "<p>A working group of the US National Cancer Institute and National Human Genome Research Institute listed what a convincing replication needs: an independent sample large enough to detect the effect, the same or a very similar phenotype, a similar population, the same SNP (or one in strong LD with it), and an effect in the same direction and of similar size. Because significant discovery estimates are inflated (the winner’s curse), a replication planned on the discovery estimate is underpowered; the replication estimate itself is unbiased. Replication in people of other ancestries also tests whether a finding generalizes, and their different LD can help to locate the causal variant.</p><p>The replication sample must not contain the discovery sample’s people or their relatives (page 18).</p>",
+  "l1": "Page 9 (meta-analysis and replication); page 10 (the winner’s curse); page 18 (relatedness between cohorts).",
+  "see": [
+   "winners-curse",
+   "meta-analysis",
+   "genome-wide-significance",
+   "type-1-error",
+   "statistical-power"
+  ],
+  "links": [
+   {
+    "t": "NCI-NHGRI Working Group on Replication in Association Studies 2007, Nature: replicating genotype–phenotype associations",
+    "u": "https://doi.org/10.1038/447655a"
+   },
+   {
+    "t": "Kraft, Zeggini & Ioannidis 2009, Stat Sci: replication in genome-wide association studies",
+    "u": "https://doi.org/10.1214/09-STS290"
+   }
+  ],
+  "match": [
+   "replication",
+   "replication study",
+   "replication sample",
+   "replication cohort",
+   "replicated"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "noncentrality-parameter",
+  "term": "Noncentrality parameter (λ)",
+  "aka": [
+   "non-centrality parameter",
+   "NCP"
+  ],
+  "short": "A number that measures how far a true effect moves a test statistic away from its distribution under the null hypothesis. For a test with 1 degree of freedom the average of z² is 1 + λ, and the power depends only on λ and the threshold.",
+  "long": "<p>For a quantitative trait, \\(\\lambda \\approx N \\cdot 2p(1-p)\\beta^2/\\sigma^2\\), with \\(N\\) people, effect-allele frequency \\(p\\), effect \\(\\beta\\) per allele and trait variance \\(\\sigma^2\\): roughly the number of people times the share of the trait’s variance that the SNP explains, so doubling \\(N\\) doubles \\(\\lambda\\). At the genome-wide threshold (\\(|z| > 5.45\\)), 80% power needs \\(\\sqrt{\\lambda} = 5.45 + 0.84 = 6.29\\), so \\(\\lambda \\approx 39.6\\). A measured SNP in LD \\(r^2\\) with the causal SNP has noncentrality \\(r^2 \\lambda\\). This \\(\\lambda\\) is not the genomic inflation factor \\(\\lambda_{\\mathrm{GC}}\\), which shares the letter.</p>",
+  "l1": "Page 8 (power calculator, tag SNPs and unscreened controls); page 9 (where the z of an associated SNP is centered).",
+  "see": [
+   "statistical-power",
+   "chi-square-distribution",
+   "tag-snp",
+   "genomic-inflation"
+  ],
+  "links": [
+   {
+    "t": "Sham & Purcell 2014, Nat Rev Genet",
+    "u": "https://doi.org/10.1038/nrg3706"
+   }
+  ],
+  "match": [
+   "noncentrality parameter",
+   "non-centrality parameter",
+   "noncentrality"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "li-stephens-model",
+  "term": "Li–Stephens model",
+  "aka": [
+   "Li and Stephens model",
+   "haplotype copying model"
+  ],
+  "short": "A model that describes a person’s haplotype as a mosaic of pieces copied from haplotypes in a reference panel, switching to another reference haplotype where recombination has occurred, with occasional mismatches. Most phasing and imputation programs are built on it.",
+  "long": "<p>Proposed by Na Li and Matthew Stephens in 2003, it is a hidden Markov model: the hidden state at each SNP is the reference haplotype being copied. The probability of switching between neighboring SNPs grows with the genetic distance between them and falls as the panel grows (with more haplotypes, a close match lasts longer); a small mismatch probability allows for mutation and genotyping error. Given the typed alleles, the forward–backward algorithm gives, at every untyped SNP, the probability of copying each reference haplotype; adding up the haplotypes that carry each allele gives the imputed genotype probabilities and the dosage.</p>",
+  "l1": "Page 8 (genotype imputation) draws the copying model and lets you run a simplified version.",
+  "see": [
+   "genotype-imputation",
+   "phasing",
+   "reference-panel",
+   "haplotype",
+   "recombination",
+   "dosage"
+  ],
+  "links": [
+   {
+    "t": "Li & Stephens 2003, Genetics",
+    "u": "https://doi.org/10.1093/genetics/165.4.2213"
+   }
+  ],
+  "match": [
+   "Li–Stephens model",
+   "Li and Stephens model",
+   "Li–Stephens",
+   "Li-Stephens"
+  ],
+  "noPlural": true,
+  "owner": "gwas-design"
+ },
+ {
+  "id": "transmission-disequilibrium-test",
+  "term": "Transmission disequilibrium test (TDT)",
+  "aka": [
+   "TDT"
+  ],
+  "short": "A family-based association test. In trios of two parents and an affected child, it counts how often parents who carry one copy of each allele pass each allele to the child; without association each allele is passed half the time, whatever the family’s ancestry.",
+  "long": "<p>Let \\(b\\) be the number of heterozygous parents who transmitted allele A and \\(c\\) the number who transmitted the other allele. The statistic \\((b - c)^2/(b + c)\\) follows a chi-square distribution with 1 degree of freedom when there is no linkage or no association. With 60 transmissions of A against 40 it is \\(20^2/100 = 4.0\\), p ≈ 0.046. Which allele a parent transmits is decided at meiosis, so differences in allele frequency between populations cannot create a signal: the test is immune to population stratification, at the cost of genotyping parents.</p>",
+  "l1": "Page 8 (families as a study design).",
+  "see": [
+   "trio",
+   "population-stratification",
+   "linkage-analysis",
+   "chi-square-test",
+   "within-family-gwas"
+  ],
+  "links": [
+   {
+    "t": "Spielman, McGinnis & Ewens 1993, Am J Hum Genet",
+    "u": "https://pubmed.ncbi.nlm.nih.gov/8447318/"
+   }
+  ],
+  "match": [
+   "transmission disequilibrium test",
+   "transmission/disequilibrium test",
+   "TDT"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "isolated-population",
+  "term": "Isolated population (population isolate)",
+  "aka": [
+   "population isolate",
+   "founder population"
+  ],
+  "short": "A population that began from a small number of founders and then had little exchange with other populations for many generations, such as the Finnish, Icelandic or Sardinian populations. Some variants that are rare elsewhere have drifted to higher frequency there, so they are easier to study.",
+  "long": "<p>The founder event and isolation have several consequences for GWAS. Some variants that are rare elsewhere can be tested in thousands rather than hundreds of thousands of people; FinnGen, for example, found associations with variants enriched in Finland. LD extends over longer stretches, which makes imputation accurate when members of the population are in the reference panel. Many participants are related, so mixed models are used. A finding may be hard to replicate elsewhere if the variant is rare in other populations.</p>",
+  "l1": "Page 8 (populations used in GWAS); page 6 (LD in isolated populations); page 10 (who is studied).",
+  "see": [
+   "founder-effect",
+   "bottleneck",
+   "genetic-drift",
+   "ld",
+   "rare-variant",
+   "mixed-model"
+  ],
+  "links": [
+   {
+    "t": "Kurki et al. 2023, Nature: FinnGen provides genetic insights from a well-phenotyped isolated population",
+    "u": "https://doi.org/10.1038/s41586-022-05473-8"
+   },
+   {
+    "t": "Sidore et al. 2015, Nat Genet: genome sequencing of Sardinians",
+    "u": "https://doi.org/10.1038/ng.3368"
+   }
+  ],
+  "match": [
+   "isolated population",
+   "population isolate"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "minor-allele-count",
+  "term": "Minor allele count (MAC)",
+  "aka": [
+   "MAC"
+  ],
+  "short": "The number of copies of the less common allele of a variant in a sample: 2N times the minor allele frequency for N people. Association tests are stable only when this count, not just the frequency, is large enough.",
+  "long": "<p>With 1,000 people, a variant with minor allele frequency 1% has about 20 copies; with 500,000 people, a variant at 0.1% has about 1,000. The large-sample approximations behind association p-values need enough copies in the sample (and, for a disease, enough among the cases), so analysis pipelines filter on a minimum count, for example with PLINK 2’s <code>--mac</code>, rather than only on frequency. This is why what counts as a common variant depends on the sample size.</p>",
+  "l1": "Slide 52 (Session 7 covers rare-variant association studies); page 8 (Box 1: what counts as a common variant).",
+  "see": [
+   "maf",
+   "rare-variant",
+   "low-frequency-variant",
+   "rare-variant-association-study"
+  ],
+  "links": [],
+  "match": [
+   "minor allele count"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "imputation-server",
+  "term": "Imputation server",
+  "aka": [
+   "Michigan Imputation Server",
+   "TOPMed Imputation Server"
+  ],
+  "short": "A web service that phases and imputes genotypes uploaded by a researcher against a large reference panel and returns the imputed files, such as the Michigan and TOPMed Imputation Servers.",
+  "long": "<p>The servers run the steps of Box 2 of the reading as one pipeline: checks of the uploaded files against the panel (build, strand, allele frequencies), phasing, imputation with Minimac and a quality report. They give access to reference panels that cannot be downloaded, such as the TOPMed panel. The price is sending genotypes to a third party, which the participants’ consent and the data-access agreement must allow.</p>",
+  "l1": "Page 8 (the imputation workflow).",
+  "see": [
+   "genotype-imputation",
+   "reference-panel",
+   "topmed",
+   "hrc",
+   "phasing",
+   "info-score"
+  ],
+  "links": [
+   {
+    "t": "Das et al. 2016, Nat Genet: next-generation genotype imputation service and methods",
+    "u": "https://doi.org/10.1038/ng.3656"
+   },
+   {
+    "t": "Michigan Imputation Server",
+    "u": "https://imputationserver.sph.umich.edu/"
+   },
+   {
+    "t": "TOPMed Imputation Server",
+    "u": "https://imputation.biodatacatalyst.nhlbi.nih.gov/"
+   }
+  ],
+  "match": [
+   "imputation server",
+   "Michigan Imputation Server",
+   "TOPMed Imputation Server"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "proxy-phenotype",
+  "term": "Proxy phenotype (and GWAS by proxy)",
+  "aka": [
+   "GWAS by proxy",
+   "GWAX",
+   "proxy-phenotype method"
+  ],
+  "short": "An easier-to-measure trait that is correlated with the trait of interest and is analyzed in its place to reach a larger sample, for example educational attainment as a proxy for cognitive performance.",
+  "long": "<p>A proxy has genetic influences of its own, so a locus found for the proxy has to be confirmed for the target trait. In GWAS by proxy, people without a diagnosis count as partial cases when a parent or sibling has the disease, from family history reported by the participants; this adds power for diseases of late onset, such as Alzheimer’s disease, that many participants are too young to have developed, but relies on the accuracy of what participants report.</p>",
+  "l1": "Page 8 (selecting study populations).",
+  "see": [
+   "phenotype",
+   "statistical-power",
+   "misclassification"
+  ],
+  "links": [
+   {
+    "t": "Liu, Erlich & Pickrell 2017, Nat Genet: case–control association mapping by proxy",
+    "u": "https://doi.org/10.1038/ng.3766"
+   },
+   {
+    "t": "Rietveld et al. 2014, PNAS: the proxy-phenotype method",
+    "u": "https://doi.org/10.1073/pnas.1404623111"
+   }
+  ],
+  "match": [
+   "proxy phenotype",
+   "proxy-phenotype",
+   "GWAS by proxy",
+   "GWAX"
+  ],
+  "owner": "gwas-design"
+ },
+ {
+  "id": "candidate-gene",
+  "term": "Candidate gene (candidate gene study)",
+  "aka": [
+   "candidate gene study",
+   "candidate-gene association study"
+  ],
+  "short": "A gene suspected, from its known biology or its position near an association, of influencing a trait. A candidate gene study tests variants in a few such genes chosen in advance; most of its reported associations with complex traits failed to replicate.",
+  "long": "<p>Before genome-wide arrays, studies picked genes by hypothesis and genotyped a handful of variants, often in a few hundred people. Small samples, lenient thresholds and the publication of positive results produced many false positives: a review of 166 associations studied three or more times found only 6 consistently replicated, and a 2019 study of up to 443,264 people found no support for 18 widely studied candidate genes for depression. A GWAS tests the whole genome without a prior choice, with a threshold that allows for the number of tests. After a GWAS, the genes near an associated locus are again called candidate genes: candidates for the causal gene, to be tested by fine-mapping, colocalization and experiments.</p>",
+  "l1": "Page 8 (what a GWAS is); page 2 (agnostic designs); page 1 (candidate genes from TWAS).",
+  "see": [
+   "gwas",
+   "replication",
+   "multiple-testing",
+   "type-1-error",
+   "post-gwas-studies"
+  ],
+  "links": [
+   {
+    "t": "Hirschhorn et al. 2002, Genet Med: a comprehensive review of genetic association studies",
+    "u": "https://doi.org/10.1097/00125817-200203000-00002"
+   },
+   {
+    "t": "Border et al. 2019, Am J Psychiatry: no support for historical candidate gene hypotheses for depression",
+    "u": "https://doi.org/10.1176/appi.ajp.2018.18070881"
+   }
+  ],
+  "match": [
+   "candidate gene",
+   "candidate gene study",
+   "candidate-gene study",
+   "candidate-gene"
+  ],
+  "owner": "gwas-design"
+ }
+]

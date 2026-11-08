@@ -43,3 +43,12 @@
   .course-home .topbar .toplinks { display: flex; }
   .course-home .topbar .toplinks a { padding: 6px; font-size: 0.82rem; }
 }
+
+/* Lecture 1 card: four parts, each with its own color */
+.lecture-card + .lecture-card { margin-top: 18px; }
+.lecture-card.l1 { border-top-color: var(--accent); }
+.lecture-card.l1 .lecture-number { background: var(--accent-soft); color: var(--accent); }
+.lecture-card.l1 .lecture-parts section:nth-child(1) h4 { color: var(--mm); }
+.lecture-card.l1 .lecture-parts section:nth-child(2) h4 { color: var(--data); }
+.lecture-card.l1 .lecture-parts section:nth-child(3) h4 { color: var(--accent); }
+.lecture-card.l1 .lecture-parts section:nth-child(4) h4 { color: var(--bridge); }

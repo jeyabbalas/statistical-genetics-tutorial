@@ -35,13 +35,22 @@ class Page(HTMLParser):
     handle_startendtag = handle_starttag
 
 
-pages = {p: Page(p.read_text()) for p in ROOT.rglob("*.html") if ".git" not in p.parts}
-# The glossary is rendered by site.js from these entries, rather than in HTML.
-for data in ROOT.rglob("glossary-data.js"):
+pages = {p: Page(p.read_text()) for p in ROOT.rglob("*.html")
+         if ".git" not in p.parts and not p.name.startswith("_")}  # _template.html is a starting point, not a page
+# The glossary is rendered by site.js from these entries, rather than in HTML. A glossary page shows the
+# entries of every glossary-data.js it loads (Lecture 1's glossary also shows Lecture 0's entries).
+def glossary_ids(data):
     match = re.search(r"window\.GLOSSARY_ENTRIES\s*=\s*(\[.*\]);?\s*$", data.read_text(), re.S)
-    glossary = data.parents[2] / "glossary.html"
-    if match and glossary in pages:
-        pages[glossary].ids.update(entry["id"] for entry in json.loads(match.group(1)))
+    return {entry["id"] for entry in json.loads(match.group(1))} if match else set()
+
+
+for glossary, page in pages.items():
+    if glossary.name != "glossary.html":
+        continue
+    for src in re.findall(r'<script[^>]+src="([^"]*glossary-data\.js)"', glossary.read_text()):
+        data = (glossary.parent / src).resolve()
+        if data.is_file():
+            page.ids.update(glossary_ids(data))
 
 
 def check(source, ref):
@@ -84,7 +93,7 @@ for path in ROOT.rglob("*.css"):
 for path in ROOT.rglob("*.js"):
     # Script-created DOM paths are relative to the document, not the JS file.
     document = path.parents[2] / "index.html"
-    if path.parent.name == "widgets":
+    if path.parent.name in ("widgets", "lab"):
         document = path.parents[3] / "index.html"
     for _, ref in re.findall(r'''(?<!\\)(["'])([^"'\\\s<>]+\.(?:html|css|js|png|jpg|jpeg|svg|pdf)(?:[?#][^"'\\\s<>]*)?)\1(?!\s*\+)''', path.read_text()):
         check(document, ref)

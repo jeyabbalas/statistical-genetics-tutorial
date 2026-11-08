@@ -10,10 +10,16 @@ machine-learning researchers.
 0. [Biological foundations for statistical genetics](0-biological-foundations/index.html)
    — 13 topics covering the biological system and how it is measured, with
    interactive examples and UK Biobank as a running example.
+1. [Genetic epidemiology, GWAS and quality control](1-introduction-gwas-qc/index.html)
+   — Session 1 of the DCEG Statistical Genetics Workshop in 23 pages: genetic
+   epidemiology, allele frequencies and Hardy–Weinberg tests, linkage
+   disequilibrium, population structure, the GWAS from design to use, and the
+   PLINK quality-control practical, with an in-browser PLINK lab on a toy dataset
+   and instructions for running the real practical on your own computer.
 
 The [course landing page](index.html) indexes the available lectures and study
-resources. The Lecture 1 decoder inside Lecture 0 accompanies the source GWAS
-lecture; a separate Lecture 1 tutorial has not been added yet.
+resources. Lecture 1's [authoring guide](1-introduction-gwas-qc/README.md)
+describes its page conventions, glossary, lab engine and checks.
 
 ## Preview and check
 
@@ -28,15 +34,35 @@ Open http://localhost:8000/. No build or package installation is needed.
 ```sh
 python3 tools/check_links.py
 python3 0-biological-foundations/tools/check_site.py
+python3 1-introduction-gwas-qc/tools/build_glossary.py
+python3 1-introduction-gwas-qc/tools/check_site.py --strict
+node 1-introduction-gwas-qc/tools/test_lab.mjs
 node tools/check_math.mjs
 ```
 
-The first command checks local links, assets, and HTML/glossary anchors with the
-GitHub Pages project prefix. The second checks Lecture 0 and rebuilds its glossary
-usage index. Its optional `--links` flag checks external references over the
-network; some publishers block automated requests. The third renders every TeX
-expression on the site and in the glossary with the vendored KaTeX (it needs
-Node.js, nothing else) and reports any that would not render.
+- `tools/check_links.py` checks local links, assets, and HTML/glossary anchors with
+  the GitHub Pages project prefix.
+- `0-biological-foundations/tools/check_site.py` checks Lecture 0 and rebuilds its
+  glossary usage index. Its optional `--links` flag checks external references over
+  the network; some publishers block automated requests.
+- `1-introduction-gwas-qc/tools/build_glossary.py` builds Lecture 1's glossary from
+  `assets/js/glossary-parts/`, and Lecture 1's `check_site.py` checks that lecture
+  the way the Lecture 0 script does (`--links` works there too).
+- `1-introduction-gwas-qc/tools/test_lab.mjs` tests Lecture 1's in-browser PLINK
+  emulator and toy dataset.
+- `tools/check_math.mjs` renders every TeX expression on the site and in the
+  glossary with the vendored KaTeX (it needs Node.js, nothing else) and reports any
+  that would not render.
+
+To check Lecture 1's pages in a real browser (console errors, numbers left unfilled,
+horizontal overflow, and screenshots at desktop and phone width), keep the server
+running and use Google Chrome through `1-introduction-gwas-qc/tools/browser_check.mjs`
+(set `CHROME` to the browser binary if it is not in the default macOS location):
+
+```sh
+node 1-introduction-gwas-qc/tools/browser_check.mjs --base http://localhost:8000/1-introduction-gwas-qc/ \
+  --pages all --mode both --out /tmp/lecture1-check
+```
 
 ## Writing math
 
@@ -120,7 +146,7 @@ The stylesheet adds the "Terms" and "Intuition" labels.
 4. Run the checks above, commit, and push to `main`.
 
 Keep internal links relative (for example, `dna.html`, `../index.html`, and
-`../sources/DCEGStatGen_09sep26.pdf`). A path starting with `/` points to the
+`../sources/lecture_1/DCEGStatGen_09sep26.pdf`). A path starting with `/` points to the
 GitHub account's domain root and skips the repository name. External citations
 should keep their full `https://` URLs.
 
@@ -130,8 +156,13 @@ Publish from **Settings → Pages → Deploy from a branch → main → /(root)*
 The root `.nojekyll` file makes GitHub serve this static HTML site directly.
 Subsequent pushes to `main` update the website automatically.
 
-The lecture source PDF stays in `sources/`, so relative PDF links and slide
-fragments can use the same directory structure locally and on GitHub Pages.
+The lecture source PDFs stay in `sources/` (one folder per lecture, such as
+`sources/lecture_1/`), so relative PDF links and slide fragments can use the same
+directory structure locally and on GitHub Pages. Publish only material you may
+redistribute: the workshop's slides are already shown on these pages, but the
+Session 1 reading (Uffelmann et al. 2021) is a copyrighted journal article and is
+cited by DOI rather than published.
 
-See [Lecture 0's README](0-biological-foundations/README.md) for its editing guide,
+See [Lecture 0's README](0-biological-foundations/README.md) and
+[Lecture 1's README](1-introduction-gwas-qc/README.md) for their editing guides,
 figure credits, and content notes.

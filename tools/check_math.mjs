@@ -143,9 +143,12 @@ function scanHtml(html, label) {
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
-    if (name === ".git" || name === "node_modules") continue;
+    // Hidden folders (.git, a browser profile left by a running check) and _drafts are not pages.
+    if (name.startsWith(".") || name === "node_modules" || name.startsWith("_")) continue;
     const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p, out);
+    let st;
+    try { st = statSync(p); } catch (e) { continue; }   // removed while we were listing
+    if (st.isDirectory()) walk(p, out);
     else if (name.endsWith(".html")) out.push(p);
   }
   return out;
@@ -154,11 +157,13 @@ function walk(dir, out = []) {
 const files = walk(ROOT).sort();
 for (const f of files) scanHtml(readFileSync(f, "utf8"), relative(ROOT, f));
 
-// Glossary entries: HTML strings shown in tooltips and on the glossary page.
-const glossaryFile = join(LECTURE0, "assets/js/glossary-data.js");
-const gsrc = readFileSync(glossaryFile, "utf8");
-const gm = gsrc.match(/window\.GLOSSARY_ENTRIES\s*=\s*(\[[\s\S]*\]);?\s*$/);
-if (gm) {
+// Glossary entries: HTML strings shown in tooltips and on the glossary page (every lecture's glossary-data.js).
+const glossaryFiles = readdirSync(ROOT).filter((d) => /^\d+-/.test(d))
+  .map((d) => join(ROOT, d, "assets/js/glossary-data.js")).filter((f) => { try { return statSync(f).isFile(); } catch { return false; } });
+for (const glossaryFile of glossaryFiles) {
+  const gsrc = readFileSync(glossaryFile, "utf8");
+  const gm = gsrc.match(/window\.GLOSSARY_ENTRIES\s*=\s*(\[[\s\S]*\]);?\s*$/);
+  if (!gm) continue;
   for (const e of JSON.parse(gm[1])) {
     for (const key of ["term", "short", "long"]) {
       if (!e[key]) continue;

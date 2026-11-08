@@ -1,0 +1,270 @@
+[
+  {
+    "id": "drug-target",
+    "term": "Drug target",
+    "aka": ["therapeutic target", "target (of a drug)"],
+    "short": "The molecule in the body, usually a protein, that a drug binds in order to change its activity. Example: evolocumab binds the protein PCSK9, so PCSK9 is its drug target.",
+    "long": "<p>Most drugs that fail in development fail because acting on the chosen target does not change the disease, or because it causes harm. Human genetics gives evidence on both before a drug exists: people who carry a loss-of-function variant in the gene that encodes a protein show what a lifetime of lower activity of that protein does. If carriers are healthy and have less of the disease, a drug that blocks the protein is more likely to be safe and effective.</p><p>Across drug-development programs, targets with human genetic support were about 2.6 times as likely to lead to an approved drug as targets without it (Minikel et al. 2024), confirming an earlier estimate that genetic support could double the success rate (Nelson et al. 2015).</p>",
+    "l1": "Slides 15–17: ANGPTL3, PCSK9 and BCL11A became drug targets through genetic studies (page 1).",
+    "see": ["loss-of-function", "forward-genetics", "reverse-genetics", "monoclonal-antibody"],
+    "links": [
+      {"t": "Minikel et al. 2024, Nature", "u": "https://doi.org/10.1038/s41586-024-07316-0"},
+      {"t": "Nelson et al. 2015, Nature Genetics", "u": "https://doi.org/10.1038/ng.3314"}
+    ],
+    "match": ["drug target", "therapeutic target"],
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "monoclonal-antibody",
+    "term": "Monoclonal antibody",
+    "aka": ["mAb"],
+    "short": "An antibody made in the laboratory from cells that all descend from one cell, so every molecule binds the same site on one target protein. Many drugs are monoclonal antibodies, for example evolocumab and alirocumab, which bind PCSK9.",
+    "long": "<p>Antibodies are Y-shaped proteins of the immune system that bind other molecules tightly and specifically. A therapeutic antibody that binds a protein in the blood can stop it from binding its partner: evolocumab and alirocumab stop PCSK9 from binding the LDL receptor, and evinacumab blocks ANGPTL3. Antibodies are given by injection, every few weeks for these drugs.</p>",
+    "l1": "The drugs that followed the PCSK9 and ANGPTL3 discoveries (slides 15–16) are monoclonal antibodies.",
+    "see": ["drug-target"],
+    "links": [],
+    "match": ["monoclonal antibody", "monoclonal antibodies"],
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "randomized-controlled-trial",
+    "term": "Randomized controlled trial",
+    "aka": ["RCT", "randomized trial"],
+    "short": "A study that assigns participants at random to a treatment or to a control (placebo or usual care) and compares their outcomes. Randomization makes the groups alike on average in every other factor, measured or not, so a difference in outcomes can be attributed to the treatment.",
+    "long": "<p>Randomized controlled trials are the reference standard for causal questions in medicine, but they are expensive, usually last a few years, and can only test treatments that exist. Mendelian randomization uses the random assortment of alleles at conception as a substitute for random assignment, which is why its results are often compared with trial results (slide 23).</p>",
+    "l1": "Slide 23: Mendelian randomization results for CRP and HDL cholesterol are “consistent with clinical trials”.",
+    "see": ["mendelian-randomization", "confounding"],
+    "links": [],
+    "match": ["randomized controlled trial", "randomised controlled trial", "randomized trial", "randomised trial"],
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "wald-ratio",
+    "term": "Wald ratio",
+    "aka": ["ratio estimate", "ratio of coefficients"],
+    "short": "The Mendelian randomization estimate of a causal effect from one genetic variant: the variant’s effect on the outcome divided by its effect on the exposure.",
+    "long": "<p>If a variant changes the exposure by β<sub>GX</sub> per allele and the outcome by β<sub>GY</sub> per allele, and it affects the outcome only through the exposure, then one unit of exposure changes the outcome by β<sub>GY</sub> / β<sub>GX</sub>. Example: an allele that raises LDL cholesterol by 0.10 mmol/L and raises the log odds of coronary disease by 0.05 gives 0.05 / 0.10 = 0.5 per mmol/L, an odds ratio of e<sup>0.5</sup> ≈ 1.65 per mmol/L.</p><p>Its standard error is approximately SE(β̂<sub>GY</sub>) / |β̂<sub>GX</sub>|, so a variant with a small effect on the exposure gives an imprecise ratio. Named after Abraham Wald’s 1940 method for fitting a line when both variables are measured with error.</p>",
+    "l1": "Slide 22 (Mendelian randomization); page 1 derives it and lets you simulate it.",
+    "see": ["mendelian-randomization", "instrumental-variable", "weak-instrument", "horizontal-pleiotropy"],
+    "links": [
+      {"t": "Burgess, Small & Thompson 2017, Stat Methods Med Res (review of MR estimators)", "u": "https://doi.org/10.1177/0962280215597579"}
+    ],
+    "match": ["Wald ratio", "Wald ratios", "Wald estimate"],
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "weak-instrument",
+    "term": "Weak instrument",
+    "aka": ["weak instrument bias"],
+    "short": "An instrumental variable, such as a genetic variant, that explains so little of the exposure’s variation that Mendelian randomization estimates become imprecise and biased. It is usually flagged by a first-stage F statistic below 10.",
+    "long": "<p>For one variant the F statistic is the squared z-score of its association with the exposure, (β̂<sub>GX</sub> / SE)<sup>2</sup>; it grows with the sample size and with the variance of the exposure the variant explains. When F is small, chance correlation between the variant and the confounders in the sample is not small compared with the variant’s true effect. In one-sample Mendelian randomization (exposure and outcome measured in the same people) the bias then pulls the estimate toward the confounded observational estimate; in two-sample designs it pulls the estimate toward zero.</p>",
+    "l1": "Not on the slides; page 1’s Mendelian randomization simulator lets you weaken the instrument and watch the bias appear.",
+    "see": ["instrumental-variable", "wald-ratio", "mendelian-randomization"],
+    "links": [
+      {"t": "Burgess & Thompson 2011, Int J Epidemiol", "u": "https://doi.org/10.1093/ije/dyr036"}
+    ],
+    "match": ["weak instrument", "weak-instrument bias", "weak instrument bias"],
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "horizontal-pleiotropy",
+    "term": "Horizontal pleiotropy",
+    "aka": ["directional pleiotropy"],
+    "short": "When a genetic variant used as an instrument affects the outcome through a path that does not pass through the exposure. It breaks the third assumption of Mendelian randomization (exclusion restriction) and biases the estimate.",
+    "long": "<p>Vertical pleiotropy, where the variant changes the exposure and the exposure then changes other traits, is not a problem: those effects are part of the causal effect being estimated. Horizontal pleiotropy is a second, separate path from the variant to the outcome. With one variant it cannot be detected from the data; with many variants, methods such as MR-Egger and the weighted median look for it (page 10).</p>",
+    "l1": "Slide 22, Assumption 3 (no arrow from the variant directly to the outcome).",
+    "see": ["pleiotropy", "mendelian-randomization", "instrumental-variable"],
+    "links": [],
+    "match": ["horizontal pleiotropy", "horizontally pleiotropic"],
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "relative-risk",
+    "term": "Relative risk",
+    "aka": ["risk ratio", "RR"],
+    "short": "The risk of an outcome in one group divided by the risk in a reference group. A relative risk of 2 means twice the risk of the reference group; by itself it does not say how large either risk is.",
+    "long": "<p>A relative risk of 2 turns a 1% risk into 2% and a 10% risk into about 20%. Decisions about screening or treatment depend on the absolute risk, so risk models multiply relative risks from several factors (family history, a polygenic score, breast density) onto a baseline risk and convert the result to a probability. When the outcome is rare, the odds ratio is close to the relative risk.</p>",
+    "l1": "Slide 20: the risk model combines relative risks from several sources into one lifetime risk.",
+    "see": ["odds-ratio", "hazard-ratio", "risk-stratified-screening"],
+    "links": [],
+    "match": ["relative risk", "risk ratio"],
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "risk-stratified-screening",
+    "term": "Risk-stratified screening",
+    "aka": ["risk-based screening", "stratified screening"],
+    "short": "Screening in which the age to start, the interval between tests or the kind of test depends on each person’s estimated risk, instead of being the same for everyone of a given age. The risk is computed from factors such as family history, questionnaire answers, breast density, a polygenic score and rare variants.",
+    "long": "<p>Breast cancer is the main example. A model such as BOADICEA turns a woman’s risk factors into an absolute lifetime risk, and the risk is compared with thresholds. In England, NICE guidance uses lifetime risk from age 20: below 17% is near-population risk, 17% to below 30% moderate, and 30% or more high, each with its own screening advice. With a 313-SNP polygenic score added to the other factors, Lee et al. (2019) estimated that 14.7% of women in the UK would be at moderate and 1.1% at high risk.</p><p>Whether risk-stratified screening improves outcomes compared with age-based screening is the subject of randomized trials such as WISDOM (United States) and MyPeBS (Europe).</p>",
+    "l1": "Slide 20 shows the BOADICEA risk curves of Lee et al. (2019).",
+    "see": ["boadicea", "polygenic-score", "mammographic-density", "relative-risk", "brca1-brca2"],
+    "links": [
+      {"t": "Lee et al. 2019, Genetics in Medicine", "u": "https://doi.org/10.1038/s41436-018-0406-9"},
+      {"t": "CanRisk tool", "u": "https://www.canrisk.org/"}
+    ],
+    "match": ["risk-stratified screening", "risk stratified screening", "risk-based screening"],
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "boadicea",
+    "term": "BOADICEA",
+    "aka": ["Breast and Ovarian Analysis of Disease Incidence and Carrier Estimation Algorithm", "CanRisk"],
+    "short": "A model that computes a woman’s risk of breast and ovarian cancer from her family history, rare variants in genes such as BRCA1 and BRCA2, a polygenic score, questionnaire risk factors and mammographic density. Clinicians use it through the CanRisk web tool.",
+    "long": "<p>BOADICEA models the family’s cancers as the result of rare high-risk variants plus a polygenic component and combines that with the woman’s own risk factors as relative risks on population cancer rates. The 2019 version (Lee et al.) added a 313-SNP polygenic score, questionnaire risk factors and mammographic density; with all of them, predicted lifetime risks in the UK range from 2.8% (1st percentile) to 30.6% (99th percentile).</p>",
+    "l1": "Slide 20 is a figure from the paper that describes this version of BOADICEA.",
+    "see": ["risk-stratified-screening", "polygenic-score", "brca1-brca2"],
+    "links": [
+      {"t": "Lee et al. 2019, Genetics in Medicine", "u": "https://doi.org/10.1038/s41436-018-0406-9"},
+      {"t": "CanRisk tool", "u": "https://www.canrisk.org/"}
+    ],
+    "match": ["BOADICEA", "CanRisk"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "mammographic-density",
+    "term": "Mammographic density",
+    "aka": ["breast density"],
+    "short": "The share of the breast that appears white on a mammogram (glandular and connective tissue) rather than dark (fat). Higher density raises the risk of breast cancer and makes tumors harder to see on the image.",
+    "long": "<p>Density is reported on a scale such as the BI-RADS categories or as a percentage of the breast area. It is one of the strongest risk factors for breast cancer that is not genetic in the usual sense, although density is itself partly heritable. Risk models such as BOADICEA use it as one input next to questionnaire risk factors and a polygenic score.</p>",
+    "l1": "Slide 20 (“MD” in the legend).",
+    "see": ["risk-stratified-screening", "boadicea"],
+    "links": [
+      {"t": "Boyd et al. 2007, New England Journal of Medicine", "u": "https://doi.org/10.1056/NEJMoa062790"}
+    ],
+    "match": ["mammographic density", "breast density"],
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "brca1-brca2",
+    "term": "BRCA1 and BRCA2",
+    "aka": ["BRCA genes"],
+    "short": "Two genes whose proteins help repair broken DNA. Pathogenic variants in either gene, carried by about 1 in 400 people, raise the risk of breast cancer by age 80 to about 70% and of ovarian cancer to 17% (BRCA2) or 44% (BRCA1).",
+    "long": "<p>The risks to age 80 come from a prospective study of 6,036 <em>BRCA1</em> and 3,820 <em>BRCA2</em> carriers (Kuchenbaecker et al. 2017): breast cancer 72% and 69%, ovarian cancer 44% and 17%. For comparison, about 13% of women in the United States develop breast cancer and about 1.1% ovarian cancer in their lifetime. Carriers are found by testing people with a strong family history and, increasingly, by testing their relatives once a variant is known in the family. The prevalence is higher in some groups, for example about 2% of people of Ashkenazi Jewish ancestry, because of founder variants.</p>",
+    "l1": "Slide 19: “Predictive: screening those with rare risk variants – BRCA1/BRCA2”.",
+    "see": ["penetrance", "risk-stratified-screening", "lynch-syndrome"],
+    "links": [
+      {"t": "NCI fact sheet: BRCA gene changes", "u": "https://www.cancer.gov/about-cancer/causes-prevention/genetics/brca-fact-sheet"},
+      {"t": "Kuchenbaecker et al. 2017, JAMA", "u": "https://doi.org/10.1001/jama.2017.7112"}
+    ],
+    "match": ["BRCA1", "BRCA2", "BRCA1/BRCA2", "BRCA1/2"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "lynch-syndrome",
+    "term": "Lynch syndrome",
+    "aka": ["hereditary nonpolyposis colorectal cancer", "HNPCC"],
+    "short": "An inherited condition caused by a pathogenic variant in one of the DNA mismatch-repair genes (MLH1, MSH2, MSH6, PMS2) or EPCAM. Carriers have high risks of colorectal and endometrial cancer; about 1 in 279 people carry such a variant.",
+    "long": "<p>Mismatch repair corrects errors made when DNA is copied; tumors in carriers accumulate many small errors, which is how Lynch syndrome is often first suspected from a tumor test. Carriers are offered colonoscopy every one to two years, which finds and removes precancerous polyps. The carrier frequency of 1 in 279 is an estimate for the general population (Win et al. 2017): 1 in 1,946 for <em>MLH1</em>, 1 in 2,841 for <em>MSH2</em>, 1 in 758 for <em>MSH6</em> and 1 in 714 for <em>PMS2</em>.</p>",
+    "l1": "Slide 19: “Lynch Syndrome/HNPCC”.",
+    "see": ["brca1-brca2", "penetrance"],
+    "links": [
+      {"t": "Win et al. 2017, Cancer Epidemiol Biomarkers Prev", "u": "https://doi.org/10.1158/1055-9965.EPI-16-0693"},
+      {"t": "MedlinePlus Genetics: Lynch syndrome", "u": "https://medlineplus.gov/genetics/condition/lynch-syndrome/"}
+    ],
+    "match": ["Lynch syndrome", "HNPCC", "hereditary nonpolyposis colorectal cancer"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "newborn-screening",
+    "term": "Newborn screening",
+    "aka": ["neonatal screening", "heel-prick test"],
+    "short": "Testing every baby shortly after birth, usually from drops of blood dried on filter paper, for treatable conditions that cause no symptoms at first, so that treatment can start before harm is done.",
+    "long": "<p>In the United States, the American College of Medical Genetics (ACMG) recommended in 2006 a uniform panel of 29 core conditions, chosen by scoring each candidate on whether a test exists, whether treatment helps, and how well the condition is understood; 25 further conditions are found as by-products. The federal Recommended Uniform Screening Panel that grew from it lists 38 core and 26 secondary conditions since infantile Krabbe disease was added in July 2024.</p><p>Most of these tests measure metabolites or proteins, not DNA: tandem mass spectrometry for amino acids and acylcarnitines, immunoassays for hormones, separation of hemoglobin types. DNA is tested as a second step for some conditions such as cystic fibrosis. A positive screen is not a diagnosis; the baby is recalled for confirmatory testing.</p>",
+    "l1": "Slide 19: “Diagnostic: screening newborns – Amer. College of Med. Genetics: screen for 29 conditions”.",
+    "see": ["phenylketonuria", "inborn-error-of-metabolism", "tandem-mass-spectrometry", "hemoglobinopathy"],
+    "links": [
+      {"t": "ACMG Newborn Screening Expert Group 2006, Pediatrics", "u": "https://doi.org/10.1542/peds.2005-2633I"},
+      {"t": "HRSA: Recommended Uniform Screening Panel", "u": "https://www.hrsa.gov/advisory-committees/heritable-disorders/rusp"}
+    ],
+    "match": ["newborn screening", "neonatal screening", "screening newborns"],
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "phenylketonuria",
+    "term": "Phenylketonuria",
+    "aka": ["PKU"],
+    "short": "An inherited recessive disease, caused by variants in the gene PAH, in which the amino acid phenylalanine cannot be broken down and builds up in the blood, damaging the developing brain. A diet low in phenylalanine started soon after birth prevents the damage.",
+    "long": "<p>Phenylketonuria was the first condition screened for in all newborns, because a cheap blood test can find it before symptoms appear and because early treatment works. It is also the textbook example that a strongly genetic disease can be prevented by changing the environment (the diet).</p>",
+    "l1": "Slide 19 lists phenylketonuria (PKU) among the newborn screening conditions.",
+    "see": ["newborn-screening", "inborn-error-of-metabolism", "mendelian-disease"],
+    "links": [
+      {"t": "MedlinePlus Genetics: phenylketonuria", "u": "https://medlineplus.gov/genetics/condition/phenylketonuria/"}
+    ],
+    "match": ["phenylketonuria", "PKU"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "inborn-error-of-metabolism",
+    "term": "Inborn error of metabolism",
+    "aka": ["inherited metabolic disorder"],
+    "short": "A disease caused by an inherited defect in an enzyme or transporter of a metabolic pathway, so that a substance builds up or a product is missing. Archibald Garrod introduced the term in 1908.",
+    "long": "<p>Garrod studied alkaptonuria, in which urine turns black on standing, and noticed in 1902 that it was more common among children of parents who were first cousins, as Mendel’s recessive inheritance predicts. In his 1908 Croonian Lectures he proposed that such diseases are inherited blocks in chemical pathways, decades before genes were known to encode enzymes. Phenylketonuria and maple syrup urine disease are examples on today’s newborn screening panels.</p>",
+    "l1": "Slide 28 credits Garrod with “inborn errors of metabolism”; slide 19’s newborn screening panel is mostly made of them.",
+    "see": ["phenylketonuria", "newborn-screening", "mendelian-disease"],
+    "links": [],
+    "match": ["inborn error of metabolism", "inborn errors of metabolism"],
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "tandem-mass-spectrometry",
+    "term": "Tandem mass spectrometry",
+    "aka": ["MS/MS"],
+    "short": "A laboratory method that sorts molecules by mass twice in a row, so that dozens of metabolites, such as amino acids and acylcarnitines, can be measured at once in one dried blood spot. It lets newborn screening test for many inborn errors of metabolism with one assay.",
+    "long": "<p>In the first stage the instrument selects molecules of a given mass; they are broken into fragments, and the second stage measures the fragments. Each metabolite has a characteristic pair of masses, so many can be counted in a single run of a few minutes. On slide 19, 20 of the 29 core conditions are found by MS/MS: 9 organic acid conditions and 5 fatty acid oxidation disorders from the acylcarnitine profile, and 6 amino acid disorders.</p>",
+    "l1": "Slide 19, the table’s “MS/MS” columns.",
+    "see": ["newborn-screening", "inborn-error-of-metabolism"],
+    "links": [],
+    "match": ["tandem mass spectrometry", "MS/MS"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "predixcan",
+    "term": "PrediXcan",
+    "aka": ["S-PrediXcan"],
+    "short": "A method and software for a transcriptome-wide association study: it predicts each gene’s expression from genotypes with weights trained in a reference dataset such as GTEx, and tests the predicted expression for association with a trait. S-PrediXcan does the same from GWAS summary statistics.",
+    "long": "<p>PrediXcan (Gamazon et al. 2015) trains an elastic-net regression of a gene’s measured expression on the variants within 1 Mb of the gene in a reference dataset, then applies the weights to people who have genotypes and a trait but no expression data.</p>",
+    "l1": "Slide 25 (TWAS); covered in Session 5.",
+    "see": ["twas", "transcriptome-imputation", "gtex", "fusion-twas"],
+    "links": [
+      {"t": "Gamazon et al. 2015, Nature Genetics", "u": "https://doi.org/10.1038/ng.3367"}
+    ],
+    "match": ["PrediXcan", "S-PrediXcan"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  },
+  {
+    "id": "fusion-twas",
+    "term": "FUSION",
+    "aka": ["FUSION TWAS software"],
+    "short": "Software for a transcriptome-wide association study from GWAS summary statistics: it combines a gene’s expression weights with the GWAS z-scores of the same variants, using an LD reference panel, into one z-score per gene.",
+    "long": "<p>FUSION (Gusev et al. 2016) fits several prediction models per gene (best single eQTL, BLUP, BSLMM, lasso, elastic net) in a reference dataset, keeps the one with the best cross-validated accuracy, and reports for each gene TWAS.Z and TWAS.P together with the model’s cross-validated R².</p>",
+    "l1": "Slide 25 (TWAS); covered in Session 5.",
+    "see": ["twas", "transcriptome-imputation", "predixcan", "summary-statistics"],
+    "links": [
+      {"t": "FUSION documentation (Gusev lab)", "u": "http://gusevlab.org/projects/fusion/"},
+      {"t": "Gusev et al. 2016, Nature Genetics", "u": "https://doi.org/10.1038/ng.3506"}
+    ],
+    "match": ["FUSION"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "genetic-epidemiology"
+  }
+]

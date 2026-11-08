@@ -1,0 +1,18 @@
+[
+  {
+    "id": "grafpop",
+    "term": "GRAF-pop",
+    "aka": ["GrafPop"],
+    "short": "NCBI's program, published in 2019, that infers a person's genetic ancestry from genotypes without principal component analysis. It measures the person's genetic distance to each of several reference populations from their allele frequencies and places the person on a fixed triangle with European, African and East Asian corners. dbGaP uses it in quality control; GrafAnc grew out of it.",
+    "long": "<p>The distance to a population is the negative logarithm of the probability of the person's genotypes under Hardy–Weinberg proportions with that population's allele frequencies, averaged over SNPs, so genotypes that are rare in a population push the distance up. The European, African and East Asian distances give the person three weights that sum to 1 and are read as ancestry proportions (Pe, Pf and Pa). Applied to fixed corner coordinates, the weights give the scores GD1 and GD2; GD3 is the distance of the person's point from the plane of the triangle. Because the corners are fixed, people genotyped on different SNPs can be plotted together.</p><p>GRAF-pop used 10,000 SNPs and five reference populations whose allele frequencies came from dbGaP participants. Since 2018 dbGaP has used it to find inconsistencies between the populations that studies report and those that the genotypes predict. GrafAnc, released in 2025 by GRAF-pop's first author and colleagues, keeps the distances and the triangle and uses 282,424 SNPs, 26 reference populations and 8 continental groups.</p>",
+    "l1": "Page 22 (QC step 8): the distances, the triangle and how GrafAnc builds on them.",
+    "see": ["grafanc", "reference-population", "genetic-similarity", "structure-admixture"],
+    "links": [
+      {"t": "Jin et al. 2019, G3", "u": "https://doi.org/10.1534/g3.118.200925"}
+    ],
+    "match": ["GRAF-pop", "GrafPop"],
+    "cs": true,
+    "noPlural": true,
+    "owner": "qc-grafanc"
+  }
+]

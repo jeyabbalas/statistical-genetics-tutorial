@@ -1,0 +1,124 @@
+[
+ {
+  "id": "essentialism",
+  "term": "Essentialism (typological thinking)",
+  "aka": [
+   "typological thinking",
+   "essentialist theories of race"
+  ],
+  "short": "The assumption that humans fall into a few distinct, internally uniform, ranked and unchanging groups, each with a fixed nature.",
+  "long": "<p>Slide 40 places essentialist theories of “race” in the 18th and 19th centuries, before eugenics. The 2023 National Academies report on population descriptors calls this assumption typological thinking and recommends that genetics research avoid it (its recommendation 2).</p>",
+  "l1": "Slide 40; page 3, Eugenics and the misuse of genetics.",
+  "see": [
+   "eugenics",
+   "population-descriptor",
+   "race"
+  ],
+  "links": [
+   {
+    "t": "NASEM 2023 report",
+    "u": "https://doi.org/10.17226/26902"
+   }
+  ],
+  "match": [
+   "essentialism",
+   "essentialist",
+   "typological thinking"
+  ],
+  "noPlural": true,
+  "owner": "social-context"
+ },
+ {
+  "id": "dbgap",
+  "term": "dbGaP (database of Genotypes and Phenotypes)",
+  "aka": [
+   "database of Genotypes and Phenotypes"
+  ],
+  "short": "NIH’s controlled-access repository for individual-level genotype and phenotype data. Researchers apply for access to a dataset and must keep to its data use limitation.",
+  "long": "<p>Under the NIH Genomic Data Sharing Policy, investigators funded by NIH deposit genomic data in an NIH-designated repository such as dbGaP. Each dataset is divided into consent groups, and each group carries a data use limitation based on what its participants agreed to.</p>",
+  "l1": "Page 3, Consent and data sharing; page 22 (GRAF-pop was written for dbGaP).",
+  "see": [
+   "data-use-limitation",
+   "informed-consent"
+  ],
+  "links": [
+   {
+    "t": "dbGaP",
+    "u": "https://www.ncbi.nlm.nih.gov/gap/"
+   }
+  ],
+  "match": [
+   "dbGaP"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "social-context"
+ },
+ {
+  "id": "data-use-limitation",
+  "term": "Data use limitation (DUL)",
+  "aka": [
+   "DUL",
+   "consent group"
+  ],
+  "short": "A short statement, based on participants’ informed consent, of what a shared genomic dataset may be used for.",
+  "long": "<p>NIH’s standard categories are general research use; health/medical/biomedical research, which excludes the study of population origins or ancestry; disease-specific research, for example on diabetes and related conditions; and other, customized limits. Modifiers such as use by not-for-profit organizations only can be added. Researchers who receive a controlled-access dataset must keep to its limitation.</p>",
+  "l1": "Page 3, Consent and data sharing.",
+  "see": [
+   "dbgap",
+   "informed-consent"
+  ],
+  "links": [
+   {
+    "t": "NIH points to consider on data use limitations (2015)",
+    "u": "https://www.grants.nih.gov/sites/default/files/flmngr/NIH_PTC_in_Developing_DUL_Statements.pdf"
+   }
+  ],
+  "match": [
+   "data use limitation",
+   "data use limitations"
+  ],
+  "noPlural": true,
+  "owner": "social-context"
+ },
+ {
+  "id": "balding-nichols-model",
+  "term": "Balding–Nichols model",
+  "short": "A model of allele frequencies in related populations: each population’s frequency is drawn around a shared ancestral frequency p, with variance F<sub>ST</sub> · p(1 − p).",
+  "long": "<p>Each population’s allele frequency follows a beta distribution with mean p and variance F<sub>ST</sub> · p(1 − p), so populations differ more when F<sub>ST</sub> is larger. Balding and Nichols introduced it in 1995 for forensic inference from DNA profiles, to allow for differentiation between populations; it is also a common way to simulate population structure, as on pages 3 and 7.</p>",
+  "l1": "Page 3, stratification simulator; page 7, simulated populations.",
+  "see": [
+   "fst",
+   "population-stratification"
+  ],
+  "links": [
+   {
+    "t": "Balding & Nichols 1995",
+    "u": "https://doi.org/10.1007/BF01441146"
+   }
+  ],
+  "match": [
+   "Balding–Nichols model",
+   "Balding-Nichols model"
+  ],
+  "noPlural": true,
+  "owner": "social-context"
+ },
+ {
+  "id": "path-analysis",
+  "term": "Path analysis",
+  "short": "Sewall Wright’s method (1921) of splitting correlations along a diagram of causes. Along a single chain of causes, the effects multiply.",
+  "long": "<p>If a variant affects a trait only through LDL cholesterol, its effect on the trait is its effect on LDL times the effect of LDL on the trait. The same product underlies the Wald ratio of Mendelian randomization (page 1) and the test of the margarine example (page 3).</p>",
+  "l1": "Page 2, timeline (1921); page 3, Margarine versus butter.",
+  "see": [
+   "mendelian-randomization",
+   "wald-ratio"
+  ],
+  "links": [],
+  "match": [
+   "path analysis"
+  ],
+  "noPlural": true,
+  "owner": "social-context"
+ }
+]

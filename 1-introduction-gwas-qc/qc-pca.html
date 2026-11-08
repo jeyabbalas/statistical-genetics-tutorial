@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC step 6: principal component analysis · Lecture 1</title>
+<meta name="description" content="How PLINK's --pca turns the LD-pruned, common SNPs of every person into principal components; what the .eigenvec and .eigenval files hold; why the SNPs are pruned first; and what clusters, gradients and outliers on a PC plot do and do not mean, with the toy data in the browser lab.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-pca-scatter.js"></script>
+<script defer src="assets/js/widgets/qc-pca-prune.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-pca"]. */
+body[data-page="qc-pca"] .mm-fig { display: block; width: 100%; height: auto; }
+body[data-page="qc-pca"] .pc-k { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+body[data-page="qc-pca"] .pc-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 22px; align-items: start; }
+@media (max-width: 760px) { body[data-page="qc-pca"] .pc-grid { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="qc-pca"] .pc-cap { font-size: 0.86rem; margin: 0.4em 0 0.3em; }
+body[data-page="qc-pca"] .pc-readout { margin-top: 0.6em; overflow-wrap: anywhere; }
+body[data-page="qc-pca"] .pc-table .table-wrap { width: fit-content; max-width: 100%; }
+body[data-page="qc-pca"] .pc-table table { font-size: 0.8rem; width: auto; min-width: min(100%, 360px); }
+body[data-page="qc-pca"] .pc-table th, body[data-page="qc-pca"] .pc-table td { padding: 5px 6px; }
+@media (max-width: 640px) { body[data-page="qc-pca"] .pc-table table.stack td.num { text-align: left; } body[data-page="qc-pca"] .pc-table .table-wrap { width: auto; } }
+</style>
+</head>
+<body data-page="qc-pca">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Step 6 of 8 · Page 20 of 23</p>
+  <h1>QC step 6: principal component analysis</h1>
+  <p class="lede">Do some people differ from the rest of the sample in their genome-wide pattern of genotypes? PLINK's <code>--pca</code> finds the directions along which people's genotypes at the LD-pruned, common SNPs vary most, the principal components (PCs), and gives each person a score on each of them. Plots of the first PCs show groups of genetically similar people, gradients between them, and people far from everyone else. Such patterns reflect genetic ancestry, but also relatives, regions of strong LD and technical differences between batches of samples. This page runs the practical's command, reads its two output files, shows why the SNPs are pruned first, and explains what clusters and outliers do and do not mean. How PCA works is explained on <a href="population-structure.html#pca">Population structure · PCA</a>.</p>
+  <div class="chips">
+    <span class="chip core">Command: <code>plink --pca</code></span>
+    <span class="chip data">Writes: <code>.eigenvec</code> and <code>.eigenval</code></span>
+    <span class="chip time">≈ 40 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="6" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Each person becomes a point on a few axes of genetic variation; the axes describe this sample, not people in general</h2>
+  <figure>
+<svg viewBox="0 0 860 268" role="img" aria-labelledby="mm-t mm-d" class="mm-fig only-wide">
+<title id="mm-t">QC step 6 as one box of the pipeline: principal component analysis</title><desc id="mm-d">The eight QC steps with step 6, PCA, highlighted, expanded into five stages. Statistic: each person's scores on the top principal components of the pruned, common SNPs, with an eigenvalue per component. Distribution: a scatter plot of PC1 against PC2 with one large cluster, two small groups and the scree plot of eigenvalues. Threshold: no fixed rule in the practical; outliers are often defined as more than 6 standard deviations along a top component, and clusters are interpreted against reference samples in step 7. Action: flag outliers, keep the top PCs as covariates. Record: the PCs used and the people flagged.</desc>
+<defs><marker id="mm-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker></defs>
+<line x1="158.8" y1="15" x2="701.2" y2="15" stroke="#d9dee5" stroke-width="2"/>
+<circle cx="158.8" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="158.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">1</text>
+<text x="158.8" y="40" class="t-xs" text-anchor="middle">Missingness</text>
+<circle cx="236.2" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="236.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">2</text>
+<text x="236.2" y="40" class="t-xs" text-anchor="middle">Hardy–Weinberg</text>
+<circle cx="313.8" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="313.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">3</text>
+<text x="313.8" y="40" class="t-xs" text-anchor="middle">LD pruning</text>
+<circle cx="391.2" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="391.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">4</text>
+<text x="391.2" y="40" class="t-xs" text-anchor="middle">Relatedness</text>
+<circle cx="468.8" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="468.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">5</text>
+<text x="468.8" y="40" class="t-xs" text-anchor="middle">Heterozygosity</text>
+<circle cx="546.2" cy="15" r="11" fill="var(--lab)" stroke="var(--lab)" stroke-width="1"/>
+<text x="546.2" y="19" class="t-xs" text-anchor="middle" style="fill:#fff;font-weight:700">6</text>
+<text x="546.2" y="40" class="t-xs" text-anchor="middle" style="font-weight:700;fill:var(--fg)">PCA</text>
+<circle cx="623.8" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="623.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">7</text>
+<text x="623.8" y="40" class="t-xs" text-anchor="middle">Reference PCA</text>
+<circle cx="701.2" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="701.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">8</text>
+<text x="701.2" y="40" class="t-xs" text-anchor="middle">GrafAnc</text>
+<path d="M546.2,44 L546.2,54 M10,58 L538.2,58 L546.2,50 L554.2,58 L850,58" fill="none" stroke="var(--lab)" stroke-width="1.4"/>
+<rect x="17" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="17" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="27" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">STATISTIC PER PERSON</text>
+<text x="27" y="108" class="t-b" text-anchor="start">PC scores</text>
+<text x="27" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">a person's coordinates on</text>
+<text x="27" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">the top 20 axes of</text>
+<text x="27" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">genetic variation (pruned,</text>
+<text x="27" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">common SNPs); one</text>
+<text x="27" y="183" class="t-xs" text-anchor="start" style="fill:#1d2127">eigenvalue per axis</text>
+<line x1="172" y1="164.0" x2="183" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="185" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="185" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="195" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">DISTRIBUTION</text>
+<text x="195" y="108" class="t-b" text-anchor="start">PC1 against PC2</text>
+<line x1="221" y1="199" x2="323" y2="199" stroke="#8a93a0" stroke-width="1"/>
+<line x1="221" y1="199" x2="221" y2="129" stroke="#8a93a0" stroke-width="1"/>
+<circle cx="244.1" cy="172.6" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="257.7" cy="177.0" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="243.5" cy="174.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="254.5" cy="169.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="244.2" cy="180.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="255.9" cy="172.2" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="261.0" cy="169.7" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="251.0" cy="175.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="267.3" cy="175.9" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="246.8" cy="180.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="252.2" cy="173.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="249.5" cy="174.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="253.3" cy="171.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="258.3" cy="173.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="240.6" cy="171.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="242.9" cy="175.3" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="242.6" cy="174.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="246.8" cy="173.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="271.8" cy="174.7" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="256.8" cy="181.0" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="249.8" cy="171.3" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="251.0" cy="172.7" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="252.2" cy="179.4" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="255.1" cy="178.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="263.1" cy="177.0" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="255.8" cy="174.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="257.4" cy="177.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="257.7" cy="175.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="259.3" cy="171.4" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="252.5" cy="178.3" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="256.3" cy="172.2" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="261.6" cy="176.3" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="255.0" cy="172.0" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="253.3" cy="173.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="305.4" cy="180.1" r="2.3" fill="var(--q2)"/>
+<circle cx="300.5" cy="179.4" r="2.3" fill="var(--q2)"/>
+<circle cx="307.1" cy="172.7" r="2.3" fill="var(--q2)"/>
+<circle cx="308.6" cy="174.3" r="2.3" fill="var(--q2)"/>
+<circle cx="307.8" cy="175.6" r="2.3" fill="var(--q2)"/>
+<circle cx="305.4" cy="175.3" r="2.3" fill="var(--q2)"/>
+<circle cx="311.9" cy="179.1" r="2.3" fill="var(--q2)"/>
+<circle cx="256.9" cy="133.3" r="2.3" fill="var(--q3)"/>
+<circle cx="260.8" cy="136.1" r="2.3" fill="var(--q3)"/>
+<circle cx="263.3" cy="142.0" r="2.3" fill="var(--q3)"/>
+<circle cx="269.7" cy="133.8" r="2.3" fill="var(--q3)"/>
+<circle cx="260.5" cy="136.7" r="2.3" fill="var(--q3)"/>
+<circle cx="260.3" cy="141.3" r="2.3" fill="var(--q3)"/>
+<circle cx="292.4" cy="134.6" r="2.6" fill="#fff" stroke="var(--q4)" stroke-width="1.4"/>
+<text x="297.4" y="137.6" class="t-xs">outlier</text>
+<text x="272.0" y="211" class="t-xs" text-anchor="middle">PC1</text>
+<text x="216" y="167.0" class="t-xs" text-anchor="end">PC2</text>
+<text x="195" y="229" class="t-xs" text-anchor="start" style="fill:#1d2127">clusters and gradients of</text>
+<text x="195" y="242" class="t-xs" text-anchor="start" style="fill:#1d2127">genetic similarity; the</text>
+<text x="195" y="255" class="t-xs" text-anchor="start" style="fill:#1d2127">scree plot ranks the axes</text>
+<line x1="340" y1="164.0" x2="351" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="353" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="353" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="363" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">THRESHOLD</text>
+<text x="363" y="108" class="t-b" text-anchor="start">Outliers, clusters</text>
+<text x="363" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">no fixed rule in the</text>
+<text x="363" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">practical; a common one:</text>
+<text x="363" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">beyond 6 SD on a top PC;</text>
+<text x="363" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">clusters are read against</text>
+<text x="363" y="183" class="t-xs" text-anchor="start" style="fill:#1d2127">references (step 7)</text>
+<line x1="508" y1="164.0" x2="519" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="521" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="521" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="531" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">REMOVE OR FLAG</text>
+<text x="531" y="108" class="t-b" text-anchor="start">Flag and adjust</text>
+<text x="531" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">flag outliers and check</text>
+<text x="531" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">them; keep everyone you</text>
+<text x="531" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">can and add the top PCs</text>
+<text x="531" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">as covariates in the</text>
+<text x="531" y="183" class="t-xs" text-anchor="start" style="fill:#1d2127">association test</text>
+<line x1="676" y1="164.0" x2="687" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="689" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="689" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="699" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">RECORD</text>
+<text x="699" y="108" class="t-b" text-anchor="start">PCs and decisions</text>
+<text x="699" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">SNP set, number of PCs</text>
+<text x="699" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">kept, people flagged</text>
+<text x="699" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">and why</text>
+</svg>
+<svg viewBox="0 0 360 605" role="img" aria-labelledby="mmn-t mmn-d" class="mm-fig only-narrow">
+<title id="mmn-t">QC step 6 as one box of the pipeline: principal component analysis</title><desc id="mmn-d">The eight QC steps with step 6, PCA, highlighted, expanded into five stages. Statistic: each person's scores on the top principal components of the pruned, common SNPs, with an eigenvalue per component. Distribution: a scatter plot of PC1 against PC2 with one large cluster, two small groups and the scree plot of eigenvalues. Threshold: no fixed rule in the practical; outliers are often defined as more than 6 standard deviations along a top component, and clusters are interpreted against reference samples in step 7. Action: flag outliers, keep the top PCs as covariates. Record: the PCs used and the people flagged.</desc>
+<defs><marker id="mmn-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker></defs>
+<line x1="26.0" y1="15" x2="334.0" y2="15" stroke="#d9dee5" stroke-width="2"/>
+<circle cx="26.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="26.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">1</text>
+<circle cx="70.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="70.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">2</text>
+<circle cx="114.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="114.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">3</text>
+<circle cx="158.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="158.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">4</text>
+<circle cx="202.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="202.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">5</text>
+<circle cx="246.0" cy="15" r="11" fill="var(--lab)" stroke="var(--lab)" stroke-width="1"/>
+<text x="246.0" y="19" class="t-xs" text-anchor="middle" style="fill:#fff;font-weight:700">6</text>
+<text x="246.0" y="40" class="t-xs" text-anchor="middle" style="font-weight:700;fill:var(--fg)">PCA</text>
+<circle cx="290.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="290.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">7</text>
+<circle cx="334.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="334.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">8</text>
+<rect x="8" y="54" width="344" height="84" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="54" width="5" height="84" rx="2" fill="var(--lab)"/>
+<text x="22" y="72" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">STATISTIC PER PERSON</text>
+<text x="22" y="89" class="t-b" text-anchor="start">PC scores</text>
+<text x="22" y="106" class="t-xs" text-anchor="start" style="fill:#1d2127">a person's coordinates on the top 20 axes of genetic</text>
+<text x="22" y="119" class="t-xs" text-anchor="start" style="fill:#1d2127">variation (pruned, common SNPs); one eigenvalue per</text>
+<text x="22" y="132" class="t-xs" text-anchor="start" style="fill:#1d2127">axis</text>
+<line x1="180.0" y1="139" x2="180.0" y2="152" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="154" width="344" height="167" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="154" width="5" height="167" rx="2" fill="var(--lab)"/>
+<text x="22" y="172" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">DISTRIBUTION</text>
+<text x="22" y="189" class="t-b" text-anchor="start">PC1 against PC2</text>
+<line x1="98" y1="278" x2="258" y2="278" stroke="#8a93a0" stroke-width="1"/>
+<line x1="98" y1="278" x2="98" y2="208" stroke="#8a93a0" stroke-width="1"/>
+<circle cx="134.2" cy="251.6" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="155.6" cy="256.0" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="133.2" cy="253.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="150.6" cy="248.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="134.3" cy="259.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="152.8" cy="251.2" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="160.7" cy="248.7" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="145.0" cy="254.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="170.7" cy="254.9" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="138.5" cy="259.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="146.9" cy="252.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="142.7" cy="253.8" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="148.6" cy="250.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="156.5" cy="252.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="128.8" cy="250.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="132.4" cy="254.3" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="131.9" cy="253.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="138.5" cy="252.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="177.7" cy="253.7" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="154.1" cy="260.0" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="143.2" cy="250.3" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="145.1" cy="251.7" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="147.0" cy="258.4" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="151.4" cy="257.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="164.0" cy="256.0" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="152.6" cy="253.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="155.1" cy="256.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="155.6" cy="254.1" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="158.1" cy="250.4" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="147.4" cy="257.3" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="153.4" cy="251.2" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="161.8" cy="255.3" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="151.3" cy="251.0" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="148.7" cy="252.5" r="2" fill="var(--q1)" fill-opacity="0.75"/>
+<circle cx="230.4" cy="259.1" r="2.3" fill="var(--q2)"/>
+<circle cx="222.7" cy="258.4" r="2.3" fill="var(--q2)"/>
+<circle cx="233.0" cy="251.7" r="2.3" fill="var(--q2)"/>
+<circle cx="235.5" cy="253.3" r="2.3" fill="var(--q2)"/>
+<circle cx="234.2" cy="254.6" r="2.3" fill="var(--q2)"/>
+<circle cx="230.4" cy="254.3" r="2.3" fill="var(--q2)"/>
+<circle cx="240.6" cy="258.1" r="2.3" fill="var(--q2)"/>
+<circle cx="154.4" cy="212.3" r="2.3" fill="var(--q3)"/>
+<circle cx="160.4" cy="215.1" r="2.3" fill="var(--q3)"/>
+<circle cx="164.4" cy="221.0" r="2.3" fill="var(--q3)"/>
+<circle cx="174.4" cy="212.8" r="2.3" fill="var(--q3)"/>
+<circle cx="159.9" cy="215.7" r="2.3" fill="var(--q3)"/>
+<circle cx="159.6" cy="220.3" r="2.3" fill="var(--q3)"/>
+<circle cx="210.0" cy="213.6" r="2.6" fill="#fff" stroke="var(--q4)" stroke-width="1.4"/>
+<text x="215.0" y="216.6" class="t-xs">outlier</text>
+<text x="178.0" y="290" class="t-xs" text-anchor="middle">PC1</text>
+<text x="93" y="246.0" class="t-xs" text-anchor="end">PC2</text>
+<text x="22" y="302" class="t-xs" text-anchor="start" style="fill:#1d2127">clusters and gradients of genetic similarity; the</text>
+<text x="22" y="315" class="t-xs" text-anchor="start" style="fill:#1d2127">scree plot ranks the axes</text>
+<line x1="180.0" y1="322" x2="180.0" y2="335" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="337" width="344" height="84" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="337" width="5" height="84" rx="2" fill="var(--lab)"/>
+<text x="22" y="355" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">THRESHOLD</text>
+<text x="22" y="372" class="t-b" text-anchor="start">Outliers, clusters</text>
+<text x="22" y="389" class="t-xs" text-anchor="start" style="fill:#1d2127">no fixed rule in the practical; a common one: beyond 6</text>
+<text x="22" y="402" class="t-xs" text-anchor="start" style="fill:#1d2127">SD on a top PC; clusters are read against references</text>
+<text x="22" y="415" class="t-xs" text-anchor="start" style="fill:#1d2127">(step 7)</text>
+<line x1="180.0" y1="422" x2="180.0" y2="435" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="437" width="344" height="84" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="437" width="5" height="84" rx="2" fill="var(--lab)"/>
+<text x="22" y="455" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">REMOVE OR FLAG</text>
+<text x="22" y="472" class="t-b" text-anchor="start">Flag and adjust</text>
+<text x="22" y="489" class="t-xs" text-anchor="start" style="fill:#1d2127">flag outliers and check them; keep everyone you can</text>
+<text x="22" y="502" class="t-xs" text-anchor="start" style="fill:#1d2127">and add the top PCs as covariates in the association</text>
+<text x="22" y="515" class="t-xs" text-anchor="start" style="fill:#1d2127">test</text>
+<line x1="180.0" y1="522" x2="180.0" y2="535" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="537" width="344" height="58" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="537" width="5" height="58" rx="2" fill="var(--lab)"/>
+<text x="22" y="555" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">RECORD</text>
+<text x="22" y="572" class="t-b" text-anchor="start">PCs and decisions</text>
+<text x="22" y="589" class="t-xs" text-anchor="start" style="fill:#1d2127">SNP set, number of PCs kept, people flagged and why</text>
+</svg>
+  </figure>
+  <p class="mm-statement">PLINK standardizes everyone's genotypes at the pruned, common SNPs, measures how similar every pair of people is, and finds the few directions that capture most of that similarity: the principal components. Each person gets a score on each PC (<code>.eigenvec</code>); each PC gets an eigenvalue, the amount of variation it captures (<code>.eigenval</code>). A plot of PC1 against PC2 shows the main structure, and the scree plot shows how many PCs carry it. Clusters, gradients and outliers are then explained with reference samples (steps 7 and 8), relatedness (step 4) and sample quality (steps 1 and 5), and the top PCs are kept as covariates for the association analysis of Session 2.</p>
+  <ul class="mm-hooks">
+    <li><strong>PCs summarize the people analyzed.</strong> Who is in the data sets the axes; adding or removing people moves everyone (<a href="#clusters">what clusters mean</a>).</li>
+    <li><strong>Prune first.</strong> A region of strong LD can take over a component on its own (<a href="#pruning">pruning</a>).</li>
+    <li><strong>A cluster is not a race.</strong> It is a group of people with similar genotypes at these SNPs; any label comes from reference samples, not from the plot (<a href="#clusters">what clusters mean</a>).</li>
+    <li><strong>Outliers need an explanation.</strong> A person far from everyone may differ in genetic ancestry from the rest of the sample, or may be a poor sample (<a href="#outliers">outliers</a>).</li>
+    <li><strong>The PCs are used again.</strong> The top PCs become covariates that adjust association tests for ancestry (<a href="#covariates">covariates</a>).</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and the earlier pages</div>
+  <p>Principal component analysis as a measure of genetic similarity, and the words used for groups of people, are introduced in <a href="../0-biological-foundations/ancestry.html#pca">Lecture 0 · Measuring genetic similarity with PCA</a> and <a href="../0-biological-foundations/ancestry.html#descriptors">Words matter</a>. How PCA works, from a data matrix to genotypes, with a worked example of six people, is on <a href="population-structure.html#pca">Population structure · PCA</a>, and what the components depend on is in <a href="population-structure.html#pca-limits">What PCs depend on</a>. This step uses the fileset of <a href="qc-missingness.html">step 1</a> and the pruned SNP list of <a href="qc-ld-pruning.html">step 3</a>; its results are read together with <a href="qc-relatedness.html">step 4</a> and <a href="qc-heterozygosity.html">step 5</a>.</p>
+</aside>
+
+<h2 id="what-it-finds">What the step finds <span class="tag core">Core</span></h2>
+<p>People who share more recent ancestry share more allele copies, so their genotypes agree more often, across the whole genome. PCA looks for directions in which many SNPs vary together across people. What lies behind such a direction can be one of several things:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Patterns on a plot of the first PCs</caption>
+  <thead><tr><th>Pattern</th><th>What can produce it</th><th>How to tell</th><th>Usual action</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Pattern">One compact cloud</td><td data-label="What can produce it">People of similar genetic ancestry, without strong structure</td><td data-label="How to tell">No PC stands clearly above the rest in the scree plot</td><td data-label="Usual action">Nothing to remove; the top PCs may still be used as covariates</td></tr>
+    <tr><td data-label="Pattern">Separate clusters</td><td data-label="What can produce it">Groups that differ in genetic ancestry; samples genotyped in different batches or on different plates; a large family</td><td data-label="How to tell">Reference samples (step 7); batch and plate records; the pairs of step 4</td><td data-label="Usual action">Keep and adjust with PCs, or analyze within groups; investigate a batch</td></tr>
+    <tr><td data-label="Pattern">A gradient, or people between clusters</td><td data-label="What can produce it"><a class="term" href="glossary.html#admixture">Admixed</a> people, whose recent ancestors came from two or more populations; gradual change with geography</td><td data-label="How to tell">Position on the line between two clusters; GrafAnc's ancestry estimates (step 8)</td><td data-label="Usual action">Keep and adjust with PCs</td></tr>
+    <tr><td data-label="Pattern">Two or three people together, far out on one PC</td><td data-label="What can produce it">A duplicate sample or close relatives: their genotypes agree far more than anyone else's</td><td data-label="How to tell">Pairs with a high <code>PI_HAT</code> in step 4's <code>.genome</code> file</td><td data-label="Usual action">Compute the PCs on unrelated people and project the relatives (<a href="#outliers">outliers</a>)</td></tr>
+    <tr><td data-label="Pattern">A few people far from everyone</td><td data-label="What can produce it">Genetic ancestry unlike anyone else's in the sample; contaminated or low-quality DNA</td><td data-label="How to tell">Missingness (step 1), relatedness to many people (step 4), heterozygosity (step 5); reference samples</td><td data-label="Usual action">Remove poor samples; for the others, decide by the analysis plan (<a href="#outliers">outliers</a>)</td></tr>
+    <tr><td data-label="Pattern">A component that splits people into two or three stripes</td><td data-label="What can produce it">A region of strong LD, such as an <a class="term" href="glossary.html#inversion">inversion</a>, whose haplotypes the component sorts</td><td data-label="How to tell">The SNPs that move with the component sit in one region (<a href="#pruning">pruning</a>)</td><td data-label="Usual action">Prune, or exclude the region, and rerun</td></tr>
+  </tbody>
+</table>
+</div>
+<p><strong>Why it matters.</strong> Allele frequencies differ between populations, and so can the share of cases, because disease risk, recruitment and diagnosis differ between groups. A SNP whose frequency differs between the groups then appears associated with the disease because of the grouping, not because of the SNP: confounding by ancestry, called <a href="../0-biological-foundations/ancestry.html#stratification">population stratification</a>. Including the top PCs as covariates in the association model adjusts for it, which is why the PCs are computed before the association analysis of Session 2.<sup><a href="#src-1">1</a>,<a href="#src-2">2</a></sup> For quality control itself, PCA shows samples unlike everyone else and technical structure, such as a batch that forms its own cluster. One quality-control review also tested, within each population subgroup, whether case–control status was associated with the first two PCs, a direct check for this kind of confounding.<sup><a href="#src-3">3</a></sup></p>
+
+<h2 id="statistic">What <code>--pca</code> computes <span class="tag core">Core</span></h2>
+<p><code>--pca</code> works on the fileset left after <code>--extract</code> and <code>--maf</code>: \(n\) people and \(m\) SNPs. The derivation, with a worked example, is on <a href="population-structure.html#pca-genotypes">Population structure · Applied to genotypes</a>; in brief, PLINK first standardizes the genotypes and computes a relationship matrix:<sup><a href="#src-2">2</a>,<a href="#src-4">4</a></sup></p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} z_{ij} = \frac{g_{ij} - 2\hat{p}_j}{\sqrt{2\hat{p}_j(1 - \hat{p}_j)}} \\[6pt] \mathbf{K} = \tfrac{1}{m}\, \mathbf{Z}\mathbf{Z}^{\top} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(g_{ij}\)</dt><dd>Genotype of person \(i\) at SNP \(j\): copies of allele 1, 0, 1 or 2.</dd>
+    <dt>\(\hat{p}_j\)</dt><dd>Frequency of allele 1 at SNP \(j\) among the people analyzed.</dd>
+    <dt>\(z_{ij}\)</dt><dd>Standardized genotype, the entry in row \(i\) and column \(j\) of the \(n \times m\) matrix \(\mathbf{Z}\).</dd>
+    <dt>\(m\)</dt><dd>Number of SNPs: here the pruned autosomal SNPs with a minor allele frequency of at least 5%.</dd>
+    <dt>\(\mathbf{K}\)</dt><dd>The \(n \times n\) relationship matrix; PLINK calls it the variance-standardized relationship matrix.</dd>
+  </dl>
+  <p class="eq-intuition">Each SNP is centered, so that its average over people is 0, and scaled, so that its variance is about 1 whatever its allele frequency. Entry \((i, i')\) of \(\mathbf{K}\) is the average over SNPs of \(z_{ij} z_{i'j}\): large and positive for two people whose genotypes agree at many SNPs more than the allele frequencies predict, near 0 for two unrelated people from one population, and near 1 on the diagonal.</p>
+</div>
+<p>PLINK changes one thing: it averages each entry over the SNPs at which it can be computed, so that a missing call is skipped rather than counted. An off-diagonal entry is averaged over the SNPs called in both people, and a diagonal entry over the SNPs called in that person. The diagonal gets no other special treatment: each diagonal entry is the person's average of \(z_{ij}^2\), close to 1 for people whose parents are not related. PLINK's documentation writes it as 1 plus \(\hat{F}_1\), the first of the three estimates of a person's <a class="term" href="glossary.html#inbreeding-coefficient">inbreeding coefficient</a> that PLINK's <code>--ibc</code> computes.<sup><a href="#src-13">13</a></sup> The principal components are the eigenvectors of \(\mathbf{K}\):</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \mathbf{K}\,\mathbf{u}_k = \ell_k\,\mathbf{u}_k, \qquad \text{share of variance of PC}\,k \approx \frac{\ell_k}{\operatorname{tr}\mathbf{K}} \approx \frac{\ell_k}{n} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\mathbf{u}_k\)</dt><dd>The \(k\)-th eigenvector: \(n\) numbers, one per person, whose squares add up to 1. Column \(k + 2\) of the <code>.eigenvec</code> file.</dd>
+    <dt>\(\ell_k\)</dt><dd>Its eigenvalue, line \(k\) of the <code>.eigenval</code> file; \(\ell_1 \ge \ell_2 \ge \dots\)</dd>
+    <dt>\(\operatorname{tr}\mathbf{K}\)</dt><dd>The trace of \(\mathbf{K}\), the sum of its diagonal entries; close to \(n\) because each diagonal entry is close to 1.</dd>
+    <dt>\(n\)</dt><dd>Number of people.</dd>
+  </dl>
+  <p class="eq-intuition">Among all ways of giving each person one number, with the squares adding up to 1, \(\mathbf{u}_1\) is the one that agrees best with the relationship matrix: the quantity \(\mathbf{u}^{\top}\mathbf{K}\mathbf{u}\) is largest for \(\mathbf{u} = \mathbf{u}_1\), and its largest value is \(\ell_1\). \(\mathbf{u}_2\) is the best among the ways perpendicular to \(\mathbf{u}_1\), and so on. All the eigenvalues of \(\mathbf{K}\) add up to its trace, so \(\ell_k / n\) is approximately the share of all the variation among people that PC \(k\) captures. The 20 eigenvalues PLINK reports are only part of the trace; dividing by their sum inflates every share.</p>
+</div>
+<p>Three properties of these numbers matter whenever PCs are plotted or compared:</p>
+<ul>
+  <li><strong>Scale.</strong> Every column of <code>.eigenvec</code> has length 1, so with \(n\) people a typical value is of the order of \(1/\sqrt{n}\), whatever the PC. How much a PC matters is in its eigenvalue, not in the spread of its column. Multiplying column \(k\) by \(\sqrt{\ell_k}\) restores the relative sizes.</li>
+  <li><strong>Sign.</strong> If \(\mathbf{u}_k\) is an eigenvector, so is \(-\mathbf{u}_k\). Two runs, or two programs, can give mirror images of the same plot, so compare PCs only up to a change of sign.</li>
+  <li><strong>Origin.</strong> Every column of \(\mathbf{Z}\) has mean 0, so the scores of all people on a PC add up to 0 (approximately, because PLINK averages each entry over the SNPs called in both people): the origin is the average person of this sample, and the largest group sits nearest to it. Adding or removing people moves everyone's coordinates (<a href="population-structure.html#centering">Population structure · Centering</a>).</li>
+</ul>
+
+<h3 id="files">The .eigenvec and .eigenval files</h3>
+<dl class="cols-doc">
+  <dt>.eigenvec</dt><dd>One line per person, separated by spaces, with no header line (PLINK 1.9 adds one only with the modifier <code>header</code>). Columns: FID, IID, then PC1 to PC20. Read into R with <code>fread</code>, the columns are named V1, V2, V3, …, so PC1 is V3 and PC2 is V4; that is why the practical writes <code>rename(PC1 = V3, PC2 = V4)</code>.<sup><a href="#src-2">2</a>,<a href="#src-5">5</a></sup></dd>
+  <dt>.eigenval</dt><dd>20 lines: the eigenvalues \(\ell_1, \ldots, \ell_{20}\), largest first.</dd>
+  <dt>Not in the files</dt><dd>The share of variance (compute \(\ell_k / n\)); the SNP weights of each PC (the modifier <code>var-wts</code> writes them; the lab's PLINK does not support it, and the widget in <a href="#pruning">Pruning</a> uses correlations, which are approximately proportional to the weights).</dd>
+</dl>
+
+<h2 id="run-it">Run it in the browser <span class="tag core">Core</span></h2>
+<p>The practical runs <code>--pca</code> on the same fileset and pruned SNPs as steps 4 and 5, with a minor allele frequency filter added:<sup><a href="#src-5">5</a></sup></p>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="3">--extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in</span> <span class="part" data-n="4">--maf 0.05</span> <span class="part" data-n="5">--pca</span> <span class="part" data-n="6">--out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code>: PLINK 1.9 (in the lab, its emulator).</li>
+    <li><code>--bfile PREFIX</code>: the fileset left after step 1's missingness filters.</li>
+    <li><code>--extract FILE</code>: only the SNPs in step 3's pruned list, so that no region of strong LD contributes many SNPs carrying the same information (<a href="#pruning">pruning</a>).</li>
+    <li><code>--maf 0.05</code>: keep SNPs whose minor allele frequency among these people is at least 5%. The practical explains that low-frequency variants "can generate sample-specific structure and are generally less useful for visualizing broad population structure".<sup><a href="#src-5">5</a></sup></li>
+    <li><code>--pca</code>: compute \(\mathbf{K}\) and write its top 20 eigenvectors and eigenvalues. A number after it changes the count (<code>--pca 10</code>); the modifiers <code>header</code> and <code>tabs</code> add a header line and separate columns with tabs.<sup><a href="#src-2">2</a></sup></li>
+    <li><code>--out PREFIX</code>: writes <code>PREFIX.eigenvec</code>, <code>PREFIX.eigenval</code> and <code>PREFIX.log</code>; the same prefix as the <code>.genome</code> and <code>.het</code> files.</li>
+  </ol>
+</div>
+<div class="lab" id="lab-pca" data-title="Step 6 · PCA on the toy data">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="lab-script">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --maf 0.05 --pca --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+head -3 ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenvec
+cat ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenval
+awk 'NR == FNR {n++; next} {printf "PC%d %s %.1f%%\n", FNR, $1, 100 * $1 / n}' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenvec ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenval
+sort -k3,3g ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenvec | cut -d " " -f 1-5 | head -3
+sort -k3,3gr ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenvec | cut -d " " -f 1-5 | head -3
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --maf 0.05 --pca --out ${analysis_dir}/toy.noprune
+awk 'NR == FNR {a[FNR] = $1; next} FNR &lt;= 5 {print "PC" FNR, "pruned", a[FNR], "unpruned", $1}' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenval ${analysis_dir}/toy.noprune.eigenval</pre>
+</div>
+<p>The setup recreated what steps 1 and 3 wrote. Press <strong>Run next</strong> to run the commands in order. PLINK's console output reports how many variants <code>--extract</code> kept and how many <code>--maf</code> removed, then "Relationship matrix calculation complete", a warning about monomorphic variants (<a href="#monomorphic-warning">explained below</a>) and the names of the two files.</p>
+<p>For the toy data the console reports that <code>--extract</code> kept <span data-card="prune_in">?</span> variants, that the minor allele frequency filter removed <span data-card="pca_maf_removed">?</span> of them, and that <span data-card="pca_snps">?</span> variants and <span data-card="qc_people">?</span> people pass filters and QC. The <code>.eigenval</code> file has <span data-card="pca_eigenvalues">?</span> lines, PLINK's default number of components, and the <code>.eigenvec</code> file one line per person. The first eigenvalue is <span data-card="pca_eigenval_1">?</span>, followed by <span data-card="pca_eigenval_2">?</span>, <span data-card="pca_eigenval_3">?</span> and <span data-card="pca_eigenval_4">?</span>.</p>
+<ul>
+  <li><code>head -3</code> shows the first three people: FID, IID and 20 numbers each. <code>cat</code> prints the 20 eigenvalues.</li>
+  <li>The first <code>awk</code> reads two files. While <code>NR == FNR</code> it is reading the <code>.eigenvec</code> file and only counts its lines, \(n\); then, for each line of the <code>.eigenval</code> file, it prints the PC number, the eigenvalue and \(100\,\ell_k / n\), the approximate percentage of variance.</li>
+  <li><code>sort -k3,3g</code> orders people by column 3, PC1, as general numbers (needed for values such as <code>-1.2e-05</code>); <code>cut -d " " -f 1-5</code> keeps FID, IID and PC1 to PC3. With <code>gr</code> the order is reversed: the people at the two ends of PC1.</li>
+  <li>The second <code>plink</code> repeats the PCA without <code>--extract</code>, on all the fileset's SNPs with a minor allele frequency of at least 5%, a comparison the <a href="qc-exercise.html">exercise</a> also asks for; the last <code>awk</code> prints the first five eigenvalues of both runs side by side.</li>
+</ul>
+<p id="monomorphic-warning"><strong>The warning about monomorphic variants.</strong> PLINK 1.9.0 prints "Warning: Monomorphic variant(s) present; this implies GRM-destabilizing very rare variants are also present. You should almost certainly apply a MAF filter and rerun this calculation, instead of using results from the current run." A monomorphic SNP, one at which everyone in the sample carries the same allele, has \(\hat{p}_j = 0\) or 1, so the formula for \(z_{ij}\) would divide by 0; PLINK lets such a SNP add 0 to the sum behind every entry. The warning's real concern is SNPs that are rare without being monomorphic: their \(\sqrt{2\hat{p}_j(1 - \hat{p}_j)}\) is small, so the few people who carry the rare allele get very large values of \(z_{ij}\), and a handful of such SNPs can dominate \(\mathbf{K}\). Here <code>--maf 0.05</code> has already removed every SNP with a minor allele frequency below 5%, so no SNP is monomorphic or very rare, and the results can be used. The warning appears anyway because of how PLINK 1.9 builds the matrix: it processes SNPs 20 at a time and fills an incomplete last group with placeholder entries of frequency 0, which its check counts as monomorphic SNPs. So it warns whenever the number of SNPs is not a multiple of 20, as with the toy data's <span data-card="pca_snps">?</span> SNPs, PennCATH's 112,669 and step 7's merged sets. The lab's PLINK warns under the same rule. PLINK 1.9 versions released before 23 September 2026 do not print the warning at all.<sup><a href="#src-13">13</a></sup></p>
+
+<h2 id="look">Look at the components <span class="tag core">Core</span></h2>
+<p>The practical plots PC1 against PC2 and PC2 against PC3, and asks: "Do you see distinct clusters in this plot? What might explain them?", adding that "PCA clustering can also reflect technical effects".<sup><a href="#src-5">5</a></sup> The widget draws any pair of PCs and the scree plot, the eigenvalues in decreasing order.</p>
+<div class="widget" id="w-pca-scatter">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The toy data's principal components and scree plot</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It plots the toy data's .eigenvec and .eigenval files written in the lab above.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Start with PC1 against PC2, the practical's first plot, then PC2 against PC3. Look for clusters, gradients and isolated people, and in the scree plot count the PCs that stand above the slow decline of the rest. Tick <em>multiply each PC by √eigenvalue</em>: every PLINK column has length 1, so the plain plot gives each PC the same spread; scaled, a PC with a larger eigenvalue is stretched accordingly, and distances on the plot reflect how different people's genotypes are. Color by the phenotype code to see whether cases and controls are spread alike over the PCs; where they are not, ancestry could confound the association tests, which is what PCs as covariates adjust for. Color by the outlier rule to list the people more than 6 SD from the mean on any of the first 10 PCs. The table adds each one's missing-call rate from step 1, and the button below it runs the practical's step 4 and 5 commands to add their close relatives and <code>F</code>. Two people at the same far-out spot on one PC, with nobody else nearby, are usually a duplicate or a pair of close relatives: the practical runs <code>--pca</code> on the fileset of step 1, before any relatives are removed, so a pair that shares much of its genome can get a component of its own.</p>
+<p><strong>What the simulation planted.</strong> The toy study was simulated with <span data-card="sim_european_like">?</span> European-like people (step 1 removed <span data-card="mind_removed">?</span> of them), <span data-card="sim_african_like">?</span> African-like, <span data-card="sim_east_asian_like">?</span> East-Asian-like and <span data-card="sim_south_asian_like">?</span> South-Asian-like people, and <span data-card="sim_admixed">?</span> people with recent African and European ancestry (<a href="practical-overview.html#toy-data">the toy dataset</a>). Choose <em>Color by: simulated group</em> to see this truth, which a real study does not have. The first two PCs each separate one small group from the European-like majority. One axis runs to the African-like people, with the admixed people spread along the way. The other runs to the East-Asian-like people, with the South-Asian-like people between them and the majority. The outlier rule flags two kinds of people. The planted duplicate of step 4 (<span data-card="ibd_duplicate_fids">?</span>) sits far out on a component of its own: two copies of the same genome share far more than any other two people, and PCA gives that sharing a component. Two East-Asian-like people sit at the end of an ancestry component. The duplicate is a sample-handling problem; the East-Asian-like people are not errors at all.</p>
+
+<h2 id="pruning">Why the SNPs are pruned first <span class="tag core">Core</span></h2>
+<p>PCA treats every SNP as a separate column and knows nothing about where the SNPs lie. Hundreds of SNPs in one region of strong LD carry nearly the same information, so they act like one SNP counted hundreds of times, and a component can end up describing that single region. The practical puts it this way: "regions of strong or long-range LD can disproportionately influence individual components".<sup><a href="#src-5">5</a></sup> A quality-control review gives a real example. In a lung cancer study of people of European ancestry, PCA on all 545,000 autosomal SNPs with a missing-call rate below 5% separated the US and Italian participants on the first two PCs, while the third PC split both into three groups. The groups matched people's genotypes at a cluster of highly correlated SNPs in 8p23, a region that contains a polymorphic inversion: a stretch of chromosome 8 that is reversed on some copies of the chromosome and not on others. PCA of other European samples had shown the same. The authors therefore recommend against adjusting for PCs that are highly correlated with such local SNP clusters, which could even hide true associations in those regions.<sup><a href="#src-3">3</a>,<a href="#src-6">6</a></sup> Lists of long-range LD regions to remove before PCA exist,<sup><a href="#src-7">7</a></sup> and Privé and colleagues detect such regions automatically from peaks of the SNP weights; they found that PC19 to PC40 of UK Biobank capture LD structure rather than population structure.<sup><a href="#src-8">8</a></sup> Pruning (step 3) removes most of this redundancy. The widget runs the toy data's PCA with and without it.</p>
+<div class="widget" id="w-pca-prune">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">PCA with and without LD pruning: where does each component come from? (toy data)</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It compares the toy data's PCA with and without the pruned SNP list.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> If you have not run the terminal's last commands, press the button to run the PCA without <code>--extract</code>. The table compares the first eigenvalues of the two runs. Then choose the unpruned run and step through the components. The right panel gives, for every SNP, the squared correlation \(r^2\) between its genotypes and the people's scores on the chosen PC; the correlation is approximately proportional to the SNP's weight on the component, which real PLINK writes with <code>var-wts</code>. A component that reflects genome-wide ancestry gets small \(r^2\) from SNPs everywhere. A component made by one region of strong LD gets large \(r^2\) from that region, and its scatter plot sorts people into three groups: those carrying zero, one or two copies of one of the region's haplotypes. The readout says how much of the component's summed \(r^2\) the region carries. Components are perpendicular by construction, but the signals behind them need not be: when the region's signal and an ancestry signal are of similar size, two components can each carry part of both, and the three groups then run diagonally across the plot of the two. Switch to the pruned run to see whether the region's signal has gone.</p>
+<p><strong>In the toy data.</strong> The simulation planted a long-range LD region on chromosome <span data-card="long_range_chr">?</span>, from <span data-card="long_range_start_mb">?</span> to <span data-card="long_range_end_mb">?</span> Mb. It imitates a polymorphic inversion: its <span data-card="long_range_snps">?</span> SNPs carry two groups of haplotypes, standard and inverted, that do not recombine with each other. Without pruning, the PCA uses <span data-card="pca_unpruned_snps">?</span> SNPs, and PC<span data-card="pca_unpruned_inversion_pc">?</span> sorts people by how many inverted copies they carry (correlation <span data-card="pca_unpruned_inversion_r">?</span> with the number of copies). The widget's table shows how much the unpruned run's early eigenvalues grow. Step 3 keeps only <span data-card="long_range_snps_prune_in">?</span> of the region's <span data-card="long_range_snps_qc">?</span> SNPs that passed step 1, and in the pruned run no component follows the region: the closest is PC<span data-card="pca_pruned_inversion_pc">?</span>, with a correlation of only <span data-card="pca_pruned_inversion_r">?</span>.</p>
+<p>Pruning is not the only safeguard. In a diabetes study in the same review, two SNP sets of about 12,000 SNPs each, both selected for low LD and a minor allele frequency above 5%, gave very similar first and second PCs but much less similar third to fifth PCs. The authors recommend exploring how the PCs change with the choice of SNPs.<sup><a href="#src-3">3</a></sup></p>
+
+<h2 id="clusters">What clusters mean, and what they do not <span class="tag core">Core</span></h2>
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 104–105 · PCs summarize the people in the data</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-104.jpg" alt="Lecture 1, slide 104: limitations of principal components. The PCA of Europeans from Novembre et al. 2008, people's country codes on PC1 and PC2 forming a picture that resembles the map of Europe, next to the paper's selection rule: people whose observed grandparents came from different countries were excluded; the slide calls the picture by design too pretty" loading="lazy"><figcaption>Lecture 1 · slide 104</figcaption></figure>
+    <div>
+      <p>Slide 104 explains why the PCA of Europeans on slide 103 looks like a map. Its authors used a person only "if all observed grandparents originated from a single country" and excluded everyone else, which removes the people who would fall between countries; the slide calls the picture "(by design) too pretty".<sup><a href="#src-6">6</a></sup> Slide 105 shows the opposite sampling. In a figure from a New York City biobank, reproduced by Lewis and colleagues, reference people from 87 populations form colored islands, and 31,705 biobank participants fill the space between and around them; the caption calls the islands "a by-product of sampling strategy".<sup><a href="#src-9">9</a>,<a href="#src-10">10</a></sup></p>
+      <p>The slide's reminder, "PCs are just a summary of the data! Who is in the data? Who is not in the data?", applies to step 6 directly: the PCs of PennCATH, or of the toy data, describe the people in that file as the study recruited them. Clusters and gaps depend on who was recruited, and a person between clusters is not an error. <a href="population-structure.html#pca-limits">Population structure · What PCs depend on</a> decodes both slides in more detail.</p>
+    </div>
+  </div>
+  <div class="slide-strip">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-105.jpg" alt="Lecture 1, slide 105: remember PCs are just a summary of the data; who is in the data, and who is not? PC1 against PC2 from Belbin et al., reproduced by Lewis et al. 2022: colored reference people from 87 populations form separate islands labeled Africa, Middle East, Europe, South Asia, Oceania, East Asia and Americas, while gray dots, 31,705 participants of a New York City biobank, fill the space between them" loading="lazy"><figcaption>slide 105</figcaption></figure>
+  </div>
+</aside>
+<p>The practical opens step 6 with the same caution: "PCA does not measure ancestry directly: the resulting components can reflect genetic ancestry and demographic history, but they can also be affected by technical artifacts."<sup><a href="#src-5">5</a></sup> Three points follow from how PCA works.</p>
+<ul>
+  <li><strong>The axes come from this sample.</strong> Each PC is a direction of variation among the people analyzed, and the origin is their average. A group that is a small share of the sample may not get a component of its own, and the same person can sit in a cluster in one study and between clusters in another.</li>
+  <li><strong>A cluster is a group of people with similar genotypes at these SNPs, not a race, an ethnicity or a nationality.</strong> The practical's terminology note: <em>genetic ancestry</em> "refers to patterns of genetic similarity inferred relative to reference samples or statistical models. It is not interchangeable with self-identified race, ethnicity, nationality, or personal identity."<sup><a href="#src-5">5</a></sup> Lecture 0 explains the distinction in <a href="../0-biological-foundations/ancestry.html#descriptors">Words matter</a>, following the National Academies' 2023 report on population descriptors.<sup><a href="#src-11">11</a></sup> A study-only PCA has no labels at all: names for its clusters come from comparison with reference samples (step 7) or from a reference-based tool (step 8).</li>
+  <li><strong>A cluster can be technical.</strong> Samples genotyped in different batches, on different plates or arrays, or with DNA of different quality can separate on a PC. Coloring the plot by batch or plate, when they are recorded, tests this directly.</li>
+</ul>
+<p><strong>PennCATH.</strong> Its 1,401 people were drawn from consecutive patients undergoing cardiac catheterization at one university hospital, and all were recorded as white (<a href="practical-overview.html#penncath">The data</a>). Its study-only PCA shows the variation among these people; it cannot show how they relate to other populations. Step 7 adds that by merging the data with 1000 Genomes, and the practical reports there that the PennCATH people "lie predominantly within or very close to the cluster formed by 1KG samples carrying the EUR reference label", a statement about genetic similarity to a reference, "not a categorical determination that every participant is 'European'".<sup><a href="#src-5">5</a></sup></p>
+
+<h2 id="outliers">Outliers: flag, explain, then decide <span class="tag core">Core</span></h2>
+<p>An outlier is a person far from everyone else on at least one of the top PCs. PLINK's documentation calls its <code>--pca</code> "a simple port of GCTA's --pca flag" and points to EIGENSOFT for "automatic outlier removal".<sup><a href="#src-2">2</a></sup> EIGENSOFT's <code>smartpca</code> by default removes anyone more than 6 standard deviations from the mean along any of the top 10 PCs and repeats the PCA, up to 5 times.<sup><a href="#src-12">12</a></sup> The widget above applies one pass of this rule to PLINK's PCs. Privé and colleagues instead use each person's distances to their nearest neighbors on the PCs, which flags people in sparsely populated parts of the plot, not only people far from the mean.<sup><a href="#src-8">8</a></sup></p>
+<p>What to do with a flagged person depends on why they are far out:</p>
+<ul>
+  <li><strong>A poor sample.</strong> A high missing-call rate (step 1), relatedness to many people (step 4) or <code>F</code> far from 0 (step 5) points to DNA problems. Remove the sample.</li>
+  <li><strong>A relative.</strong> A family can form its own component. Compute the PCs on unrelated people (one of each close pair from step 4) and project the relatives onto them (<a href="population-structure.html#ld-relatives">Population structure · LD and relatives</a>).</li>
+  <li><strong>A person whose genetic ancestry differs from most of the sample.</strong> This is not an error. The practical's exercise says not to exclude a sample "solely because its GrafAnc label differs from the majority" and lists defensible options: "retaining all samples with appropriate population-structure adjustment, conducting stratified analyses, or restricting an analysis to a more genetically homogeneous subset when that restriction is scientifically justified and prespecified".<sup><a href="#src-5">5</a></sup> Removing people for their ancestry also narrows whom genetic research serves (<a href="../0-biological-foundations/ancestry.html#diversity">Lecture 0 · Diversity in genetic studies</a>).</li>
+</ul>
+<p><strong>In the toy data.</strong> The three actions match the people the widget's outlier rule flags. The duplicate pair (<span data-card="ibd_duplicate_fids">?</span>) has ordinary missingness and <code>F</code>, and a <code>PI_HAT</code> near 1 in step 4. Step 4's decision removes one copy, and their component goes with it: a PCA run without one copy has no component that singles out the other. The two East-Asian-like people have ordinary missingness, no close relatives and slightly positive <code>F</code>, the pattern that genetic ancestry gives (<a href="qc-heterozygosity.html#ancestry">step 5</a>). They are correct samples at the edge of the sample's ancestry range: keep them, and let the PCs describe them.</p>
+
+<h2 id="covariates">Later: PCs as covariates <span class="tag core">Core</span></h2>
+<p>The association analysis of Session 2 includes the top PCs as covariates in each SNP's regression, so that the comparison between genotypes and disease is made among people with the same PC scores (<a href="gwas-analysis.html#pcs">Testing association · Principal components as covariates</a>).<sup><a href="#src-1">1</a>,<a href="#src-2">2</a></sup> Three choices made in this step carry over:</p>
+<ul>
+  <li><strong>How many PCs.</strong> There is no single rule: the scree plot, the Tracy–Widom test, plots of each PC and the purpose are used together (<a href="population-structure.html#how-many">Population structure · How many PCs?</a>).</li>
+  <li><strong>Which people define them.</strong> Unrelated people, with relatives projected onto their PCs, so that no family makes a component.</li>
+  <li><strong>Which SNPs.</strong> Pruned SNPs, with long-range LD regions removed: a PC made by one region would adjust every association test for that region's genotypes.</li>
+</ul>
+
+<h2 id="in-r">In R <span class="tag core">Core</span></h2>
+<p>The practical reads the <code>.eigenvec</code> file and plots PC1 against PC2 and PC2 against PC3.<sup><a href="#src-5">5</a></sup> The code below does the same, adds the scree plot with approximate shares of variance, colors the people by the phenotype code of the <code>.fam</code> file, and lists people more than 6 SD from the mean on any of the first 10 PCs. It assumes <code>analysis_dir</code> is set as on <a href="setup.html">Set up your computer</a>.</p>
+<span class="code-label r">R</span>
+<pre class="code">library(tidyverse)
+library(data.table)
+
+analysis_dir &lt;- Sys.getenv(<span class="str">"analysis_dir"</span>)
+pca &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.LD0.3.eigenvec"</span>))
+eigenval &lt;- scan(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.LD0.3.eigenval"</span>))
+
+pca %&gt;% rename(PC1 = V3, PC2 = V4) %&gt;%
+  ggplot(aes(x = PC1, y = PC2)) +
+  geom_point() +
+  labs(title = <span class="str">"PC1 vs. PC2"</span>) +
+  theme_classic()
+
+pca %&gt;% rename(PC2 = V4, PC3 = V5) %&gt;%
+  ggplot(aes(x = PC2, y = PC3)) +
+  geom_point() +
+  labs(title = <span class="str">"PC2 vs. PC3"</span>) +
+  theme_classic()
+
+<span class="cm"># Scree plot; eigenvalue / number of people approximates the share of variance</span>
+tibble(PC = seq_along(eigenval), eigenvalue = eigenval, share = eigenval / nrow(pca)) %&gt;%
+  ggplot(aes(x = PC, y = eigenvalue)) +
+  geom_line() + geom_point() +
+  labs(x = <span class="str">"Principal component"</span>, y = <span class="str">"Eigenvalue"</span>) +
+  theme_classic()
+
+<span class="cm"># Color by the phenotype code in column 6 of the .fam file</span>
+fam &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.fam"</span>))
+pca %&gt;%
+  inner_join(select(fam, V1, V2, pheno = V6), by = c(<span class="str">"V1"</span>, <span class="str">"V2"</span>)) %&gt;%
+  ggplot(aes(x = V3, y = V4, color = factor(pheno))) +
+  geom_point(alpha = <span class="kw">0.6</span>) +
+  coord_equal() +
+  labs(x = <span class="str">"PC1"</span>, y = <span class="str">"PC2"</span>, color = <span class="str">"Phenotype code"</span>) +
+  theme_classic()
+
+<span class="cm"># More than 6 SD from the mean on any of PC1-PC10 (one pass)</span>
+pca %&gt;%
+  mutate(across(V3:V12, ~ (.x - mean(.x)) / sd(.x))) %&gt;%
+  filter(if_any(V3:V12, ~ abs(.x) &gt; <span class="kw">6</span>)) %&gt;%
+  select(FID = V1, IID = V2)</pre>
+<p>Each function, with its pandas counterpart (<a href="tools.html#r">The tools · R</a> has more):</p>
+<ul>
+  <li><code>fread()</code> on a file without a header names the columns V1, V2, …; pandas would need <code>header=None</code>. <code>scan()</code> reads a file of numbers into a vector, like <code>np.loadtxt</code>.</li>
+  <li><code>rename(PC1 = V3)</code> gives column V3 the name PC1 (pandas <code>df.rename(columns={"V3": "PC1"})</code>).</li>
+  <li><code>tibble()</code> builds a small table from vectors, like <code>pd.DataFrame({...})</code>; <code>seq_along(x)</code> is 1, 2, …, up to the length of <code>x</code>.</li>
+  <li><code>inner_join(x, y, by = …)</code> keeps people found in both tables (<code>pd.merge(..., how="inner")</code>); <code>factor(pheno)</code> makes ggplot2 color by category rather than on a continuous scale.</li>
+  <li><code>mutate(across(V3:V12, ~ …))</code> applies the same formula to columns V3 to V12; <code>if_any()</code> keeps a row if the condition holds in any of them (in pandas, <code>(z.abs() &gt; 6).any(axis=1)</code>).</li>
+  <li><code>coord_equal()</code> draws both axes on the same scale, so that distances on the plot are not distorted.</li>
+</ul>
+<p>What the phenotype codes mean in this copy of PennCATH is discussed on <a href="plink-data.html#phenotype-column">The data · What column 6 holds</a>. The same analysis runs on the toy data in the R console below, with <code>dplyr</code> and <code>ggplot2</code> instead of the whole tidyverse. The first run downloads R into the page; the console runs <code>--pca</code> first if you have not.</p>
+<div class="rlab" id="r-pca" data-title="Step 6 in R · the toy data's PCs" data-packages="data.table,dplyr,ggplot2">
+<pre class="lab-setup">[ -f ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.eigenvec ] || plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in --maf 0.05 --pca --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3</pre>
+<pre class="rlab-code">library(data.table)
+library(dplyr)
+library(ggplot2)
+
+pca &lt;- fread(file.path(analysis_dir, "toy.geno0.01.mind0.01.LD0.3.eigenvec"))
+eigenval &lt;- scan(file.path(analysis_dir, "toy.geno0.01.mind0.01.LD0.3.eigenval"))
+fam &lt;- fread(file.path(analysis_dir, "toy.geno0.01.mind0.01.fam"))
+nrow(pca)
+round(100 * eigenval / nrow(pca), 1)   # approximate % of variance
+
+pca %&gt;%
+  inner_join(select(fam, V1, V2, pheno = V6), by = c("V1", "V2")) %&gt;%
+  rename(PC1 = V3, PC2 = V4) %&gt;%
+  ggplot(aes(x = PC1, y = PC2, color = factor(pheno))) +
+  geom_point() +
+  coord_equal() +
+  labs(title = "PC1 vs. PC2 (toy data)", color = "phenotype code") +
+  theme_classic()
+
+data.frame(PC = seq_along(eigenval), eigenvalue = eigenval) %&gt;%
+  ggplot(aes(x = PC, y = eigenvalue)) +
+  geom_line() + geom_point() +
+  labs(title = "Scree plot (toy data)") +
+  theme_classic()</pre>
+</div>
+
+<h2 id="real-data">On your own computer: the real data <span class="tag core">Core</span></h2>
+<p>With PLINK 1.9 installed and the variables set as on <a href="setup.html">Set up your computer</a>, the practical's command runs on the PennCATH files from steps 1 and 3:<sup><a href="#src-5">5</a></sup></p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/penncath.geno0.01.mind0.01.prune.in \
+      --maf 0.05 --pca --out ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3
+<span class="prompt">$ </span>wc -l ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.eigenvec
+<span class="prompt">$ </span>cat ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.eigenval</pre>
+<p><strong>What to look at.</strong></p>
+<ul>
+  <li><strong>Size.</strong> One line per person left after step 1, 1,380, and 20 eigenvalues.</li>
+  <li><strong>The log.</strong> How many SNPs <code>--extract</code> kept and how many <code>--maf 0.05</code> then removed: the \(m\) of the formulas above.</li>
+  <li><strong>The scree plot.</strong> How many eigenvalues stand above the slow decline of the rest.</li>
+  <li><strong>PC1 against PC2, PC2 against PC3.</strong> The practical's question: distinct clusters, and what might explain them.</li>
+  <li><strong>The people at the ends of each top PC.</strong> Their missing-call rates (step 1), pairs in the <code>.genome</code> file (step 4) and <code>F</code> (step 5).</li>
+</ul>
+<p><strong>How the real data differ from the toy data.</strong> The toy data's groups were simulated to differ. PennCATH's people come from one hospital, and in step 7 most of them fall in or near one reference cluster, so its study-only PCs describe variation within that group, together with any technical structure. The matrix is also larger: \(\mathbf{K}\) has 1,380 × 1,380 entries, each an average over all the pruned SNPs. For comparison, real PLINK 1.9.0 builds PennCATH's matrix from 112,669 SNPs: <code>--extract</code> keeps the 176,206 pruned SNPs and <code>--maf 0.05</code> removes 63,537 of them. The first four eigenvalues are 6.28, 2.18, 1.83 and 1.43, and the 20 add up to 32.6, so PC1 captures about 0.45% of the variance (6.28 / 1,380), against <span data-card="pca_eigenval_1">?</span> / <span data-card="qc_people">?</span> for the toy data, whose groups were simulated to differ.</p>
+
+<h2 id="pitfalls">Pitfalls <span class="tag core">Core</span></h2>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Reading clusters as races or ethnic groups</div>
+  <p>A PC plot shows genetic similarity among the people analyzed. Labels such as "European" come from reference samples and describe similarity to those samples; they are not identities, and race and ethnicity are not read off a PC plot.</p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Comparing PCs across runs as if they were fixed</div>
+  <p>Signs can flip, the order of PCs with similar eigenvalues can swap, and adding or removing people moves the origin. Compare runs by the pattern, allowing for sign changes, not by the values.</p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Shares of variance from the 20 reported eigenvalues</div>
+  <p>The eigenvalues in <code>.eigenval</code> are the 20 largest of \(n\). Divide by \(n\) (the trace of \(\mathbf{K}\), approximately), not by the sum of the 20, which makes every share look larger.</p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> PCs from unpruned SNPs or with relatives included</div>
+  <p>A region of strong LD or a large family can make a component of its own, and using that component as a covariate adjusts the association tests for something other than ancestry.</p>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li><code>--pca</code> standardizes the genotypes of the pruned SNPs with minor allele frequency of at least 5%, builds the relationship matrix \(\mathbf{K}\), and writes its top 20 eigenvectors (<code>.eigenvec</code>, one line per person, no header) and eigenvalues (<code>.eigenval</code>).</li>
+    <li>Each PC column has length 1; its importance is in its eigenvalue, and \(\ell_k / n\) approximates its share of the variance. Signs are arbitrary and the origin is the sample's average person.</li>
+    <li>Clusters, gradients and outliers can reflect genetic ancestry, relatives, regions of strong LD or technical batches; pruning removes the LD effect, and steps 1, 4, 5, 7 and 8 explain the rest.</li>
+    <li>PCs describe the people analyzed. A cluster is a group of genetically similar people, not a race or an ethnicity; labels come from reference samples.</li>
+    <li>Flag outliers, explain each one, and decide by the analysis plan; the top PCs, computed on unrelated people from pruned SNPs, become covariates in Session 2.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Why does the practical run --pca on pruned SNPs with --maf 0.05, rather than on all SNPs?</summary><div class="a"><p>Pruning removes SNPs in strong LD with each other. Without it, a region of strong LD contributes many SNPs that carry the same information, and a component can describe that region (people's genotypes at an inversion, for example) instead of genome-wide ancestry. The MAF filter removes low-frequency variants, which the practical says "can generate sample-specific structure": a rare allele carried by a few people makes those few people look alike at that SNP, which says little about broad population structure.</p></div></details>
+  <details class="q"><summary>In a study of 1,380 people, the first eigenvalue is 12.4 and the 20 eigenvalues add up to 60. What share of the variance does PC1 capture?</summary><div class="a"><p>About 12.4 / 1,380 ≈ 0.9%, because the eigenvalues of \(\mathbf{K}\) add up to its trace, which is close to the number of people. Dividing by the sum of the 20 reported eigenvalues would give 12.4 / 60 ≈ 21%, a large overstatement: the other 1,360 eigenvalues are left out.</p></div></details>
+  <details class="q"><summary>You rerun the PCA after removing three people, and PC1 now points the other way: the people who were on the right are on the left. Is something wrong?</summary><div class="a"><p>No. If \(\mathbf{u}\) is an eigenvector, so is \(-\mathbf{u}\), so the sign of each PC is arbitrary. Removing people also changes the sample's average and therefore moves the origin and everyone's coordinates a little. Compare the pattern, allowing for a change of sign.</p></div></details>
+  <details class="q"><summary>In the unpruned PCA, PC2 splits people into three horizontal stripes, and almost all SNPs correlated with PC2 lie in a 4 Mb region of chromosome 8. What is going on, and what do you do?</summary><div class="a"><p>PC2 is describing one region, not ancestry: most likely an inversion or another region of strong LD, where the three stripes are people carrying zero, one or two copies of one of its haplotypes. Use the pruned SNPs, or exclude the region before the PCA, and check that the component disappears. Using such a PC as a covariate would adjust every association test for the genotypes in that region, and could hide a true association there.</p></div></details>
+  <details class="q"><summary>A study has 950 people of one genetic ancestry and 50 of another. On PC1, the large group sits near 0 and the small group far from it. Why?</summary><div class="a"><p>The scores on every PC add up to approximately 0 over the sample, because each SNP column was centered. With the groups at their means, \(950\,\bar{x}_1 + 50\,\bar{x}_2 \approx 0\), so \(\bar{x}_1 \approx -\bar{x}_2/19\): the large group's mean is 19 times closer to 0. The origin is the average person of this sample, not a fixed point.</p></div></details>
+  <details class="q"><summary>A colleague labels the clusters on a study-only PC plot "White", "Black" and "Asian". What is wrong with that, and what can be said instead?</summary><div class="a"><p>A study-only PCA has no labels: it shows groups of people with similar genotypes at these SNPs, nothing about how they identify or are identified. Race and ethnicity are social categories, not properties read off genotypes. What can be said comes from comparison with reference samples (step 7) or a reference-based tool (step 8), for example that a cluster is genetically most similar to the 1000 Genomes samples labeled EUR, together with the caveat that this is a statement about genetic similarity relative to that reference.</p></div></details>
+  <details class="q"><summary>Lab: color the scatter plot by the outlier rule (6 SD on PC1 to PC10). Who is flagged, and what do steps 1, 4 and 5 say about them?</summary><div class="a"><p>The planted duplicate pair (<span data-card="ibd_duplicate_fids">?</span>) and two East-Asian-like people. Press the button under the table to add steps 4 and 5. The duplicate pair has ordinary missing-call rates and <code>F</code>, and <code>PI_HAT</code> <span data-card="ibd_duplicate_pihat">?</span> with each other: a sample-handling problem that step 4 already resolves by removing one copy. (Each copy is also in a flagged pair with the contaminated sample of step 5; that is the contaminated sample's doing.) The East-Asian-like people have ordinary missingness and no close relatives, and their <code>F</code> is slightly positive, as ancestry makes it. They are not errors, so keep them.</p></div></details>
+  <details class="q"><summary>Lab: compare the first eigenvalues of the pruned and unpruned runs in the pruning widget. Which unpruned PC follows the toy data's long-range LD region, where is the region, and what happens to it after pruning?</summary><div class="a"><p>PC<span data-card="pca_unpruned_inversion_pc">?</span>. Its large \(r^2\) values all come from chromosome <span data-card="long_range_chr">?</span>, between <span data-card="long_range_start_mb">?</span> and <span data-card="long_range_end_mb">?</span> Mb, and its scatter plot shows three groups of people: those with zero, one and two inverted copies (correlation <span data-card="pca_unpruned_inversion_r">?</span> with the number of copies). The region is why the unpruned run has an extra large eigenvalue among its first few. After pruning, only <span data-card="long_range_snps_prune_in">?</span> of the region's SNPs remain, and no PC follows it: the best correlation is <span data-card="pca_pruned_inversion_r">?</span>, on PC<span data-card="pca_pruned_inversion_pc">?</span>.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/strat#pca" target="_blank" rel="noopener">PLINK 1.9: --pca</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — the command, its modifiers and the output files.</li>
+    <li><a href="https://doi.org/10.1038/ng1847" target="_blank" rel="noopener">Principal components analysis corrects for stratification in genome-wide association studies</a> <span class="src">· Price et al. 2006, Nature Genetics</span> <span class="level intermediate">intermediate</span> — EIGENSTRAT: PCs as the adjustment for ancestry in association tests.</li>
+    <li><a href="https://doi.org/10.1371/journal.pgen.0020190" target="_blank" rel="noopener">Population structure and eigenanalysis</a> <span class="src">· Patterson et al. 2006, PLoS Genetics</span> <span class="level advanced">advanced</span> — the statistics of PCA on genotypes, including the Tracy–Widom test.</li>
+    <li><a href="https://doi.org/10.1038/nature07331" target="_blank" rel="noopener">Genes mirror geography within Europe</a> <span class="src">· Novembre et al. 2008, Nature</span> <span class="level intro">intro</span> — the map-like PCA of slides 103–104, and how its sample was selected.</li>
+    <li><a href="https://doi.org/10.1093/bioinformatics/btaa520" target="_blank" rel="noopener">Efficient toolkit implementing best practices for principal component analysis of population genetic data</a> <span class="src">· Privé et al. 2020, Bioinformatics</span> <span class="level advanced">advanced</span> — LD regions, outliers and projection, with UK Biobank examples.</li>
+    <li><a href="https://doi.org/10.1126/science.abm7530" target="_blank" rel="noopener">Getting genetic ancestry right for science and society</a> <span class="src">· Lewis et al. 2022, Science</span> <span class="level intro">intro</span> — why genetic ancestry is continuous and how to describe it.</li>
+    <li><a href="https://doi.org/10.17226/26902" target="_blank" rel="noopener">Using Population Descriptors in Genetics and Genomics Research</a> <span class="src">· National Academies 2023</span> <span class="level intro">intro</span> — recommendations for naming groups of people in genetics research.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Price AL, Patterson NJ, Plenge RM, Weinblatt ME, Shadick NA, Reich D (2006). Principal components analysis corrects for stratification in genome-wide association studies. <em>Nature Genetics</em> 38:904–909. <a href="https://doi.org/10.1038/ng1847" target="_blank" rel="noopener">doi:10.1038/ng1847</a></li>
+    <li id="src-2">Chang CC, Purcell S. PLINK 1.9 documentation: “Population stratification”, section on <code>--pca</code> (top 20 principal components of the variance-standardized relationship matrix by default; <code>header</code>, <code>tabs</code> and <code>var-wts</code> modifiers; output <code>.eigenvec</code> and <code>.eigenval</code>; “a simple port of GCTA’s --pca flag”, with EIGENSOFT suggested for automatic outlier removal; top components “generally used as covariates”). <a href="https://www.cog-genomics.org/plink/1.9/strat#pca" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/strat</a></li>
+    <li id="src-3">Laurie CC, Doheny KF, Mirel DB, et al. (2010). Quality control and quality assurance in genotypic data for genome-wide association studies. <em>Genetic Epidemiology</em> 34:591–602 (relatedness: 36 duplicate pairs, two not documented as one person; two mixed samples related to nearly every other sample; ±2 SD bounds for full siblings in Fig. 3; principal components driven by the 8p23 inversion; mixed and low-quality samples; plate effects in genotype calling). <a href="https://doi.org/10.1002/gepi.20516" target="_blank" rel="noopener">doi:10.1002/gepi.20516</a></li>
+    <li id="src-4">Lecture 1 of this course, “Population structure and principal component analysis”: the standardized genotype matrix and relationship matrix, what PCs depend on (LD regions, relatives), the .eigenvec and .eigenval files, and how many PCs. <a href="population-structure.html#pca">population-structure.html</a></li>
+    <li id="src-5">DCEG Statistical Genetics Workshop, Session 1 practical, “Introduction to GWAS Quality Control”: web page and R Markdown source <code>01_qc.Rmd</code> (PennCATH data; PLINK 1.9 commands, file names and thresholds for steps 1–8; 1,380 people after the missingness filters; questions and exercise). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">practical page</a> · <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/blob/main/src/01_qc.Rmd" target="_blank" rel="noopener">01_qc.Rmd</a></li>
+    <li id="src-6">Novembre J, Johnson T, Bryc K, et al. (2008). Genes mirror geography within Europe. <em>Nature</em> 456:98–101. <a href="https://doi.org/10.1038/nature07331" target="_blank" rel="noopener">doi:10.1038/nature07331</a></li>
+    <li id="src-7">Price AL, Weale ME, Patterson N, et al. (2008). Long-range LD can confound genome scans in admixed populations. <em>American Journal of Human Genetics</em> 83:132–135 (24 long-range LD regions to exclude before PCA). <a href="https://doi.org/10.1016/j.ajhg.2008.06.005" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2008.06.005</a></li>
+    <li id="src-8">Privé F, Luu K, Blum MGB, McGrath JJ, Vilhjálmsson BJ (2020). Efficient toolkit implementing best practices for principal component analysis of population genetic data. <em>Bioinformatics</em> 36:4449–4457 (outlier samples detected with a K-nearest-neighbor statistic on the PCs; automatic removal of long-range LD regions from peaks of SNP loadings; PC19–PC40 of UK Biobank capture LD structure; shrinkage of projected PCs). <a href="https://doi.org/10.1093/bioinformatics/btaa520" target="_blank" rel="noopener">doi:10.1093/bioinformatics/btaa520</a></li>
+    <li id="src-9">Lewis ACF, Molina SJ, Appelbaum PS, et al. (2022). Getting genetic ancestry right for science and society. <em>Science</em> 376:250–252. <a href="https://doi.org/10.1126/science.abm7530" target="_blank" rel="noopener">doi:10.1126/science.abm7530</a></li>
+    <li id="src-10">Belbin GM, Cullina S, Wenric S, et al. (2021). Toward a fine-scale population health monitoring system. <em>Cell</em> 184:2068–2083.e11. <a href="https://doi.org/10.1016/j.cell.2021.03.034" target="_blank" rel="noopener">doi:10.1016/j.cell.2021.03.034</a></li>
+    <li id="src-11">National Academies of Sciences, Engineering, and Medicine (2023). <em>Using Population Descriptors in Genetics and Genomics Research: A New Framework for an Evolving Field</em>. Washington, DC: The National Academies Press. <a href="https://doi.org/10.17226/26902" target="_blank" rel="noopener">doi:10.17226/26902</a></li>
+    <li id="src-12">Patterson N, Price AL, Reich D, et al. EIGENSOFT documentation, <code>POPGEN/README</code> (smartpca parameters: <code>numoutlieriter</code>, at most 5 outlier-removal iterations by default; <code>numoutlierevec</code>, 10 components checked; <code>outliersigmathresh</code>, 6 standard deviations; <code>ldregress</code>). <a href="https://github.com/DReichLab/EIG/blob/master/POPGEN/README" target="_blank" rel="noopener">github.com/DReichLab/EIG</a></li>
+    <li id="src-13">Chang CC, Purcell S. PLINK 1.9: documentation of <code>--make-rel</code>, “Inbreeding estimates on diagonal” (the default diagonal is 1 + Fhat1, “equivalent to not having any special handling of the diagonal at all”); the home page's “Recent version history” (23 Sep 2026, rc3: “--pca/GRM construction now prints a strongly worded warning if a monomorphic variant is present”); and the source file <code>1.9/plink_calc.c</code> (the matrix is built 20 SNPs at a time, and an incomplete last group is filled with entries of frequency 0, which the monomorphic check counts). Checked for this site with PLINK 1.9.0 on the toy data: 2,360 or 2,380 SNPs, no warning; 2,361 SNPs, a warning. <a href="https://www.cog-genomics.org/plink/1.9/distance#make_rel" target="_blank" rel="noopener">distance#make_rel</a>, <a href="https://www.cog-genomics.org/plink/1.9/" target="_blank" rel="noopener">cog-genomics.org/plink/1.9</a>, <a href="https://github.com/chrchang/plink-ng/blob/master/1.9/plink_calc.c" target="_blank" rel="noopener">plink_calc.c</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

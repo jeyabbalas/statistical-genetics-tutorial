@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC step 5: heterozygosity · Lecture 1</title>
+<meta name="description" content="How PLINK's --het counts each person's homozygous genotypes at LD-pruned SNPs, compares them with the number expected from the allele frequencies, and estimates the inbreeding coefficient F; what contamination, poor DNA, inbreeding and genetic ancestry do to it; and why the practical's two rules, mean ± 3 SD of the heterozygosity rate and |F| > 0.1, flag different people.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-heterozygosity-mixing.js"></script>
+<script defer src="assets/js/widgets/qc-heterozygosity-dist.js"></script>
+<script defer src="assets/js/widgets/qc-heterozygosity-fmiss.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-heterozygosity"]. */
+body[data-page="qc-heterozygosity"] .mm-fig { display: block; width: 100%; height: auto; }
+/* widget: mixing two people's DNA */
+body[data-page="qc-heterozygosity"] .mix-out { display: inline-block; min-width: 2.6em; font-weight: 700; font-variant-numeric: tabular-nums; margin-left: 6px; }
+body[data-page="qc-heterozygosity"] .mix-presets { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+body[data-page="qc-heterozygosity"] .mix-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 10px 22px; align-items: start; }
+@media (max-width: 760px) { body[data-page="qc-heterozygosity"] .mix-grid { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="qc-heterozygosity"] .mix-cap { font-size: 0.86rem; margin: 0.3em 0 0.35em; }
+body[data-page="qc-heterozygosity"] .mix-svg { display: block; width: 100%; max-width: 440px; height: auto; margin: 0 auto; }
+body[data-page="qc-heterozygosity"] .mix-legend { font-size: 0.8rem; margin: 0.3em 0 0; }
+body[data-page="qc-heterozygosity"] .mix-sw { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; white-space: nowrap; }
+body[data-page="qc-heterozygosity"] .mix-sw i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+body[data-page="qc-heterozygosity"] .mix-sw i.hollow { background: #fff; border: 2px solid; width: 8px; height: 8px; }
+body[data-page="qc-heterozygosity"] .mix-readout { margin-top: 0.7em; font-size: 0.82rem; line-height: 1.6; overflow-wrap: anywhere; }
+/* lab widgets */
+body[data-page="qc-heterozygosity"] .hd-k { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+body[data-page="qc-heterozygosity"] .hd-k output { font-weight: 700; min-width: 2.2em; font-variant-numeric: tabular-nums; }
+body[data-page="qc-heterozygosity"] .hd-readout, body[data-page="qc-heterozygosity"] .hf-readout { margin-top: 0.6em; overflow-wrap: anywhere; }
+body[data-page="qc-heterozygosity"] .hd-table table, body[data-page="qc-heterozygosity"] .hf-table table { font-size: 0.8rem; }
+body[data-page="qc-heterozygosity"] .hd-table th, body[data-page="qc-heterozygosity"] .hd-table td, body[data-page="qc-heterozygosity"] .hf-table th, body[data-page="qc-heterozygosity"] .hf-table td { padding: 5px 6px; }
+body[data-page="qc-heterozygosity"] .hd-table td.num, body[data-page="qc-heterozygosity"] .hf-table td.num { white-space: nowrap; }
+body[data-page="qc-heterozygosity"] .hd-rob { display: inline; }
+@media (max-width: 640px) {
+  body[data-page="qc-heterozygosity"] .hd-table table.stack td.num, body[data-page="qc-heterozygosity"] .hf-table table.stack td.num { text-align: left; }
+}
+</style>
+</head>
+<body data-page="qc-heterozygosity">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Step 5 of 8 · Page 19 of 23</p>
+  <h1>QC step 5: heterozygosity</h1>
+  <p class="lede">Does anyone carry too many or too few heterozygous genotypes? A person's heterozygosity rate is the share of their called SNPs at which they carry two different alleles. Too many heterozygous calls point to DNA from two people mixed in one sample; too few to related parents or poor DNA; and genetic ancestry that differs from most of the sample moves the rate in either direction. PLINK's <code>--het</code> counts each person's homozygous genotypes at the LD-pruned SNPs, compares the count with the number expected from the allele frequencies, and reports the inbreeding coefficient estimate <code>F</code>. This page explains both statistics, the two rules the practical compares, and what to do with the people they flag.</p>
+  <div class="chips">
+    <span class="chip core">Command: <code>plink --het</code></span>
+    <span class="chip data">Writes: <code>.het</code>, one row per person</span>
+    <span class="chip time">≈ 40 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="5" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">One heterozygosity rate per person, compared with the sample and with its expectation; outliers are explained before anyone is removed</h2>
+  <figure>
+<svg viewBox="0 0 860 268" role="img" aria-labelledby="mm-t mm-d" class="mm-fig only-wide">
+<title id="mm-t">QC step 5 as one box of the pipeline: heterozygosity</title><desc id="mm-d">The eight QC steps with step 5, heterozygosity, highlighted, expanded into five stages. Statistic: each person's heterozygosity rate and inbreeding coefficient F from observed and expected homozygous genotype counts at pruned SNPs. Distribution: a narrow bell-shaped histogram with a few people in the tails. Threshold: the practical flags people more than 3 standard deviations from the mean heterozygosity rate; some pipelines use |F| above 0.1 or 0.2. Action: flag, explain with missingness, relatedness and ancestry, then remove. Record: IDs, statistic and reason.</desc>
+<defs><marker id="mm-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker></defs>
+<line x1="158.8" y1="15" x2="701.2" y2="15" stroke="#d9dee5" stroke-width="2"/>
+<circle cx="158.8" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="158.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">1</text>
+<text x="158.8" y="40" class="t-xs" text-anchor="middle">Missingness</text>
+<circle cx="236.2" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="236.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">2</text>
+<text x="236.2" y="40" class="t-xs" text-anchor="middle">Hardy–Weinberg</text>
+<circle cx="313.8" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="313.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">3</text>
+<text x="313.8" y="40" class="t-xs" text-anchor="middle">LD pruning</text>
+<circle cx="391.2" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="391.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">4</text>
+<text x="391.2" y="40" class="t-xs" text-anchor="middle">Relatedness</text>
+<circle cx="468.8" cy="15" r="11" fill="var(--lab)" stroke="var(--lab)" stroke-width="1"/>
+<text x="468.8" y="19" class="t-xs" text-anchor="middle" style="fill:#fff;font-weight:700">5</text>
+<text x="468.8" y="40" class="t-xs" text-anchor="middle" style="font-weight:700;fill:var(--fg)">Heterozygosity</text>
+<circle cx="546.2" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="546.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">6</text>
+<text x="546.2" y="40" class="t-xs" text-anchor="middle">PCA</text>
+<circle cx="623.8" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="623.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">7</text>
+<text x="623.8" y="40" class="t-xs" text-anchor="middle">Reference PCA</text>
+<circle cx="701.2" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="701.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">8</text>
+<text x="701.2" y="40" class="t-xs" text-anchor="middle">GrafAnc</text>
+<path d="M468.8,44 L468.8,54 M10,58 L460.8,58 L468.8,50 L476.8,58 L850,58" fill="none" stroke="var(--lab)" stroke-width="1.4"/>
+<rect x="17" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="17" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="27" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">STATISTIC PER PERSON</text>
+<text x="27" y="108" class="t-b" text-anchor="start">het_rate and F</text>
+<text x="27" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">share of a person's</text>
+<text x="27" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">called SNPs that are</text>
+<text x="27" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">heterozygous; F compares</text>
+<text x="27" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">homozygotes with the</text>
+<text x="27" y="183" class="t-xs" text-anchor="start" style="fill:#1d2127">number expected from</text>
+<text x="27" y="196" class="t-xs" text-anchor="start" style="fill:#1d2127">allele frequencies</text>
+<line x1="172" y1="164.0" x2="183" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="185" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="185" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="195" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">DISTRIBUTION</text>
+<text x="195" y="108" class="t-b" text-anchor="start">Histogram</text>
+<rect x="199.5" y="195.0" width="7.4" height="4.0" fill="var(--q4)"/>
+<rect x="207.9" y="196.8" width="7.4" height="2.2" fill="var(--g1)"/>
+<rect x="216.3" y="192.7" width="7.4" height="6.3" fill="var(--g1)"/>
+<rect x="224.7" y="184.3" width="7.4" height="14.7" fill="var(--g1)"/>
+<rect x="233.1" y="170.6" width="7.4" height="28.4" fill="var(--g1)"/>
+<rect x="241.5" y="153.7" width="7.4" height="45.3" fill="var(--g1)"/>
+<rect x="249.9" y="138.9" width="7.4" height="60.1" fill="var(--g1)"/>
+<rect x="258.3" y="133.0" width="7.4" height="66.0" fill="var(--g1)"/>
+<rect x="266.7" y="138.9" width="7.4" height="60.1" fill="var(--g1)"/>
+<rect x="275.1" y="153.7" width="7.4" height="45.3" fill="var(--g1)"/>
+<rect x="283.5" y="170.6" width="7.4" height="28.4" fill="var(--g1)"/>
+<rect x="291.9" y="184.3" width="7.4" height="14.7" fill="var(--g1)"/>
+<rect x="300.3" y="192.7" width="7.4" height="6.3" fill="var(--g1)"/>
+<rect x="308.7" y="196.8" width="7.4" height="2.2" fill="var(--g1)"/>
+<rect x="317.1" y="195.0" width="7.4" height="4.0" fill="var(--q4)"/>
+<line x1="199" y1="199" x2="325" y2="199" stroke="#8a93a0" stroke-width="1"/>
+<line x1="203.8" y1="131" x2="203.8" y2="201" stroke="#1d2127" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="320.2" y1="131" x2="320.2" y2="201" stroke="#1d2127" stroke-width="1" stroke-dasharray="3 2"/>
+<text x="203.8" y="211" class="t-xs" text-anchor="middle">−3 SD</text>
+<text x="320.2" y="211" class="t-xs" text-anchor="middle">+3 SD</text>
+<text x="195" y="229" class="t-xs" text-anchor="start" style="fill:#1d2127">most people in a narrow</text>
+<text x="195" y="242" class="t-xs" text-anchor="start" style="fill:#1d2127">peak; outliers in</text>
+<text x="195" y="255" class="t-xs" text-anchor="start" style="fill:#1d2127">both tails</text>
+<line x1="340" y1="164.0" x2="351" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="353" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="353" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="363" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">THRESHOLD</text>
+<text x="363" y="108" class="t-b" text-anchor="start">±3 SD or |F| cut</text>
+<text x="363" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">practical: mean ± 3 SD</text>
+<text x="363" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">of het_rate; some</text>
+<text x="363" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">pipelines: |F| &gt; 0.1</text>
+<text x="363" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">or 0.2; the two rules</text>
+<text x="363" y="183" class="t-xs" text-anchor="start" style="fill:#1d2127">flag different people</text>
+<line x1="508" y1="164.0" x2="519" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="521" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="521" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="531" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">REMOVE OR FLAG</text>
+<text x="531" y="108" class="t-b" text-anchor="start">Explain, then act</text>
+<text x="531" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">high: contamination?</text>
+<text x="531" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">low: related parents?</text>
+<text x="531" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">either: ancestry? Check</text>
+<text x="531" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">missingness, IBD and</text>
+<text x="531" y="183" class="t-xs" text-anchor="start" style="fill:#1d2127">PCA before removing</text>
+<line x1="676" y1="164.0" x2="687" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="689" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="689" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="699" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">RECORD</text>
+<text x="699" y="108" class="t-b" text-anchor="start">IDs and reasons</text>
+<text x="699" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">het_rate, F, the rule</text>
+<text x="699" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">used and the likely</text>
+<text x="699" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">cause for each person</text>
+<text x="699" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">flagged or removed</text>
+</svg>
+<svg viewBox="0 0 360 592" role="img" aria-labelledby="mmn-t mmn-d" class="mm-fig only-narrow">
+<title id="mmn-t">QC step 5 as one box of the pipeline: heterozygosity</title><desc id="mmn-d">The eight QC steps with step 5, heterozygosity, highlighted, expanded into five stages. Statistic: each person's heterozygosity rate and inbreeding coefficient F from observed and expected homozygous genotype counts at pruned SNPs. Distribution: a narrow bell-shaped histogram with a few people in the tails. Threshold: the practical flags people more than 3 standard deviations from the mean heterozygosity rate; some pipelines use |F| above 0.1 or 0.2. Action: flag, explain with missingness, relatedness and ancestry, then remove. Record: IDs, statistic and reason.</desc>
+<defs><marker id="mmn-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker></defs>
+<line x1="26.0" y1="15" x2="334.0" y2="15" stroke="#d9dee5" stroke-width="2"/>
+<circle cx="26.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="26.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">1</text>
+<circle cx="70.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="70.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">2</text>
+<circle cx="114.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="114.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">3</text>
+<circle cx="158.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="158.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">4</text>
+<circle cx="202.0" cy="15" r="11" fill="var(--lab)" stroke="var(--lab)" stroke-width="1"/>
+<text x="202.0" y="19" class="t-xs" text-anchor="middle" style="fill:#fff;font-weight:700">5</text>
+<text x="202.0" y="40" class="t-xs" text-anchor="middle" style="font-weight:700;fill:var(--fg)">Heterozygosity</text>
+<circle cx="246.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="246.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">6</text>
+<circle cx="290.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="290.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">7</text>
+<circle cx="334.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="334.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">8</text>
+<rect x="8" y="54" width="344" height="84" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="54" width="5" height="84" rx="2" fill="var(--lab)"/>
+<text x="22" y="72" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">STATISTIC PER PERSON</text>
+<text x="22" y="89" class="t-b" text-anchor="start">het_rate and F</text>
+<text x="22" y="106" class="t-xs" text-anchor="start" style="fill:#1d2127">share of a person's called SNPs that are heterozygous;</text>
+<text x="22" y="119" class="t-xs" text-anchor="start" style="fill:#1d2127">F compares homozygotes with the number expected from</text>
+<text x="22" y="132" class="t-xs" text-anchor="start" style="fill:#1d2127">allele frequencies</text>
+<line x1="180.0" y1="139" x2="180.0" y2="152" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="154" width="344" height="154" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="154" width="5" height="154" rx="2" fill="var(--lab)"/>
+<text x="22" y="172" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">DISTRIBUTION</text>
+<text x="22" y="189" class="t-b" text-anchor="start">Histogram</text>
+<rect x="76.5" y="274.0" width="11.3" height="4.0" fill="var(--q4)"/>
+<rect x="88.8" y="275.8" width="11.3" height="2.2" fill="var(--g1)"/>
+<rect x="101.0" y="271.7" width="11.3" height="6.3" fill="var(--g1)"/>
+<rect x="113.3" y="263.3" width="11.3" height="14.7" fill="var(--g1)"/>
+<rect x="125.6" y="249.6" width="11.3" height="28.4" fill="var(--g1)"/>
+<rect x="137.8" y="232.7" width="11.3" height="45.3" fill="var(--g1)"/>
+<rect x="150.1" y="217.9" width="11.3" height="60.1" fill="var(--g1)"/>
+<rect x="162.4" y="212.0" width="11.3" height="66.0" fill="var(--g1)"/>
+<rect x="174.6" y="217.9" width="11.3" height="60.1" fill="var(--g1)"/>
+<rect x="186.9" y="232.7" width="11.3" height="45.3" fill="var(--g1)"/>
+<rect x="199.2" y="249.6" width="11.3" height="28.4" fill="var(--g1)"/>
+<rect x="211.4" y="263.3" width="11.3" height="14.7" fill="var(--g1)"/>
+<rect x="223.7" y="271.7" width="11.3" height="6.3" fill="var(--g1)"/>
+<rect x="236.0" y="275.8" width="11.3" height="2.2" fill="var(--g1)"/>
+<rect x="248.2" y="274.0" width="11.3" height="4.0" fill="var(--q4)"/>
+<line x1="76" y1="278" x2="260" y2="278" stroke="#8a93a0" stroke-width="1"/>
+<line x1="83.1" y1="210" x2="83.1" y2="280" stroke="#1d2127" stroke-width="1" stroke-dasharray="3 2"/>
+<line x1="252.9" y1="210" x2="252.9" y2="280" stroke="#1d2127" stroke-width="1" stroke-dasharray="3 2"/>
+<text x="83.1" y="290" class="t-xs" text-anchor="middle">−3 SD</text>
+<text x="252.9" y="290" class="t-xs" text-anchor="middle">+3 SD</text>
+<text x="22" y="302" class="t-xs" text-anchor="start" style="fill:#1d2127">most people in a narrow peak; outliers in both tails</text>
+<line x1="180.0" y1="309" x2="180.0" y2="322" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="324" width="344" height="71" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="324" width="5" height="71" rx="2" fill="var(--lab)"/>
+<text x="22" y="342" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">THRESHOLD</text>
+<text x="22" y="359" class="t-b" text-anchor="start">±3 SD or |F| cut</text>
+<text x="22" y="376" class="t-xs" text-anchor="start" style="fill:#1d2127">practical: mean ± 3 SD of het_rate; some pipelines:</text>
+<text x="22" y="389" class="t-xs" text-anchor="start" style="fill:#1d2127">|F| &gt; 0.1 or 0.2; the two rules flag different people</text>
+<line x1="180.0" y1="396" x2="180.0" y2="409" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="411" width="344" height="84" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="411" width="5" height="84" rx="2" fill="var(--lab)"/>
+<text x="22" y="429" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">REMOVE OR FLAG</text>
+<text x="22" y="446" class="t-b" text-anchor="start">Explain, then act</text>
+<text x="22" y="463" class="t-xs" text-anchor="start" style="fill:#1d2127">high: contamination? low: related parents? either:</text>
+<text x="22" y="476" class="t-xs" text-anchor="start" style="fill:#1d2127">ancestry? Check missingness, IBD and PCA before</text>
+<text x="22" y="489" class="t-xs" text-anchor="start" style="fill:#1d2127">removing</text>
+<line x1="180.0" y1="496" x2="180.0" y2="509" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="511" width="344" height="71" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="511" width="5" height="71" rx="2" fill="var(--lab)"/>
+<text x="22" y="529" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">RECORD</text>
+<text x="22" y="546" class="t-b" text-anchor="start">IDs and reasons</text>
+<text x="22" y="563" class="t-xs" text-anchor="start" style="fill:#1d2127">het_rate, F, the rule used and the likely cause for</text>
+<text x="22" y="576" class="t-xs" text-anchor="start" style="fill:#1d2127">each person flagged or removed</text>
+</svg>
+  </figure>
+  <p class="mm-statement">For each person, PLINK counts the homozygous genotypes among the called, pruned SNPs and the number expected from the sample's allele frequencies. The heterozygosity rate is the share of calls that are heterozygous; F is the relative shortfall of heterozygous calls against their expectation. Most people sit in a narrow peak; people in either tail are flagged, the likely cause of each is worked out with missingness, relatedness and genetic ancestry, and then they are removed or kept.</p>
+  <ul class="mm-hooks">
+    <li><strong>Too high is usually technical.</strong> Mixed DNA is called heterozygous wherever the two people differ (<a href="#contamination">contamination</a>).</li>
+    <li><strong>Too low is often biological.</strong> Children of related parents carry long homozygous stretches (<a href="#roh">runs of homozygosity</a>); poor DNA can also lose heterozygous calls (<a href="#what-it-finds">what the step finds</a>).</li>
+    <li><strong>F depends on whose allele frequencies are used.</strong> People whose genetic ancestry differs from most of the sample can sit in either tail without any error (<a href="#ancestry">ancestry</a>).</li>
+    <li><strong>Two rules, two answers.</strong> The practical's mean ± 3 SD of the heterozygosity rate adapts to the sample; |F| &gt; 0.1 is fixed, so they flag different people (<a href="#two-rules">two rules</a>).</li>
+    <li><strong>Read it next to missingness.</strong> A plot of F (or the rate) against the missing-call rate separates contamination from inbreeding (<a href="#look">the plots</a>).</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and the earlier steps</div>
+  <p>Heterozygosity, the expected heterozygosity \(2pq\) of a SNP under Hardy–Weinberg equilibrium, the inbreeding coefficient \(F\) and PLINK's formula for it are introduced in <a href="../0-biological-foundations/allele-frequencies.html#heterozygosity">Lecture 0 · Heterozygosity</a>; pooling groups with different allele frequencies is <a href="../0-biological-foundations/allele-frequencies.html#wahlund">the Wahlund effect</a>. Per SNP, the same shortfall of heterozygotes is what <a href="qc-hwe.html">step 2</a> tests. This step uses <a href="qc-missingness.html">step 1</a>'s missing-call rates and the pruned SNP list (<code>.prune.in</code>) of <a href="qc-ld-pruning.html">step 3</a>, and it is read together with <a href="qc-relatedness.html">step 4</a>.</p>
+</aside>
+
+<h2 id="what-it-finds">What the step finds <span class="tag core">Core</span></h2>
+<p>At a SNP with allele frequency \(p\), a person drawn from the sample's population is heterozygous with probability \(2pq\), so over tens of thousands of SNPs every person's heterozygosity rate lands close to the average of \(2pq\). Departures from it have a small number of causes:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Why a person's heterozygosity departs from the sample's</caption>
+  <thead><tr><th>Cause</th><th>Direction</th><th>How it arises</th><th>Also seen in</th><th>Usual action</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Cause">Contaminated DNA</td><td data-label="Direction">Too high (F &lt; 0)</td><td data-label="How it arises">DNA of a second person in the tube or well. Wherever the two differ, the signal lies between the homozygous and heterozygous clusters and is called heterozygous or not called (<a href="#contamination">below</a>).</td><td data-label="Also seen in">High missing-call rate (step 1); weak relatedness to many people (step 4).</td><td data-label="Usual action">Remove.</td></tr>
+    <tr><td data-label="Cause">Poor DNA or a failed array</td><td data-label="Direction">Either</td><td data-label="How it arises">Degraded or too little DNA, or a bad hybridization, gives noisy signals; calls drift between clusters.</td><td data-label="Also seen in">High missing-call rate; sometimes a whole plate.</td><td data-label="Usual action">Remove; look for a batch.</td></tr>
+    <tr><td data-label="Cause">Related parents</td><td data-label="Direction">Too low (F &gt; 0)</td><td data-label="How it arises">A child of relatives inherits some stretches twice from one ancestor: <a href="#roh">runs of homozygosity</a>. F estimates the fraction of the genome affected, 1/16 for a child of first cousins.</td><td data-label="Also seen in">Long runs of homozygosity; normal missingness.</td><td data-label="Usual action">Usually keep: the genotypes are correct.</td></tr>
+    <tr><td data-label="Cause">Genetic ancestry that differs from most of the sample</td><td data-label="Direction">Either</td><td data-label="How it arises">Allele frequencies, and genetic diversity, differ between populations, so the sample's frequencies predict this person's heterozygosity badly (<a href="#ancestry">below</a>).</td><td data-label="Also seen in">Principal components (steps 6–7); GrafAnc (step 8).</td><td data-label="Usual action">Keep; assess within genetically similar groups.</td></tr>
+  </tbody>
+</table>
+</div>
+<p><strong>Why it matters.</strong> A contaminated or degraded sample has wrong genotypes at thousands of SNPs. If such samples are more common among cases than controls, or concentrated on plates that hold more cases, the errors become differences between cases and controls and produce false associations. Poor samples can also spoil other samples' calls: software that calls genotypes by clustering a batch of samples together can draw the clusters wrongly when the batch contains poor samples. A quality-control review of four GWAS describes both. In the two genotyped on the Affymetrix 6.0 array, the array PennCATH used, it found 28 and 26 low-quality samples with high heterozygosity, high relatedness to other samples and poor allele-intensity plots; they were spread over many plates, and no false associations were found. It also recounts a study on the Affymetrix 5.0 array in which eight such samples sat on one plate with a disproportionately high number of cases; the false associations they caused remained after the eight were removed and disappeared only when the plate's other samples were re-called.<sup><a href="#src-1">1</a></sup> Removing people for low heterozygosity caused by related parents or by ancestry, in contrast, removes correct data and makes the sample less diverse.</p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021</div>
+  <p>Table 1 lists heterozygosity next to call rate, sex check and relatedness among the per-individual checks PLINK performs, and the "Data processing" part of the Experimentation section asks that ancestry be "carefully considered and accounted for", which applies here because F depends on allele frequencies.<sup><a href="#src-2">2</a></sup></p>
+</aside>
+
+<h3 id="contamination">Contamination: how mixed DNA turns homozygous calls into heterozygous ones</h3>
+<p>A genotyping array does not see alleles directly. At each SNP it measures two fluorescence intensities, one for each allele, and the calling software converts them into the share of the signal that comes from allele B (Lecture 0's <a class="term" href="glossary.html#b-allele-frequency">B allele frequency</a>): about 0 for AA, 0.5 for AB and 1 for BB. In a mixture, each person contributes signal in proportion to their share of the DNA. Where person A is AA and person B is BB, a 20% share of B's DNA moves the signal from 0 to about 0.2, between the clusters, where it is called heterozygous or not called at all. The widget simulates this.</p>
+<div class="widget" id="w-het-mix">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Mix two people's DNA and call genotypes</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The text above describes what it shows.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The left panel shows 300 of the 20,000 simulated SNPs, grouped by person A's true genotype; the right panel the expected rates at every mixing share. Move the slider slowly from 0%. Up to about 10% nothing changes: B's DNA moves the signal of A's homozygous SNPs only a little, and they stay inside the AA or BB band. Between about 10% and 25%, A's homozygous SNPs at which B carries a different allele drift into the gaps between bands and get no call. The missing-call rate rises, and so does the heterozygosity rate, although the last line of the readout shows that no homozygous genotype has yet been called heterozygous: the lost calls are all homozygous, so the heterozygous calls make up a larger share of the calls that remain, and F falls (below −0.1 at 20%). From about 25%, many of those SNPs cross into the AB band and are called heterozygous: the rate reaches about 0.5 near 35% and F about −0.4. Beyond 40%, A's own heterozygous SNPs also leave the AB band, and the sample becomes a mass of no calls. The calling rule here is simplified (real software draws each SNP's clusters from all samples), but the pattern is the one seen in real data: a contaminated sample has a high missing-call rate in step 1, an excess of heterozygous calls here, and, because a heterozygous call is never an opposite homozygote, apparent relatedness to many people in step 4.<sup><a href="#src-1">1</a>,<a href="#src-3">3</a></sup></p>
+
+<h2 id="statistic">The statistic: the heterozygosity rate and F <span class="tag core">Core</span></h2>
+<p><code>--het</code> works on one person at a time and on autosomal SNPs only. For each person it counts \(N_i\), the SNPs with a genotype call, leaving out SNPs that are monomorphic in the sample; \(O_i\), how many of those calls are homozygous; and \(E_i\), how many homozygous calls the sample's allele frequencies predict.<sup><a href="#src-4">4</a>,<a href="#src-5">5</a></sup> The practical turns the counts into a rate; PLINK turns them into \(F\).</p>
+
+<h3 id="het-rate">The heterozygosity rate</h3>
+<div class="eq-block">
+  <div class="eq-display">\[ h_i = \frac{N_i - O_i}{N_i} \]</div>
+  <dl class="eq-terms">
+    <dt>\(i\)</dt><dd>A person.</dd>
+    <dt>\(N_i\)</dt><dd>PLINK's <code>N(NM)</code>: the number of autosomal SNPs at which person \(i\) has a genotype call, among SNPs that are not monomorphic in the sample.</dd>
+    <dt>\(O_i\)</dt><dd>PLINK's <code>O(HOM)</code>: the number of those calls that are homozygous.</dd>
+    <dt>\(h_i\)</dt><dd>The heterozygosity rate, the practical's <code>het_rate</code>: the share of the person's calls that are heterozygous.</dd>
+  </dl>
+  <p class="eq-intuition">\(N_i - O_i\) is the number of heterozygous calls. Dividing by \(N_i\) rather than by the number of SNPs makes people with different numbers of missing calls comparable. The rate itself has no fixed expected value: it depends on which SNPs are used. Over SNPs with common alleles it is around 0.3 to 0.4, because each SNP contributes its own \(2pq\), at most 0.5. That is why the practical judges it against the sample (mean ± 3 SD) rather than against a fixed number.<sup><a href="#src-6">6</a>,<a href="#src-7">7</a></sup></p>
+</div>
+
+<h3 id="expected-hom">The expected number of homozygous calls</h3>
+<div class="eq-block">
+  <div class="eq-display">\[ E_i = \sum_{j \in C_i} \left( 1 - 2\hat{p}_j \hat{q}_j \right) \]</div>
+  <dl class="eq-terms">
+    <dt>\(C_i\)</dt><dd>The set of SNPs counted in \(N_i\): autosomal, called in person \(i\), not monomorphic.</dd>
+    <dt>\(\hat{p}_j, \hat{q}_j\)</dt><dd>Frequencies of the two alleles of SNP \(j\). PLINK estimates them from the <a class="term" href="glossary.html#founder">founders</a>, the people whose father and mother IDs in the <code>.fam</code> file are both 0 (in PennCATH, everyone), or reads them from a file given with <code>--read-freq</code>.</dd>
+    <dt>\(E_i\)</dt><dd>PLINK's <code>E(HOM)</code>: the number of homozygous calls expected for person \(i\).</dd>
+  </dl>
+  <p class="eq-intuition">Under Hardy–Weinberg proportions a person is homozygous at SNP \(j\) with probability \(\hat{p}_j^2 + \hat{q}_j^2 = 1 - 2\hat{p}_j\hat{q}_j\); adding these probabilities over the person's called SNPs gives the expected count. Because the sum runs over that person's calls only, a missing call removes the SNP from both the observed and the expected count. The frequencies come from the whole sample, so \(E_i\) is the expectation for a person drawn from the sample's population; for someone whose ancestry differs from most of the sample it can be off (<a href="#ancestry">below</a>). By default PLINK omits the small-sample factor \(n/(n-1)\) of Nei's formula; the modifier <code>small-sample</code> restores it.<sup><a href="#src-4">4</a></sup></p>
+</div>
+
+<h3 id="f">F, the inbreeding coefficient estimate</h3>
+<p>The <a class="term" href="glossary.html#inbreeding-coefficient">inbreeding coefficient</a> \(F_i\) of a person is the probability that their two alleles at a position are identical by descent from an ancestor of both parents. On that fraction of the genome the person is homozygous for sure; elsewhere Hardy–Weinberg proportions apply. PLINK estimates \(F_i\) by the <a class="term" href="glossary.html#method-of-moments">method of moments</a>:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \mathrm{E}[O_i] = E_i + F_i\,(N_i - E_i) \\[6pt] \hat{F}_i = \frac{O_i - E_i}{N_i - E_i} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(F_i\)</dt><dd>Person \(i\)'s inbreeding coefficient: 0 for a child of unrelated parents, 1/16 = 0.0625 for a child of first cousins.</dd>
+    <dt>\(\mathrm{E}[O_i]\)</dt><dd>Expected number of homozygous calls of a person with inbreeding coefficient \(F_i\).</dd>
+    <dt>\(N_i - E_i\)</dt><dd>Expected number of heterozygous calls when \(F_i = 0\): the sum of \(2\hat{p}_j\hat{q}_j\) over the person's called SNPs.</dd>
+    <dt>\(\hat{F}_i\)</dt><dd>PLINK's <code>F</code>: the value of \(F_i\) that makes the expected count equal the observed count \(O_i\).</dd>
+  </dl>
+  <p class="eq-intuition">At SNP \(j\) the person is homozygous with probability \(1 - 2\hat{p}_j\hat{q}_j(1 - F_i)\): inbreeding removes a fraction \(F_i\) of the expected heterozygotes. Adding over SNPs gives the first line; solving it for \(F_i\) with \(O_i\) in place of its expectation gives the second. Equivalently, \(\hat{F}_i\) is 1 minus the ratio of observed to expected heterozygous calls, the per-person version of the per-SNP shortfall in <a href="qc-hwe.html">step 2</a>. \(\hat{F}_i\) is 0 when the person has as many heterozygous calls as expected, positive with a shortfall and negative with an excess, which a probability cannot be: a clearly negative \(\hat{F}_i\) means something added heterozygous calls (contamination) or the sample's frequencies do not fit the person (ancestry). A worked example: a person with \(N_i = 50{,}000\) calls and \(E_i = 32{,}000\) expects \(18{,}000\) heterozygous calls (\(h = 0.36\)). With \(O_i = 33{,}125\), \(\hat{F}_i = 1{,}125 / 18{,}000 = 0.0625\), the value expected for a child of first cousins, and \(h_i = 16{,}875 / 50{,}000 = 0.3375\). With \(O_i = 30{,}200\), \(\hat{F}_i = -1{,}800 / 18{,}000 = -0.1\) and \(h_i = 0.396\).</p>
+</div>
+<p><strong>In the toy data.</strong> The person with the largest <code>F</code> is <span data-card="het_inbred_fid">?</span>, with <code>F</code> = <span data-card="het_inbred_f">?</span> and a heterozygosity rate of <span data-card="het_inbred_rate">?</span>, against a sample mean of <span data-card="het_rate_mean">?</span>. After running <code>--het</code> in the terminal below, this command prints that person's line and recomputes \(\hat{F}_i\) from it:</p>
+<span class="code-label bash">bash · in the terminal below</span>
+<pre class="code"><span class="prompt">$ </span>awk 'NR &gt; 1 &amp;&amp; $6 &gt; 0.2 {print; print "F recomputed:", ($3 - $4) / ($5 - $4)}' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het</pre>
+<p>The recomputed value can differ from <code>F</code> in the fourth digit: the file shows <code>E(HOM)</code> rounded to four significant digits, while PLINK computed <code>F</code> from the unrounded value.</p>
+
+<h3 id="precision">How precise is F?</h3>
+<p>Even for a person whose parents are unrelated and whose DNA is clean, \(\hat{F}_i\) is not exactly 0: whether the person is heterozygous at each SNP is a chance event. If the SNPs are independent, which is what LD pruning approximates, the spread of \(\hat{F}_i\) follows from the variance of a sum of independent yes-or-no outcomes:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \mathrm{SD}(\hat{F}_i) \approx \frac{\sqrt{\sum_j H_j (1 - H_j)}}{\sum_j H_j} \]</div>
+  <dl class="eq-terms">
+    <dt>\(H_j\)</dt><dd>\(2\hat{p}_j\hat{q}_j\), the probability that the person is heterozygous at SNP \(j\) when \(F_i = 0\).</dd>
+    <dt>\(\sum_j\)</dt><dd>Sum over the person's called SNPs.</dd>
+    <dt>\(\mathrm{SD}(\hat{F}_i)\)</dt><dd>Standard deviation of \(\hat{F}_i\) across people of the sample's population with \(F_i = 0\).</dd>
+  </dl>
+  <p class="eq-intuition">The number of heterozygous calls has variance \(\sum_j H_j(1 - H_j)\), and \(\hat{F}_i\) is that number divided by \(-\sum_j H_j\), plus a constant. With 50,000 SNPs and \(H_j = 0.36\), \(\mathrm{SD}(\hat{F}_i) \approx \sqrt{11{,}520}/18{,}000 \approx 0.006\). Two things follow. In a large, homogeneous, well-genotyped sample the peak of \(F\) around 0 is narrow, so a child of first cousins (\(F = 0.0625\)) stands out clearly. And with correlated SNPs the variance is larger than this formula says, which is one reason <code>--het</code> runs on the pruned SNPs: PLINK's documentation notes that the calculation does not take LD into account.<sup><a href="#src-4">4</a></sup></p>
+</div>
+
+<h3 id="het-file">The .het file, column by column</h3>
+<p>One line per person with a header line; six columns.<sup><a href="#src-5">5</a>,<a href="#src-8">8</a></sup></p>
+<dl class="cols-doc">
+  <dt>FID, IID</dt><dd>Family ID and within-family ID, as in the <a href="plink-data.html">.fam file</a>.</dd>
+  <dt>O(HOM)</dt><dd>\(O_i\): observed number of homozygous genotypes.</dd>
+  <dt>E(HOM)</dt><dd>\(E_i\): expected number of homozygous genotypes. PLINK prints it with four significant digits, so a value of 10,000 or more appears in exponential notation: <code>2.523e+04</code> means about 25,230.</dd>
+  <dt>N(NM)</dt><dd>\(N_i\): number of non-missing, non-monomorphic autosomal genotypes.</dd>
+  <dt>F</dt><dd>\(\hat{F}_i = (O_i - E_i)/(N_i - E_i)\), also with four significant digits; <code>nan</code> for a person with no calls. PLINK computes it from the unrounded \(E_i\), so <code>F</code> recomputed from the printed columns can differ in the fourth digit.</dd>
+</dl>
+<p>The heterozygosity rate is not in the file; compute it as (<code>N(NM)</code> − <code>O(HOM)</code>) / <code>N(NM)</code>. In R the column names contain parentheses, so they must be written in backquotes: <code>`N(NM)`</code>.</p>
+
+<h2 id="run-it">Run it in the browser <span class="tag core">Core</span></h2>
+<p>The practical runs <code>--het</code> on the same fileset and pruned SNPs as step 4, and writes the output under the same prefix.<sup><a href="#src-6">6</a></sup></p>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="3">--het</span> <span class="part" data-n="4">--extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in</span> <span class="part" data-n="5">--out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code>: PLINK 1.9 (in the lab, its emulator).</li>
+    <li><code>--bfile PREFIX</code>: the fileset left after step 1's missingness filters.</li>
+    <li><code>--het</code>: for every person, count homozygous calls, expected homozygous calls and non-missing calls at autosomal SNPs, compute \(F\), and write <code>PREFIX.het</code>. Modifiers: <code>small-sample</code> (include the \(n/(n-1)\) factor) and <code>gz</code> (compress). With <code>--read-freq FILE</code> the expected counts use allele frequencies from a file, for example those of a reference population, instead of the sample's.<sup><a href="#src-4">4</a></sup></li>
+    <li><code>--extract FILE</code>: use only the SNPs in step 3's <code>.prune.in</code>. The order on the command line does not matter: PLINK applies <code>--extract</code> before it computes anything (<a href="tools.html#plink-order">the order of operations</a>).</li>
+    <li><code>--out PREFIX</code>: writes <code>PREFIX.het</code> and <code>PREFIX.log</code>; the same prefix as step 4's <code>.genome</code>.</li>
+  </ol>
+</div>
+<div class="lab" id="lab-het" data-title="Step 5 · heterozygosity on the toy data">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="lab-script">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --het \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+head -5 ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het
+tail -n +2 ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het | sort -k6,6g | head -4
+tail -n +2 ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het | sort -k6,6gr | head -4
+awk 'NR &gt; 1 {h = ($5 - $3) / $5; s += h; ss += h * h; n++} END {m = s / n; sd = sqrt((ss - n * m * m) / (n - 1)); print "mean", m, "sd", sd, "low", m - 3 * sd, "high", m + 3 * sd}' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het
+awk 'NR == FNR {if (FNR &gt; 1) {h = ($5 - $3) / $5; s += h; ss += h * h; n++}; next} FNR == 1 {m = s / n; sd = sqrt((ss - n * m * m) / (n - 1)); print $1, $2, "het_rate", $6} FNR &gt; 1 {h = ($5 - $3) / $5; if (h &lt; m - 3 * sd || h &gt; m + 3 * sd) print $1, $2, h, $6}' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het
+awk 'NR == 1 || $6 &gt; 0.1 || $6 &lt; -0.1' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het</pre>
+</div>
+<p>The setup recreated what steps 1 and 3 wrote, including step 1's <code>toy.geno0.01.imiss</code>, which the plots below use. Press <strong>Run next</strong> to run the commands in order. PLINK's console output reports the number of variants <code>--extract</code> kept, how many people and variants passed, and the name of the <code>.het</code> file.</p>
+<p>For the toy data the console reports that <code>--extract</code> kept <span data-card="prune_in">?</span> variants, that <span data-card="het_snps">?</span> variants and <span data-card="het_people">?</span> people pass filters and QC, and that <code>--het</code> scanned <span data-card="het_snps">?</span> variants and wrote its report. The <code>.het</code> file therefore has <span data-card="het_people">?</span> lines after the header, one per person.</p>
+<p>The other commands are the analyst's first look, and they work the same way on your own computer:</p>
+<ul>
+  <li><code>tail -n +2 FILE | sort -k6,6g | head -4</code> drops the header, sorts by the sixth column (<code>F</code>) as a general number, and shows the four lowest values: the candidates for contamination. With <code>-k6,6gr</code> the order is reversed and the four highest values, the candidates for inbreeding or a different genetic ancestry, come first.</li>
+  <li>The first <code>awk</code> computes <code>het_rate</code> for every person (fields 5 and 3 are <code>N(NM)</code> and <code>O(HOM)</code>), adds up the rates and their squares, and at the end prints the mean, the standard deviation (with the divisor \(n - 1\), like R's <code>sd()</code>) and the limits mean ± 3 SD.</li>
+  <li>The second <code>awk</code> reads the file twice. While <code>NR == FNR</code> (the line number over all input equals the line number in the current file, so it is the first pass) it only accumulates; <code>next</code> skips the rest of the program. In the second pass it prints the header and every person outside the limits: the practical's ±3 SD rule in one command.</li>
+  <li>The last command prints the header and every person with \(F\) above 0.1 or below −0.1, the practical's second rule.</li>
+</ul>
+
+<h2 id="look">Look at the distribution <span class="tag core">Core</span></h2>
+<p>The practical plots a histogram of <code>het_rate</code> and lists the people beyond mean ± 3 SD; then it applies |<code>F</code>| &gt; 0.1 and asks how the two lists compare.<sup><a href="#src-6">6</a></sup> The first widget does the first part with a choice of how many standard deviations; the second puts each person's \(F\) next to their missing-call rate from step 1, the plot QC protocols use to separate the causes.<sup><a href="#src-7">7</a></sup></p>
+<div class="widget" id="w-het-dist">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The toy data's heterozygosity rates and the mean ± k SD rule</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It plots the toy data's .het file written in the lab above.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Most people form one narrow peak. The dashed lines are the mean ± k standard deviations, and the table lists everyone outside them, with the side they fall on. At k = 3, the practical's rule, note who is flagged on each side. Lower k to 2: about 1 in 20 values of a normal distribution lie beyond 2 SD, so ordinary people start to be flagged. Raise k to 5 or 6 to see which people are so extreme that any reasonable rule flags them. The readout also gives the SD of everyone else: when it is clearly smaller than the SD of all, the outliers have widened the limits that were meant to find them. Tick <em>robust</em> to use the median and the median absolute deviation (MAD, scaled to equal the SD for normally distributed data), which a few outliers barely move. The last line converts the limits into a band of \(F\), the comparison made in <a href="#two-rules">two rules, different people</a>.</p>
+<p><strong>What the simulation planted.</strong> In the toy data the mean <code>het_rate</code> is <span data-card="het_rate_mean">?</span> and the SD <span data-card="het_rate_sd">?</span>, so the practical's rule flags <span data-card="het_outliers_3sd">?</span> people: <span data-card="het_outliers_3sd_low">?</span> below the band and <span data-card="het_outliers_3sd_high">?</span> above it (FIDs <span data-card="het_outliers_3sd_fids">?</span>). The simulation explains each one (<a href="practical-overview.html#toy-data">the toy dataset</a>):</p>
+<ul>
+  <li><span data-card="het_inbred_fid">?</span>, below the band (<code>het_rate</code> <span data-card="het_inbred_rate">?</span>, <code>F</code> <span data-card="het_inbred_f">?</span>), was simulated as the child of two full siblings. On about a quarter of this person's genome, both copies descend from the same copy in one grandparent and are identical.</li>
+  <li><span data-card="het_contaminated_fid">?</span>, above the band (<code>het_rate</code> <span data-card="het_contaminated_rate">?</span>, <code>F</code> <span data-card="het_contaminated_f">?</span>), is a contaminated sample: its DNA was mixed with DNA from an unrelated person who is not in the study.</li>
+  <li>The remaining person in the list, also above the band, is a correct sample. This person was simulated with one parent of African-like and one of European-like ancestry, so their two genome copies come from different populations and are heterozygous more often than the sample's allele frequencies predict (<a href="#ancestry">Genetic ancestry and F</a>).</li>
+</ul>
+
+<div class="widget" id="w-het-fmiss">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">F against missingness: which rule flags whom (toy data)</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It plots the toy data's .het and .imiss files written in the lab above.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Each dot is one person: \(F\) from this step (or <code>het_rate</code>) against the missing-call rate from step 1, colored by which of the practical's two rules flags them; the dashed lines show the rule that matches the y axis. Look for the pattern of each cause: contaminated or poor samples low on the plot and to the right (negative \(F\), more missing calls than most), children of related parents high on the plot with ordinary missingness, and people whose genetic ancestry differs from most of the sample shifted up or down together. Switch the cut-off to 0.2 and see who is no longer flagged. <em>Add step 4's relatedness</em> runs <code>--genome</code> and counts, for each flagged person, the pairs with <code>PI_HAT</code> &gt; 0.1875: a contaminated sample tends to appear related to many people. Point at or tap a dot to see the person. Step 1 already removed everyone with more than 1% missing calls, so the x axis stops near 0.01; a sample that lost more calls than that never reaches this step.</p>
+<p>In the toy data, ±3 SD flags <span data-card="het_outliers_3sd">?</span> people and |<code>F</code>| &gt; 0.1 flags <span data-card="het_f_abs_gt_0_1">?</span>: <span data-card="het_f_gt_0_1">?</span> above 0.1 and <span data-card="het_f_lt_minus_0_1">?</span> below −0.1 (FIDs <span data-card="het_f_fids">?</span>). Both rules flag <span data-card="het_both_rules">?</span>. The one person flagged by |<code>F</code>| &gt; 0.1 alone is East-Asian-like, with <code>F</code> just above 0.1. That is within about one genotype call of the cut-off, so real PLINK, or a slightly different set of SNPs, could put this person on either side of it. Choose <em>Color by: what the simulation planted</em> to see the truth behind every point, which a real study never has. The contaminated sample sits low on the plot with more missing calls than most, and the inbred person at the top. The admixed people lie below 0 and the East-Asian-like people above it. The low-quality samples sit to the right with ordinary <code>F</code>.</p>
+
+<h2 id="ancestry">Genetic ancestry and F <span class="tag core">Core</span></h2>
+<p>\(E_i\) uses the whole sample's allele frequencies. That is right for a person drawn from the same population as most of the sample and can be wrong for others. Two cases show how.</p>
+<p><strong>A person from a different population.</strong> If the person's population has allele frequency \(p'_j\) at SNP \(j\) while the sample has \(p_j\), the person is heterozygous with probability \(2p'_jq'_j\), but \(E_i\) is computed from \(2p_jq_j\). Over many SNPs, \(\hat{F}_i\) then comes close to \(1 - \sum_j 2p'_jq'_j \big/ \sum_j 2p_jq_j\): positive if the person's population is less heterozygous at these SNPs than the sample's population, negative if it is more. Which one applies depends on the populations and on how the SNPs were chosen, so the tail such a person lands in is not a sign of an error. PLINK's documentation warns that with "a highly imbalanced ancestry distribution (e.g. &gt;90% EUR but a few samples with ancestry primarily from other continents), you may need to process the rare-ancestry samples separately."<sup><a href="#src-4">4</a></sup></p>
+<p><strong>A person whose parents come from two populations.</strong> They inherit one allele from each, so their heterozygosity is higher than the pooled frequencies predict:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ p_1 q_2 + p_2 q_1 = 2\bar{p}\bar{q} + \tfrac{1}{2}(p_1 - p_2)^2 \]</div>
+  <dl class="eq-terms">
+    <dt>\(p_1, p_2\)</dt><dd>Frequency of allele 1 at a SNP in the mother's and the father's population; \(q_1 = 1 - p_1\), \(q_2 = 1 - p_2\).</dd>
+    <dt>\(p_1q_2 + p_2q_1\)</dt><dd>Probability that the child is heterozygous: allele 1 from the mother and allele 2 from the father, or the reverse.</dd>
+    <dt>\(\bar{p}, \bar{q}\)</dt><dd>The pooled frequencies, \(\bar{p} = (p_1 + p_2)/2\) and \(\bar{q} = 1 - \bar{p}\).</dd>
+  </dl>
+  <p class="eq-intuition">The child's expected heterozygosity exceeds the pooled Hardy–Weinberg value by half the squared frequency difference, at every SNP where the populations differ. Against frequencies pooled from both populations, such a person therefore gets a negative \(\hat{F}_i\), the same direction as contamination. This is the mirror image of the <a href="../0-biological-foundations/allele-frequencies.html#wahlund">Wahlund effect</a>, in which pooling people from two populations produces too few heterozygotes.</p>
+</div>
+<p>The practical makes the same point: <code>F</code> "relies on a specific dataset's allele-frequency reference", so "uncorrected population stratification will distort its distribution", and rules such as ±3 SD are best "evaluated within genetically comparable groups".<sup><a href="#src-6">6</a></sup> In practice: look at heterozygosity after the principal components of step 6, compute it within groups of genetically similar people, or give <code>--read-freq</code> the allele frequencies of the person's reference population. UK Biobank adjusted heterozygosity for ancestry with principal components before flagging outliers (<a href="../0-biological-foundations/allele-frequencies.html#heterozygosity">Lecture 0 · Heterozygosity</a>).</p>
+<p><strong>In the toy data.</strong> The toy study has <span data-card="sim_european_like">?</span> European-like people and, by design, small groups of others: <span data-card="sim_african_like">?</span> African-like, <span data-card="sim_east_asian_like">?</span> East-Asian-like and <span data-card="sim_south_asian_like">?</span> South-Asian-like people, and <span data-card="sim_admixed">?</span> people with recent African and European ancestry. The allele frequencies behind \(E_i\) are therefore mostly those of the European-like majority. Color the plot of <code>F</code> against missingness by what the simulation planted. Every admixed person has a negative <code>F</code> and every East-Asian-like person a positive one, while the African-like and South-Asian-like people sit near 0. The admixed person with one parent from each population is outside the ±3 SD band, and an admixed person with a smaller African-like share sits just inside it. Neither is an error, and neither is the East-Asian-like person flagged by |<code>F</code>| &gt; 0.1.</p>
+
+<h2 id="two-rules">Two rules, different people <span class="tag core">Core</span></h2>
+<p>The two statistics are closely tied. Dividing the definition of \(\hat{F}_i\) by \(N_i\):</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \hat{F}_i = 1 - \frac{h_i}{\bar{H}_i}, \qquad \bar{H}_i = \frac{N_i - E_i}{N_i} \]</div>
+  <dl class="eq-terms">
+    <dt>\(h_i\)</dt><dd>Person \(i\)'s observed heterozygosity rate.</dd>
+    <dt>\(\bar{H}_i\)</dt><dd>The heterozygosity rate expected from the sample's allele frequencies, averaged over the person's called SNPs: the mean of \(2\hat{p}_j\hat{q}_j\).</dd>
+  </dl>
+  <p class="eq-intuition">When everyone is called at nearly the same SNPs, \(\bar{H}_i\) is nearly the same number \(\bar{H}\) for everyone, and \(\hat{F}_i\) is a decreasing straight-line function of \(h_i\): both statistics order people the same way, from most to least heterozygous. The rules differ in where they cut. Mean ± 3 SD of \(h\) corresponds to \(\lvert \hat{F}_i - \bar{F} \rvert &gt; 3\,s_h / \bar{H}\), a cut that depends on the spread \(s_h\) of the sample; |<code>F</code>| &gt; 0.1 is the same in every study. With \(\bar{H} = 0.36\), a homogeneous sample with \(s_h = 0.004\) gets a ±3 SD cut of about 0.033 in \(F\), three times stricter than 0.1, while a sample that mixes several ancestries, with \(s_h = 0.012\), gets 0.1.</p>
+</div>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>The two rules side by side</caption>
+  <thead><tr><th>Property</th><th>Mean ± 3 SD of het_rate</th><th>|F| &gt; 0.1</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Property">Center</td><td data-label="Mean ± 3 SD">The sample's mean rate</td><td data-label="|F| &gt; 0.1">The expectation, F = 0</td></tr>
+    <tr><td data-label="Property">Width</td><td data-label="Mean ± 3 SD">Three times the sample's SD: narrow in a homogeneous, well-genotyped sample, wide in a mixed one</td><td data-label="|F| &gt; 0.1">Fixed</td></tr>
+    <tr><td data-label="Property">Child of first cousins (F = 0.0625)</td><td data-label="Mean ± 3 SD">Often flagged in a homogeneous sample</td><td data-label="|F| &gt; 0.1">Not flagged</td></tr>
+    <tr><td data-label="Property">Light contamination</td><td data-label="Mean ± 3 SD">Flagged once F is a few SDs below the mean</td><td data-label="|F| &gt; 0.1">Flagged only below −0.1</td></tr>
+    <tr><td data-label="Property">Outliers' own effect</td><td data-label="Mean ± 3 SD">Widen the SD and push the limits out ("masking")</td><td data-label="|F| &gt; 0.1">None</td></tr>
+    <tr><td data-label="Property">Ancestry differences</td><td data-label="Mean ± 3 SD">Widen the SD; a small group can sit in a tail</td><td data-label="|F| &gt; 0.1">Shift F for whole groups</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Neither rule is correct in general; they answer different questions. ±3 SD asks "who is unusual in this sample?"; |<code>F</code>| &gt; 0.1 asks "whose heterozygosity is far from what the allele frequencies predict?". The practical's question, how sensitive QC decisions are to the choice of metric and threshold, is answered by running both and looking at the people on which they disagree.<sup><a href="#src-6">6</a></sup></p>
+
+<h2 id="threshold">Choose a threshold and act <span class="tag core">Core</span></h2>
+<p><strong>What the practical does.</strong> It flags people more than 3 standard deviations from the mean heterozygosity rate, then shows that |<code>F</code>| &gt; 0.1 (or |<code>F</code>| &gt; 0.2 in some pipelines) flags different people, and notes that fixed cut-offs "are not universal" while dataset-specific rules are "ideally evaluated within genetically comparable groups". The exercise asks you to choose and justify a rule, and accepts that a well-justified analysis may remove no one.<sup><a href="#src-6">6</a></sup></p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Heterozygosity rules in published QC protocols</caption>
+  <thead><tr><th>Source</th><th>Rule</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Source">Anderson et al. 2010<sup><a href="#src-7">7</a></sup></td><td data-label="Rule">Heterozygosity rate more than 3 SD from the mean</td><td data-label="Notes">Plotted against the missing-call rate; people beyond either limit, or with 3% or more missing calls, are removed.</td></tr>
+    <tr><td data-label="Source">Marees et al. 2018<sup><a href="#src-9">9</a></sup></td><td data-label="Rule">Heterozygosity rate more than 3 SD from the mean</td><td data-label="Notes">Computed on pruned SNPs, as here.</td></tr>
+    <tr><td data-label="Source">Laurie et al. 2010<sup><a href="#src-1">1</a></sup></td><td data-label="Rule">Outliers more than 1.5 interquartile ranges beyond the quartiles, within each "ethnic group" (the paper's term)</td><td data-label="Notes">One of three signs of a mixed sample, with a high variance of the allele-intensity signal and relatedness to many samples.</td></tr>
+    <tr><td data-label="Source">Common in pipelines</td><td data-label="Rule">|F| &gt; 0.1 or 0.2</td><td data-label="Notes">Fixed; the practical compares it with ±3 SD.</td></tr>
+  </tbody>
+</table>
+</div>
+<p><strong>Explain before removing.</strong> For each flagged person, check the other evidence: a high missing-call rate (step 1) or relatedness to many people (step 4) points to contamination or poor DNA, and such samples are removed. A high \(F\) with normal missingness and long runs of homozygosity points to related parents; the genotypes are correct, so many studies keep these people. A position in the tail shared with other people of similar genetic ancestry (step 6 onward) is not an error either; keep them and handle ancestry in the analysis.</p>
+<p><strong>Robust limits.</strong> Because outliers inflate the standard deviation, some pipelines use the median and the median absolute deviation, or the interquartile range as Laurie et al. did, instead of the mean and SD.</p>
+<p><strong>Order of operations.</strong> This step reads the fileset after the missingness filters, because missing calls add noise. Read it with step 4: a contaminated sample creates false relatives, and removing it can resolve several flagged pairs at once. The removals are applied together at the end of the practical with <code>--remove</code> (<a href="qc-exercise.html">the exercise</a>).</p>
+<p><strong>Record.</strong> For every flagged person write down the family and individual ID, <code>het_rate</code>, <code>F</code>, the rule that flagged them and the likely cause; <a href="qc-exercise.html">the exercise</a> collects these decisions in its QC report.</p>
+<p><strong>In the toy data.</strong> Explaining before removing leads to different decisions for the people the two rules flag:</p>
+<ul>
+  <li>The contaminated sample, <span data-card="het_contaminated_fid">?</span>, has the most negative <code>F</code>, more missing calls than the other flagged people, and a <code>PI_HAT</code> above 0.1875 with many people in step 4. Remove it.</li>
+  <li>The inbred person, <span data-card="het_inbred_fid">?</span>, has the largest <code>F</code>, ordinary missingness and no close relatives in step 4. The genotypes are correct, and many studies keep such people; long runs of homozygosity (<a href="#roh">below</a>) would confirm the cause.</li>
+  <li>The admixed person and the East-Asian-like person are flagged because of their genetic ancestry. Keep them, and let the principal components of step 6 describe it.</li>
+</ul>
+<p>Applied without these checks, either rule would remove correct samples along with the contaminated one.</p>
+
+<h2 id="roh">Runs of homozygosity <span class="tag optional">Optional</span></h2>
+<p>A child of related parents can inherit the same ancestral chromosome segment from both of them. Across such a segment every SNP is homozygous: a <a class="term" href="glossary.html#runs-of-homozygosity">run of homozygosity</a> (ROH). Short runs are common in everyone, because chance alone makes some stretches homozygous and shared ancient ancestry leaves short identical segments; long runs, several megabases or more, come from recent common ancestors of the parents. The share of the genome in long runs, \(F_{\mathrm{ROH}}\), estimates the inbreeding coefficient and, unlike \(\hat{F}\) from <code>--het</code>, shows where the homozygosity is and how long the segments are, which distinguishes recent from distant shared ancestry.<sup><a href="#src-10">10</a>,<a href="#src-11">11</a></sup></p>
+<span class="code-label bash">bash · not part of the practical</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --homozyg \
+      --out ${analysis_dir}/penncath.geno0.01.mind0.01.roh</pre>
+<p>By default PLINK reports runs of at least 100 SNPs and 1,000 kb, with at least one SNP per 50 kb on average, scanning windows of 50 SNPs that may contain one heterozygous and five missing calls.<sup><a href="#src-12">12</a></sup> The reports list each run and each person's total length in runs. For a child of first cousins, about 1/16 of the autosomes, roughly 180 megabases, is expected to lie in runs inherited twice from the parents' shared grandparents. ROH also matter beyond QC: a run makes the person homozygous for any recessive variant inside it, and the total length of a person's runs has been studied in relation to many traits.<sup><a href="#src-11">11</a></sup></p>
+
+<h2 id="in-r">In R <span class="tag core">Core</span></h2>
+<p>The practical reads the <code>.het</code> file, computes <code>het_rate</code>, plots its histogram, lists the people beyond ±3 SD and then those with |<code>F</code>| &gt; 0.1.<sup><a href="#src-6">6</a></sup> The code below does the same, shows the people on whom the two rules disagree, and draws the heterozygosity–missingness plot. It assumes <code>analysis_dir</code> is set as on <a href="setup.html">Set up your computer</a>.</p>
+<span class="code-label r">R</span>
+<pre class="code">library(tidyverse)
+library(data.table)
+
+analysis_dir &lt;- Sys.getenv(<span class="str">"analysis_dir"</span>)
+het &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.LD0.3.het"</span>), quote = <span class="str">""</span>) %&gt;%
+  mutate(het_rate = (`N(NM)` - `O(HOM)`) / `N(NM)`)
+
+summary(het$het_rate)
+lo &lt;- mean(het$het_rate) - <span class="kw">3</span> * sd(het$het_rate)
+hi &lt;- mean(het$het_rate) + <span class="kw">3</span> * sd(het$het_rate)
+
+ggplot(het, aes(x = het_rate)) +
+  geom_histogram(bins = <span class="kw">50</span>) +
+  geom_vline(xintercept = c(lo, hi), color = <span class="str">"red"</span>, linetype = <span class="str">"dashed"</span>) +
+  labs(title = <span class="str">"Heterozygosity"</span>, x = <span class="str">"Heterozygosity rate"</span>) +
+  theme_classic()
+
+out_sd &lt;- het %&gt;% filter(het_rate &lt; lo | het_rate &gt; hi)   <span class="cm"># the practical's ±3 SD rule</span>
+out_f  &lt;- het %&gt;% filter(abs(F) &gt; <span class="kw">0.1</span>)                   <span class="cm"># |F| &gt; 0.1</span>
+out_sd
+out_f
+anti_join(out_sd, out_f, by = c(<span class="str">"FID"</span>, <span class="str">"IID"</span>))   <span class="cm"># flagged by ±3 SD only</span>
+anti_join(out_f, out_sd, by = c(<span class="str">"FID"</span>, <span class="str">"IID"</span>))   <span class="cm"># flagged by |F| only</span>
+
+<span class="cm"># Heterozygosity against missingness (step 1's .imiss)</span>
+imiss &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.imiss"</span>), quote = <span class="str">""</span>)
+het %&gt;%
+  inner_join(imiss, by = c(<span class="str">"FID"</span>, <span class="str">"IID"</span>)) %&gt;%
+  ggplot(aes(x = F_MISS, y = het_rate)) +
+  geom_point(alpha = <span class="kw">0.5</span>) +
+  geom_hline(yintercept = c(lo, hi), color = <span class="str">"red"</span>, linetype = <span class="str">"dashed"</span>) +
+  labs(x = <span class="str">"Missing-call rate (F_MISS)"</span>, y = <span class="str">"Heterozygosity rate"</span>) +
+  theme_classic()</pre>
+<p>Each function, with its pandas counterpart (<a href="tools.html#r">The tools · R</a> has more):</p>
+<ul>
+  <li><code>fread(path, quote = "")</code> reads the whitespace-separated table, like <code>pd.read_csv(path, sep=r"\s+")</code>; <code>quote = ""</code> keeps IDs written with quote characters unchanged, so they still match the <code>.fam</code> file.</li>
+  <li><code>mutate(het_rate = …)</code> adds a column computed from others, like <code>df.assign(het_rate=…)</code>. Column names with parentheses go in backquotes, <code>`N(NM)`</code>, as in pandas <code>df["N(NM)"]</code>.</li>
+  <li><code>mean()</code> and <code>sd()</code> are the mean and the standard deviation with divisor \(n - 1\) (pandas <code>.mean()</code> and <code>.std()</code>, which also uses \(n - 1\)).</li>
+  <li><code>filter(a | b)</code> keeps rows where either condition holds; <code>abs()</code> is the absolute value.</li>
+  <li><code>anti_join(x, y, by = …)</code> keeps the rows of <code>x</code> with no match in <code>y</code> (in pandas, a merge with <code>indicator=True</code> filtered to <code>"left_only"</code>); <code>inner_join()</code> keeps rows with a match in both.</li>
+  <li><code>geom_histogram()</code>, <code>geom_point()</code>, <code>geom_vline()</code> and <code>geom_hline()</code> draw bars, points and vertical or horizontal lines; <code>linetype = "dashed"</code> dashes them.</li>
+</ul>
+<p>The same analysis runs on the toy data in the R console below, with <code>dplyr</code> and <code>ggplot2</code> instead of the whole tidyverse. The first run downloads R into the page; the console runs <code>--het</code> first if you have not.</p>
+<div class="rlab" id="r-het" data-title="Step 5 in R · the toy data's .het file" data-packages="data.table,dplyr,ggplot2">
+<pre class="lab-setup">[ -f ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.het ] || plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --het --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3</pre>
+<pre class="rlab-code">library(data.table)
+library(dplyr)
+library(ggplot2)
+
+het &lt;- fread(file.path(analysis_dir, "toy.geno0.01.mind0.01.LD0.3.het"), quote = "") %&gt;%
+  mutate(het_rate = (`N(NM)` - `O(HOM)`) / `N(NM)`)
+summary(het$het_rate)
+
+lo &lt;- mean(het$het_rate) - 3 * sd(het$het_rate)
+hi &lt;- mean(het$het_rate) + 3 * sd(het$het_rate)
+c(lower = lo, upper = hi)
+
+ggplot(het, aes(x = het_rate)) +
+  geom_histogram(bins = 40) +
+  geom_vline(xintercept = c(lo, hi), color = "red", linetype = "dashed") +
+  labs(title = "Heterozygosity (toy data)", x = "het_rate") +
+  theme_classic()
+
+het %&gt;% filter(het_rate &lt; lo | het_rate &gt; hi)   # mean ± 3 SD
+het %&gt;% filter(F &gt; 0.1 | F &lt; -0.1)              # |F| &gt; 0.1
+
+imiss &lt;- fread(file.path(analysis_dir, "toy.geno0.01.imiss"), quote = "")
+het %&gt;%
+  inner_join(imiss, by = c("FID", "IID")) %&gt;%
+  ggplot(aes(x = F_MISS, y = F)) +
+  geom_point() +
+  geom_hline(yintercept = c(-0.1, 0.1), color = "red", linetype = "dashed") +
+  labs(title = "F against missingness (toy data)") +
+  theme_classic()</pre>
+</div>
+
+<h2 id="real-data">On your own computer: the real data <span class="tag core">Core</span></h2>
+<p>With PLINK 1.9 installed and the variables set as on <a href="setup.html">Set up your computer</a>, the practical's command runs on the PennCATH files from steps 1 and 3:<sup><a href="#src-6">6</a></sup></p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --het \
+      --extract ${analysis_dir}/penncath.geno0.01.mind0.01.prune.in \
+      --out ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3
+<span class="prompt">$ </span>wc -l ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.het
+<span class="prompt">$ </span>tail -n +2 ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.het | sort -k6,6g | head</pre>
+<p><strong>What to look at.</strong></p>
+<ul>
+  <li><strong>Size.</strong> The file should have one line per person left after step 1, 1,380, plus the header.</li>
+  <li><strong><code>N(NM)</code>.</strong> Close to the number of SNPs in <code>.prune.in</code> for everyone, minus each person's missing calls; a person with a much smaller value had many missing calls.</li>
+  <li><strong>The shape of the histogram.</strong> One narrow peak is expected for a sample of one broad ancestry; a shoulder or a second peak points to a group of people whose ancestry, or genotyping batch, differs from the rest.</li>
+  <li><strong>Both tails, and both rules.</strong> Who is beyond ±3 SD, who has |<code>F</code>| &gt; 0.1, and who is on only one list.</li>
+  <li><strong>The flagged people in steps 1 and 4.</strong> Their missing-call rates in <code>penncath.geno0.01.imiss</code>, and whether they appear in many pairs of the <code>.genome</code> file.</li>
+</ul>
+<p><strong>How the real data differ from the toy data.</strong> PennCATH has 1,380 people at this point and many more pruned SNPs than the toy data, so each person's \(F\) is estimated more precisely. Its genotypes come from the Affymetrix 6.0 array (<a href="practical-overview.html#penncath">The data</a>); the review cited above called that array's genotypes plate by plate, a procedure in which a few poor samples can affect the calls of the others on their plate.<sup><a href="#src-1">1</a></sup> The 1,401 patients were all recorded as white (<a href="practical-overview.html#penncath">The data</a>), and the practical expects more than 99% of them to receive GrafAnc's European assignment in step 8, with a small number assigned to its Middle East and North Africa group.<sup><a href="#src-6">6</a></sup> These are reference-based measures of genetic similarity, not identities, but they mean that ancestry should spread <code>F</code> only a little; the few people whose genetic ancestry differs from most of the sample are the ones to check before removing anyone from the tails. For comparison, real PLINK 1.9.0's <code>.het</code> file gives a mean heterozygosity rate of 0.2234 with a standard deviation of 0.0023, so the ±3 SD band runs from 0.2164 to 0.2303. Eleven people fall outside it, 9 above and 2 below, and nobody has |<code>F</code>| &gt; 0.1: <code>F</code> runs only from −0.045 to 0.039. On these data the two rules flag entirely different people.</p>
+
+<h2 id="pitfalls">Pitfalls <span class="tag core">Core</span></h2>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Removing people for their ancestry</div>
+  <p>A small group of people whose genetic ancestry differs from most of the sample can fall beyond ±3 SD, or beyond |F| = 0.1, because the sample's allele frequencies do not fit them. Removing them makes the study less diverse and fixes no error. Check genetic ancestry (steps 6–8) before removing people from the tails, and assess heterozygosity within genetically similar groups.</p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Running --het on all SNPs, or on a tiny sample</div>
+  <p>Without pruning, correlated SNPs make \(F\) noisier and let a few long LD blocks dominate. With very few people the sample's allele frequencies are poor, and PLINK's documentation calls <code>--read-freq</code> "practically mandatory" in that case.<sup><a href="#src-4">4</a></sup></p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Reading the two tails the same way</div>
+  <p>High heterozygosity (negative F) is almost always technical; low heterozygosity (positive F) is often biological. A single rule that removes both tails without looking treats a child of first cousins like a contaminated sample.</p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Forgetting the backquotes</div>
+  <p>In R, <code>N(NM) - O(HOM)</code> is read as calls to functions named <code>N</code> and <code>O</code> and fails; the column names must be written <code>`N(NM)`</code> and <code>`O(HOM)`</code>.</p>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li><code>--het</code> counts, per person, homozygous calls \(O\), expected homozygous calls \(E = \sum (1 - 2pq)\) and non-missing calls \(N\) at pruned autosomal SNPs, and reports \(F = (O - E)/(N - E)\), a method-of-moments estimate of the inbreeding coefficient.</li>
+    <li>The practical's heterozygosity rate is \((N - O)/N\); \(F = 1 - h/\bar{H}\), so the two order people the same way but the rules cut in different places.</li>
+    <li>Excess heterozygosity (negative F) points to contamination or poor DNA, which also raise missingness and create false relatives; a deficit (positive F) to related parents or poor DNA.</li>
+    <li>F depends on the allele frequencies used: people whose genetic ancestry differs from most of the sample can sit in either tail without any error.</li>
+    <li>Mean ± 3 SD adapts to the sample's spread; |F| &gt; 0.1 is fixed. Run both, look at the people they disagree on, and explain each flagged person before removing them.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A person has N(NM) = 40,000, O(HOM) = 26,000 and E(HOM) = 25,200. Compute het_rate and F. Is the person more or less heterozygous than expected?</summary><div class="a"><p>het_rate = (40,000 − 26,000) / 40,000 = 0.35. F = (26,000 − 25,200) / (40,000 − 25,200) = 800 / 14,800 ≈ 0.054. The person has 800 more homozygous calls than expected, so they are less heterozygous than expected: 14,000 heterozygous calls against 14,800 expected. An F of about 0.05 is close to the 0.0625 expected for a child of first cousins; whether ±3 SD flags it depends on the sample's spread, while |F| &gt; 0.1 does not.</p></div></details>
+  <details class="q"><summary>Why does a contaminated sample get a negative F, and in which other two QC steps would you expect it to stand out?</summary><div class="a"><p>Wherever the two people in the mixture have different genotypes, the measured signal lies between the clusters and is called heterozygous or not called. More heterozygous calls than the allele frequencies predict make \(O &lt; E\), so F is negative. The no-calls raise the person's missing-call rate (step 1), and because a heterozygous call can never be an opposite homozygote, the sample shares at least one allele with everyone at those SNPs and appears related to many people (step 4).</p></div></details>
+  <details class="q"><summary>In a sample of 2,000 people of similar genetic ancestry, the SD of het_rate is 0.003 and the mean expected heterozygosity is 0.35. Which F values correspond to the ±3 SD limits, and which rule is stricter?</summary><div class="a"><p>From \(\hat{F} = 1 - h/\bar{H}\), a change of 3 SD in \(h\) is a change of \(3 \times 0.003 / 0.35 \approx 0.026\) in \(F\). So ±3 SD flags people whose F differs from the mean F by more than about 0.026, which is much stricter than |F| &gt; 0.1. It would flag, for example, most children of first cousins (F ≈ 0.0625) and mild contamination that |F| &gt; 0.1 misses.</p></div></details>
+  <details class="q"><summary>A study is 95% of European genetic ancestry and 5% of African genetic ancestry. Why might the second group's F values be shifted, and what would you do?</summary><div class="a"><p>PLINK computes the expected homozygous count from the whole sample's allele frequencies, which here are mostly those of the European-ancestry majority. For people whose genetic ancestry differs, those frequencies predict their heterozygosity badly, so their F values shift as a group (the direction depends on the frequency differences and on how diverse their populations are at the array's SNPs). PLINK's documentation warns that such rare-ancestry samples may need to be processed separately. Compute heterozygosity within genetically similar groups, or with <code>--read-freq</code> and suitable reference frequencies, and do not remove people just because their group sits in a tail.</p></div></details>
+  <details class="q"><summary>Show that a child whose parents come from two populations with allele frequencies 0.2 and 0.6 at a SNP is heterozygous more often than Hardy–Weinberg proportions for the pooled frequency predict.</summary><div class="a"><p>The child is heterozygous with probability \(p_1q_2 + p_2q_1 = 0.2 \times 0.4 + 0.6 \times 0.8 = 0.08 + 0.48 = 0.56\). The pooled frequency is \(\bar{p} = 0.4\), so the Hardy–Weinberg value is \(2 \times 0.4 \times 0.6 = 0.48\). The difference, 0.08, equals \(\tfrac{1}{2}(0.2 - 0.6)^2 = 0.08\). Over many such SNPs the child gets a negative F against pooled frequencies, the same direction as contamination.</p></div></details>
+  <details class="q"><summary>Why does --het use the pruned SNPs from step 3 rather than all SNPs?</summary><div class="a"><p>The estimate treats each SNP as independent information. SNPs in strong LD carry the same information several times, so a few LD blocks would count many times, F would be noisier than the formula for its precision suggests, and regions with long-range LD would weigh too much. PLINK's documentation says these calculations do not take LD into account and recommends pruning first.</p></div></details>
+  <details class="q"><summary>Lab: run the two rules in the terminal (the last two <code>awk</code> commands). Which toy people does each rule flag, and who is flagged by only one rule? Why?</summary><div class="a"><p>±3 SD flags <span data-card="het_outliers_3sd_fids">?</span>; |<code>F</code>| &gt; 0.1 flags <span data-card="het_f_fids">?</span>. The person in the second list only is East-Asian-like, with <code>F</code> just above 0.1. In this sample the ±3 SD band of <code>het_rate</code> corresponds to a band of <code>F</code> slightly wider than ±0.1 around the mean <code>F</code> (the last line of the histogram widget's readout converts it), so a person with <code>F</code> just above 0.1 stays inside the band. The case is borderline: one more heterozygous call would bring this person's <code>F</code> below 0.1.</p></div></details>
+  <details class="q"><summary>Lab: which of the flagged people is the contaminated sample? Use their missing-call rates from step 1 and their pairs from step 4.</summary><div class="a"><p><span data-card="het_contaminated_fid">?</span>. It has the most negative <code>F</code> (<span data-card="het_contaminated_f">?</span>) and the highest missing-call rate of the flagged people, and it has <code>PI_HAT</code> &gt; 0.1875 with many people in step 4. The table under the plot of <code>F</code> against missingness lists the missing-call rates, and its button adds the pair counts. The admixed person also has a negative <code>F</code>, but ordinary missingness and no flagged pairs. Ancestry explains that person; contamination explains the other.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/basic_stats#ibc" target="_blank" rel="noopener">PLINK 1.9: --het and --ibc</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — the command, its modifiers and the warnings about small samples and imbalanced ancestry.</li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Data quality control in genetic case-control association studies</a> <span class="src">· Anderson et al. 2010, Nature Protocols</span> <span class="level intro">intro</span> — the heterozygosity–missingness plot and the ±3 SD rule, with R code.</li>
+    <li><a href="https://doi.org/10.1002/gepi.20516" target="_blank" rel="noopener">Quality control and quality assurance in genotypic data for genome-wide association studies</a> <span class="src">· Laurie et al. 2010</span> <span class="level intermediate">intermediate</span> — how mixed and low-quality samples were found in real GWAS, and what they did to the results.</li>
+    <li><a href="https://doi.org/10.1016/j.ajhg.2012.09.004" target="_blank" rel="noopener">Detecting and estimating contamination of human DNA samples</a> <span class="src">· Jun et al. 2012</span> <span class="level advanced">advanced</span> — estimating the share of a second person's DNA from sequence reads and array intensities.</li>
+    <li><a href="https://doi.org/10.1038/nrg.2017.109" target="_blank" rel="noopener">Runs of homozygosity: windows into population history and trait architecture</a> <span class="src">· Ceballos et al. 2018</span> <span class="level intermediate">intermediate</span> — ROH, F<sub>ROH</sub> and what they reveal about parents' relatedness and population history.</li>
+    <li><a href="https://doi.org/10.1016/j.ajhg.2008.08.007" target="_blank" rel="noopener">Runs of homozygosity in European populations</a> <span class="src">· McQuillan et al. 2008</span> <span class="level advanced">advanced</span> — F<sub>ROH</sub> compared with pedigree inbreeding in real populations.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Laurie CC, Doheny KF, Mirel DB, et al. (2010). Quality control and quality assurance in genotypic data for genome-wide association studies. <em>Genetic Epidemiology</em> 34:591–602 (relatedness: 36 duplicate pairs, two not documented as one person; two mixed samples related to nearly every other sample; ±2 SD bounds for full siblings in Fig. 3; principal components driven by the 8p23 inversion; mixed and low-quality samples; plate effects in genotype calling). <a href="https://doi.org/10.1002/gepi.20516" target="_blank" rel="noopener">doi:10.1002/gepi.20516</a></li>
+    <li id="src-2">Uffelmann E, Huang QQ, Munung NS, et al. (2021). Genome-wide association studies. <em>Nature Reviews Methods Primers</em> 1:59 (Experimentation: “Data processing” and “Testing for associations”, Eqs. 1–3; Fig. 1; Table 1). <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-3">Jun G, Flickinger M, Hetrick KN, et al. (2012). Detecting and estimating contamination of human DNA samples in sequencing and array-based genotype data. <em>American Journal of Human Genetics</em> 91:839–848. <a href="https://doi.org/10.1016/j.ajhg.2012.09.004" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2012.09.004</a></li>
+    <li id="src-4">Chang CC, Purcell S. PLINK 1.9 documentation: “Basic statistics”, section “Inbreeding” (<code>--het</code>: observed and expected autosomal homozygous genotype counts and the method-of-moments F; expected counts from loaded or sample allele frequencies; the n/(n − 1) multiplier omitted unless <code>small-sample</code>; samples with rare ancestry may need separate processing; LD pruning recommended). <a href="https://www.cog-genomics.org/plink/1.9/basic_stats#ibc" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/basic_stats</a></li>
+    <li id="src-5">Chang CC. PLINK 1.9 source code, <code>plink_misc.c</code>, function <code>het_report</code>: N(NM) counts a person's called, non-monomorphic autosomal SNPs; E(HOM) sums 1 − 2pq over them; F = (O(HOM) − E(HOM)) / (N(NM) − E(HOM)). <a href="https://github.com/chrchang/plink-ng/blob/master/1.9/plink_misc.c" target="_blank" rel="noopener">github.com/chrchang/plink-ng</a></li>
+    <li id="src-6">DCEG Statistical Genetics Workshop, Session 1 practical, “Introduction to GWAS Quality Control”: web page and R Markdown source <code>01_qc.Rmd</code> (PennCATH data; PLINK 1.9 commands, file names and thresholds for steps 1–8; 1,380 people after the missingness filters; questions and exercise). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">practical page</a> · <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/blob/main/src/01_qc.Rmd" target="_blank" rel="noopener">01_qc.Rmd</a></li>
+    <li id="src-7">Anderson CA, Pettersson FH, Clarke GM, Cardon LR, Morris AP, Zondervan KT (2010). Data quality control in genetic case-control association studies. <em>Nature Protocols</em> 5:1564–1573 (IBD on pruned SNPs with high-LD regions removed; remove one of each pair with IBD &gt; 0.1875, 0.185 in the protocol step, keeping the one with the higher call rate; IBD &gt; 0.98 for duplicates; heterozygosity rate (N(NM) − O(HOM))/N(NM) with a ±3 SD rule). <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-8">Chang CC, Purcell S. PLINK 1.9 documentation: “File formats” (<code>.genome</code> identity-by-descent report and <code>.het</code> method-of-moments F coefficient estimates). <a href="https://www.cog-genomics.org/plink/1.9/formats#genome" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/formats</a></li>
+    <li id="src-9">Marees AT, de Kluiver H, Stringer S, et al. (2018). A tutorial on conducting genome-wide association studies: quality control and statistical analysis. <em>International Journal of Methods in Psychiatric Research</em> 27:e1608 (pi-hat threshold 0.2 in population-based studies; heterozygosity ±3 SD from the mean; outliers on MDS removed; up to 10 components as covariates). <a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">doi:10.1002/mpr.1608</a></li>
+    <li id="src-10">McQuillan R, Leutenegger AL, Abdel-Rahman R, et al. (2008). Runs of homozygosity in European populations. <em>American Journal of Human Genetics</em> 83:359–372. <a href="https://doi.org/10.1016/j.ajhg.2008.08.007" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2008.08.007</a></li>
+    <li id="src-11">Ceballos FC, Joshi PK, Clark DW, Ramsay M, Wilson JF (2018). Runs of homozygosity: windows into population history and trait architecture. <em>Nature Reviews Genetics</em> 19:220–234. <a href="https://doi.org/10.1038/nrg.2017.109" target="_blank" rel="noopener">doi:10.1038/nrg.2017.109</a></li>
+    <li id="src-12">Chang CC, Purcell S. PLINK 1.9 documentation: “Identity-by-descent”, section “Runs of homozygosity” (<code>--homozyg</code>; by default runs of at least 100 SNPs and 1,000 kb, at least one SNP per 50 kb). <a href="https://www.cog-genomics.org/plink/1.9/ibd#homozyg" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/ibd</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

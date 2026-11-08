@@ -1,0 +1,323 @@
+[
+ {
+  "id": "population-genetics",
+  "term": "Population genetics",
+  "aka": [],
+  "short": "The study of how allele and genotype frequencies are distributed within and among populations, and of how mutation, genetic drift, migration, natural selection and mating patterns change them over generations.",
+  "long": "<p>Population genetics supplies the expectations that GWAS quality control and analysis test against: Hardy–Weinberg proportions of genotypes, the decay of linkage disequilibrium with distance along the genome, and differences in allele frequency between populations, summarized by F<sub>ST</sub> or by principal components. Its mathematical theory was built by Fisher, Wright and Haldane in the 1920s and 1930s.</p><p>On the field map of slide 29 it is the foundation box captioned “The distribution of genetic variation among human populations”; Sessions 1 and 7 highlight it.</p>",
+  "l1": "Slide 29: one of the four foundation boxes of the field map; Sessions 1 and 7 highlight it (page 2).",
+  "see": [
+   "hwe",
+   "fst",
+   "genetic-drift",
+   "natural-selection",
+   "modern-synthesis"
+  ],
+  "links": [
+   {
+    "t": "1000 Genomes Project Consortium 2015, Nature",
+    "u": "https://doi.org/10.1038/nature15393"
+   }
+  ],
+  "match": [
+   "population genetics"
+  ],
+  "owner": "field-map"
+ },
+ {
+  "id": "molecular-genetics",
+  "term": "Molecular genetics",
+  "aka": [],
+  "short": "The study of genes at the level of molecules: how DNA is copied, how genes are transcribed and translated into proteins, how their activity is regulated, and how variants change these steps.",
+  "long": "<p>Molecular genetics grew from the findings that genes lie on chromosomes (Morgan, 1910), that DNA carries genetic information (Avery, MacLeod and McCarty, 1944; Hershey and Chase, 1952) and that DNA is a double helix (Watson and Crick, 1953). Its technologies, from DNA markers to genotyping arrays and sequencing, produce the data that genetic epidemiology analyzes.</p><p>Slide 45 grays the box out as a topic the course does not cover explicitly; Session 9 (functional genomics) returns to it.</p>",
+  "l1": "Slides 28–29 and 45: one of the three traditions behind genetic epidemiology and a foundation box of the field map (page 2).",
+  "see": [
+   "dna",
+   "double-helix",
+   "chromosome",
+   "functional-genomics"
+  ],
+  "links": [
+   {
+    "t": "Ingles, Basic concepts of molecular genetics, in Thomas 2004",
+    "u": "https://doi.org/10.1093/oso/9780195159394.003.0002"
+   }
+  ],
+  "match": [
+   "molecular genetics"
+  ],
+  "owner": "field-map"
+ },
+ {
+  "id": "mendelian-genetics",
+  "term": "Mendelian genetics",
+  "aka": [],
+  "short": "The study of how traits controlled by single genes pass from parents to children, following Mendel’s laws of segregation and independent assortment.",
+  "long": "<p>Mendel (1866) crossed pea plants and found that discrete traits pass on as units that separate in fixed ratios, such as 3 : 1 among the offspring of two heterozygous parents. After his laws were rediscovered in 1900, Bateson, Punnett and others extended them, and Garrod showed in 1902 that a human disease, alkaptonuria, follows them. Diseases caused by a variant in one gene with near-complete penetrance are still called Mendelian diseases.</p><p>Slide 45 grays the box out, but Hardy–Weinberg tests and relatedness checks in the practical rest on its laws.</p>",
+  "l1": "Slides 28–29 and 45: Mendel heads the list on slide 28, and Mendelian genetics is a foundation box of the field map (page 2).",
+  "see": [
+   "mendels-laws",
+   "segregation",
+   "recessive",
+   "dominant",
+   "penetrance"
+  ],
+  "links": [],
+  "match": [
+   "Mendelian genetics"
+  ],
+  "owner": "field-map"
+ },
+ {
+  "id": "clinical-genetics",
+  "term": "Clinical genetics",
+  "aka": [
+   "medical genetics"
+  ],
+  "short": "The medical field that diagnoses inherited diseases in patients and their families, works out how they are inherited, and advises families about risks and options.",
+  "long": "<p>Clinical genetics began with physicians who followed rare diseases through families and measured their chemistry, such as Garrod’s work on alkaptonuria and other inborn errors of metabolism (1902–1909) and Neel’s on sickle cell anemia (1949). It brought to genetic epidemiology the study of patients with well-defined diagnoses and of the families they come from.</p>",
+  "l1": "Slide 28: one of the three traditions joined in genetic epidemiology, represented by Garrod and Neel (page 2).",
+  "see": [
+   "inborn-error-of-metabolism",
+   "hemoglobinopathy",
+   "sickle-cell-disease",
+   "pharmacogenetics",
+   "pedigree"
+  ],
+  "links": [],
+  "match": [
+   "clinical genetics",
+   "medical genetics"
+  ],
+  "owner": "field-map"
+ },
+ {
+  "id": "pharmacogenetics",
+  "term": "Pharmacogenetics",
+  "aka": [
+   "pharmacogenomics"
+  ],
+  "short": "The study of inherited differences in how people respond to drugs, in benefit or in side effects.",
+  "long": "<p>The idea goes back to Garrod, who argued that the chemical individuality behind inborn errors of metabolism also explains why people react differently to drugs and foods. Friedrich Vogel named the field in 1959, after inherited differences in the response to several drugs had been described in the 1950s. Genome-wide studies of drug response are often called pharmacogenomics.</p>",
+  "l1": "Slide 28: listed with Garrod under clinical genetics (page 2).",
+  "see": [
+   "clinical-genetics",
+   "inborn-error-of-metabolism",
+   "drug-target"
+  ],
+  "links": [],
+  "match": [
+   "pharmacogenetics",
+   "pharmacogenomics"
+  ],
+  "noPlural": true,
+  "owner": "field-map"
+ },
+ {
+  "id": "post-gwas-studies",
+  "term": "Post-GWAS studies",
+  "aka": [
+   "post-GWAS analyses"
+  ],
+  "short": "Analyses that start from GWAS results to find the causal variants and genes behind an association, the mechanism by which they act, and what the associations predict or imply.",
+  "long": "<p>They include statistical fine-mapping (which variant in an associated region is causal), colocalization (whether two traits, such as a disease and the expression of a gene, share a causal variant), transcriptome-wide association studies, estimates of SNP heritability and of its enrichment in classes of variants, polygenic scores, and Mendelian randomization. Most of them need only GWAS summary statistics plus reference data such as a linkage disequilibrium panel or gene expression measurements.</p><p>On the field map the box is captioned “Understanding biologic mechanisms behind genetic associations”; Sessions 3–9 highlight it.</p>",
+  "l1": "Slide 29: the third design box of the field map; Sessions 3–9 highlight it (page 2).",
+  "see": [
+   "fine-mapping",
+   "colocalization",
+   "twas",
+   "snp-heritability",
+   "polygenic-score",
+   "mendelian-randomization",
+   "summary-statistics"
+  ],
+  "links": [
+   {
+    "t": "Visscher et al. 2017, American Journal of Human Genetics",
+    "u": "https://doi.org/10.1016/j.ajhg.2017.06.005"
+   }
+  ],
+  "match": [
+   "post-GWAS studies",
+   "post-GWAS study",
+   "post-GWAS analyses",
+   "post-GWAS analysis"
+  ],
+  "noPlural": true,
+  "owner": "field-map"
+ },
+ {
+  "id": "human-genome-project",
+  "term": "Human Genome Project",
+  "aka": [],
+  "short": "The international public project (1990–2003) that determined the sequence of the human genome; a draft was published in 2001 and a finished sequence in 2003.",
+  "long": "<p>Francis Collins directed the U.S. genome institute at the National Institutes of Health from 1993, and Eric Lander’s center at the Whitehead Institute was the largest contributor to the draft sequence. The project produced the reference sequence against which variants are named and positioned, in genome builds such as GRCh37 and GRCh38. The HapMap and 1000 Genomes projects followed and cataloged common variation; the Telomere-to-Telomere Consortium closed the remaining gaps in 2022.</p>",
+  "l1": "Slide 28: Collins and Lander are listed for the Human Genome Project, the HapMap and high-throughput genotyping and sequencing (page 2).",
+  "see": [
+   "genome",
+   "hapmap",
+   "thousand-genomes",
+   "sequencing"
+  ],
+  "links": [
+   {
+    "t": "Lander et al. 2001, Nature",
+    "u": "https://doi.org/10.1038/35057062"
+   }
+  ],
+  "match": [
+   "Human Genome Project"
+  ],
+  "noPlural": true,
+  "owner": "field-map"
+ },
+ {
+  "id": "modern-synthesis",
+  "term": "Modern synthesis",
+  "aka": [
+   "evolutionary synthesis"
+  ],
+  "short": "The joining, from about 1918 to the 1940s, of Mendelian genetics with Darwin’s theory of evolution by natural selection, through the mathematical population genetics of Fisher, Wright and Haldane.",
+  "long": "<p>Before the synthesis, followers of Mendel, who studied discrete traits, and biometricians such as Pearson, who studied continuous traits, disagreed about how inheritance works. Fisher (1918) showed that many Mendelian genes of small effect produce continuous variation and the observed correlations between relatives; Fisher, Wright and Haldane then worked out how selection, drift and mutation change allele frequencies. Julian Huxley’s book <em>Evolution: The Modern Synthesis</em> (1942) gave the movement its name.</p>",
+  "l1": "Slide 28: Fisher, Wright and Haldane are listed for “the modern synthesis” (page 2).",
+  "see": [
+   "population-genetics",
+   "natural-selection",
+   "genetic-drift",
+   "mendelian-genetics"
+  ],
+  "links": [],
+  "match": [
+   "modern synthesis"
+  ],
+  "noPlural": true,
+  "owner": "field-map"
+ },
+ {
+  "id": "alkaptonuria",
+  "term": "Alkaptonuria",
+  "aka": [],
+  "short": "A rare inherited disorder in which homogentisic acid, formed when the amino acids phenylalanine and tyrosine are broken down, cannot be broken down further; it is excreted in the urine, which darkens on standing.",
+  "long": "<p>In 1902 Archibald Garrod noted that alkaptonuria was common among the children of first-cousin marriages and interpreted it as a recessive Mendelian trait: the first human disease explained by Mendel’s laws. He later counted it among the inborn errors of metabolism. The gene, <em>HGD</em>, which encodes the enzyme homogentisate 1,2-dioxygenase, was identified in 1996.</p>",
+  "l1": "Slide 28: Garrod’s work on alkaptonuria began clinical genetics (page 2).",
+  "see": [
+   "inborn-error-of-metabolism",
+   "recessive",
+   "mendelian-genetics",
+   "enzyme"
+  ],
+  "links": [
+   {
+    "t": "Fernández-Cañón et al. 1996, Nature Genetics",
+    "u": "https://doi.org/10.1038/ng0996-19"
+   }
+  ],
+  "match": [
+   "alkaptonuria"
+  ],
+  "noPlural": true,
+  "owner": "field-map"
+ },
+ {
+  "id": "fair-principles",
+  "term": "FAIR principles",
+  "aka": [
+   "FAIR"
+  ],
+  "short": "Guidelines that research data and code should be findable, accessible, interoperable and reusable, with the identifiers and metadata that let people and computers find and reuse them.",
+  "long": "<p>The principles were published by Wilkinson and colleagues in 2016. For GWAS they mean, for example, summary statistics deposited in a public catalog in a standard format that states the genome build, the effect allele and the sample, and analysis pipelines whose software versions and parameters are recorded so that others can rerun them. Sharing must also respect participants’ consent and privacy.</p>",
+  "l1": "The workshop website asks for GWAS pipelines that follow the FAIR principles (page 2).",
+  "see": [
+   "summary-statistics",
+   "gwas-catalog"
+  ],
+  "links": [
+   {
+    "t": "Wilkinson et al. 2016, Scientific Data",
+    "u": "https://doi.org/10.1038/sdata.2016.18"
+   }
+  ],
+  "match": [
+   "FAIR principles",
+   "FAIR"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "field-map"
+ },
+ {
+  "id": "recurrence-risk-ratio",
+  "term": "Recurrence risk ratio",
+  "aka": [
+   "λs",
+   "sibling recurrence risk ratio"
+  ],
+  "short": "The risk of a disease in relatives of an affected person divided by the risk in the general population; for siblings it is written λs. A value well above 1 shows that the disease clusters in families.",
+  "long": "<p>Clustering in families can come from shared genes or from shared environments, so a high recurrence risk ratio is evidence for, not proof of, genetic influence. Risch (1990) showed how the ratios for different kinds of relatives constrain the genetic models that can explain a disease and set the power of linkage studies.</p>",
+  "l1": "Slide 29: a statistic of the familial aggregation box of the field map (page 2).",
+  "see": [
+   "familial-aggregation",
+   "heritability",
+   "twin-study",
+   "linkage-analysis"
+  ],
+  "links": [
+   {
+    "t": "Risch 1990, American Journal of Human Genetics",
+    "u": "https://pubmed.ncbi.nlm.nih.gov/2301392/"
+   }
+  ],
+  "match": [
+   "recurrence risk ratio",
+   "recurrence risk ratios",
+   "sibling recurrence risk"
+  ],
+  "noPlural": true,
+  "owner": "field-map"
+ },
+ {
+  "id": "regression-toward-the-mean",
+  "term": "Regression toward the mean",
+  "aka": [
+   "regression to the mean"
+  ],
+  "short": "The tendency of an extreme measurement to be followed, in a relative or in a repeat measurement, by one closer to the average, because part of what made the first value extreme is not shared.",
+  "long": "<p>Galton (1886) found that the adult children of very tall parents are on average tall, but less tall than their parents, and that the children of very short parents are less short. The slope of the children’s heights on the parents’ heights is below 1, and this “regression” gave linear regression its name. The same effect explains why the first estimate of a GWAS effect that passed a strict threshold tends to be larger than in replication studies (the winner’s curse).</p>",
+  "l1": "Slide 28: Galton is listed for continuous traits; his study of heights introduced regression (page 2).",
+  "see": [
+   "heritability"
+  ],
+  "links": [],
+  "match": [
+   "regression toward the mean",
+   "regression to the mean"
+  ],
+  "noPlural": true,
+  "owner": "field-map"
+ },
+ {
+  "id": "skat",
+  "term": "SKAT (sequence kernel association test)",
+  "aka": [
+   "sequence kernel association test"
+  ],
+  "short": "A test of whether a set of rare variants, usually those in one gene, is associated with a trait. A burden test adds up each person's rare alleles and tests the total; SKAT lets each variant's effect differ in size and direction.",
+  "long": "<p>SKAT (Wu and colleagues, 2011) treats the variants' effects as random draws with mean zero and tests whether their variance is greater than zero. It keeps its power when some variants raise the trait and others lower it, where a burden test loses power; a burden test is more powerful when nearly all the variants act in the same direction. SKAT-O combines the two tests. Session 7 of the workshop covers both.</p>",
+  "see": [
+   "rare-variant-association-study"
+  ],
+  "links": [
+   {
+    "t": "Wu et al. 2011, Am J Hum Genet: the sequence kernel association test",
+    "u": "https://doi.org/10.1016/j.ajhg.2011.05.029"
+   }
+  ],
+  "match": [
+   "SKAT",
+   "sequence kernel association test"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "field-map"
+ }
+]

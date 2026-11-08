@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC step 2: Hardy–Weinberg equilibrium · Lecture 1</title>
+<meta name="description" content="Step 2 of the PLINK quality-control practical: what makes a SNP depart from Hardy–Weinberg proportions, how plink --hardy computes the exact test in all people, cases and controls, why quality control reads the controls, and how to choose an --hwe threshold.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<!-- Widgets for this page, one file each: assets/js/widgets/PAGEKEY-NAME.js -->
+<script defer src="assets/js/widgets/qc-hwe-groups.js"></script>
+<!-- The in-browser lab (assets/js/lab/LAB.md); widgets that use it load after lab.js. -->
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-hwe-qq.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-hwe"]. */
+body[data-page="qc-hwe"] .mm-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px 18px; align-items: start; }
+body[data-page="qc-hwe"] .mm-panels > svg { display: block; width: 100%; height: auto; }
+body[data-page="qc-hwe"] .hg-val { font-family: var(--mono); font-size: 0.86rem; min-width: 2.6em; }
+body[data-page="qc-hwe"] .hg-chart svg { display: block; width: 100%; max-width: 470px; height: auto; margin: 4px auto 8px; }
+body[data-page="qc-hwe"] .hg-readout { white-space: pre; overflow-x: auto; }
+body[data-page="qc-hwe"] .hq-readout { white-space: pre; overflow-x: auto; }
+body[data-page="qc-hwe"] .hq-thr { font-family: var(--mono); font-size: 0.86rem; margin-left: 2px; }
+body[data-page="qc-hwe"] .hq-group { white-space: nowrap; }
+body[data-page="qc-hwe"] .hq-below { color: var(--pitfall); font-weight: 600; }
+body[data-page="qc-hwe"] .hq-p { white-space: nowrap; font-family: var(--mono); font-size: 0.86rem; }
+body[data-page="qc-hwe"] .widget select { max-width: 100%; }
+body[data-page="qc-hwe"] .widget label.w-pick { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; }
+body[data-page="qc-hwe"] .widget label.w-pick > select { min-width: 0; flex: 1 1 auto; }
+body[data-page="qc-hwe"] dl.cols-doc.log-lines { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+body[data-page="qc-hwe"] dl.cols-doc.log-lines > dt { font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 560px) { body[data-page="qc-hwe"] dl.cols-doc.log-lines { grid-template-columns: minmax(0, 1fr); } body[data-page="qc-hwe"] .hg-readout { font-size: 0.7rem; } }
+/* Keep short inline code (flags such as --hwe 1e-6) on one line; long commands carry class="wrap". */
+body[data-page="qc-hwe"] :is(p, li, dd, td, summary, figcaption) > code:not(.wrap) { white-space: nowrap; }
+body[data-page="qc-hwe"] code.wrap { overflow-wrap: anywhere; }
+</style>
+</head>
+<body data-page="qc-hwe">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Step 2 of 8 · Page 16 of 23</p>
+  <h1>QC step 2: Hardy–Weinberg equilibrium</h1>
+  <p class="lede">If each person's two alleles at a SNP were independent draws from the population's allele pool, the three genotype counts would follow from the allele frequency alone. This step tests that prediction for every SNP with an exact test, reads the result in the controls, and asks which departures are genotyping errors and which are biology.</p>
+  <div class="chips">
+    <span class="chip core">Slide 83</span>
+    <span class="chip deeper">plink --hardy · --hwe</span>
+    <span class="chip data">Writes: .hwe with rows ALL, AFF and UNAFF</span>
+    <span class="chip time">≈ 50 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="2" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">One exact-test p-value per SNP and group; quality control reads the controls</h2>
+  <figure>
+    <div class="mm-panels">
+<svg viewBox="0 0 360 300" role="img" aria-labelledby="mm-a-t mm-a-d">
+<title id="mm-a-t">Observed and expected genotype counts of two SNPs in all people, cases and controls</title>
+<desc id="mm-a-d">Two rows of three small bar charts, for all people (ALL), cases (AFF) and controls (UNAFF) of a study with 463 cases and 470 controls. Bars are the observed counts of genotypes 11, 12 and 22; dashed boxes are the counts expected under Hardy–Weinberg proportions. SNP 1, where 40% of heterozygotes are miscalled as homozygotes, has too few heterozygotes in every group, with p-values of 9.7 × 10⁻³³, 5.8 × 10⁻¹⁷ and 1.4 × 10⁻¹⁷. SNP 2, whose allele 1 raises disease risk under a recessive model, departs in the cases (p-value 3.4 × 10⁻⁶) and in all people (5.8 × 10⁻⁴), which include the cases, but not in the controls (0.74).</desc>
+<text x="8" y="18" class="t-b">A · Two SNPs, three rows of .hwe each</text>
+<text x="70" y="36" class="t-sm" text-anchor="middle">ALL</text>
+<text x="185" y="36" class="t-sm" text-anchor="middle">AFF (cases)</text>
+<text x="300" y="36" class="t-sm" text-anchor="middle">UNAFF (controls)</text>
+<text x="8" y="56" class="t-sm" style="fill: var(--fg)">SNP 1: 40% of heterozygotes miscalled</text>
+<text x="8" y="176" class="t-sm" style="fill: var(--fg)">SNP 2: allele 1 raises risk (recessive model)</text>
+<rect x="29" y="110.7" width="22" height="19.3" fill="var(--g2)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="27" y="120.0" width="26" height="10.0" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="59" y="101.9" width="22" height="28.1" fill="var(--g1)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="57" y="83.2" width="26" height="46.8" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="89" y="66.0" width="22" height="64.0" fill="var(--g0)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="87" y="75.3" width="26" height="54.7" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<line x1="23" y1="130" x2="119" y2="130" stroke="#8a93a0"/>
+<text x="70" y="146" class="t-sm" text-anchor="middle" style="fill: var(--pitfall); font-weight: 700">P = 9.7 × 10⁻³³</text>
+<rect x="144" y="110.8" width="22" height="19.2" fill="var(--g2)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="142" y="120.0" width="26" height="10.0" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="174" y="101.8" width="22" height="28.2" fill="var(--g1)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="172" y="83.3" width="26" height="46.7" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="204" y="66.0" width="22" height="64.0" fill="var(--g0)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="202" y="75.3" width="26" height="54.7" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<line x1="138" y1="130" x2="234" y2="130" stroke="#8a93a0"/>
+<text x="185" y="146" class="t-sm" text-anchor="middle" style="fill: var(--pitfall); font-weight: 700">P = 5.8 × 10⁻¹⁷</text>
+<rect x="259" y="110.6" width="22" height="19.4" fill="var(--g2)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="257" y="120.0" width="26" height="10.0" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="289" y="102.0" width="22" height="28.0" fill="var(--g1)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="287" y="83.2" width="26" height="46.8" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="319" y="66.0" width="22" height="64.0" fill="var(--g0)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="317" y="75.4" width="26" height="54.6" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<line x1="253" y1="130" x2="349" y2="130" stroke="#8a93a0"/>
+<text x="300" y="146" class="t-sm" text-anchor="middle" style="fill: var(--pitfall); font-weight: 700">P = 1.4 × 10⁻¹⁷</text>
+<rect x="29" y="230.6" width="22" height="19.4" fill="var(--g2)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="27" y="234.1" width="26" height="15.9" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="59" y="195.2" width="22" height="54.8" fill="var(--g1)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="57" y="188.1" width="26" height="61.9" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="89" y="186.0" width="22" height="64.0" fill="var(--g0)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="87" y="189.6" width="26" height="60.4" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<line x1="23" y1="250" x2="119" y2="250" stroke="#8a93a0"/>
+<text x="70" y="266" class="t-sm" text-anchor="middle" style="fill: var(--pitfall); font-weight: 700">P = 5.8 × 10⁻⁴</text>
+<rect x="144" y="223.1" width="22" height="26.9" fill="var(--g2)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="142" y="230.1" width="26" height="19.9" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="174" y="200.0" width="22" height="50.0" fill="var(--g1)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="172" y="186.0" width="26" height="64.0" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="204" y="191.5" width="22" height="58.5" fill="var(--g0)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="202" y="198.5" width="26" height="51.5" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<line x1="138" y1="250" x2="234" y2="250" stroke="#8a93a0"/>
+<text x="185" y="266" class="t-sm" text-anchor="middle" style="fill: var(--pitfall); font-weight: 700">P = 3.4 × 10⁻⁶</text>
+<rect x="259" y="239.3" width="22" height="10.7" fill="var(--g2)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="257" y="238.8" width="26" height="11.2" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="289" y="195.5" width="22" height="54.5" fill="var(--g1)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="287" y="196.5" width="26" height="53.5" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<rect x="319" y="186.5" width="22" height="63.5" fill="var(--g0)" stroke="#8a93a0" stroke-width="0.6"/>
+<rect x="317" y="186.0" width="26" height="64.0" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/>
+<line x1="253" y1="250" x2="349" y2="250" stroke="#8a93a0"/>
+<text x="300" y="266" class="t-sm" text-anchor="middle">P = 0.74</text>
+<text x="8" y="288" class="t-sm">observed</text>
+<rect x="58" y="279" width="10" height="10" fill="var(--g2)" stroke="#8a93a0" stroke-width="0.6"/><text x="71" y="288" class="t-sm">11</text>
+<rect x="90" y="279" width="10" height="10" fill="var(--g1)" stroke="#8a93a0" stroke-width="0.6"/><text x="103" y="288" class="t-sm">12</text>
+<rect x="122" y="279" width="10" height="10" fill="var(--g0)" stroke="#8a93a0" stroke-width="0.6"/><text x="135" y="288" class="t-sm">22</text>
+<rect x="165" y="279" width="16" height="10" fill="none" stroke="var(--fg)" stroke-width="1.2" stroke-dasharray="3 2"/><text x="186" y="288" class="t-sm">expected under HWE</text>
+</svg>
+<svg viewBox="0 0 360 300" role="img" aria-labelledby="mm-b-t mm-b-d">
+<title id="mm-b-t">Step 2 drawn as one box of the QC pipeline</title>
+<desc id="mm-b-d">Five stages from top to bottom. Statistic: an exact-test p-value per SNP and group, the ALL, AFF and UNAFF rows of the .hwe file. Distribution: close to uniform when Hardy–Weinberg equilibrium holds, a tail of tiny p-values from errors, and a spike at 1. Threshold: the practical counts p-values below 10⁻⁸ in UNAFF; published filters use 10⁻⁵ to 10⁻¹⁰. Remove: --hwe drops SNPs, testing the controls only; the practical leaves the filter to the exercise. Record: the log line with the number removed, the .hwe file and the threshold used.</desc>
+<text x="8" y="18" class="t-b">B · Step 2 in the QC pipeline</text>
+<g>
+<rect x="8" y="30" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="56" class="t-b" style="fill: var(--mm)">Statistic</text>
+<text x="112" y="48" class="t-sm" style="fill: var(--fg)">exact-test P per SNP and group</text>
+<text x="112" y="63" class="t-sm" style="fill: var(--fg)">(rows ALL, AFF, UNAFF of .hwe)</text>
+<polygon points="54,77 66,77 60,85" fill="var(--mm)"/>
+<rect x="8" y="88" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="114" class="t-b" style="fill: var(--mm)">Distribution</text>
+<text x="112" y="106" class="t-sm" style="fill: var(--fg)">near-uniform if HWE holds; a tail</text>
+<text x="112" y="121" class="t-sm" style="fill: var(--fg)">of tiny P (errors), a spike at 1</text>
+<polygon points="54,135 66,135 60,143" fill="var(--mm)"/>
+<rect x="8" y="146" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="172" class="t-b" style="fill: var(--mm)">Threshold</text>
+<text x="112" y="164" class="t-sm" style="fill: var(--fg)">the practical counts P &lt; 10⁻⁸ in</text>
+<text x="112" y="179" class="t-sm" style="fill: var(--fg)">UNAFF; filters use 10⁻⁵ to 10⁻¹⁰</text>
+<polygon points="54,193 66,193 60,201" fill="var(--mm)"/>
+<rect x="8" y="204" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="230" class="t-b" style="fill: var(--mm)">Remove</text>
+<text x="112" y="222" class="t-sm" style="fill: var(--fg)">--hwe drops SNPs, testing controls</text>
+<text x="112" y="237" class="t-sm" style="fill: var(--fg)">only; the exercise applies it</text>
+<polygon points="54,251 66,251 60,259" fill="var(--mm)"/>
+<rect x="8" y="262" width="344" height="34" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="283" class="t-b" style="fill: var(--mm)">Record</text>
+<text x="112" y="276" class="t-sm" style="fill: var(--fg)">"--hwe: … removed" in the .log,</text>
+<text x="112" y="290" class="t-sm" style="fill: var(--fg)">the .hwe file and the threshold</text>
+</g>
+</svg>
+    </div>
+    <figcaption><span class="illustrative">Illustrative</span> Panel A shows the counts that the widget below computes for 463 cases and 470 controls (PennCATH's numbers), allele 1 frequency 0.3 and a disease prevalence of 5%: SNP 1 has no effect on disease but 40% of its heterozygotes are called homozygous; SNP 2 is called correctly and its allele 1 acts recessively with a genotype relative risk of 2.5. <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  </figure>
+  <p class="mm-statement">For every SNP, PLINK compares the genotype counts with the counts Hardy–Weinberg proportions predict and turns the difference into an exact-test p-value, once for everyone, once for the cases and once for the controls. A genotyping error makes every row depart; a true association can make the cases depart. Quality control therefore reads the controls and removes only SNPs with extremely small p-values.</p>
+  <ul class="mm-hooks">
+    <li><strong>What breaks Hardy–Weinberg proportions.</strong> Calling errors, deletions and duplicated sequence change the genotype counts; so do mixing populations, the disease itself in cases, and chance.</li>
+    <li><strong>One exact p-value per SNP and group.</strong> <code>--hardy</code> counts genotypes in founders and computes the exact test for ALL, AFF (cases) and UNAFF (controls).</li>
+    <li><strong>Read the distribution of p-values.</strong> When Hardy–Weinberg equilibrium holds the p-values are spread almost evenly between 0 and 1; errors add a tail of tiny values.</li>
+    <li><strong>Test in controls, filter stringently.</strong> Hundreds of thousands of tests produce small p-values by chance, and a stringent threshold removes the gross errors without removing real associations.</li>
+    <li><strong>The same code for toy and real data.</strong> The lab, the R analysis and the PennCATH commands differ only in the file prefix.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and earlier pages</div>
+  <p>Hardy–Weinberg equilibrium (HWE), how it is tested, and why real genotypes depart from it: <a href="../0-biological-foundations/allele-frequencies.html#hwe">Lecture 0 · Hardy–Weinberg equilibrium</a>, <a href="../0-biological-foundations/allele-frequencies.html#hwe-test">testing HWE</a> and <a href="../0-biological-foundations/allele-frequencies.html#wahlund">the Wahlund effect</a>. The statistics behind the test (null hypothesis, p-value, the chi-square and exact tests): <a href="frequencies-hwe.html">Frequencies &amp; HWE tests</a>. This step uses the fileset made in <a href="qc-missingness.html">step 1</a>.</p>
+</aside>
+
+<h2 id="what-it-finds">What the step finds <span class="tag core">Core</span></h2>
+<p>A SNP with two alleles, allele 1 and allele 2, has three genotypes: 11, 12 and 22. If allele 1 has frequency \(p\) and allele 2 frequency \(q = 1 - p\), and each person's two alleles are independent draws from the population's allele pool, the genotype frequencies are \(p^2\), \(2pq\) and \(q^2\). These are Hardy–Weinberg proportions, and a population whose genotypes follow them is in Hardy–Weinberg equilibrium. The assumptions behind independent draws (random mating, a large population, no selection or migration acting on the SNP) never hold exactly, but for most SNPs in a group of people with similar ancestry they hold closely enough that the observed counts sit near the predicted ones.<sup><a href="#src-9">9</a></sup> A test of HWE compares the observed genotype counts with the predicted ones; a small p-value means the observed counts would be unlikely if the proportions held.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 83 · What Hardy–Weinberg equilibrium is used for</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-083.jpg" alt="Lecture 1, slide 83, titled We can use HWE to: a list of four uses, the first two outlined in a red box. Test for genotyping errors; simplify calculations, for example in simulations. Then: test for underlying deviations from the HWE assumptions of random mating, equal allele frequencies in males and females, and no mutation, migration or selection; and test for marker–disease association in cases only for some inheritance modes, such as dominant and recessive, but with low power." loading="lazy"><figcaption>Lecture 1 · slide 83</figcaption></figure>
+    <div>
+      <p>The slide lists four uses of HWE and outlines the first two in red. This step is the first: <strong>testing for genotyping errors</strong>. The second, <strong>simplifying calculations</strong>, is what lets the widget below and every simulation draw genotypes from an allele frequency alone. The third, <strong>testing the assumptions</strong>, is the reason a departure is not automatically an error: population mixture, selection or allele frequencies that differ between males and females move correctly called genotypes away from HWE too. The fourth, <strong>a case-only association test</strong>, works because a risk allele that acts dominantly or recessively changes the genotype mix of cases; the widget shows why its power is low. That fourth use is also why QC must not test in cases.</p>
+    </div>
+  </div>
+</aside>
+
+<h3 id="causes">Why a SNP departs from Hardy–Weinberg proportions</h3>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Causes of departures, the direction they push the heterozygote count, and which rows of the report they affect</caption>
+  <thead><tr><th>Cause</th><th>Mechanism</th><th>Heterozygotes</th><th>Rows affected</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Cause">Heterozygotes miscalled</td><td data-label="Mechanism">Clusters that are poorly separated, or a batch whose signals have shifted: heterozygotes, which lie between the two homozygous clusters, are called homozygous (<a href="qc-missingness.html#what-it-finds">step 1</a> shows the same mechanism producing no-calls).</td><td data-label="Heterozygotes">too few</td><td data-label="Rows">ALL, AFF, UNAFF</td></tr>
+    <tr><td data-label="Cause">A second variant under the probe, or a deletion</td><td data-label="Mechanism">If one allele's DNA does not bind the probe (a nearby variant in the probe's sequence) or is missing (a deleted segment on one chromosome copy), a heterozygous person shows only the other allele and is called homozygous.</td><td data-label="Heterozygotes">too few</td><td data-label="Rows">ALL, AFF, UNAFF</td></tr>
+    <tr><td data-label="Cause">Duplicated sequence</td><td data-label="Mechanism">If the probe's sequence occurs at two places in the genome and the two copies differ at the SNP, the array reads both: homozygous people look heterozygous.</td><td data-label="Heterozygotes">too many</td><td data-label="Rows">ALL, AFF, UNAFF</td></tr>
+    <tr><td data-label="Cause">Mixed ancestry groups</td><td data-label="Mechanism">Pooling groups with different allele frequencies gives fewer heterozygotes than the pooled frequency predicts (the <a href="../0-biological-foundations/allele-frequencies.html#wahlund">Wahlund effect</a>), even though each group is in HWE.</td><td data-label="Heterozygotes">too few</td><td data-label="Rows">any row that pools the groups</td></tr>
+    <tr><td data-label="Cause">The disease</td><td data-label="Mechanism">Cases are selected for risk genotypes. A risk allele acting recessively enriches homozygotes, one acting dominantly enriches carriers (heterozygotes); a multiplicative effect leaves cases in HWE.</td><td data-label="Heterozygotes">either</td><td data-label="Rows">AFF, and ALL because it contains the cases</td></tr>
+    <tr><td data-label="Cause">Chance</td><td data-label="Mechanism">With hundreds of thousands of SNPs, some SNPs in HWE get small p-values (see <a href="#expected-false">how many</a>).</td><td data-label="Heterozygotes">either</td><td data-label="Rows">any</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Only the first three are errors, and they act in every row of the report. The PLINK documentation sets the expectation: "serious genotyping errors often yield extreme p-values like 1e-50", while "genuine SNP-trait associations can be expected to deviate slightly from Hardy-Weinberg equilibrium".<sup><a href="#src-2">2</a></sup> An error left in the data matters because it can differ between cases and controls (genotyped in different batches, for example) and then produce a false association, or, when it is the same in both, it weakens the test.<sup><a href="#src-4">4</a></sup></p>
+
+<div class="widget" id="w-hwe-groups">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Why QC reads the controls: HWE in ALL, AFF and UNAFF</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It computes the genotype counts of one SNP in cases and controls under a disease model and a genotyping error, and the Hardy–Weinberg exact test in each group, as PLINK's --hardy report does.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> At the start, allele 1 raises risk under a recessive model with a genotype relative risk of 2.5. With PennCATH's numbers of cases and controls, the cases (AFF) have too few heterozygotes and a p-value of about 3 × 10⁻⁶, all people (ALL) about 6 × 10⁻⁴ because they include the cases, and the controls (UNAFF) about 0.7. Switch the study size to ten times larger: AFF and ALL fall to 10⁻⁴⁹ and 10⁻²⁸, so a filter on ALL at 10⁻⁶ would delete a true association, while UNAFF stays unremarkable. Choose the multiplicative model: the cases return to HWE, yet ALL still departs, because pooling cases and controls with different allele frequencies is itself a mixture of groups. Now set the relative risk to 1 and miscall 20% of heterozygotes: every row departs, and the heterozygote shortfall in the note equals the miscall rate. Even so, the controls' p-value is only about 3 × 10⁻⁵ with 470 controls; at 10% it is about 0.04. In a study of this size, the HWE test finds gross errors only. Finally set the relative risk to 1.3, a typical GWAS effect: the case-only departure disappears into noise, which is why slide 83 calls that use of HWE low-powered. Tick "mid-p" to see PLINK's <code>midp</code> version of each p-value, which is always a little smaller.</p>
+<p id="penncath-controls">The convention rests on a general argument. At a SNP that affects the trait, a group selected for the trait, the cases, can depart from Hardy–Weinberg proportions; a group not selected for it should not, so a departure there points to the genotyping or to the mix of people rather than to the trait. In PennCATH the word &ldquo;controls&rdquo; needs care. The practical's controls are PLINK's UNAFF group, the 470 people coded 1 in column 6 of the <code>.fam</code> file. The clinical table that comes with Patrick Breheny's teaching copy of PennCATH records coronary artery disease for these 470 people as well as for the 463 coded 2, and what separates the two codes is not documented (<a href="plink-data.html#phenotype-column">what column 6 holds</a>). This page keeps the practical's word as the name of the UNAFF group, not as a description of who these people are.</p>
+
+<h2 id="statistic">The statistic: the exact test <span class="tag core">Core</span></h2>
+<p>For each SNP and each group (ALL, AFF, UNAFF), PLINK counts the genotypes among the founders. In PLINK's terms a founder is a person whose father and mother IDs, columns 3 and 4 of the <code>.fam</code> file, are both 0 (unknown); a person with a parent ID filled in is a nonfounder even if that parent is not in the fileset.<sup><a href="#src-2">2</a></sup> Counting founders only keeps a family's shared alleles from being counted twice. In PennCATH all 1,401 people are founders.<sup><a href="#src-10">10</a></sup> From the three counts come the allele frequency and the heterozygote frequencies the report prints:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \hat{p} = \frac{2n_{11} + n_{12}}{2n} \\[4pt] \hat{H}_{\mathrm{obs}} = \frac{n_{12}}{n} \qquad \hat{H}_{\mathrm{exp}} = 2\hat{p}(1 - \hat{p}) \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(n_{11}\), \(n_{12}\), \(n_{22}\)</dt><dd>Numbers of founders in the group with genotypes 11, 12 and 22 at this SNP, among those with a call. PLINK prints them as GENO, in that order (allele 1 is PLINK's A1, usually the minor allele).</dd>
+    <dt>\(n\)</dt><dd>\(n_{11} + n_{12} + n_{22}\), the number of people with a call in the group.</dd>
+    <dt>\(\hat{p}\)</dt><dd>The estimated frequency of allele 1: its copies (two per 11 homozygote, one per heterozygote) divided by the \(2n\) allele copies; between 0 and 1.</dd>
+    <dt>\(\hat{H}_{\mathrm{obs}}\)</dt><dd>The observed share of heterozygotes in the group (O(HET) in the report).</dd>
+    <dt>\(\hat{H}_{\mathrm{exp}}\)</dt><dd>The share of heterozygotes that Hardy–Weinberg proportions predict from the group's own allele frequency (E(HET) in the report); at most 0.5, reached when \(\hat{p} = 0.5\).</dd>
+  </dl>
+  <p class="eq-intuition">Both heterozygote frequencies come from the same three counts, so they can be compared directly. Take controls with 62, 158 and 250 people of genotypes 11, 12 and 22 (\(n = 470\)): \(\hat{p} = (124 + 158)/940 = 0.30\), \(\hat{H}_{\mathrm{exp}} = 2 \times 0.30 \times 0.70 = 0.42\), which predicts about 197 heterozygotes, but \(\hat{H}_{\mathrm{obs}} = 158/470 = 0.336\). These counts are what a SNP at frequency 0.30 looks like when 20% of its heterozygotes are called homozygous, half each way: the allele frequency is unchanged, and only the heterozygotes are short.</p>
+</div>
+
+<p>Is a shortfall from 197 to 158 heterozygotes more than chance? The exact test answers this without the large-sample approximation of the chi-square test, which gives misleading p-values when one allele is rare.<sup><a href="#src-5">5</a></sup> It fixes the number of people and the number of allele 1 copies at their observed values and asks how likely each possible number of heterozygotes would be if the \(2n\) allele copies were paired into people at random:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \Pr(n_{12} \mid n, n_1) = \\ \frac{2^{n_{12}}\; n!\; n_1!\; n_2!}{n_{11}!\; n_{12}!\; n_{22}!\; (2n)!} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(n_1\), \(n_2\)</dt><dd>The numbers of allele 1 and allele 2 copies in the group: \(n_1 = 2n_{11} + n_{12}\), \(n_2 = 2n_{22} + n_{12}\), with \(n_1 + n_2 = 2n\).</dd>
+    <dt>\(\Pr(n_{12} \mid n, n_1)\)</dt><dd>The probability, under Hardy–Weinberg equilibrium, of seeing exactly \(n_{12}\) heterozygotes among \(n\) people who carry \(n_1\) copies of allele 1 in total. Once \(n_{12}\) is fixed, \(n_{11} = (n_1 - n_{12})/2\) and \(n_{22} = (n_2 - n_{12})/2\) follow.</dd>
+    <dt>\(k!\)</dt><dd>The factorial \(1 \times 2 \times \dots \times k\), the number of orders of \(k\) distinct items; \(0! = 1\).</dd>
+    <dt>\(2^{n_{12}}\)</dt><dd>Each heterozygote can receive its two different alleles in two orders, and each order is a different pairing of copies.</dd>
+  </dl>
+  <p class="eq-intuition">The formula counts the ways of pairing the \(2n\) allele copies into \(n\) people that give \(n_{12}\) heterozygotes, as a share of all pairings. \(n!/(n_{11}!\,n_{12}!\,n_{22}!)\) counts the ways to give the \(n\) people their genotypes, \(2^{n_{12}}\) counts the orders within heterozygotes, and \(n_1!\,n_2!/(2n)!\) turns the count into a probability. Moving from \(n_{12}\) to \(n_{12} - 2\) heterozygotes (one 11 and one 22 person more) multiplies the probability by \(n_{12}(n_{12} - 1) / (4(n_{11} + 1)(n_{22} + 1))\); PLINK computes the whole distribution with this ratio, starting from the most likely count.<sup><a href="#src-5">5</a></sup> For the controls above (\(n = 470\), \(n_1 = 282\)) the most likely count is 198 heterozygotes, with probability 0.088; the observed 158 has probability 9.1 × 10⁻⁶.</p>
+</div>
+
+<p>The p-value adds up the probabilities of every heterozygote count that is as unlikely as the observed one or more so, on both sides of the most likely count:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \sum_{k \,:\, \Pr(k) \le \Pr(n_{12})} \Pr(k \mid n, n_1) \]</div>
+  <dl class="eq-terms">
+    <dt>\(k\)</dt><dd>A possible number of heterozygotes for the same \(n\) and \(n_1\): it has the same parity (odd or even) as \(n_1\) and runs from 0 or 1 up to the smaller of \(n_1\) and \(n_2\).</dd>
+    <dt>\(\Pr(k \mid n, n_1)\)</dt><dd>The probability of \(k\) heterozygotes from the previous formula.</dd>
+    <dt>\(\Pr(k) \le \Pr(n_{12})\)</dt><dd>The condition that selects the counts at least as unlikely as the observed \(n_{12}\).</dd>
+  </dl>
+  <p class="eq-intuition">This sum is the exact test's p-value (the P column of the report). It is two-sided: too few and too many heterozygotes both count as departures. In the example, counts of 158 or fewer contribute 1.48 × 10⁻⁵ and counts of 236 or more, which are as unlikely on the other side, contribute 1.07 × 10⁻⁵, so the p-value is 2.55 × 10⁻⁵. With <code>--hardy midp</code> or <code>--hwe … midp</code>, PLINK counts the observed probability (and any exactly equal one) only half, the mid-p value (2.09 × 10⁻⁵ here). The plain exact test rejects HWE slightly less often than its nominal rate when HWE holds; the mid-p version brings the rate close to nominal, and the PLINK documentation recommends it for filtering.<sup><a href="#src-2">2</a>,<a href="#src-6">6</a></sup></p>
+</div>
+
+<p>The report does not print the size of the departure, but O(HET) and E(HET) give it. The relative shortfall of heterozygotes is the per-SNP version of the inbreeding coefficient \(F\) that <a href="qc-heterozygosity.html">step 5</a> computes per person:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \hat{F} = 1 - \frac{\hat{H}_{\mathrm{obs}}}{\hat{H}_{\mathrm{exp}}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{F}\)</dt><dd>The share of the expected heterozygotes that are missing at this SNP, in this group: 0 when the counts match HWE, positive when heterozygotes are too few (1 when there are none), negative when they are too many.</dd>
+    <dt>\(\hat{H}_{\mathrm{obs}}\), \(\hat{H}_{\mathrm{exp}}\)</dt><dd>O(HET) and E(HET) from the report, as defined above.</dd>
+  </dl>
+  <p class="eq-intuition">For the example, \(\hat{F} = 1 - 0.336/0.42 = 0.20\): exactly the 20% of heterozygotes that were miscalled, because symmetric miscalls lower \(\hat{H}_{\mathrm{obs}}\) by that share and leave \(\hat{p}\), and so \(\hat{H}_{\mathrm{exp}}\), unchanged. The p-value measures evidence, not size: the same \(\hat{F} = 0.20\) gives 2.6 × 10⁻⁵ with 470 controls and about 10⁻⁹ with all 933 people of the widget's study. A SNP with a large \(|\hat{F}|\) but an unremarkable p-value is often a rare SNP, where even a large relative shortfall is a few people.</p>
+</div>
+<p>The toy data contain SNPs whose genotypes the simulation miscalled on purpose (<a href="practical-overview.html#toy-dataset">the toy dataset</a>), and their UNAFF rows show \(\hat{F}\) near its extremes. At the <span data-card="hwe_planted_deficit">?</span> SNPs with a heterozygote deficit (<span data-card="hwe_planted_deficit_ids">?</span>), most heterozygotes were called as the common homozygote, so O(HET) is close to 0 and \(\hat{F}\) close to 1. At the <span data-card="hwe_planted_excess">?</span> SNPs with an excess (<span data-card="hwe_planted_excess_ids">?</span>), most common homozygotes were called heterozygous, so O(HET) is far above E(HET) and \(\hat{F}\) is strongly negative. The terminal below prints their rows; compute \(\hat{F}\) from columns 7 and 8.</p>
+
+<h3 id="columns">The .hwe file, column by column</h3>
+<p><code>--hardy</code> writes <code>PREFIX.hwe</code>, a whitespace-separated text file with a header line and, for case/control data, three lines per SNP:<sup><a href="#src-3">3</a></sup></p>
+<dl class="cols-doc">
+  <dt>CHR</dt><dd>Chromosome code, from the <code>.bim</code> file.</dd>
+  <dt>SNP</dt><dd>Variant ID, from the <code>.bim</code> file.</dd>
+  <dt>TEST</dt><dd>The group: <code>ALL</code> (every founder, including people whose phenotype is missing), <code>AFF</code> (founders coded 2, &ldquo;affected&rdquo;, in the phenotype column: the cases) or <code>UNAFF</code> (founders coded 1, &ldquo;unaffected&rdquo;: the controls). With a quantitative phenotype or none there is one line per SNP, labeled <code>ALL(QT)</code> or <code>ALL(NP)</code>.</dd>
+  <dt>A1</dt><dd>Allele 1, usually the minor allele (chosen once from all founders, so it is the same in all three rows).</dd>
+  <dt>A2</dt><dd>Allele 2, usually the major allele.</dd>
+  <dt>GENO</dt><dd>\(n_{11}\)/\(n_{12}\)/\(n_{22}\): the numbers of A1 homozygotes, heterozygotes and A2 homozygotes in the group, separated by slashes.</dd>
+  <dt>O(HET)</dt><dd>Observed heterozygote frequency \(\hat{H}_{\mathrm{obs}} = n_{12}/n\).</dd>
+  <dt>E(HET)</dt><dd>Expected heterozygote frequency \(\hat{H}_{\mathrm{exp}} = 2\hat{p}(1 - \hat{p})\), from the same group's counts.</dd>
+  <dt>P</dt><dd>The exact test's p-value (the mid-p value with <code>--hardy midp</code>), printed with four significant digits. A SNP with no calls in the group gets <code>nan</code> for O(HET) and E(HET) and a P of 1.</dd>
+</dl>
+<p>Three lines per SNP means that <code>wc -l</code> on the file counts every SNP three times (plus the header); select one group with <code>grep UNAFF</code> or <code>awk '$3 == "UNAFF"'</code> before counting. On the X chromosome PLINK uses females only, because males carry one X.<sup><a href="#src-2">2</a></sup></p>
+
+<h2 id="run-it">Run it in the browser <span class="tag core">Core</span></h2>
+<p>The practical runs <code>--hardy</code> on the fileset that step 1 produced, so the test sees only SNPs and people that passed the missingness filters:</p>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="3">--hardy</span> <span class="part" data-n="4">--out ${analysis_dir}/toy.geno0.01.mind0.01</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code> — PLINK 1.9 (in the lab, its emulator).</li>
+    <li><code>--bfile …toy.geno0.01.mind0.01</code> — the fileset written by step 1, after <code>--geno 0.01</code> and <code>--mind 0.01</code>.</li>
+    <li><code>--hardy</code> — write the Hardy–Weinberg report <code>.hwe</code> for every SNP: founders only, three rows per SNP for case/control data. It removes nothing. Modifiers: <code>midp</code> (mid-p values) and <code>gz</code> (compressed output). Unlike PLINK 1.07, PLINK 1.9 does not filter at 0.001 when <code>--hardy</code> is given.<sup><a href="#src-3">3</a></sup></li>
+    <li><code>--out …toy.geno0.01.mind0.01</code> — the prefix: the report is <code>toy.geno0.01.mind0.01.hwe</code>, next to the fileset it describes.</li>
+  </ol>
+</div>
+<p>The new line in the console is "--hardy: Writing Hardy-Weinberg report (founders only) to ….hwe ... done." The "(founders only)" is a reminder of who is counted.</p>
+<p>Run it in the terminal below: <strong>Run next</strong> runs the suggested commands one at a time, and a click on a suggestion puts it on the command line. The terminal's setup has already run step 1 on the toy data (the note above it lists the two commands), so the input fileset exists even if you opened this page first.</p>
+<div class="lab" id="lab-hardy" data-title="Step 2 · Hardy–Weinberg report for the toy data">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="lab-script">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --hardy --out ${analysis_dir}/toy.geno0.01.mind0.01
+head ${analysis_dir}/toy.geno0.01.mind0.01.hwe
+grep UNAFF ${analysis_dir}/toy.geno0.01.mind0.01.hwe | sort -g -k9 | head
+awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-8' ${analysis_dir}/toy.geno0.01.mind0.01.hwe | wc -l
+awk '$3 == "AFF" &amp;&amp; $9 &lt; 1e-8' ${analysis_dir}/toy.geno0.01.mind0.01.hwe | wc -l
+awk '$3 == "ALL" &amp;&amp; $9 &lt; 1e-8' ${analysis_dir}/toy.geno0.01.mind0.01.hwe | wc -l
+awk 'NR == FNR { if ($3 == "UNAFF" &amp;&amp; $9 &lt; 1e-8) bad[$2]; next } $2 in bad' ${analysis_dir}/toy.geno0.01.mind0.01.hwe ${analysis_dir}/toy.geno0.01.mind0.01.hwe
+awk 'NR == FNR { if ($3 == "UNAFF" &amp;&amp; $9 &lt; 1e-8) bad[$2]; next } $9 &lt; 1e-8 &amp;&amp; !($2 in bad)' ${analysis_dir}/toy.geno0.01.mind0.01.hwe ${analysis_dir}/toy.geno0.01.mind0.01.hwe</pre>
+</div>
+<p>Then read the report the way an analyst would:</p>
+<ul>
+  <li><code class="wrap">grep UNAFF ${analysis_dir}/toy.geno0.01.mind0.01.hwe | sort -g -k9 | head</code> keeps the controls' rows and sorts them by column 9, P, as general numbers (<code>-g</code> reads values such as <code>3.2e-12</code>), so the most extreme SNPs come first.</li>
+  <li><code class="wrap">awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-8' ${analysis_dir}/toy.geno0.01.mind0.01.hwe | wc -l</code> answers the practical's question, how many SNPs have an HWE p-value below 10⁻⁸ in the controls.</li>
+  <li>For each extreme SNP, compare O(HET) (column 7) with E(HET) (column 8): below means too few heterozygotes, above means too many. Then compare its three rows: <code>grep -w</code> with the SNP's ID prints all three. An error shows in every row; a departure in AFF alone points to the disease.</li>
+  <li>The last two commands do this for all extreme SNPs at once. Each reads the report twice: on the first pass (<code>NR == FNR</code>, as on the <a href="qc-missingness.html#real-data">step 1 page</a>) it stores the IDs of the SNPs below 10⁻⁸ in the controls as keys of the array <code>bad</code>. On the second pass, the first command prints all three rows of those SNPs, and the second prints the rows below 10⁻⁸ of every other SNP.</li>
+</ul>
+<p>In the toy data, <span data-card="hwe_unaff_p_lt_1e8">?</span> SNPs have a UNAFF p-value below 10⁻⁸, and they are exactly the planted calling errors: the heterozygote deficits <span data-card="hwe_planted_deficit_ids">?</span> and the excesses <span data-card="hwe_planted_excess_ids">?</span>. Each of them departs in all three rows, as an error should. In the AFF rows <span data-card="hwe_aff_p_lt_1e8">?</span> SNPs are below 10⁻⁸, and in the ALL rows <span data-card="hwe_all_p_lt_1e8">?</span>: the same SNPs and <span data-card="sim_causal_snp">?</span>, the SNP that the simulation made causal for the disease, whose two rows the last command prints. Its p-value is <span data-card="hwe_causal_aff_p">?</span> in the cases and <span data-card="hwe_causal_all_p">?</span> in everyone, but <span data-card="hwe_causal_unaff_p">?</span> in the controls: the cases are enriched for people with two copies of the risk allele, which in the cases looks like a shortage of heterozygotes, while the controls are in equilibrium.</p>
+
+<h2 id="distribution">Look at the distribution <span class="tag core">Core</span></h2>
+<p>If every SNP were in HWE, the p-values of a continuous test would be spread evenly between 0 and 1: 10% of SNPs below 0.1, 1% below 0.01, one in a million below 10⁻⁶. The exact test is discrete, so its p-values come in steps, and whenever the observed heterozygote count is the most likely count for that SNP, the p-value is exactly 1. The fewer counts are plausible, the more often that happens: for a SNP whose rare allele is carried by only a few people, and for any SNP in a small group. The practical's histogram of the controls' p-values therefore shows a nearly flat floor, a tall bar at 1, and, if there are errors, a pile-up near 0. A histogram cannot show how extreme the smallest values are; for that, plot \(-\log_{10}\) of each p-value against the value expected for its rank under HWE, a quantile–quantile (Q–Q) plot (<a href="../0-biological-foundations/the-data.html#qq">Lecture 0 · QQ plots</a>). Points on the diagonal match chance; points that rise above it at the right end are the SNPs that chance does not explain.</p>
+<div class="widget" id="w-hwe-qq">
+  <div class="widget-head"><span class="badge">Interactive</span><span class="wtitle">The toy data's Hardy–Weinberg p-values: controls against everyone</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It reads toy.geno0.01.mind0.01.hwe from the in-browser lab and draws a Q–Q plot of its p-values for the UNAFF, ALL and AFF rows, with a threshold line.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to look for.</strong> The widget reads the <code>.hwe</code> file that the terminal wrote (or press its button). In the Q–Q plot each point is one SNP in one row of the report; the controls' points should lie on the diagonal until the last few, and the SNPs that rise far above it are the departures. Points that rise in ALL and AFF but not in UNAFF are SNPs whose departure comes from the cases. Move the threshold to see how many SNPs each row would lose, and switch to the histogram to see the practical's plot of the controls' p-values, with its bar at 1.</p>
+<p>In the toy data the controls' points follow the diagonal until the last <span data-card="hwe_unaff_p_lt_1e8">?</span>, which sit far above it: the planted errors. ALL and AFF show the same SNPs and, far above the diagonal too, the causal SNP <span data-card="sim_causal_snp">?</span>. Tick <strong>Mark the planted SNPs</strong> to check, and to see their p-values in all three rows. Then move the threshold to 10⁻³: the controls' count rises from <span data-card="hwe_unaff_p_lt_1e8">?</span> to <span data-card="hwe_unaff_p_lt_1e3">?</span>. Any SNP added is an ordinary one: at 10⁻³, chance alone can put SNPs of a study this size below the line (next section). In the histogram, the bar at 1 holds common SNPs as well as rare ones, because the toy data have only <span data-card="qc_controls">?</span> controls.</p>
+
+<h3 id="expected-false">How many small p-values chance alone produces</h3>
+<div class="eq-block">
+  <div class="eq-display">\[ \E[N_t] \le M\,t \]</div>
+  <dl class="eq-terms">
+    <dt>\(t\)</dt><dd>A p-value threshold, such as 10⁻⁶.</dd>
+    <dt>\(M\)</dt><dd>The number of SNPs tested.</dd>
+    <dt>\(N_t\)</dt><dd>The number of SNPs whose p-value falls below \(t\) when every SNP is in Hardy–Weinberg equilibrium.</dd>
+    <dt>\(\E[N_t]\)</dt><dd>The expected (average) value of \(N_t\) over repeated samples.</dd>
+  </dl>
+  <p class="eq-intuition">When HWE holds, each SNP's p-value falls below \(t\) with probability \(t\) for a continuous test and at most \(t\) for the exact test, so on average at most \(Mt\) SNPs cross the threshold by chance. PennCATH has at most 861,473 SNPs: about 861 cross 10⁻³, 0.86 cross 10⁻⁶ and 0.009 cross 10⁻⁸. A threshold of 10⁻³ would therefore remove several hundred well-genotyped SNPs, while at 10⁻⁶ or below almost every SNP removed has a real departure, error or biology.</p>
+</div>
+
+<h2 id="threshold">Choose a threshold and act <span class="tag core">Core</span></h2>
+<p>The practical counts the controls' SNPs below 10⁻⁸, applies no filter, and leaves the choice to the exercise: "a higher cutoff (e.g., 1e-3) is more aggressive and removes more markers, while a lower cutoff (e.g., 1e-6) is more permissive and retains more".<sup><a href="#src-1">1</a></sup> Published protocols filter in controls with thresholds from 10⁻⁵ to 10⁻¹²:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Hardy–Weinberg thresholds in the practical and in published protocols</caption>
+  <thead><tr><th>Source</th><th>Group tested</th><th>Remove SNPs with an exact-test p-value below</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Source">Session 1 practical<sup><a href="#src-1">1</a></sup></td><td data-label="Group">controls (UNAFF)</td><td data-label="Threshold">counts below 10⁻⁸; the filter is left to the exercise</td></tr>
+    <tr><td data-label="Source">Anderson et al. 2010<sup><a href="#src-4">4</a></sup></td><td data-label="Group">controls</td><td data-label="Threshold">10⁻⁵ (<code>--hwe 0.00001</code>)</td></tr>
+    <tr><td data-label="Source">Marees et al. 2018<sup><a href="#src-7">7</a></sup></td><td data-label="Group">controls; cases</td><td data-label="Threshold">10⁻⁶ in controls, then 10⁻¹⁰ in cases; 10⁻⁶ for a quantitative trait</td></tr>
+    <tr><td data-label="Source">UK Biobank (Bycroft et al. 2018)<sup><a href="#src-8">8</a></sup></td><td data-label="Group">each genotyping batch</td><td data-label="Threshold">10⁻¹², setting the SNP's calls in that batch to missing</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Three arguments narrow the choice. <strong>Chance</strong>: at \(t\), about \(Mt\) good SNPs go (above). <strong>Sample size</strong>: the p-value of a given departure shrinks as the number of people grows, so a fixed threshold is stricter in a large study; UK Biobank's 10⁻¹² across hundreds of thousands of people is no more lenient than 10⁻⁶ in a few thousand. <strong>Biology</strong>: real associations depart slightly, so the threshold should be far below the p-values that a true effect can produce in controls. The PLINK documentation recommends "a low threshold", because serious errors give extreme p-values that any reasonable threshold catches.<sup><a href="#src-2">2</a></sup></p>
+
+<h3 id="hwe-flag">The --hwe filter</h3>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="3">--hwe 1e-6 midp</span> <span class="part" data-n="4">--make-bed</span> <span class="part" data-n="5">--out ${analysis_dir}/toy.geno0.01.mind0.01.hwe1e-6</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code> — as before.</li>
+    <li><code>--bfile …</code> — the fileset after step 1.</li>
+    <li><code>--hwe 1e-6 midp</code> — remove every SNP whose exact-test p-value is below 10⁻⁶ (here the mid-p value). For case/control data PLINK tests the controls only: "cases and missing phenotypes are normally ignored"; the modifier <code>include-nonctrl</code> tests all founders instead.<sup><a href="#src-2">2</a></sup> The number is required; there is no default threshold.</li>
+    <li><code>--make-bed</code> — write the remaining SNPs as a new fileset; without it the filter changes nothing on disk.</li>
+    <li><code>--out …hwe1e-6</code> — a name that records the threshold.</li>
+  </ol>
+</div>
+<p>The log then says "--hwe: <em>N</em> variants removed due to Hardy-Weinberg exact test." Two more lines can appear. "Warning: --hwe observation counts vary by more than 10%" means that the SNPs were tested on very different numbers of people, usually because of missing calls; a SNP with many missing calls gets a less extreme p-value for the same departure, so one threshold treats SNPs unequally. After step 1's <code>--geno 0.01</code> every SNP is called in at least 99% of people, so the warning should not appear. On the X chromosome only females are tested, which triggers a second version of the warning in data with many males.<sup><a href="#src-2">2</a></sup> In PLINK's fixed order of operations <code>--hwe</code> runs after <code>--mind</code> and <code>--geno</code> and before <code>--maf</code>, so a single command with all of them tests HWE on the data the missingness filters leave (<a href="tools.html#plink-order">order of operations</a>).</p>
+<p>Try the filter on the toy data, with the default (controls only) and with <code>include-nonctrl</code>, and compare the two log lines:</p>
+<div class="lab" id="lab-hwe-filter" data-title="Step 2 · the --hwe filter: controls only, then everyone">
+<pre class="lab-script">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --hwe 1e-6 midp --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.hwe1e-6
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --hwe 1e-6 midp include-nonctrl --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.hwe1e-6all
+grep "Hardy-Weinberg" ${analysis_dir}/toy.geno0.01.mind0.01.hwe1e-6.log ${analysis_dir}/toy.geno0.01.mind0.01.hwe1e-6all.log
+wc -l ${analysis_dir}/toy.geno0.01.mind0.01.bim ${analysis_dir}/toy.geno0.01.mind0.01.hwe1e-6.bim ${analysis_dir}/toy.geno0.01.mind0.01.hwe1e-6all.bim</pre>
+</div>
+<p>On the toy data the default removes <span data-card="hwe_planted">?</span> SNPs, the planted errors. <code>include-nonctrl</code> removes the same SNPs and also the causal SNP <span data-card="sim_causal_snp">?</span>: testing everyone would delete the toy data's real association before the association analysis could find it.</p>
+
+<h3 id="ancestry">Several ancestry groups in one study</h3>
+<p>The practical's discussion question points to a second reason for a departure: "in datasets with multiple ancestries, apparent HWE violations can also reflect population stratification rather than genotyping error".<sup><a href="#src-1">1</a></sup> Population stratification here means that the study combines groups of people whose allele frequencies differ because of their genetic ancestry. Each group can be in HWE while the pooled controls are not (the Wahlund effect), and the departure is largest at SNPs whose frequencies differ most between groups, which are exactly the SNPs that later separate the groups in a PCA (<a href="qc-pca.html">step 6</a>). Filtering the pooled data would remove informative, correctly called SNPs. Options, in the order pipelines usually take them: run the test separately within groups of similar genetic ancestry (<code>--keep</code> a list of the group's IDs, from <a href="qc-reference-pca.html">step 7</a> or <a href="qc-grafanc.html">step 8</a>) and remove a SNP only if it fails in a group, or in several; or use a more lenient threshold on the pooled data. Ancestry groups defined from genotypes are relative to a reference panel and are not race or ethnicity (<a href="../0-biological-foundations/ancestry.html#descriptors">Lecture 0 · population descriptors</a>).</p>
+<h3 id="removed-flagged">Removed, flagged and recorded</h3>
+<p><code>--hwe</code> removes SNPs; it writes no list of them. As in step 1, the list is the difference between the input and output <code>.bim</code> files, or the SNPs below the threshold in the <code>.hwe</code> report: <code class="wrap">awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-6 { print $2 }' FILE.hwe &gt; hwe_fail.txt</code> (without <code>midp</code>; with it, run <code>--hardy midp</code> first). Many analysts keep such SNPs in a list and check them after the association analysis instead: a SNP removed for an HWE departure in controls cannot become a GWAS hit, and one that is a hit and departs in cases only is a reason to look closer, not to delete. The practical applies no HWE filter before step 3, so steps 3–8 use all SNPs that passed step 1.<sup><a href="#src-1">1</a></sup></p>
+<h2 id="in-r">In R <span class="tag core">Core</span></h2>
+<p>The practical reads the report, keeps the controls' rows, draws a histogram of their p-values and counts those below 10⁻⁸. This version adds a Q–Q plot and a comparison of the three rows for the most extreme SNPs.</p>
+<span class="code-label r">r</span>
+<pre class="code"><span class="kw">library</span>(data.table)
+<span class="kw">library</span>(dplyr)
+<span class="kw">library</span>(ggplot2)
+
+analysis_dir &lt;- Sys.getenv(<span class="str">"analysis_dir"</span>)
+hwe &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.hwe"</span>))
+hwe %&gt;% count(TEST)                       <span class="cm"># the same number of SNPs in ALL, AFF and UNAFF</span>
+
+unaff &lt;- hwe %&gt;% filter(TEST == <span class="str">"UNAFF"</span>)
+
+<span class="cm"># The practical's histogram and count</span>
+ggplot(unaff, aes(x = P)) +
+  geom_histogram(bins = 50) +
+  labs(title = <span class="str">"Hardy-Weinberg equilibrium exact test p-values (controls)"</span>, x = <span class="str">"P"</span>, y = <span class="str">"SNPs"</span>) +
+  theme_classic()
+unaff %&gt;% count(below_1e8 = P &lt; 1e-8)
+
+<span class="cm"># Size and direction of each departure: F = 1 - O(HET)/E(HET)</span>
+unaff &lt;- unaff %&gt;% mutate(F = 1 - `O(HET)` / `E(HET)`)
+unaff %&gt;% arrange(P) %&gt;% select(SNP, GENO, `O(HET)`, `E(HET)`, F, P) %&gt;% head(10)
+
+<span class="cm"># Q-Q plot: observed -log10(P) against the values expected for each rank under HWE</span>
+qq &lt;- unaff %&gt;%
+  arrange(P) %&gt;%
+  mutate(expected = -log10(ppoints(n())), observed = -log10(P))
+ggplot(qq, aes(x = expected, y = observed)) +
+  geom_point(size = 0.8) +
+  geom_abline(slope = 1, intercept = 0, linetype = <span class="str">"dashed"</span>) +
+  labs(x = <span class="str">"expected -log10(P)"</span>, y = <span class="str">"observed -log10(P)"</span>) +
+  theme_classic()
+
+<span class="cm"># The three rows of the 10 most extreme SNPs in controls, side by side</span>
+top &lt;- unaff %&gt;% arrange(P) %&gt;% head(10) %&gt;% pull(SNP)
+hwe %&gt;% filter(SNP %in% top) %&gt;% select(SNP, TEST, GENO, P) %&gt;% arrange(SNP, TEST)</pre>
+<p>New functions on this page, with the pandas equivalent:</p>
+<dl class="cols-doc">
+  <dt><code>filter(cond)</code></dt><dd>Keeps the rows where the condition is TRUE, like <code>df[df.TEST == "UNAFF"]</code> or <code>df.query(...)</code>.</dd>
+  <dt><code>`O(HET)`</code></dt><dd>Backticks let R use a column name that is not a valid variable name (here because of the parentheses), like <code>df["O(HET)"]</code>.</dd>
+  <dt><code>select(...)</code>, <code>pull(col)</code></dt><dd>Keep the listed columns (<code>df[[...]]</code>); extract one column as a vector (<code>df[col].to_numpy()</code>).</dd>
+  <dt><code>n()</code>, <code>ppoints(n)</code></dt><dd><code>n()</code> is the number of rows inside a dplyr verb. <code>ppoints(n)</code> gives \(n\) evenly spaced probabilities, \((i - 0.5)/n\) for \(i = 1, \dots, n\) when \(n &gt; 10\): the expected quantiles of \(n\) uniform p-values, sorted.</dd>
+  <dt><code>%in%</code></dt><dd>Element-wise membership, like <code>df.SNP.isin(top)</code>.</dd>
+  <dt><code>geom_point</code>, <code>geom_abline</code></dt><dd>A scatter layer; a straight line with a given slope and intercept (here the diagonal).</dd>
+</dl>
+<p>The same analysis runs in the browser on the toy report. The code loads dplyr and ggplot2 instead of the whole <code>tidyverse</code> bundle, which would be a much larger download for the browser's R, and <code>analysis_dir</code> is already defined there.</p>
+<div class="rlab" id="r-hwe" data-title="Step 2 in R · the toy Hardy–Weinberg report" data-packages="data.table,dplyr,ggplot2">
+<pre class="lab-setup">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --hardy --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="rlab-code">library(data.table)
+library(dplyr)
+library(ggplot2)
+
+hwe &lt;- fread(file.path(analysis_dir, "toy.geno0.01.mind0.01.hwe"))
+hwe %&gt;% count(TEST)
+unaff &lt;- hwe %&gt;% filter(TEST == "UNAFF")
+
+# The practical's histogram and count
+ggplot(unaff, aes(x = P)) +
+  geom_histogram(bins = 50) +
+  labs(title = "HWE exact test p-values (toy controls)", x = "P", y = "SNPs") +
+  theme_classic()
+unaff %&gt;% count(below_1e8 = P &lt; 1e-8)
+
+# Size and direction of each departure
+unaff &lt;- unaff %&gt;% mutate(F = 1 - `O(HET)` / `E(HET)`)
+unaff %&gt;% arrange(P) %&gt;% select(SNP, GENO, `O(HET)`, `E(HET)`, F, P) %&gt;% head(10)
+
+# Q-Q plot
+qq &lt;- unaff %&gt;% arrange(P) %&gt;% mutate(expected = -log10(ppoints(n())), observed = -log10(P))
+ggplot(qq, aes(x = expected, y = observed)) +
+  geom_point(size = 0.8) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+  labs(x = "expected -log10(P)", y = "observed -log10(P)") +
+  theme_classic()
+
+# The three rows of the 10 most extreme SNPs in controls
+top &lt;- unaff %&gt;% arrange(P) %&gt;% head(10) %&gt;% pull(SNP)
+hwe %&gt;% filter(SNP %in% top) %&gt;% select(SNP, TEST, GENO, P) %&gt;% arrange(SNP, TEST)</pre>
+</div>
+
+<h2 id="real-data">On your own computer: the real data <span class="tag core">Core</span></h2>
+<p>After step 1 on your own computer, the practical's command for PennCATH is:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --hardy --out ${analysis_dir}/penncath.geno0.01.mind0.01
+<span class="prompt">$ </span>grep UNAFF ${analysis_dir}/penncath.geno0.01.mind0.01.hwe | sort -g -k9 | head -n 20
+<span class="prompt">$ </span>awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-8' ${analysis_dir}/penncath.geno0.01.mind0.01.hwe | wc -l</pre>
+<p>and, for the exercise, a filtered fileset at the threshold you choose (here 10⁻⁶):</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --hwe 1e-6 midp --make-bed --out ${analysis_dir}/penncath.geno0.01.mind0.01.hwe1e-6</pre>
+<p>What to look at in the real output:</p>
+<ul>
+  <li><strong>Who is in each row.</strong> PennCATH started with 463 cases, 470 controls and 468 people with a missing phenotype (codes 2, 1 and −9; see <a href="#penncath-controls">what the codes mean in this copy</a>).<sup><a href="#src-10">10</a></sup> Step 1 removed 21 people, so the ALL rows count up to 1,380 founders, the AFF rows at most 463 and the UNAFF rows at most 470. The QC test therefore rests on at most 470 controls: as the widget shows, a sample of that size detects gross errors but not subtle ones.</li>
+  <li><strong>The counts.</strong> Real PLINK 1.9.0's <code>--hardy</code> reports 1,380 founders and 0 nonfounders: 455 cases, 463 controls and 462 people with a missing phenotype (<a href="qc-missingness.html#real-data">step 1's numbers</a>). Of the 569,723 SNPs, 162 have a p-value below 10⁻⁸ in the UNAFF rows, 157 in the AFF rows and 407 in the ALL rows; below 10⁻⁶ the counts are 212, 205 and 602. On average, chance alone puts fewer than one SNP per group below 10⁻⁶ (<a href="#expected-false">how many small p-values chance produces</a>), so almost all of these SNPs have a real departure, error or biology. The ALL rows count every founder, about three times as many people as either group, so the same departure reaches a smaller p-value there.</li>
+  <li><strong>The extreme SNPs.</strong> Sort the controls by P. For the most extreme ones, is it a shortfall or an excess of heterozygotes (O(HET) against E(HET))? Do the AFF and ALL rows depart as well, as an error would make them?</li>
+  <li><strong>The histogram and the Q–Q plot.</strong> A flat floor, a bar at 1 and a few extreme values are expected. The bar at 1 includes the SNPs that are monomorphic, carrying one allele only: <a href="plink-data.html#a1-a2">the data page</a> counts 26,153 in the input <code>.bim</code> file, where PennCATH writes −9 as the missing allele's name. With one allele there is only one possible set of genotype counts, so the exact test returns 1 (0.5 with <code>midp</code>). A Q–Q plot that leaves the diagonal early, across many SNPs, would point to structure in the controls rather than to a few bad SNPs.</li>
+  <li><strong>The --hwe log line.</strong> How many SNPs a 10⁻⁶ filter removes, compared with the \(Mt \approx 0.86\) expected by chance. With <code>midp</code> it removes at least the SNPs whose UNAFF p-value in the report is below 10⁻⁶, because a mid-p value is smaller than the report's p-value for the same SNP. Real PLINK 1.9.0 removes 218 SNPs.</li>
+</ul>
+<p>How the real data differ from the toy data. The real file has three rows for each SNP that passed step 1, so it is several times longer than the <code>.lmiss</code> file; sort and count it with the shell or R, not a spreadsheet. The practical reports that GrafAnc (<a href="qc-grafanc.html">step 8</a>) assigns more than 99% of PennCATH people to its European (EUR) continental group and a small number to its Middle East and North Africa (MEN) group,<sup><a href="#src-1">1</a></sup> so departures caused by pooling very different ancestry groups should be rarer than in a multi-ancestry study. The toy study is similar: <span data-card="sim_european_like">?</span> of its <span data-card="study_people">?</span> people were simulated as European-like (<a href="practical-overview.html#toy-dataset">the toy dataset</a>). The toy data's failing SNPs were planted with known causes; in the real data the cause of a departure has to be inferred from its direction and from which rows show it, and you will not know for certain.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Mistakes that are easy to make in this step</div>
+  <ul>
+    <li><strong>Reading the wrong row.</strong> The first row of each SNP is ALL. Filter on <code>TEST == "UNAFF"</code> for QC; a filter on ALL or AFF can delete true associations.</li>
+    <li><strong>Getting the direction of the threshold backwards.</strong> <code>--hwe 1e-3</code> removes more SNPs than <code>--hwe 1e-6</code>: a larger threshold catches more p-values.</li>
+    <li><strong>Counting lines instead of SNPs.</strong> <code>wc -l</code> on the <code>.hwe</code> file counts each SNP three times, plus the header.</li>
+    <li><strong>Testing a mixture.</strong> Controls of several ancestries depart from HWE at SNPs whose allele frequencies differ between the groups. Test within groups of similar ancestry, or choose a lenient threshold.</li>
+    <li><strong>Reading P = 1 as proof of quality.</strong> A rare SNP often has P = 1 because few heterozygote counts are possible; the test has little power there. A monomorphic SNP (one allele only) also gets 1.</li>
+    <li><strong>Expecting <code>--hardy</code> to filter.</strong> In PLINK 1.9 it only reports; PLINK 1.07 removed SNPs below 0.001 automatically. Use <code>--hwe</code> with <code>--make-bed</code> to remove.</li>
+    <li><strong>Testing before the missingness filters.</strong> SNPs with many missing calls are tested on fewer people and get less extreme p-values; run step 1 first, as the practical does.</li>
+  </ul>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>Under Hardy–Weinberg equilibrium the genotype counts follow from the allele frequency: \(p^2\), \(2pq\), \(q^2\). Calling errors, deletions, duplicated sequence, population mixture, the disease and chance move them away.</li>
+    <li><code>plink --hardy</code> writes, for every SNP, the genotype counts (GENO), O(HET), E(HET) and the exact test's p-value, in three rows for case/control data: ALL (all founders), AFF (cases), UNAFF (controls).</li>
+    <li>The exact test fixes the number of people and allele copies and sums the probabilities of all heterozygote counts as unlikely as the observed one; the mid-p version counts the observed probability half.</li>
+    <li>QC reads UNAFF, because a true association can make cases (and ALL) depart. <code>--hwe</code> tests controls only by default (<code>include-nonctrl</code> changes that).</li>
+    <li>With \(M\) SNPs, about \(Mt\) cross a threshold \(t\) by chance: thresholds of 10⁻⁵ to 10⁻¹⁰ in controls keep the chance losses below one SNP or a few, and still catch gross errors.</li>
+    <li>The practical counts SNPs below 10⁻⁸ in controls and leaves the filter to the exercise; with several ancestry groups, test within groups.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A SNP's controls have GENO 10/120/340. Compute \(\hat{p}\), O(HET), E(HET) and \(\hat{F}\). Too few or too many heterozygotes?</summary><div class="a"><p>\(n = 470\) and \(n_1 = 2 \times 10 + 120 = 140\) copies of allele 1, so \(\hat{p} = 140/940 = 0.149\). O(HET) \(= 120/470 = 0.255\); E(HET) \(= 2 \times 0.149 \times 0.851 = 0.254\); \(\hat{F} = 1 - 0.255/0.254 \approx -0.006\). The counts match Hardy–Weinberg proportions almost exactly (the expected numbers are about 10.4, 119.2 and 340.4), so the exact test's p-value is close to 1.</p></div></details>
+  <details class="q"><summary>Why does PLINK's <code>--hwe</code> test only the controls in a case–control study, and when would you use <code>include-nonctrl</code>?</summary><div class="a"><p>Cases are selected for the disease, so if a SNP affects risk, the cases' genotype mix shifts. Under a recessive or dominant model the cases then depart from HWE, and ALL, which contains the cases, departs too; a filter on those rows could remove the very SNPs the study is looking for. Controls of a rare disease are close to a random sample of the population, so a departure there points to an error or to population structure. <code>include-nonctrl</code> tests all founders, which suits data without a case/control phenotype (where there are no controls to test) or a deliberate choice to test everyone, accepting the risk.</p></div></details>
+  <details class="q"><summary>With 861,473 SNPs all in Hardy–Weinberg equilibrium, about how many would a filter at 10⁻³ remove, and at 10⁻⁸?</summary><div class="a"><p>At most \(Mt\): \(861{,}473 \times 10^{-3} \approx 861\) SNPs at 10⁻³ and \(861{,}473 \times 10^{-8} \approx 0.009\) at 10⁻⁸ (so almost certainly none). The exact test is slightly conservative, so the real numbers are a little lower. This is the cost side of the practical's remark that 10⁻³ is "more aggressive": hundreds of well-genotyped SNPs would go.</p></div></details>
+  <details class="q"><summary>Run it in the lab: how many toy SNPs have an HWE p-value below 10⁻⁸ in the controls, and how many in the cases? Explain the difference.</summary><div class="a"><p>Run <code class="wrap">awk '$3 == "UNAFF" &amp;&amp; $9 &lt; 1e-8' ${analysis_dir}/toy.geno0.01.mind0.01.hwe | wc -l</code> and the same with <code>"AFF"</code>: the controls have <span data-card="hwe_unaff_p_lt_1e8">?</span> such SNPs and the cases <span data-card="hwe_aff_p_lt_1e8">?</span>. The SNPs that appear in both lists are candidates for genotyping errors, which affect everyone; in the toy data they are the planted errors. A SNP that appears only in AFF has a departure created by the disease: here it is <span data-card="sim_causal_snp">?</span>, the SNP the simulation made causal. Print its three rows with <code>grep -w</code> and its ID to check that only AFF and ALL depart.</p></div></details>
+  <details class="q"><summary>Run it in the lab: among the controls' 10 most extreme SNPs, which have too few heterozygotes and which too many? What could cause each?</summary><div class="a"><p>Run <code class="wrap">grep UNAFF ${analysis_dir}/toy.geno0.01.mind0.01.hwe | sort -g -k9 | head</code> and compare column 7, O(HET), with column 8, E(HET). Too few heterozygotes (O(HET) &lt; E(HET)) fits heterozygotes miscalled as homozygotes, a variant under the probe, a deletion, or a mixture of ancestry groups. Too many (O(HET) &gt; E(HET)) fits a probe that reads two copies of a duplicated sequence. In the toy data the deficits <span data-card="hwe_planted_deficit_ids">?</span> were planted as heterozygotes miscalled as the common homozygote, and the excesses <span data-card="hwe_planted_excess_ids">?</span> as a probe that also binds a second place in the genome, one that always carries the minor allele; the other SNPs among the 10 have p-values that chance explains.</p></div></details>
+  <details class="q"><summary>A SNP has 20% of its heterozygotes miscalled in every person. With 470 controls its p-value is about 3 × 10⁻⁵. Would <code>--hwe 1e-6</code> remove it? What does this say about the test?</summary><div class="a"><p>No: 3 × 10⁻⁵ is above 10⁻⁶, so the SNP stays. The departure is large (\(\hat{F} = 0.20\)), but 470 people do not give strong evidence for it. The HWE filter in a study of this size removes only gross errors (the PLINK documentation's example is a p-value of 10⁻⁵⁰); moderate error rates pass. Other checks, such as missingness patterns, cluster plots and comparisons with external allele frequencies, are needed to find them.</p></div></details>
+  <details class="q"><summary>Why can ALL depart from Hardy–Weinberg proportions even when cases and controls are each in equilibrium?</summary><div class="a"><p>If allele 1's frequency differs between cases and controls (as it does at an associated SNP, even under a multiplicative model that keeps both groups in HWE), the ALL row pools two groups with different frequencies. A pooled sample of groups with different allele frequencies has fewer heterozygotes than its pooled frequency predicts: the Wahlund effect. The widget's multiplicative model shows it: AFF and UNAFF have p-values near 1, while ALL in the larger study has about 2 × 10⁻⁶.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/filter#hwe" target="_blank" rel="noopener">PLINK 1.9: --hwe</a> <span class="src">· PLINK documentation</span> <span class="level intermediate">intermediate</span> — the filter, its modifiers, and the advice on thresholds and on SNPs with missing data.</li>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/basic_stats#hardy" target="_blank" rel="noopener">PLINK 1.9: --hardy</a> and <a href="https://www.cog-genomics.org/plink/1.9/formats#hwe" target="_blank" rel="noopener">the .hwe format</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — the report and its columns.</li>
+    <li><a href="https://doi.org/10.1086/429864" target="_blank" rel="noopener">Wigginton, Cutler &amp; Abecasis 2005, A note on exact tests of Hardy-Weinberg equilibrium</a> <span class="src">· Am J Hum Genet</span> <span class="level advanced">advanced</span> — the algorithm PLINK uses, and why the chi-square test misleads for rare alleles.</li>
+    <li><a href="https://doi.org/10.1515/sagmb-2012-0039" target="_blank" rel="noopener">Graffelman &amp; Moreno 2013, The mid p-value in exact tests for Hardy-Weinberg equilibrium</a> <span class="src">· Stat Appl Genet Mol Biol</span> <span class="level advanced">advanced</span> — why the mid-p version has a type I error rate closer to nominal.</li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Anderson et al. 2010, Data quality control in genetic case-control association studies</a> <span class="src">· Nature Protocols</span> <span class="level intermediate">intermediate</span> — HWE in the context of a full QC protocol, with commands.</li>
+    <li><a href="../0-biological-foundations/allele-frequencies.html#hwe-test">Lecture 0 · Testing HWE</a> <span class="src">· this site</span> <span class="level intro">intro</span> — an interactive Hardy–Weinberg explorer with the chi-square and exact tests side by side.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">DCEG Statistical Genetics Workshop. Session 1 practical: Introduction to GWAS quality control (<code>01_qc.Rmd</code>), QC step 2 and the exercise. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1" target="_blank" rel="noopener">dceg-workshops.github.io/statistical_genetics_workshop</a>; code at <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a>.</li>
+    <li id="src-2">Chang CC, Purcell SM, et al. PLINK 1.9 documentation: Input filtering, Hardy-Weinberg equilibrium tests (--hwe) and founder status (--nonfounders, --make-founders). <a href="https://www.cog-genomics.org/plink/1.9/filter#hwe" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/filter</a></li>
+    <li id="src-3">PLINK 1.9 documentation: Basic statistics, Hardy-Weinberg equilibrium (--hardy), and File formats, .hwe. <a href="https://www.cog-genomics.org/plink/1.9/basic_stats#hardy" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/basic_stats</a>; <a href="https://www.cog-genomics.org/plink/1.9/formats#hwe" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/formats</a></li>
+    <li id="src-4">Anderson CA, Pettersson FH, Clarke GM, Cardon LR, Morris AP, Zondervan KT. Data quality control in genetic case-control association studies. <em>Nat Protoc</em>. 2010;5:1564–1573. <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-5">Wigginton JE, Cutler DJ, Abecasis GR. A note on exact tests of Hardy-Weinberg equilibrium. <em>Am J Hum Genet</em>. 2005;76:887–893. <a href="https://doi.org/10.1086/429864" target="_blank" rel="noopener">doi:10.1086/429864</a></li>
+    <li id="src-6">Graffelman J, Moreno V. The mid p-value in exact tests for Hardy-Weinberg equilibrium. <em>Stat Appl Genet Mol Biol</em>. 2013;12(4):433–448. <a href="https://doi.org/10.1515/sagmb-2012-0039" target="_blank" rel="noopener">doi:10.1515/sagmb-2012-0039</a></li>
+    <li id="src-7">Marees AT, de Kluiver H, Stringer S, Vorspan F, Curis E, Marie-Claire C, Derks EM. A tutorial on conducting genome-wide association studies: quality control and statistical analysis. <em>Int J Methods Psychiatr Res</em>. 2018;27:e1608. <a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">doi:10.1002/mpr.1608</a></li>
+    <li id="src-8">Bycroft C, Freeman C, Petkova D, et al. The UK Biobank resource with deep phenotyping and genomic data. <em>Nature</em>. 2018;562:203–209. <a href="https://doi.org/10.1038/s41586-018-0579-z" target="_blank" rel="noopener">doi:10.1038/s41586-018-0579-z</a></li>
+    <li id="src-9">Lecture 1, slides 81–83 (Hardy–Weinberg equilibrium: assumptions, formula and uses), and Lecture 0 of this course, <a href="../0-biological-foundations/allele-frequencies.html#why-deviate">Why genotype counts deviate from HWE</a>.</li>
+    <li id="src-10">The practical's input data: <code>penncath.log</code>, written by PLINK v1.90b7 (1,401 founders and 0 nonfounders; 463 cases, 470 controls, 468 missing phenotypes). Shown in full on <a href="tools.html#plink-log">The tools in detail</a>.</li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

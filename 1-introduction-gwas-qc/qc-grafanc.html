@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC step 8: genetic ancestry assignment with GrafAnc · Lecture 1</title>
+<meta name="description" content="How GrafAnc scores each person against reference populations: genetic distances, the E–F–A triangle and barycentric coordinates behind GD1–GD3 and Pe, Pf, Pa, contrast scores and the rules behind AncGroupID; unique IDs with --update-ids, running GrafAnc, and what its groups are not.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/grafanc-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-grafanc-explorer.js"></script>
+<script defer src="assets/js/widgets/qc-grafanc-plane.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-grafanc"]. */
+body[data-page="qc-grafanc"] .ge-sliders label { flex-wrap: wrap; }
+body[data-page="qc-grafanc"] .ge-sliders input[type="range"] { width: 130px; }
+body[data-page="qc-grafanc"] .ge-val { display: inline-block; min-width: 3.2em; font-variant-numeric: tabular-nums; }
+body[data-page="qc-grafanc"] .ge-e { font-size: 0.9rem; font-weight: 600; }
+body[data-page="qc-grafanc"] .ge-plane svg { display: block; width: 100%; max-width: 560px; margin: 0 auto; cursor: crosshair; }
+body[data-page="qc-grafanc"] .ge-plane .ge-tgp { cursor: pointer; }
+body[data-page="qc-grafanc"] .ge-legend { font-size: 0.8rem; color: var(--fg-muted); margin: 4px 0 10px; line-height: 1.8; }
+body[data-page="qc-grafanc"] .ge-legend > span { margin-right: 10px; white-space: nowrap; }
+body[data-page="qc-grafanc"] .ge-legend .ge-legend-h { font-weight: 700; color: var(--fg); }
+body[data-page="qc-grafanc"] .ge-sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+body[data-page="qc-grafanc"] .ge-sw-sim { background: rgba(29, 33, 39, .35); }
+body[data-page="qc-grafanc"] .ge-sw-me { background: var(--accent); }
+body[data-page="qc-grafanc"] .ge-sw-true { border: 1.5px dashed var(--fg); width: 9px; height: 9px; }
+body[data-page="qc-grafanc"] .ge-check { gap: 6px; }
+body[data-page="qc-grafanc"] .ge-table-wrap { overflow-x: auto; margin: 6px 0 10px; }
+body[data-page="qc-grafanc"] table.ge-table { font-size: 0.82rem; margin: 0; }
+body[data-page="qc-grafanc"] table.ge-table td { font-variant-numeric: tabular-nums; text-align: right; }
+body[data-page="qc-grafanc"] table.ge-table tr.ge-me th, body[data-page="qc-grafanc"] table.ge-table tr.ge-me td { font-weight: 700; }
+body[data-page="qc-grafanc"] .ge-out, body[data-page="qc-grafanc"] .ge-look { font-family: var(--font); font-size: 0.88rem; margin-top: 8px; }
+body[data-page="qc-grafanc"] .ge-out p, body[data-page="qc-grafanc"] .ge-look p { margin: 0.25em 0; }
+body[data-page="qc-grafanc"] .ge-warn { color: var(--pitfall); }
+body[data-page="qc-grafanc"] table.rules td:first-child { white-space: nowrap; }
+body[data-page="qc-grafanc"] #main p code, body[data-page="qc-grafanc"] #main li code, body[data-page="qc-grafanc"] #main dd code { overflow-wrap: anywhere; }
+body[data-page="qc-grafanc"] .widget label { flex-wrap: wrap; max-width: 100%; }
+body[data-page="qc-grafanc"] .widget select { max-width: calc(100vw - 80px); }
+</style>
+</head>
+<body data-page="qc-grafanc">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Step 8 of 8 · Page 22 of 23</p>
+  <h1>QC step 8: genetic ancestry assignment with GrafAnc</h1>
+  <p class="lede">Step 7 placed the study's people among reference samples, but only after a careful merge, and its axes depend on who is in the merged file. GrafAnc answers the same question with reference allele frequencies built into the program: for each person on their own, it measures how probable their genotypes are under each of several reference populations, and turns those distances into scores, three ancestry percentages and a group code. This page shows how the numbers are made, how to run the program, and what its groups do and do not mean.</p>
+  <div class="chips">
+    <span class="chip core">Slides 98–101</span>
+    <span class="chip">plink --update-ids · grafanc</span>
+    <span class="chip data">Writes: penncath_grafanc_out.txt</span>
+    <span class="chip time">≈ 60 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="8" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Distances to reference populations become scores, and fixed rules turn scores into groups</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 236" role="img" aria-labelledby="mm-t mm-d">
+<title id="mm-t">Step 8 as one row of the QC pipeline</title>
+<desc id="mm-d">Input: the step 1 fileset with unique individual IDs. Five boxes in a row. Statistic: distances from each person to European (E), African (F) and East Asian (A) reference populations, giving GD1, GD2, GD3, the percentages Pe, Pf, Pa and 15 contrast scores. Distribution: people on the GD1–GD2 plane, inside or near the E–F–A triangle. Threshold: fixed if–then rules on the scores give AncGroupID, for example 3xx for EUR. Remove or flag: flag, stratify or adjust, never exclude by the label alone. Record: the output table with scores and a group per person, and the counts per group. Each person is scored on their own, so nobody else in the study changes the result.</desc>
+<defs><marker id="mm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<rect x="10" y="6" width="732" height="26" rx="6" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="376" y="24" class="t-sm" text-anchor="middle" style="fill:var(--fg)">Input: the step 1 fileset with unique individual IDs (plink --update-ids)</text>
+<text x="76" y="56" class="t-b t-mm" text-anchor="middle">statistic</text>
+<text x="226" y="56" class="t-b t-mm" text-anchor="middle">distribution</text>
+<text x="376" y="56" class="t-b t-mm" text-anchor="middle">threshold</text>
+<text x="526" y="56" class="t-b t-mm" text-anchor="middle">remove or flag</text>
+<text x="676" y="56" class="t-b t-mm" text-anchor="middle">record</text>
+<rect x="10" y="66" width="132" height="116" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="76" y="90" class="t-sm" text-anchor="middle">distances to E, F, A</text>
+<text x="76" y="107" class="t-sm" text-anchor="middle">give GD1, GD2, GD3</text>
+<text x="76" y="124" class="t-sm" text-anchor="middle">and Pe, Pf, Pa;</text>
+<text x="76" y="141" class="t-sm" text-anchor="middle">15 contrast scores</text>
+<text x="76" y="158" class="t-sm" text-anchor="middle">for finer structure</text>
+<line x1="144" y1="124" x2="158" y2="124" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="160" y="66" width="132" height="116" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<polygon points="226,82 186,142 266,142" fill="#f4f6f8" stroke="#5a6370"/>
+<text x="226" y="79" class="t-xs" text-anchor="middle">E</text>
+<text x="180" y="152" class="t-xs" text-anchor="middle">F</text>
+<text x="272" y="152" class="t-xs" text-anchor="middle">A</text>
+<circle cx="224" cy="96" r="2.4" fill="#1d2127"/><circle cx="229" cy="99" r="2.4" fill="#1d2127"/><circle cx="221" cy="101" r="2.4" fill="#1d2127"/><circle cx="231" cy="94" r="2.4" fill="#1d2127"/><circle cx="214" cy="116" r="2.4" fill="#1d2127"/>
+<text x="226" y="172" class="t-sm" text-anchor="middle">people on GD1–GD2</text>
+<line x1="294" y1="124" x2="308" y2="124" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="310" y="66" width="132" height="116" rx="8" fill="#f3f1ff" stroke="#4c3fb0" stroke-width="1.4"/>
+<text x="376" y="98" class="t-sm" text-anchor="middle">fixed if–then rules</text>
+<text x="376" y="115" class="t-sm" text-anchor="middle">on the scores give</text>
+<text x="376" y="132" class="t-sm" text-anchor="middle">AncGroupID</text>
+<text x="376" y="149" class="t-sm" text-anchor="middle">(3xx = EUR, …)</text>
+<line x1="444" y1="124" x2="458" y2="124" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="460" y="66" width="132" height="116" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="526" y="98" class="t-sm" text-anchor="middle">flag, stratify or</text>
+<text x="526" y="115" class="t-sm" text-anchor="middle">adjust; never</text>
+<text x="526" y="132" class="t-sm" text-anchor="middle">exclude by the</text>
+<text x="526" y="149" class="t-sm" text-anchor="middle">label alone</text>
+<line x1="594" y1="124" x2="608" y2="124" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="610" y="66" width="132" height="116" rx="8" fill="#fbf6e0" stroke="#d9c98a"/>
+<text x="676" y="98" class="t-sm" text-anchor="middle">output table:</text>
+<text x="676" y="115" class="t-sm" text-anchor="middle">scores and a group</text>
+<text x="676" y="132" class="t-sm" text-anchor="middle">per person; counts</text>
+<text x="676" y="149" class="t-sm" text-anchor="middle">per group</text>
+<text x="10" y="212" class="t-sm">Each person is scored on their own against fixed reference allele frequencies: nobody else in the study changes</text>
+<text x="10" y="228" class="t-sm">the result, and the same genotypes give the same scores in any study.</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 340 340" role="img" aria-labelledby="mm-t2 mm-d2">
+<title id="mm-t2">Step 8 as one row of the QC pipeline</title>
+<desc id="mm-d2">Input: the step 1 fileset with unique individual IDs. Statistic: distances to European, African and East Asian reference populations give GD1 to GD3, Pe, Pf, Pa and 15 contrast scores. Distribution: people on the GD1–GD2 plane near the E–F–A triangle. Threshold: fixed rules on the scores give AncGroupID. Remove or flag: flag, stratify or adjust; never exclude by the label alone. Record: the output table and the counts per group.</desc>
+<rect x="10" y="6" width="320" height="40" rx="6" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="170" y="23" class="t-sm" text-anchor="middle" style="fill:var(--fg)">Input: the step 1 fileset with</text>
+<text x="170" y="38" class="t-sm" text-anchor="middle" style="fill:var(--fg)">unique individual IDs (--update-ids)</text>
+<text x="10" y="74" class="t-b t-mm">statistic</text>
+<text x="112" y="74" class="t-sm">distances to E, F, A give GD1–GD3,</text>
+<text x="112" y="89" class="t-sm">Pe, Pf, Pa; 15 contrast scores</text>
+<line x1="10" y1="98" x2="330" y2="98" stroke="#d0d6de"/>
+<text x="10" y="118" class="t-b t-mm">distribution</text>
+<text x="112" y="118" class="t-sm">people on the GD1–GD2 plane,</text>
+<text x="112" y="133" class="t-sm">near the E–F–A triangle</text>
+<line x1="10" y1="142" x2="330" y2="142" stroke="#d0d6de"/>
+<text x="10" y="162" class="t-b t-mm">threshold</text>
+<text x="112" y="162" class="t-sm">fixed if–then rules on the scores</text>
+<text x="112" y="177" class="t-sm">give AncGroupID (3xx = EUR, …)</text>
+<line x1="10" y1="186" x2="330" y2="186" stroke="#d0d6de"/>
+<text x="10" y="206" class="t-b t-mm">remove or flag</text>
+<text x="112" y="206" class="t-sm">flag, stratify or adjust; never</text>
+<text x="112" y="221" class="t-sm">exclude by the label alone</text>
+<line x1="10" y1="230" x2="330" y2="230" stroke="#d0d6de"/>
+<text x="10" y="250" class="t-b t-mm">record</text>
+<text x="112" y="250" class="t-sm">output table; counts per group</text>
+<text x="10" y="294" class="t-sm">Each person is scored on their own: nobody else</text>
+<text x="10" y="310" class="t-sm">in the study changes the result, and the same</text>
+<text x="10" y="326" class="t-sm">genotypes give the same scores in any study.</text>
+</svg>
+  </figure>
+  <p class="mm-statement">GrafAnc measures, for each person, how probable their genotypes are under the allele frequencies of reference populations. Three of these distances place the person relative to a triangle of European, African and East Asian references (GD1–GD3, Pe, Pf, Pa); fifteen more compare pairs of finer populations; and a fixed set of rules turns the scores into a group code. The scores are continuous measures of genetic similarity, and the group is a summary of them.</p>
+  <ul class="mm-hooks">
+    <li><strong>A fixed reference built into the program.</strong> GrafAnc compares each person with stored allele frequencies at up to 282,424 SNPs, so no merge is needed and the result does not depend on the rest of the study (<a href="#what-it-finds">what the step finds</a>).</li>
+    <li><strong>Distances become a point in a triangle.</strong> The person's distances to E, F and A are compared with the distances expected for members of each; barycentric coordinates turn the comparison into Pe, Pf and Pa, and contrast scores resolve finer structure (<a href="#statistic">the statistics</a>).</li>
+    <li><strong>Unique IDs first, then one command.</strong> GrafAnc names people by their individual ID, and every PennCATH individual ID is 1, so <code>--update-ids</code> comes first (<a href="#run">run it</a>).</li>
+    <li><strong>People on the GD1–GD2 plane.</strong> The practical's plot colors each person by GrafAnc's continental group; comparing it with step 7's PCA checks both methods (<a href="#distribution">look at the plane</a>).</li>
+    <li><strong>Rules make groups; groups are not identities.</strong> The group codes come from thresholds on scores relative to GrafAnc's reference populations, and the practical warns against excluding anyone because of them (<a href="#threshold">choose a rule</a>).</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and earlier pages</div>
+  <p>Genotype probabilities under Hardy–Weinberg proportions: <a href="../0-biological-foundations/allele-frequencies.html#hwe">Lecture 0 · Hardy–Weinberg equilibrium</a>. Model-based ancestry estimates, including a first look at GRAF-pop and GrafAnc: <a href="../0-biological-foundations/ancestry.html#admixture-models">Lecture 0 · Model-based estimates</a>. How to describe people relative to reference samples: <a href="../0-biological-foundations/ancestry.html#descriptors">Lecture 0 · Population descriptors</a>. Supervised STRUCTURE-type fits and where GRAF-pop and GrafAnc sit among them: <a href="population-structure.html#supervised">Population structure · Supervised fits</a>. GrafAnc as a program, with its inputs, outputs and build: <a href="tools.html#grafanc">The tools · GrafAnc</a>. Strands and A/T, C/G SNPs: <a href="snp-data.html#strands">The data: SNPs · Strands</a>. The reference-based PCA this step is compared with: <a href="qc-reference-pca.html">step 7</a>.</p>
+</aside>
+
+<h2 id="what-it-finds">What the step finds <span class="tag core">Core</span></h2>
+
+<p>GrafAnc answers the question of step 7, where each person sits relative to reference populations, in a way that does not need a merge. It grew out of GRAF-pop, a tool written at NCBI for the quality control of dbGaP, NIH's database of genotypes and phenotypes, which by 2019 held genotypes of more than a million people from hundreds of studies, typed on many different arrays.<sup><a href="#src-2">2</a></sup> GRAF-pop used 10,000 SNPs and five reference populations whose allele frequencies came from dbGaP participants. GrafAnc, released in 2025 by GRAF-pop's first author and colleagues, uses 282,424 SNPs and 26 reference populations, mostly UK Biobank participants grouped by country of birth plus 1000 Genomes samples. It computes 18 scores per person and assigns each person to one of 8 continental and 38 subcontinental groups.<sup><a href="#src-1">1</a>,<a href="#src-3">3</a></sup></p>
+
+<p>Four design choices make GrafAnc different from a PCA:</p>
+<ul>
+  <li><strong>Each person is scored on their own.</strong> Adding, removing or duplicating other people changes nothing, so relatives and duplicates can stay in the input, and results from separate runs can be combined.<sup><a href="#src-3">3</a></sup></li>
+  <li><strong>The reference is a table of allele frequencies</strong>, <code>AncSnpPopAFs.txt</code>, shipped with the program. GrafAnc reads the person's genotypes at the ancestry SNPs and ignores every other SNP.</li>
+  <li><strong>The SNPs were chosen once, carefully.</strong> From 784,256 UK Biobank SNPs the authors kept biallelic SNPs, removed A/T and G/C SNPs "to minimize strand alignment issues", removed regions of high LD, pruned for LD, kept SNPs at least 500 base pairs apart, and dropped SNPs whose allele frequency differs by less than 0.05 between every pair of 1000 Genomes super-populations.<sup><a href="#src-1">1</a></sup> So no LD pruning is needed before running it.</li>
+  <li><strong>Missing genotypes are tolerated.</strong> Each score uses the SNPs the person has, and the documentation asks for at least 10,000 genotyped ancestry SNPs for continental groups and 50,000 for subcontinental ones; with fewer than 100 it reports nothing.<sup><a href="#src-3">3</a></sup></li>
+</ul>
+
+<p>The strand problem of step 7 is handled inside the program. For each ancestry SNP, GrafAnc compares the two letters in the <code>.bim</code> file with its own: it accepts the same letters, the letters swapped, their complements (the other strand) or the complements swapped, and leaves out SNPs whose letters match none of these. Because no ancestry SNP is A/T or C/G, a complement can always be recognized.<sup><a href="#src-5">5</a></sup></p>
+
+<p>As a QC step it finds what step 7 finds, people whose genetic similarity differs from most of the study, and it can expose data errors: since 2018, dbGaP has used GRAF-pop to find inconsistencies between the populations that studies report and those that the genotypes predict.<sup><a href="#src-2">2</a></sup> It also gives every person continuous scores that can serve as covariates and a group that can define strata, for example for Hardy–Weinberg tests within groups of similar people, a use the GrafAnc authors describe.<sup><a href="#src-1">1</a></sup></p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 98–99 · Model-based and model-free maps of genetic similarity</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-098.jpg" alt="Lecture 1, slide 98: differences in allele frequencies and LD patterns can be used to map samples by genetic similarity; the map coordinates serve quality control or act as covariates for confounding. Model-based approaches: STRUCTURE, GRAF-pop. Model-free approach: PCA." loading="lazy"><figcaption>Lecture 1 · slide 98</figcaption></figure>
+    <div><p>Slide 98 sorts the methods into model-based (STRUCTURE, GRAF-pop) and model-free (PCA). "Model-based" here means that the method writes down a probability for each genotype: in each population the two copies of a SNP are drawn independently with that population's allele frequency (Hardy–Weinberg proportions). Slide 99 says GRAF-pop "uses a similar conceptual model" to STRUCTURE in its supervised form, with the reference populations fixed in advance. The difference: STRUCTURE fits ancestry proportions by maximizing a likelihood, while GRAF-pop and GrafAnc compute a distance to each reference and read proportions from a triangle, as below.</p></div>
+  </div>
+  <div class="slide-strip">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-099.jpg" alt="Lecture 1, slide 99: STRUCTURE, with the note that GRAF-Pop uses a similar conceptual model. STRUCTURE estimates the proportion of each person's genome that comes from each of K subpopulations, each assumed to be in Hardy–Weinberg equilibrium; it can be run supervised, with reference populations as the K subpopulations, or unsupervised for several values of K. Rosenberg 2002, Science." loading="lazy"><figcaption>Lecture 1 · slide 99</figcaption></figure>
+  </div>
+</aside>
+
+<h3 id="grafanc-vs-pca">GrafAnc and the reference PCA side by side</h3>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th></th><th>Reference PCA (step 7)</th><th>GrafAnc (step 8)</th></tr></thead>
+  <tbody>
+    <tr><td>Reference</td><td>Genotypes of 2,504 1000 Genomes people, merged with the study</td><td>Allele frequencies of 26 populations, stored in the program</td></tr>
+    <tr><td>Strand and allele matching</td><td>By the analyst: merge, flip, merge again</td><td>Done by the program for its fixed SNPs, which exclude A/T and G/C SNPs</td></tr>
+    <tr><td>Depends on other people in the file</td><td>Yes: the PCs are computed from everyone</td><td>No</td></tr>
+    <tr><td>Output</td><td>PC scores (axes change between runs)</td><td>18 versioned scores, Pe, Pf, Pa and a group code</td></tr>
+    <tr><td>Resolution</td><td>Set by the shared SNPs and the reference's diversity</td><td>Continental and 38 subcontinental groups, limited by the 26 references</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="statistic">The statistics: distances, a triangle and contrast scores <span class="tag core">Core</span></h2>
+
+<h3 id="distance">The distance from a person to a reference population</h3>
+
+<p>Take one SNP and call its alleles allele 1 and allele 2. A person's genotype \(g\) is the number of copies of allele 1 they carry: 0, 1 or 2. In a reference population where allele 1 has frequency \(p\) and allele 2 frequency \(q = 1 - p\), and the two copies are inherited independently (Hardy–Weinberg proportions), each genotype has a probability:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ P(g \mid p) = \begin{cases} q^2 &amp; g = 0 \\ 2pq &amp; g = 1 \\ p^2 &amp; g = 2 \end{cases} \]</div>
+  <dl class="eq-terms">
+    <dt>\(g\)</dt><dd>The person's genotype at the SNP: copies of allele 1 (0, 1 or 2). GrafAnc counts copies of the allele listed in its reference file.</dd>
+    <dt>\(p\), \(q\)</dt><dd>The frequencies of allele 1 and allele 2 in the reference population, \(q = 1 - p\).</dd>
+    <dt>\(P(g \mid p)\)</dt><dd>The probability that a person drawn from that population has genotype \(g\).</dd>
+  </dl>
+  <p class="eq-intuition">Two copies, each allele 1 with probability \(p\): both are allele 1 with probability \(p^2\), both allele 2 with \(q^2\), and one of each in two orders, \(2pq\). With \(p = 0.9\): \(P(2) = 0.81\), \(P(1) = 0.18\), \(P(0) = 0.01\). A person with no copy of allele 1 is unusual in this population; in a population with \(p = 0.2\) the same genotype has probability 0.64.</p>
+</div>
+
+<p>Over many SNPs, GRAF-pop multiplies these probabilities, which treats the SNPs as independent (they were chosen far apart and pruned for LD), takes the negative logarithm, and divides by the number of SNPs:<sup><a href="#src-2">2</a></sup></p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ D_j = -\frac{1}{S} \sum_{l=1}^{S} \ln P(g_l \mid p_{jl}) \]</div>
+  <dl class="eq-terms">
+    <dt>\(S\)</dt><dd>The number of ancestry SNPs at which this person has a genotype (at most 282,424 in GrafAnc).</dd>
+    <dt>\(l\)</dt><dd>Indexes those SNPs, \(l = 1, \dots, S\).</dd>
+    <dt>\(g_l\)</dt><dd>The person's genotype at SNP \(l\).</dd>
+    <dt>\(p_{jl}\)</dt><dd>The frequency of allele 1 of SNP \(l\) in reference population \(j\).</dd>
+    <dt>\(D_j\)</dt><dd>The genetic distance from the person to population \(j\): the average, over SNPs, of \(-\ln\) of the probability of the person's genotype. Always positive; smaller means more similar.</dd>
+  </dl>
+  <p class="eq-intuition">The product of the probabilities is the likelihood of the person's genotypes if they were a member of population \(j\); the logarithm turns the product into a sum, and dividing by \(S\) makes people with different numbers of genotyped SNPs comparable. Each SNP adds \(-\ln P\): with \(p = 0.9\), genotype 2 adds \(-\ln 0.81 = 0.21\) and genotype 0 adds \(-\ln 0.01 = 4.61\), so genotypes that are rare in a population push the distance up. If a person had to belong to one of the populations, and each were equally likely beforehand, the population with the smallest \(D_j\) would be the most probable by Bayes' theorem; GRAF-pop uses the distances as coordinates instead, because many people do not belong to one population.</p>
+</div>
+
+<h3 id="triangle">From three distances to a point in a triangle</h3>
+
+<p>Three reference populations define the continental scores: European (E), African (F) and East Asian (A). A person has three distances, \(D_{\mathrm{E}}\), \(D_{\mathrm{F}}\) and \(D_{\mathrm{A}}\), which can be drawn as a point in three dimensions. To know what a point means, GRAF-pop computes where a typical member of each reference group would sit: the expected distances, averaging over the genotypes such a member could have.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \bar{D}_{Uj} = -\frac{1}{S} \sum_{l=1}^{S} \sum_{g=0}^{2} P(g \mid p_{Ul}) \ln P(g \mid p_{jl}) \]</div>
+  <dl class="eq-terms">
+    <dt>\(U\)</dt><dd>One of the three corner groups: E, F or A.</dd>
+    <dt>\(p_{Ul}\)</dt><dd>The frequency of allele 1 of SNP \(l\) in group \(U\).</dd>
+    <dt>\(\bar{D}_{Uj}\)</dt><dd>The distance to population \(j\) expected for a member of group \(U\), over the same \(S\) SNPs the person has.</dd>
+  </dl>
+  <p class="eq-intuition">The person's genotype is replaced by every possible genotype weighted by how often a member of \(U\) has it. For one SNP with \(p = 0.9\) in both \(U\) and \(j\), the expected contribution is \(-(0.81 \ln 0.81 + 0.18 \ln 0.18 + 0.01 \ln 0.01) = 0.53\); if \(j\) has \(p = 0.5\) instead, it is 1.26. Members are closer to their own population than to others. The three points \(V_{\mathrm{E}} = (\bar{D}_{\mathrm{EE}}, \bar{D}_{\mathrm{EF}}, \bar{D}_{\mathrm{EA}})\), \(V_{\mathrm{F}}\) and \(V_{\mathrm{A}}\) are the corners of a triangle. They are recomputed for every person on that person's own SNPs, so missing genotypes do not move the corners away from the person.</p>
+</div>
+
+<p>The person's point \(Q = (D_{\mathrm{E}}, D_{\mathrm{F}}, D_{\mathrm{A}})\) is projected onto the plane of the triangle, and its position is written as a weighted average of the corners:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ Q' = \lambda_{\mathrm{E}} V_{\mathrm{E}} + \lambda_{\mathrm{F}} V_{\mathrm{F}} + \lambda_{\mathrm{A}} V_{\mathrm{A}} \]
+  \[ \lambda_{\mathrm{E}} + \lambda_{\mathrm{F}} + \lambda_{\mathrm{A}} = 1 \]</div>
+  <dl class="eq-terms">
+    <dt>\(Q'\)</dt><dd>The projection of the person's point onto the plane of the triangle.</dd>
+    <dt>\(V_{\mathrm{E}}, V_{\mathrm{F}}, V_{\mathrm{A}}\)</dt><dd>The corners: expected distances of typical members of E, F and A.</dd>
+    <dt>\(\lambda_{\mathrm{E}}, \lambda_{\mathrm{F}}, \lambda_{\mathrm{A}}\)</dt><dd>The barycentric coordinates of \(Q'\): weights that sum to 1 and reproduce \(Q'\) from the corners. Any real numbers; all between 0 and 1 exactly when \(Q'\) lies inside the triangle.</dd>
+  </dl>
+  <p class="eq-intuition">A point on a corner has weights (1, 0, 0); a point halfway along the edge from E to F has (0.5, 0.5, 0); the center of the triangle has one third each. A point outside the triangle has at least one negative weight. For a person whose ancestors come from two of the reference populations, the weights are close to the shares of their genome from each, which is why the weights are read as ancestry proportions.</p>
+</div>
+
+<p>GRAF-pop then places every person on one fixed triangle, so that people genotyped on different SNPs can be plotted together. GD1 and GD2 are the person's weights applied to fixed corner coordinates, and GD3 is the distance of the person's point from the plane of the triangle.<sup><a href="#src-2">2</a>,<a href="#src-1">1</a></sup> GrafAnc's documentation gives the fixed corners: E at (1.4758, 1.4370), F at (1.0800, 1.1000) and A at (1.7045, 1.1000).<sup><a href="#src-3">3</a></sup> Writing \(x\) for GD1 and \(y\) for GD2:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ x = 1.08 + 0.3958\,\lambda_{\mathrm{E}} + 0.6245\,\lambda_{\mathrm{A}} \]
+  \[ y = 1.1 + 0.337\,\lambda_{\mathrm{E}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(x\), \(y\)</dt><dd>The person's GD1 and GD2 scores.</dd>
+    <dt>1.08, 1.1</dt><dd>The coordinates of the F corner, where \(\lambda_{\mathrm{F}} = 1\).</dd>
+    <dt>0.3958, 0.337</dt><dd>How far the E corner lies from the F corner along GD1 and GD2: \(1.4758 - 1.08\) and \(1.437 - 1.1\).</dd>
+    <dt>0.6245</dt><dd>How far the A corner lies from the F corner along GD1, \(1.7045 - 1.08\); the A corner has the same GD2 as F.</dd>
+  </dl>
+  <p class="eq-intuition">These two lines are \((x, y) = \lambda_{\mathrm{E}} c_{\mathrm{E}} + \lambda_{\mathrm{F}} c_{\mathrm{F}} + \lambda_{\mathrm{A}} c_{\mathrm{A}}\) for the fixed corners \(c\), with \(\lambda_{\mathrm{F}} = 1 - \lambda_{\mathrm{E}} - \lambda_{\mathrm{A}}\) substituted. Because F and A share the same GD2, the weights can be read back directly: \(\lambda_{\mathrm{E}} = (y - 1.1)/0.337\), then \(\lambda_{\mathrm{A}} = (x - 1.08 - 0.3958\,\lambda_{\mathrm{E}})/0.6245\), then \(\lambda_{\mathrm{F}} = 1 - \lambda_{\mathrm{E}} - \lambda_{\mathrm{A}}\). GD2 measures European similarity alone; GD1 mixes European and East Asian similarity.</p>
+</div>
+
+<p>The reported percentages set negative weights to zero and rescale the rest to sum to 100:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ P_m = \frac{100 \max(0, \lambda_m)}{\sum_{k} \max(0, \lambda_k)} \]</div>
+  <dl class="eq-terms">
+    <dt>\(m\), \(k\)</dt><dd>Each run over the three corners E, F, A.</dd>
+    <dt>\(P_m\)</dt><dd>The reported percentage for corner \(m\): the output columns <code>Pe</code>, <code>Pf</code> and <code>Pa</code>, between 0 and 100. The unclipped weights times 100 are <code>RawPe</code>, <code>RawPf</code> and <code>RawPa</code>.</dd>
+  </dl>
+  <p class="eq-intuition">Inside the triangle nothing changes. Just outside the E corner, small negative weights are set to 0 and the person is reported as 100% E. Real numbers, from GrafAnc's mean scores of the 1000 Genomes populations:<sup><a href="#src-4">4</a></sup> CEU (Utah residents with Northern and Western European ancestry) has \(x = 1.4751\), \(y = 1.4385\), so \(\lambda_{\mathrm{E}} = 1.0045\), \(\lambda_{\mathrm{A}} = -0.0039\), \(\lambda_{\mathrm{F}} = -0.0005\), reported as 100, 0, 0. ASW (African Ancestry in Southwest US) at \(x = 1.1597\), \(y = 1.1562\) gives weights 0.167, 0.811 and 0.022 for E, F and A. GIH (Gujarati Indians in Houston) at \(x = 1.5202\), \(y = 1.2961\) gives 0.582, 0.082 and 0.336: a South Asian population is reported as a mixture of the three corners, because the triangle has no South Asian corner.</p>
+</div>
+
+<div class="widget" id="w-grafanc">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">From genotypes to Pe, Pf and Pa (simulated people, real 1000 Genomes means)</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The equations above describe what it computes.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The widget simulates 40 people with the mix you choose, computes their three distances on the chosen number of SNPs, and places them with the steps above. "80% F, 20% E" lands near the 1000 Genomes ASW point, and the reported percentages recover the mix. "All from E" scatters around the E corner; points just outside it are reported as 100% E. Change the number of SNPs: the spread shrinks roughly with the square root, and with 1,000 SNPs it is close to the spread GrafAnc's documentation gives for its own SNPs. "All from X" is a population the triangle does not contain: it lands inside the triangle and is reported as a mixture of E, F and A, and only its height above the triangle (GD3) is unusual. Look up GIH and PEL among the real points.</p>
+
+<h3 id="gd3">GD3: the height above the triangle</h3>
+
+<p>The distance from the person's point to the plane of the triangle is GD3. It is close to zero for members of the three corner populations and for people whose ancestry is a mixture of them. Two things move it.</p>
+<ul>
+  <li><strong>Ancestry the triangle does not contain raises it.</strong> A member of a population with no corner has genotypes that are less probable under all three references than those of a mixture of E, F and A at the same place in the triangle, so all three distances are larger and the point lies above the plane. Among the 1000 Genomes means the largest GD3 is PEL's, 0.054, and GrafAnc's documentation lists PEL among the populations of its "Native American" group (603).<sup><a href="#src-3">3</a>,<a href="#src-4">4</a></sup></li>
+  <li><strong>Recent mixing lowers it slightly.</strong> A person whose two copies of a SNP often come from different populations is heterozygous more often than the average of those populations. The probability of a heterozygous genotype, \(2pq\), contains a factor 2 that is the same in every population, so the extra heterozygous SNPs lower all three distances by the same amount, which moves the point below the plane. The three 1000 Genomes populations with mostly African and European ancestry, ASW, ACB and PUR, have the lowest mean GD3 (−0.0125, −0.0062 and −0.0050).</li>
+</ul>
+<p>GrafAnc's documentation suggests plotting GD1 against GD3 to see Latin American and Native American ancestry "and also for data QC".<sup><a href="#src-3">3</a></sup></p>
+
+<h3 id="contrast">Contrast scores for finer structure</h3>
+
+<p>The triangle separates continents. For finer structure, GrafAnc compares the person's distances to two related reference populations, X and Y, such as the UK Biobank participants in its Irish and Italy reference groups:<sup><a href="#src-1">1</a></sup></p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \Delta d_{XY} = D_X - D_Y \]
+  \[ \Delta d' = -1 + 2\,\frac{\Delta d_{XY} - e_X}{e_Y - e_X} \]</div>
+  <dl class="eq-terms">
+    <dt>\(D_X\), \(D_Y\)</dt><dd>The person's distances to reference populations X and Y, as above.</dd>
+    <dt>\(\Delta d_{XY}\)</dt><dd>The raw contrast: positive when the person's genotypes are more probable under Y than under X.</dd>
+    <dt>\(e_X\), \(e_Y\)</dt><dd>The raw contrast expected for a typical member of X and of Y, computed on the same SNPs the person has.</dd>
+    <dt>\(\Delta d'\)</dt><dd>The rescaled contrast score reported by GrafAnc (for example <code>EU1</code>): about −1 for a typical member of X and +1 for a typical member of Y.</dd>
+  </dl>
+  <p class="eq-intuition">Written per SNP, the raw contrast adds \(\ln(p_Y/p_X)\) for each copy of allele 1 and \(\ln(q_Y/q_X)\) for each copy of allele 2: a log-likelihood ratio, averaged over SNPs. The rescaling puts the two reference populations at −1 and +1 for every contrast and every SNP set, so that one threshold works for everyone. A person halfway between, for example with one parent from each population, scores near 0. GRAF-pop's GD4 was an unscaled contrast of this kind, between its South Asian and Latin American references.<sup><a href="#src-2">2</a></sup></p>
+</div>
+
+<div class="table-wrap">
+<table>
+  <caption>GrafAnc's 15 contrast scores: score −1 resembles X, +1 resembles Y (Jin et al., Table 1; UKBB = UK Biobank participants, grouped mostly by country of birth)</caption>
+  <thead><tr><th>Scores</th><th>Pairs of reference populations (X vs Y)</th></tr></thead>
+  <tbody>
+    <tr><td>EU1–EU3</td><td>UKBB Irish vs Italy; Irish vs Finland; France vs Poland</td></tr>
+    <tr><td>AF1–AF3</td><td>UKBB Nigeria vs Zimbabwe; Nigeria vs Ghana; Uganda vs Barbados</td></tr>
+    <tr><td>EA1–EA4</td><td>UKBB China vs Thailand; China vs Japan; China vs Philippines; China vs Nepal</td></tr>
+    <tr><td>SA1–SA2</td><td>UKBB Sri Lanka vs Bangladesh; India (one cluster) vs Pakistan</td></tr>
+    <tr><td>IC1–IC3</td><td>UKBB Latin American 2 vs South Asian; UKBB Italy vs 1000 Genomes PUR; UKBB Italy vs Iran</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="groups">From scores to AncGroupID</h3>
+
+<p>GrafAnc assigns a group by checking a fixed sequence of if–then rules on the scores; the first rule that matches decides.<sup><a href="#src-5">5</a></sup> The authors drew the rules from reference data in UK Biobank (especially participants' country of birth), the 1000 Genomes Project and the Human Genome Diversity Project, and kept them "simple to promote generalizability and reduce the risk of overfitting".<sup><a href="#src-1">1</a>,<a href="#src-3">3</a></sup> The continental part of the sequence, as written in GrafAnc's source code (Pe, Pf, Pa in percent):</p>
+
+<div class="table-wrap">
+<table class="rules">
+  <thead><tr><th>Order</th><th>If the scores satisfy</th><th>Group (first digit)</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Pa &gt; 50, Pf &gt; 10, IC1 &gt; 0.4 and GD3 &gt; 0.035</td><td>700 Oceania</td></tr>
+    <tr><td>2</td><td>IC1 &gt; 0.5 and Pf &lt; 15</td><td>4xx South Asian</td></tr>
+    <tr><td>3</td><td>Pa &gt; 15 and Pf &gt; 15</td><td>800 multi-ancestry</td></tr>
+    <tr><td>4</td><td>IC1 &gt; −0.3 and Pa &gt; 40</td><td>5xx East Asian</td></tr>
+    <tr><td>5</td><td>EU1 &lt; 1.6 and IC2 &lt; −0.25</td><td>3xx European if IC3 &lt; 3.5 − 3.1 × EU1, otherwise 202 or 203 Middle East</td></tr>
+    <tr><td>6</td><td>EU1 &gt; 1.6 and IC2 &lt; 0.4</td><td>201 Northern Africa if IC3 &lt; −0.3, otherwise 202 Middle East 1</td></tr>
+    <tr><td>7</td><td>EU1 &gt; 2.2 and IC2 &lt; 1.4</td><td>106 Northeastern Africa</td></tr>
+    <tr><td>8</td><td>GD1 &gt; 1.4758</td><td>602 Latin American 2 or 603 Native American if IC1 &lt; −0.2, otherwise 308 Other Europe</td></tr>
+    <tr><td>9</td><td>none of the above</td><td>601 Latin American 1 if IC1 &lt; 0.9 × GD1 − 1.36, otherwise one of 101–108 (Africa) by AF1–AF3</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Within each continental group, further rules on the contrast scores choose the last two digits; for example 303 is GrafAnc's "Western Europe" group, which includes the 1000 Genomes CEU and GBR samples, and 301 is "Finland".<sup><a href="#src-3">3</a></sup> The practical's R code keeps only the first digit, with <code>AncGroupID %/% 100</code>: 1 AFR, 2 MEN (Middle East and North Africa), 3 EUR, 4 SAS, 5 EAS, 6 AMR, 7 OCN, 8 MIX. Every group name describes the reference people whose average scores fall in that region, and the documentation states that "there are no clear boundaries between human populations".<sup><a href="#src-3">3</a></sup></p>
+
+<p>Each column of the output file (tab-separated, one row per person with enough SNPs):</p>
+<dl class="cols-doc">
+  <dt>Sample</dt><dd>The individual ID (second column of the <code>.fam</code> file). GrafAnc ignores the family ID.</dd>
+  <dt>SNPs</dt><dd>The number of ancestry SNPs with a genotype for this person (the documentation calls the column <code>#SNPs</code>; the program writes <code>SNPs</code>).</dd>
+  <dt>GD1, GD2, GD3</dt><dd>The position on the fixed triangle and the height above it; six decimals.</dd>
+  <dt>EA1–EA4, AF1–AF3, EU1–EU3, SA1–SA2, IC1–IC3</dt><dd>The 15 rescaled contrast scores, in this order.</dd>
+  <dt>Pe, Pf, Pa</dt><dd>The clipped percentages for the European, African and East Asian corners; two decimals, summing to 100.</dd>
+  <dt>RawPe, RawPf, RawPa</dt><dd>The unclipped weights times 100; may be negative or above 100.</dd>
+  <dt>AncGroupID</dt><dd>The three-digit group code: first digit continental, last two subcontinental.</dd>
+</dl>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 100–101 · Do not overinterpret ancestry proportions</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-100.jpg" alt="Lecture 1, slide 100: STRUCTURE-style bar plots of the 1000 Genomes samples for K = 5, 6 and 7 ancestral populations, one bar per person colored by estimated ancestry proportions, grouped by population." loading="lazy"><figcaption>Lecture 1 · slide 100</figcaption></figure>
+    <div><p>The same people get different "proportions" when the number of assumed ancestral populations changes from 5 to 7 (slide 100). Slide 101 draws the lesson, citing Lawson et al.: the proportions depend on the references. Pe, Pf and Pa are the extreme case: with only three corners, every person is described as a mix of European, African and East Asian references, including people whose ancestry is mostly from elsewhere, such as the GIH and PEL samples above. The practical says the same: Pe, Pf and Pa "should not be interpreted as a complete decomposition across every GrafAnc group such as South Asian or Middle East/North Africa".<sup><a href="#src-6">6</a></sup></p></div>
+  </div>
+  <div class="slide-strip">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-101.jpg" alt="Lecture 1, slide 101: do not overinterpret these proportions; they depend on the reference samples or on the diversity in the sample at hand, and the populations do not necessarily imply shared ancestry. Further reading: Lawson et al. 2018, a tutorial on how not to over-interpret STRUCTURE and ADMIXTURE bar plots." loading="lazy"><figcaption>Lecture 1 · slide 101</figcaption></figure>
+  </div>
+</aside>
+
+<h2 id="run">Run it in the browser <span class="tag core">Core</span></h2>
+
+<p>Step 8 has two parts: give every person a unique individual ID, then run GrafAnc on the renamed fileset. The commands are the practical's, with the toy data's names.</p>
+
+<p>When the page loads, the terminal's setup runs the two step 1 filters (<code>--geno 0.01</code>, then <code>--mind 0.01</code>), so <code>toy.geno0.01.mind0.01</code> is ready and this page works without the earlier ones. Press <strong>Run next</strong> to go through the suggested commands in order, or click one and press Enter; the two sections after the terminal explain them.</p>
+<p><strong>The lab's GrafAnc.</strong> The program that the terminal runs as <code>grafanc</code> is an emulator written for this site, not GrafAnc itself. It follows GrafAnc 1.0.0's source code for the console messages, the matching of SNPs, the scores and the output table, but it carries a toy reference. Real GrafAnc cannot use the toy files: it looks for its own 282,424 ancestry SNPs by rsID or by genome position, and the toy SNPs have made-up IDs (<code>tsnp</code> and five digits) at simulated positions. Run on the toy study, it finds 1 ancestry SNP among them and stops without writing a table. Step 8 therefore works only in the lab. The emulator's reference holds the toy model's allele frequencies at the toy study's SNPs that are not A/T or C/G, for two kinds of population: the European, African and East Asian ancestral populations from which the simulation derived all its populations, which serve as the three corners, and the <span data-card="ref_populations">?</span> toy populations of step 7's <code>toy_1kg</code>. The scores mean what GrafAnc's mean, with three differences. The toy triangle is smaller than the real one, so its GD values cannot be compared with real GrafAnc plots. The 15 subcontinental scores need GrafAnc's real reference populations and are written as <code>NA</code>. <code>AncGroupID</code> is continental only: 100, 300, 400, 500, 600, or 800 for several continents. The emulator was checked against the real program, built from the source code the workshop uses: given GrafAnc's own reference, it reports the same number of SNPs, GD1–GD3, Pe, Pf and Pa as the real program for all 1,380 PennCATH people, and its console messages match (<a href="practical-overview.html#emulator-note">The practical · How the lab was checked</a>).</p>
+
+<div class="lab" id="lab-grafanc" data-title="Step 8 · unique IDs, then GrafAnc">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="lab-script">head -3 ${analysis_dir}/toy.geno0.01.mind0.01.fam
+awk '{ print $2 }' ${analysis_dir}/toy.geno0.01.mind0.01.fam | sort | uniq -c
+awk '{
+    gsub("\"", "", $1);
+    print "\"" $1 "\"", $2, "\"" $1 "\"", "\"" $1 "_" $2 "\""
+}' ${analysis_dir}/toy.geno0.01.mind0.01.fam &gt; ${analysis_dir}/toy.updateIDs.txt
+head -3 ${analysis_dir}/toy.updateIDs.txt
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --update-ids \
+     ${analysis_dir}/toy.updateIDs.txt --make-bed \
+     --out ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs
+head -3 ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs.fam
+awk '{ print $2 }' ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs.fam | sort | uniq -d | wc -l
+if [ ! -d "${analysis_dir}/grafanc" ]; then
+    cd ${analysis_dir}
+    git clone https://github.com/jimmy-penn/grafanc.git
+fi
+if [ -f "${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz" ]; then
+    gunzip ${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz
+fi
+ls ${analysis_dir}/grafanc/bin/
+module load bcftools/1.23
+export GRAFPATH=${analysis_dir}/grafanc/cpp
+${analysis_dir}/grafanc/bin/grafanc \
+    ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs \
+    ${analysis_dir}/toy_grafanc_out.txt
+head ${analysis_dir}/toy_grafanc_out.txt</pre>
+</div>
+
+<h3 id="unique-ids">Unique individual IDs first</h3>
+
+<p>GrafAnc names each output row by the individual ID, the second column of the <code>.fam</code> file, and ignores the family ID. In PennCATH every individual ID is <code>1</code> and the family ID is the study number, written with quotation marks as part of the ID (<a href="plink-data.html">The data: PLINK files</a>). Run on that file, GrafAnc prints the warning "Fam file includes at least one duplicate sample … Please create unique sample IDs for all genotypes", and every row of its output would be named <code>1</code>. The practical therefore builds new IDs from both columns:</p>
+
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk '{
+    gsub("\"", "", $1);
+    print "\"" $1 "\"", $2, "\"" $1 "\"", "\"" $1 "_" $2 "\""
+}' ${analysis_dir}/penncath.geno0.01.mind0.01.fam &gt; ${analysis_dir}/penncath.updateIDs.txt</pre>
+
+<p>For each line of the <code>.fam</code> file the awk program removes the quotation marks from the family ID and prints four fields: the old family ID and old individual ID (with the quotes put back, so they match the file), then the new family ID (unchanged) and a new individual ID that joins family and individual ID, such as <code>"10002_1"</code>. <a href="tools.html#exit-status">The tools · shell syntax</a> runs it on the first two lines of the file and explains each part.</p>
+
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01</span> <span class="part" data-n="2">--update-ids ${analysis_dir}/penncath.updateIDs.txt</span> <span class="part" data-n="3">--make-bed</span> <span class="part" data-n="4">--out ${analysis_dir}/penncath.geno0.01.mind0.01.uniqueIDs</span></div>
+  <ol class="cmd-parts">
+    <li>The step 1 output: after the missingness filters, before any other QC step.</li>
+    <li><code>--update-ids FILE</code> — rename people. Each line of FILE has four fields: old family ID, old individual ID, new family ID, new individual ID. People not listed keep their IDs. PLINK applies the renaming before <code>--keep</code> and <code>--remove</code>, and it cannot be combined with <code>--update-parents</code> or <code>--update-sex</code> in one run.<sup><a href="#src-7">7</a></sup></li>
+    <li><code>--make-bed</code> — write the renamed fileset; only the <code>.fam</code> file differs from the input.</li>
+    <li><code>--out PREFIX</code> — the new fileset that GrafAnc reads.</li>
+  </ol>
+</div>
+
+<p>PLINK reports how many people were renamed, in a line of the form <code>--update-ids: N people updated.</code><sup><a href="#src-7">7</a></sup> Check with <code>head</code> that the second column of the new <code>.fam</code> file now differs from person to person, and count repeated IDs with <code>awk '{ print $2 }' FILE.fam | sort | uniq -d | wc -l</code>, which should print 0: awk prints the second column, <code>sort</code> puts equal IDs next to each other, <code>uniq -d</code> prints each value that occurs more than once, and <code>wc -l</code> counts those lines.</p>
+<p>In the lab, the first two suggested commands show that the toy study copies PennCATH's layout: <code>head -3</code> prints family IDs in quotation marks and individual ID <code>1</code>, and counting the second column gives a single value, <code>1</code>, for all <span data-card="qc_people">?</span> people. After the renaming, PLINK reports <code>--update-ids: <span data-card="update_ids_people">?</span> people updated.</code>, everyone in the file, <code>head -3</code> on the new <code>.fam</code> file shows individual IDs made of the study number and <code>_1</code>, and the count of repeated IDs is 0.</p>
+
+<h3 id="run-grafanc">Install and run GrafAnc</h3>
+
+<p>The practical clones the GrafAnc repository once, decompresses its reference table once, and lists the prebuilt program:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>if [ ! -d "${analysis_dir}/grafanc" ]; then
+    cd ${analysis_dir}
+    git clone https://github.com/jimmy-penn/grafanc.git
+fi
+<span class="prompt">$ </span>if [ -f "${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz" ]; then
+    gunzip ${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz
+fi
+<span class="prompt">$ </span>ls ${analysis_dir}/grafanc/bin/</pre>
+<p><code>[ ! -d dir ]</code> is true when the folder does not exist, and <code>[ -f file ]</code> when the file exists, so each block runs only the first time (<a href="tools.html#exit-status">The tools · shell syntax</a>). <code>AncSnpPopAFs.txt</code> is the reference: for each of the 282,424 ancestry SNPs, its chromosome, its positions on GRCh37 and GRCh38, its rsID, its alleles and its allele frequency in each reference population.<sup><a href="#src-3">3</a></sup></p>
+
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">module load bcftools/1.23</span> <span class="part" data-n="2">export GRAFPATH=${analysis_dir}/grafanc/cpp</span> <span class="part" data-n="3">${analysis_dir}/grafanc/bin/grafanc</span> <span class="part" data-n="4">${analysis_dir}/penncath.geno0.01.mind0.01.uniqueIDs</span> <span class="part" data-n="5">${analysis_dir}/penncath_grafanc_out.txt</span></div>
+  <ol class="cmd-parts">
+    <li><code>module load</code> — Biowulf only: makes bcftools, and the htslib library it is built on, available. GrafAnc never calls bcftools; its README lists htslib as a requirement, which is the likely reason for the line (<a href="tools.html#grafanc-build">The tools · Running GrafAnc</a>). On your own computer, follow <a href="setup.html">Set up your computer</a> instead.</li>
+    <li><code>export GRAFPATH=…</code> — tells GrafAnc where else to look for <code>AncSnpPopAFs.txt</code> (in <code>$GRAFPATH/data</code> or <code>$GRAFPATH</code>). The program first looks in the current folder and next to itself, including <code>../cpp/data</code> relative to <code>bin/</code>, so in the practical's layout it finds the file without the variable; the line is a safeguard.<sup><a href="#src-5">5</a></sup> Its second message names the file it used.</li>
+    <li>The program, called by its full path; it is not on <code>PATH</code>.</li>
+    <li>The input: a PLINK fileset prefix (GrafAnc also reads VCF files). It finds the ancestry SNPs by rsID or by position, on either genome build.</li>
+    <li>The output file. Options may follow the two file names: <code>--threads N</code> to use N processor cores (default 1) and <code>--maxmem</code> to cap memory in megabytes.</li>
+  </ol>
+</div>
+
+<p>GrafAnc reports each stage as it goes:<sup><a href="#src-5">5</a></sup></p>
+<ul>
+  <li>"Total N samples in fam file …", preceded by a duplicate-ID warning if individual IDs repeat.</li>
+  <li>"Total N SNPs in bim file. M SNPs are ancestry SNPs.", then whether rsIDs or positions were used to find them, and how many of the M "have expected alleles and will be used for ancestry inference". Ancestry SNPs whose letters match neither strand are counted separately. M is the most ancestry SNPs any person can have; a person with missing genotypes has fewer, as the <code>SNPs</code> column will show.</li>
+  <li>"Bim file has N SNPs. M SNPs are GrafAnc ancestry SNPs." and "Read genotypes of N samples from bed file.", where M now counts only the SNPs that will be used.</li>
+  <li>"Saved population results of N samples to …", where N counts the people with at least 100 genotyped ancestry SNPs.</li>
+</ul>
+<p><code>head</code> then shows the header and the first rows of the table.</p>
+<p>In the lab, the output reads:</p>
+<ul>
+  <li><code>Total <span data-card="grafanc_ref_snps">?</span> SNPs in …/grafanc/bin/../cpp/data/AncSnpPopAFs.txt</code>: the reference file that the program found next to itself, through <code>../cpp/data</code>, and the size of the toy reference (not 282,424).</li>
+  <li><code>Total <span data-card="grafanc_samples">?</span> samples in fam file …</code>, with no duplicate warning, because the individual IDs are now unique.</li>
+  <li><code>Total <span data-card="grafanc_bim_snps">?</span> SNPs in bim file. <span data-card="grafanc_anc_snps">?</span> SNPs are ancestry SNPs.</code>: every SNP left after step 1 is in the <code>.bim</code> file, and the ancestry SNPs are those also in the reference. The study's A/T and C/G SNPs are not among them, because the toy reference leaves them out, as GrafAnc's does (<a href="#what-it-finds">What the step finds</a>).</li>
+  <li><code>GRCh 37 chromosome positions are used to find ancestry SNPs.</code>: the toy IDs are not rsIDs, so positions found more matches.</li>
+  <li><code><span data-card="grafanc_used_snps">?</span> SNPs have expected alleles and will be used for ancestry inference.</code>: every ancestry SNP, so no toy SNP has letters that match neither strand, although many are written on the reverse strand.</li>
+  <li><code>Saved population results of <span data-card="grafanc_samples">?</span> samples to …</code>: every person has at least 100 genotyped ancestry SNPs. The memory, progress and time lines that come before it describe the run, not the data.</li>
+</ul>
+
+<h2 id="distribution">Look at the GD1–GD2 plane <span class="tag core">Core</span></h2>
+
+<div class="widget" id="w-grafanc-plane">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The toy study on the lab's GD1–GD2 plane</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It plots the GrafAnc output that the terminal above writes, on the lab's triangle of the European, African and East Asian corner populations.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The widget reads <code>toy_grafanc_out.txt</code> from the lab and redraws whenever the terminal writes it again (press <em>Run step 8</em> if you skipped the terminal). The triangle is the lab's toy triangle, with corners E, F and A, smaller than GrafAnc's real one (<a href="#run">The lab's GrafAnc</a>). The gray points play the part of GrafAnc's <code>PopMeanScores.txt</code>: each is the mean score of one toy population of <code>toy_1kg</code>, whose people the widget scores with the lab's GrafAnc, a map of where the reference groups fall. Each colored point is a toy person, colored by the first digit of <code>AncGroupID</code>; hover over or tap a point for the person's scores. People between two corners have intermediate weights, the pattern of admixed ancestry (<a href="#triangle">above</a>); the toy AMR populations, built as mixtures, lie between corners too. The slider flags people whose <code>Pe</code> is below a value. Inside the triangle <code>Pe</code> depends on GD2 alone, because the F and A corners have the same GD2 (1.1, in GrafAnc and in the lab): <code>Pe</code> is how far a person sits from the F–A edge toward the E corner, as a percentage of that corner's height, so the flag line is horizontal. Set GD3 on the vertical axis to see the height above the triangle, which the documentation suggests checking for data quality.</p>
+
+<h3 id="compare-pca">Compare GrafAnc with the reference PCA</h3>
+
+<p>The practical asks: "How do the GrafAnc assignments compare with the reference-based PCA pattern from Steps 6–7?" The two methods use different SNPs and different references, so agreement is a check on both. A person in the EUR cluster of the merged PCA should have a high Pe and a 3xx group; a person between the AFR and EUR clusters should have both Pf and Pe well above zero. A disagreement points to a problem worth chasing: a sample swap between the files, a strand error in step 7 that moved people, or a person whose ancestry neither reference describes well. To compare person by person in R, join the GrafAnc table to the step 7 <code>.eigenvec</code> by ID (<a href="#in-r">below</a>); note that GrafAnc's <code>Sample</code> holds the new individual IDs, so join on the <code>uniqueIDs</code> fileset's IDs.</p>
+
+<h2 id="threshold">Choose a rule and act <span class="tag core">Core</span></h2>
+
+<p><strong>The practical's choice.</strong> The practical removes nobody at step 8. Its exercise makes ancestry-based flagging optional and adds: "Do not exclude a sample solely because its GrafAnc label differs from the majority. Depending on the scientific question and analysis method, defensible options can include retaining all samples with appropriate population-structure adjustment, conducting stratified analyses, or restricting an analysis to a more genetically homogeneous subset when that restriction is scientifically justified and prespecified."<sup><a href="#src-6">6</a></sup></p>
+
+<p><strong>Options, and what each uses.</strong></p>
+<ul>
+  <li><strong>Keep everyone and adjust.</strong> Use GrafAnc's continuous scores, or PCs, as covariates (Session 2). The GrafAnc authors suggest exactly this: "GrafAnc covariates can help address subcontinental stratification and harmonize ancestry across studies".<sup><a href="#src-1">1</a></sup></li>
+  <li><strong>Stratify.</strong> Run analyses, or Hardy–Weinberg tests, within groups of genetically similar people, and combine the results. The GrafAnc authors propose its 38 subcontinental groups as such strata, merged into larger groups where a stratum is too small.<sup><a href="#src-1">1</a></sup></li>
+  <li><strong>Restrict, if prespecified.</strong> If the protocol defines the study population by genetic similarity, write the rule as a region of the scores (for example <code>Pe</code> above a value fixed in advance) and report it with the GrafAnc version. The authors recommend describing cohorts "by regions or thresholds in GrafAnc space" rather than by labels.<sup><a href="#src-1">1</a></sup></li>
+  <li><strong>Flag for checking.</strong> A person whose GrafAnc result disagrees with the reference PCA, or with recorded information, is a candidate for a sample-identity check, not an automatic exclusion.</li>
+</ul>
+
+<p><strong>Labels are not identities.</strong> An <code>AncGroupID</code> of 303 means that the person's scores satisfy the rules that GrafAnc's authors drew around the average scores of reference groups such as CEU and GBR. It does not state where the person was born, how they identify, or their race or ethnicity, which are social categories (<a href="../0-biological-foundations/ancestry.html#descriptors">Lecture 0 · Population descriptors</a>). The GrafAnc authors warn that discrete labels "can be misread as fixed biological types" and "recommend prioritizing continuous measures over hard labels", following the National Academies' report on population descriptors.<sup><a href="#src-1">1</a>,<a href="#src-8">8</a></sup> When a label is needed, the practical's wording is a model: these are "algorithmic assignments relative to GrafAnc's reference populations, not direct measurements of race, ethnicity, or personal identity".<sup><a href="#src-6">6</a></sup></p>
+
+<p><strong>The toy data.</strong> The toy study's genetic ancestry was simulated: <span data-card="sim_european_like">?</span> of its <span data-card="study_people">?</span> people were drawn from the allele frequencies of toy European populations, <span data-card="sim_african_like">?</span> from African, <span data-card="sim_east_asian_like">?</span> from East Asian and <span data-card="sim_south_asian_like">?</span> from South Asian ones, and <span data-card="sim_admixed">?</span> are admixed, with European-like and African-like ancestors in different proportions (<a href="practical-overview.html#toy-dataset">The practical · The toy dataset</a>). Of the <span data-card="grafanc_samples">?</span> people left after step 1, the lab's GrafAnc puts <span data-card="grafanc_eur">?</span> (<span data-card="grafanc_eur_percent">?</span>%) in EUR, <span data-card="grafanc_afr">?</span> in AFR, <span data-card="grafanc_eas">?</span> in EAS, <span data-card="grafanc_sas">?</span> in SAS and <span data-card="grafanc_amr">?</span> in AMR. Everyone who is not admixed lands in the group of the populations they were drawn from. The admixed people are split by their African-like share: those with the largest shares join the <span data-card="sim_african_like">?</span> African-like people in AFR, and the <span data-card="grafanc_amr">?</span> with the smallest shares get AMR, because their scores are closest to those of the toy AMR populations, which the simulation built as mixtures that include European and African ancestors. The South-Asian-like people sit between the E and A corners. At the slider's default of 80%, the <code>Pe</code> flag catches exactly the people in AFR, EAS, SAS and AMR. Raise it to 90% and European-like people join them: with a few thousand ancestry SNPs instead of hundreds of thousands, their <code>Pe</code> scatters several points below 100. Where a flag line falls is a choice that depends on the data, which is why the practical leaves flagging optional.</p>
+
+<h2 id="in-r">In R <span class="tag core">Core</span></h2>
+
+<p>The practical's R code reads the GrafAnc table, adds the continental group, plots GD1 against GD2, and counts people per group. On your own computer:</p>
+
+<span class="code-label r">R</span>
+<pre class="code">library(tidyverse)
+library(data.table)
+
+grafanc_out &lt;- fread(file.path(analysis_dir, "penncath_grafanc_out.txt"))
+
+grafanc_out &lt;- grafanc_out %&gt;%
+  mutate(ContinentalGroup = recode(AncGroupID %/% 100,
+    `1` = "AFR", `2` = "MEN", `3` = "EUR", `4` = "SAS",
+    `5` = "EAS", `6` = "AMR", `7` = "OCN", `8` = "MIX",
+    .default = NA_character_))
+
+grafanc_out %&gt;%
+  ggplot(aes(x = GD1, y = GD2, color = ContinentalGroup)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "GrafAnc-assigned genetic ancestry (GD1 vs. GD2)",
+       color = "GrafAnc-assigned ancestry group") +
+  theme_classic()
+
+grafanc_out %&gt;% count(ContinentalGroup, sort = TRUE)
+
+grafanc_out %&gt;%
+  count(AncGroupID, ContinentalGroup, sort = TRUE) %&gt;%
+  mutate(percent = round(100 * n / sum(n), 1))</pre>
+
+<p>What the new functions do, for pandas users:</p>
+<ul>
+  <li><code>mutate(new = expression)</code> adds or replaces a column, like <code>df.assign(new=...)</code>.</li>
+  <li><code>%/%</code> is integer division: <code>303 %/% 100</code> is 3, like <code>//</code> in Python.</li>
+  <li><code>recode(x, `1` = "AFR", …, .default = NA_character_)</code> replaces values by name, like <code>Series.map({1: "AFR", …})</code>; the backticks let a number be used as a name, and values not listed become a missing string.</li>
+  <li><code>count(a, b, sort = TRUE)</code> counts rows per combination of a and b, largest first, like <code>df.value_counts(["a", "b"])</code>; the count is in column <code>n</code>.</li>
+  <li><code>round(100 * n / sum(n), 1)</code> turns counts into percentages with one decimal.</li>
+</ul>
+<p>To draw GrafAnc's reference triangle on the plot of the real data, add <code>geom_polygon(data = data.frame(GD1 = c(1.4758, 1.08, 1.7045), GD2 = c(1.437, 1.1, 1.1)), aes(GD1, GD2), inherit.aes = FALSE, fill = NA, color = "grey40")</code>; <code>inherit.aes = FALSE</code> stops the triangle from looking for the <code>ContinentalGroup</code> column.</p>
+
+<p>Not in the practical: to answer its question about agreement with step 7, color the step 7 PCs by GrafAnc group. The <code>.eigenvec</code> file still has the old IDs, so build the same <code>FID_IID</code> name that <code>--update-ids</code> made, with the quotation marks removed on both sides:</p>
+
+<span class="code-label r">R</span>
+<pre class="code">pcs &lt;- fread(file.path(analysis_dir, "penncath.geno0.01.mind0.01.merge1kgenomes.eigenvec")) %&gt;%
+  mutate(Sample = paste0(gsub('"', "", V1), "_", V2)) %&gt;%
+  rename(PC1 = V3, PC2 = V4) %&gt;%
+  select(Sample, PC1, PC2)
+
+grafanc_out %&gt;%
+  mutate(Sample = gsub('"', "", Sample)) %&gt;%
+  inner_join(pcs, by = "Sample") %&gt;%
+  ggplot(aes(x = PC1, y = PC2, color = ContinentalGroup)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "Step 7 PCs, colored by GrafAnc group") +
+  theme_classic()</pre>
+<p><code>paste0</code> joins strings without a separator, <code>gsub(pattern, replacement, x)</code> replaces every match, like <code>str.replace</code>, and <code>inner_join</code> keeps only rows whose <code>Sample</code> appears in both tables, like <code>merge(how="inner")</code>; the 1000 Genomes people have no GrafAnc row and drop out.</p>
+
+<p>The same analysis runs on the toy data in the R console below, with <code>dplyr</code> and <code>ggplot2</code> instead of the whole tidyverse (a large download in the browser), and with the comparison with step 7. It leaves out the triangle: the lab's toy triangle is not GrafAnc's, and the widget above draws it. The first run downloads R into the page, which takes a few seconds. If you skipped the terminal, the console first runs the step 8 commands, and it runs step 7's merge and PCA for the comparison.</p>
+
+<div class="rlab" id="rlab-grafanc" data-title="Step 8 in R · GrafAnc on the toy data" data-packages="data.table,dplyr,ggplot2">
+<pre class="lab-setup">if [ ! -f "${analysis_dir}/toy_grafanc_out.txt" ]; then
+    awk '{ gsub("\"", "", $1); print "\"" $1 "\"", $2, "\"" $1 "\"", "\"" $1 "_" $2 "\"" }' ${analysis_dir}/toy.geno0.01.mind0.01.fam &gt; ${analysis_dir}/toy.updateIDs.txt
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --update-ids ${analysis_dir}/toy.updateIDs.txt --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs
+    if [ ! -d "${analysis_dir}/grafanc" ]; then cd ${analysis_dir}; git clone https://github.com/jimmy-penn/grafanc.git; fi
+    if [ -f "${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz" ]; then gunzip ${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz; fi
+    export GRAFPATH=${analysis_dir}/grafanc/cpp
+    ${analysis_dir}/grafanc/bin/grafanc ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs ${analysis_dir}/toy_grafanc_out.txt
+fi
+if [ ! -f "${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes.eigenvec" ]; then
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --bmerge ${reference_dir}/toy_1kg.bed ${reference_dir}/toy_1kg.bim ${reference_dir}/toy_1kg.fam --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes || true
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --flip ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs --bmerge ${reference_dir}/toy_1kg.bed ${reference_dir}/toy_1kg.bim ${reference_dir}/toy_1kg.fam --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes --geno 0.1 --maf 0.05 --pca --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+fi</pre>
+<pre class="rlab-code">library(data.table)
+library(dplyr)
+library(ggplot2)
+
+grafanc_out &lt;- fread(file.path(analysis_dir, "toy_grafanc_out.txt"))
+
+grafanc_out &lt;- grafanc_out %&gt;%
+  mutate(ContinentalGroup = recode(AncGroupID %/% 100,
+    `1` = "AFR", `2` = "MEN", `3` = "EUR", `4` = "SAS",
+    `5` = "EAS", `6` = "AMR", `7` = "OCN", `8` = "MIX",
+    .default = NA_character_))
+
+grafanc_out %&gt;%
+  ggplot(aes(x = GD1, y = GD2, color = ContinentalGroup)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "GrafAnc-assigned genetic ancestry (GD1 vs. GD2, toy data)",
+       color = "GrafAnc-assigned ancestry group") +
+  theme_classic()
+
+grafanc_out %&gt;% count(ContinentalGroup, sort = TRUE)
+
+grafanc_out %&gt;%
+  count(AncGroupID, ContinentalGroup, sort = TRUE) %&gt;%
+  mutate(percent = round(100 * n / sum(n), 1))
+
+# Step 7 PCs colored by GrafAnc group
+pcs &lt;- fread(file.path(analysis_dir, "toy.geno0.01.mind0.01.merge1kgenomes.eigenvec")) %&gt;%
+  mutate(Sample = paste0(gsub('"', "", V1), "_", V2)) %&gt;%
+  rename(PC1 = V3, PC2 = V4) %&gt;%
+  select(Sample, PC1, PC2)
+
+grafanc_out %&gt;%
+  mutate(Sample = gsub('"', "", Sample)) %&gt;%
+  inner_join(pcs, by = "Sample") %&gt;%
+  ggplot(aes(x = PC1, y = PC2, color = ContinentalGroup)) +
+  geom_point(alpha = 0.6) +
+  labs(title = "Step 7 PCs, colored by GrafAnc group (toy data)") +
+  theme_classic()</pre>
+</div>
+
+<h2 id="real-data">On your own computer: the real data <span class="tag core">Core</span></h2>
+
+<p>The commands are those of <a href="#run">Run it</a> with <code>penncath</code> in place of <code>toy</code> and the folders from <a href="setup.html">Set up your computer</a>:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk '{ gsub("\"", "", $1); print "\"" $1 "\"", $2, "\"" $1 "\"", "\"" $1 "_" $2 "\"" }' \
+      ${analysis_dir}/penncath.geno0.01.mind0.01.fam &gt; ${analysis_dir}/penncath.updateIDs.txt
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+      --update-ids ${analysis_dir}/penncath.updateIDs.txt --make-bed \
+      --out ${analysis_dir}/penncath.geno0.01.mind0.01.uniqueIDs
+<span class="prompt">$ </span>export GRAFPATH=${analysis_dir}/grafanc/cpp
+<span class="prompt">$ </span>${analysis_dir}/grafanc/bin/grafanc \
+      ${analysis_dir}/penncath.geno0.01.mind0.01.uniqueIDs \
+      ${analysis_dir}/penncath_grafanc_out.txt
+<span class="prompt">$ </span>head ${analysis_dir}/penncath_grafanc_out.txt</pre>
+
+<p>GrafAnc "can be run under GNU/LINUX 64 bit systems";<sup><a href="#src-3">3</a></sup> the prebuilt program in <code>grafanc/bin/</code> is a Linux program. On a Mac or Windows computer, run it in Docker or WSL as <a href="setup.html">Set up your computer</a> describes; <a href="tools.html#grafanc-build">The tools · Running GrafAnc</a> explains why it does not build on macOS and what the workshop's build changes. Building from source on Linux needs htslib (<code>make</code>, or <code>make HTSLIB=/path/to/htslib</code>).<sup><a href="#src-5">5</a></sup></p>
+
+<p><strong>What to look at.</strong></p>
+<ul>
+  <li>GrafAnc's message on how many of the <code>.bim</code> file's SNPs are ancestry SNPs, and the <code>SNPs</code> column: is every person above 10,000, the documentation's minimum for continental groups, and above 50,000 for subcontinental groups?</li>
+  <li>The GD1–GD2 plot and the counts per continental group. The practical's expected result: "&gt;99% of samples receive GrafAnc's EUR continental-group assignment, distributed across several European subgroups, with a small number assigned to the MEN (Middle East and North Africa) group".<sup><a href="#src-6">6</a></sup></li>
+  <li>The people who are not in the largest group: where do they sit on step 7's PCA, and does it agree?</li>
+  <li>GD3 against GD1, which the documentation suggests "also for data QC".</li>
+</ul>
+
+<p><strong>How the real data differ from the toy data.</strong> PennCATH has 1,380 people after step 1 (practical) and an array of 861,473 variants before QC (PLINK log), and the real program compares them with its full reference of 282,424 SNPs and 26 populations. The published PennCATH GWAS included patients described as "white patients".<sup><a href="#src-9">9</a></sup> For comparison, real GrafAnc, built from the source code the workshop uses, gives these results on the practical's files: 37,972 of the 569,723 SNPs left after step 1 are ancestry SNPs, and each person has between 37,449 and 37,970 of them, above the documentation's 10,000 for continental groups but below its 50,000 for subcontinental groups. 1,376 people (99.7%) are in the EUR group, spread over seven subgroups (303, GrafAnc's "Western Europe": 905; 307: 230; 304: 90; 306: 58; 305: 51; 302: 40; 308: 2), and 4 are in the MEN group (202), as the practical expects.</p>
+<p>The toy study has <span data-card="study_snps">?</span> SNPs before QC and <span data-card="grafanc_bim_snps">?</span> after step 1, of which <span data-card="grafanc_anc_snps">?</span> are ancestry SNPs of the lab's reference: <span data-card="grafanc_ref_snps">?</span> SNPs, three corner populations and <span data-card="ref_populations">?</span> toy populations, in place of 282,424 SNPs and 26 populations. Every toy person therefore has fewer ancestry SNPs than the 10,000 that the documentation asks for continental groups, one reason why the toy scores are noisier than real ones; they still separate the continental groups of the simulation. The toy study was given a few people of other genetic ancestries on purpose (<a href="#threshold">The toy data</a>); its proportions say nothing about PennCATH.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfalls</span> Common mistakes in step 8</div>
+  <ul>
+    <li><strong>Duplicate individual IDs.</strong> GrafAnc uses only the individual ID; with PennCATH's IDs it warns and the output rows cannot be told apart. Run <code>--update-ids</code> first, and keep the mapping file to join results back.</li>
+    <li><strong>Reading Pe, Pf and Pa as a complete ancestry breakdown.</strong> They measure position relative to three corners only. South Asian, Middle Eastern, Indigenous American and many other ancestries are reported as mixtures of E, F and A.</li>
+    <li><strong>Using a group code as an identity or as a reason to exclude.</strong> The code summarizes scores relative to GrafAnc's references; the practical warns against excluding people solely because of it.</li>
+    <li><strong>Too few ancestry SNPs.</strong> A small array, or heavy filtering before GrafAnc, can leave people below 10,000 ancestry SNPs, where the scores become noisy (their standard deviation grows as one over the square root of the number of SNPs).</li>
+    <li><strong>Forgetting <code>GRAFPATH</code> or the decompression step.</strong> GrafAnc then stops with "didn't find file AncSnpPopAFs.txt".</li>
+    <li><strong>Comparing numbers across GrafAnc versions.</strong> Thresholds and reference sets can change; report the version with the results.</li>
+  </ul>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>GrafAnc scores each person on their own against stored allele frequencies of 26 reference populations at up to 282,424 ancestry SNPs; no merge, pruning or strand repair is needed.</li>
+    <li>The distance to a population is the average of −ln P(genotype) over SNPs; three distances, to European, African and East Asian references, place the person relative to a triangle.</li>
+    <li>Barycentric coordinates of that position give RawPe, RawPf, RawPa; clipping negative values and rescaling gives Pe, Pf, Pa. GD1 and GD2 are the position on a fixed triangle, GD3 the height above it.</li>
+    <li>Fifteen contrast scores, rescaled so that two reference populations sit at −1 and +1, separate finer groups, and fixed if–then rules on all scores give AncGroupID.</li>
+    <li>GrafAnc needs unique individual IDs. Its groups are algorithmic, reference-relative summaries of continuous scores, not race, ethnicity or identity, and the practical excludes nobody because of them.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Run GrafAnc in the terminal on toy.geno0.01.mind0.01 without updating the IDs. What happens, and why does the practical run --update-ids first?</summary><div class="a"><p>Run <code>${analysis_dir}/grafanc/bin/grafanc ${analysis_dir}/toy.geno0.01.mind0.01 ${analysis_dir}/test.txt</code> and look for the duplicate-sample warning, then <code>cut -f1 ${analysis_dir}/test.txt | sort | uniq -c</code> to see repeated names. GrafAnc names each person by the individual ID alone; when those repeat, rows cannot be matched back to people. In the lab every toy individual ID is <code>1</code>, as in PennCATH: the warning reads "Fam file includes at least one duplicate sample: 1.", and <code>uniq -c</code> counts <span data-card="qc_people">?</span> rows named <code>1</code>, plus the header line. <code>--update-ids</code> makes the individual IDs unique by joining family and individual ID.</p>
+  </div></details>
+  <details class="q"><summary>A SNP has allele 1 frequency 0.9 in population E and 0.2 in population A. A person has genotype 0. How much does this SNP add to D_E and to D_A?</summary><div class="a"><p>Genotype 0 has probability \(q^2\): \(0.1^2 = 0.01\) in E and \(0.8^2 = 0.64\) in A. The SNP adds \(-\ln 0.01 = 4.61\) to the sum for \(D_{\mathrm{E}}\) and \(-\ln 0.64 = 0.45\) to the sum for \(D_{\mathrm{A}}\), each divided by the number of SNPs \(S\). The genotype is much more probable in A, so it pulls the person toward A.</p></div></details>
+  <details class="q"><summary>GrafAnc reports RawPe = 103.2, RawPf = −1.5, RawPa = −1.7. What are Pe, Pf and Pa, and where is the person on the GD1–GD2 plane?</summary><div class="a"><p>Negative weights are set to 0, and the rest is rescaled to 100: Pe = 100, Pf = 0, Pa = 0. The weights sum to 100 and the E weight exceeds 100, so the person lies just outside the triangle beyond the E corner, which is where people genetically very similar to the European reference fall when sampling noise pushes them past the corner.</p></div></details>
+  <details class="q"><summary>Why does a person with Gujarati ancestry get Pe ≈ 58%, Pf ≈ 8%, Pa ≈ 34%? Does that mean 8% African ancestry?</summary><div class="a"><p>The triangle has only European, African and East Asian corners, so every person is placed as a weighted combination of those three. The GIH mean scores land inside the triangle at those weights (computed above from GD1 = 1.5202, GD2 = 1.2961), but the weights describe a position relative to the three references, not a history of mixing. GrafAnc's South Asian group is assigned by a separate rule (IC1 &gt; 0.5 and Pf &lt; 15), and Lawson et al. (slide 101) warn against reading such proportions literally.</p></div></details>
+  <details class="q"><summary>In the toy output, find the people whose continental group is not EUR, and their Pe. Use the shell.</summary><div class="a"><p>The first digit of <code>AncGroupID</code> is the continental code, and 3 is EUR. <code>awk 'NR == 1 { for (i = 1; i &lt;= NF; i++) col[$i] = i; next } int($col["AncGroupID"] / 100) != 3 { print $col["Sample"], $col["Pe"], $col["AncGroupID"] }' ${analysis_dir}/toy_grafanc_out.txt</code> reads the header line first and stores each column's position under its name in the array <code>col</code>, so <code>$col["Pe"]</code> is the <code>Pe</code> column wherever it is. For every later row whose group divided by 100, rounded down by <code>int</code>, is not 3, it prints the sample, <code>Pe</code> and <code>AncGroupID</code>. In the lab it lists <span data-card="grafanc_afr">?</span> people in AFR, <span data-card="grafanc_eas">?</span> in EAS, <span data-card="grafanc_sas">?</span> in SAS and <span data-card="grafanc_amr">?</span> in AMR. Compare the list with the toy people outside the EUR cluster in step 7's PCA.</p></div></details>
+  <details class="q"><summary>What does a contrast score EU1 = −0.9 say, and what does EU1 = 0 say?</summary><div class="a"><p>EU1 contrasts the UK Biobank Irish reference group (X, at −1) with the UK Biobank Italy group (Y, at +1). −0.9 is close to −1, the score of a typical member of X: on this contrast the person resembles the Irish reference far more than the Italian one. 0 is halfway: for example a person with one parent from each population, or a person from a population that lies between them on this contrast. The score alone cannot tell these apart, which is why GrafAnc combines several scores.</p></div></details>
+  <details class="q"><summary>Why is GrafAnc's result for a person the same whether they are analyzed alone or with 10,000 others, while their PC scores in step 7 are not?</summary><div class="a"><p>GrafAnc's distances use only the person's genotypes and fixed reference allele frequencies. PCA computes its axes from the relationship matrix of everyone in the file, so adding or removing people changes the axes and every person's scores.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://github.com/jimmy-penn/grafanc/blob/master/GrafAncDocumentation.md" target="_blank" rel="noopener">GrafAnc documentation</a> <span class="src">· GitHub</span> <span class="level intro">intro</span> — input, output columns, group tables, reliability of each score, and suggested plots.</li>
+    <li><a href="https://doi.org/10.1016/j.xhgg.2025.100530" target="_blank" rel="noopener">GrafAnc: reliable and reproducible inference of continental and regional population structure</a> <span class="src">· Jin et al., HGG Advances</span> <span class="level advanced">advanced</span> — the method, the choice of SNPs and reference populations, and comparisons with PCA.</li>
+    <li><a href="https://doi.org/10.1534/g3.118.200925" target="_blank" rel="noopener">GRAF-pop: a fast distance-based method to infer subject ancestry from multiple genotype datasets without principal components analysis</a> <span class="src">· Jin et al. 2019, G3</span> <span class="level intermediate">intermediate</span> — the distances, the triangle and the barycentric coordinates in full.</li>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/data#update_indiv" target="_blank" rel="noopener">PLINK 1.9: --update-ids</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — the file format for renaming people.</li>
+    <li><a href="https://doi.org/10.1038/s41467-018-05257-7" target="_blank" rel="noopener">A tutorial on how not to over-interpret STRUCTURE and ADMIXTURE bar plots</a> <span class="src">· Lawson et al. 2018, Nature Communications</span> <span class="level intermediate">intermediate</span> — why ancestry proportions depend on the references.</li>
+    <li><a href="https://doi.org/10.17226/26902" target="_blank" rel="noopener">Using Population Descriptors in Genetics and Genomics Research</a> <span class="src">· National Academies 2023</span> <span class="level intermediate">intermediate</span> — how to describe people relative to reference samples.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Jin Y, Wang H, Naj AC, Wang LS, Lee WP. GrafAnc: reliable and reproducible inference of continental and regional population structure. <em>HGG Adv</em>. 2026;7(1):100530. <a href="https://doi.org/10.1016/j.xhgg.2025.100530" target="_blank" rel="noopener">doi:10.1016/j.xhgg.2025.100530</a></li>
+    <li id="src-2">Jin Y, Schäffer AA, Feolo M, Holmes JB, Kattman BL. GRAF-pop: a fast distance-based method to infer subject ancestry from multiple genotype datasets without principal components analysis. <em>G3 (Bethesda)</em>. 2019;9:2447–2461. <a href="https://doi.org/10.1534/g3.118.200925" target="_blank" rel="noopener">doi:10.1534/g3.118.200925</a></li>
+    <li id="src-3">Jin Y. <a href="https://github.com/jimmy-penn/grafanc/blob/master/GrafAncDocumentation.md" target="_blank" rel="noopener">GrafAnc software documentation</a> (GitHub, accessed November 2026): input requirements, output columns, ancestry group tables, triangle corners and reliability parameters.</li>
+    <li id="src-4">GrafAnc repository, file <a href="https://github.com/jimmy-penn/grafanc" target="_blank" rel="noopener">PopMeanScores.txt</a>: mean GD1, GD2 and GD3 of the 1000 Genomes populations. MIT license, Copyright (c) 2025 University of Pennsylvania.</li>
+    <li id="src-5">GrafAnc source code (<a href="https://github.com/jimmy-penn/grafanc" target="_blank" rel="noopener">github.com/jimmy-penn/grafanc</a>, accessed November 2026): group rules in <code>cpp/SampleGenoAncestry.cpp</code>, function <code>SetGrafAncGroups</code>; where the program looks for its reference file in <code>cpp/GrafAnc.cpp</code>, function <code>FindFile</code>; the console messages in <code>cpp/FamFileSamples.cpp</code> and the files it calls; build instructions in the README.</li>
+    <li id="src-6">DCEG Statistical Genetics Workshop. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">Session 1 practical: quality control</a>, QC step 8 and the exercise; code at <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/tree/main/src" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a>.</li>
+    <li id="src-7">Purcell S, Chang C. PLINK 1.9 documentation: <a href="https://www.cog-genomics.org/plink/1.9/data#update_indiv" target="_blank" rel="noopener">--update-ids</a> and <a href="https://www.cog-genomics.org/plink/1.9/order" target="_blank" rel="noopener">order of operations</a>.</li>
+    <li id="src-8">National Academies of Sciences, Engineering, and Medicine. <em>Using Population Descriptors in Genetics and Genomics Research: A New Framework for an Evolving Field</em>. Washington, DC: National Academies Press; 2023. <a href="https://doi.org/10.17226/26902" target="_blank" rel="noopener">doi:10.17226/26902</a></li>
+    <li id="src-9">Reilly MP, Li M, He J, et al. Identification of ADAMTS7 as a novel locus for coronary atherosclerosis and association of ABO with myocardial infarction in the presence of coronary atherosclerosis: two genome-wide association studies. <em>Lancet</em>. 2011;377:383–392. <a href="https://doi.org/10.1016/S0140-6736(10)61996-4" target="_blank" rel="noopener">doi:10.1016/S0140-6736(10)61996-4</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

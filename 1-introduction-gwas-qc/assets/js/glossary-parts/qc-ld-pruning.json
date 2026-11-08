@@ -1,0 +1,17 @@
+[
+  {
+    "id": "long-range-ld-region",
+    "term": "long-range LD region",
+    "aka": ["region of long-range LD", "high-LD region"],
+    "short": "A stretch of the genome, several million base pairs long, in which SNPs far apart stay correlated. Such regions can dominate principal components, so they are often excluded before PCA and relatedness estimation, in addition to LD pruning.",
+    "long": "<p>Price et al. (2008) found 24 autosomal regions, each spanning more than 2 Mb, whose SNPs drove top principal components of 327 European Americans genotyped on an Illumina 550K array, and saw them again in larger samples. They include the region of the MHC on chromosome 6 (25.5–33.5 Mb) and regions on chromosomes 8 (112–115 Mb) and 11 (46–57 Mb). Inversions are one known cause, because they suppress viable recombination inside the inverted segment.</p><p>Pruning in windows of tens of SNPs compares only nearby SNPs, so it thins these regions but leaves SNPs that are correlated over longer distances. The published coordinates belong to the genome build of the paper, which it does not name; check the build of the data before excluding them with <code>--exclude range</code>.</p>",
+    "l1": "Page 17 (QC step 3) explains why pruning leaves these regions and how to exclude them; page 7 (population structure) shows what they do to principal components.",
+    "see": ["ld-pruning", "mhc", "inversion", "pca"],
+    "links": [
+      {"t": "Price et al. 2008, Long-range LD can confound genome scans in admixed populations", "u": "https://doi.org/10.1016/j.ajhg.2008.06.005"}
+    ],
+    "match": ["long-range LD regions", "long-range LD region", "regions of long-range LD", "region of long-range LD", "long-range LD"],
+    "noPlural": true,
+    "owner": "qc-ld-pruning"
+  }
+]

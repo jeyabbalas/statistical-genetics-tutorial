@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC step 3: LD pruning · Lecture 1</title>
+<meta name="description" content="Step 3 of the PLINK quality-control practical: why relatedness, heterozygosity and PCA need SNPs that are nearly independent, how plink --indep-pairwise 50 5 0.3 prunes SNPs in a sliding window, what .prune.in and .prune.out contain, and how to choose the window, step and r² threshold.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<!-- Widgets for this page, one file each: assets/js/widgets/PAGEKEY-NAME.js -->
+<script defer src="assets/js/widgets/qc-ld-pruning-window.js"></script>
+<!-- The in-browser lab (assets/js/lab/LAB.md); widgets that use it load after lab.js. -->
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-ld-pruning-params.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-ld-pruning"]. */
+body[data-page="qc-ld-pruning"] .mm-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px 18px; align-items: start; }
+body[data-page="qc-ld-pruning"] .mm-panels > svg { display: block; width: 100%; height: auto; }
+body[data-page="qc-ld-pruning"] .pw-ctl { flex-wrap: wrap; max-width: 100%; }
+body[data-page="qc-ld-pruning"] .pw-ctl input[type="range"] { width: 140px; }
+body[data-page="qc-ld-pruning"] .pw-val { font-family: var(--mono); font-size: 0.86rem; min-width: 2.4em; }
+body[data-page="qc-ld-pruning"] .pw-chart svg { display: block; max-width: 100%; height: auto; margin: 4px 0 2px; }
+body[data-page="qc-ld-pruning"] .pw-legend { margin: 0 0 8px; }
+body[data-page="qc-ld-pruning"] .pw-status { white-space: pre-wrap; }
+body[data-page="qc-ld-pruning"] .pw-lists { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.78rem; margin-top: 8px; }
+body[data-page="qc-ld-pruning"] .pp-cmd { white-space: normal; font-size: 0.8rem; margin-bottom: 10px; }
+body[data-page="qc-ld-pruning"] .pp-cmd .pp-word { white-space: nowrap; }
+body[data-page="qc-ld-pruning"] .pp-cmd .pp-note { display: block; margin-top: 4px; }
+body[data-page="qc-ld-pruning"] code.wrap { overflow-wrap: anywhere; }
+body[data-page="qc-ld-pruning"] .pp-table { white-space: pre; overflow-x: auto; margin-top: 8px; }
+@media (max-width: 480px) { body[data-page="qc-ld-pruning"] .pp-table { font-size: 0.72rem; } }
+body[data-page="qc-ld-pruning"] .pw-lists[hidden], body[data-page="qc-ld-pruning"] .pp-table[hidden] { display: none; }
+body[data-page="qc-ld-pruning"] .widget select { max-width: 100%; }
+body[data-page="qc-ld-pruning"] .widget label.w-pick { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; }
+body[data-page="qc-ld-pruning"] .widget label.w-pick > select { min-width: 0; flex: 1 1 auto; }
+/* Keep short inline code (flags such as --extract) on one line; long commands carry class="wrap". */
+body[data-page="qc-ld-pruning"] :is(p, li, dd, td, summary, figcaption) > code:not(.wrap) { white-space: nowrap; }
+</style>
+</head>
+<body data-page="qc-ld-pruning">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Step 3 of 8 · Page 17 of 23</p>
+  <h1>QC step 3: LD pruning</h1>
+  <p class="lede">Relatedness, heterozygosity and principal components treat every SNP as a separate piece of evidence, but neighboring SNPs often carry the same information. This step slides a window along each chromosome and, from every pair of SNPs whose genotypes are strongly correlated, sets one aside. It changes no data: it writes two lists, the SNPs to keep and the SNPs set aside.</p>
+  <div class="chips">
+    <span class="chip core">Slide 85</span>
+    <span class="chip deeper">plink --indep-pairwise 50 5 0.3</span>
+    <span class="chip data">Writes: .prune.in and .prune.out</span>
+    <span class="chip time">≈ 45 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="3" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">A window slides along each chromosome; from every correlated pair inside it, the SNP with the lower minor allele frequency goes to a list</h2>
+  <figure>
+    <div class="mm-panels">
+<svg viewBox="0 0 360 324" role="img" aria-labelledby="mm-a-t mm-a-d">
+<title id="mm-a-t">One window of LD pruning, decision by decision</title>
+<desc id="mm-a-d">Ten SNPs in a row with their minor allele frequencies: 0.32, 0.30, 0.12, 0.45, 0.41, 0.44, 0.20, 0.10, 0.35 and 0.33. A box marks window 1, SNPs 1 to 8; a bracket below marks window 2, SNPs 3 to 10, the same window moved on by 2 SNPs. Arcs join the pairs with r² above 0.3: SNPs 1 and 2 (r² 0.81), 3 and 7 (0.35), 4 and 5 (0.55), 5 and 6 (0.62), 7 and 8 (0.40) and, in window 2, 9 and 10 (0.50). In PLINK's order, each pair loses its SNP with the lower minor allele frequency: SNP 2, then 3, then 5, after which the pair 5 and 6 no longer counts, then 8, and in window 2, SNP 10. The kept SNPs 1, 4, 6, 7 and 9 go to .prune.in; SNPs 2, 3, 5, 8 and 10 go to .prune.out.</desc>
+<text x="8" y="18" class="t-b">A · A window of 8 SNPs, moved 2 at a time</text>
+<rect x="8" y="28" width="270" height="142" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="14" y="43" class="t-sm" style="fill: var(--mm); font-weight: 600">window 1: SNPs 1–8</text>
+<path d="M24,97 Q41,69 58,97" fill="none" stroke="var(--fg)" stroke-width="1.3"/>
+<text x="41" y="79" class="t-xs" text-anchor="middle" style="fill: var(--fg)">0.81</text>
+<path d="M126,97 Q143,69 160,97" fill="none" stroke="var(--fg)" stroke-width="1.3"/>
+<text x="143" y="79" class="t-xs" text-anchor="middle" style="fill: var(--fg)">0.55</text>
+<path d="M160,97 Q177,69 194,97" fill="none" stroke="var(--fg-faint)" stroke-width="1.3" stroke-dasharray="3 2"/>
+<text x="177" y="79" class="t-xs" text-anchor="middle">0.62</text>
+<path d="M228,97 Q245,69 262,97" fill="none" stroke="var(--fg)" stroke-width="1.3"/>
+<text x="245" y="79" class="t-xs" text-anchor="middle" style="fill: var(--fg)">0.40</text>
+<path d="M296,97 Q313,69 330,97" fill="none" stroke="var(--fg)" stroke-width="1.3"/>
+<text x="313" y="79" class="t-xs" text-anchor="middle" style="fill: var(--fg)">0.50</text>
+<path d="M92,137 Q160,165 228,137" fill="none" stroke="var(--fg)" stroke-width="1.3"/>
+<text x="160" y="163" class="t-xs" text-anchor="middle" style="fill: var(--fg)">0.35</text>
+<circle cx="24" cy="108" r="9" fill="var(--g2)" stroke="var(--g2)"/><text x="24" y="111.5" class="t-xs" text-anchor="middle" style="fill: #fff">1</text>
+<circle cx="58" cy="108" r="9" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="3 2"/><text x="58" y="111.5" class="t-xs" text-anchor="middle" style="fill: var(--pitfall)">2</text>
+<circle cx="92" cy="108" r="9" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="3 2"/><text x="92" y="111.5" class="t-xs" text-anchor="middle" style="fill: var(--pitfall)">3</text>
+<circle cx="126" cy="108" r="9" fill="var(--g2)" stroke="var(--g2)"/><text x="126" y="111.5" class="t-xs" text-anchor="middle" style="fill: #fff">4</text>
+<circle cx="160" cy="108" r="9" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="3 2"/><text x="160" y="111.5" class="t-xs" text-anchor="middle" style="fill: var(--pitfall)">5</text>
+<circle cx="194" cy="108" r="9" fill="var(--g2)" stroke="var(--g2)"/><text x="194" y="111.5" class="t-xs" text-anchor="middle" style="fill: #fff">6</text>
+<circle cx="228" cy="108" r="9" fill="var(--g2)" stroke="var(--g2)"/><text x="228" y="111.5" class="t-xs" text-anchor="middle" style="fill: #fff">7</text>
+<circle cx="262" cy="108" r="9" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="3 2"/><text x="262" y="111.5" class="t-xs" text-anchor="middle" style="fill: var(--pitfall)">8</text>
+<circle cx="296" cy="108" r="9" fill="var(--g2)" stroke="var(--g2)"/><text x="296" y="111.5" class="t-xs" text-anchor="middle" style="fill: #fff">9</text>
+<circle cx="330" cy="108" r="9" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="3 2"/><text x="330" y="111.5" class="t-xs" text-anchor="middle" style="fill: var(--pitfall)">10</text>
+<text x="24" y="131" class="t-xs" text-anchor="middle">0.32</text>
+<text x="58" y="131" class="t-xs" text-anchor="middle">0.30</text>
+<text x="92" y="131" class="t-xs" text-anchor="middle">0.12</text>
+<text x="126" y="131" class="t-xs" text-anchor="middle">0.45</text>
+<text x="160" y="131" class="t-xs" text-anchor="middle">0.41</text>
+<text x="194" y="131" class="t-xs" text-anchor="middle">0.44</text>
+<text x="228" y="131" class="t-xs" text-anchor="middle">0.20</text>
+<text x="262" y="131" class="t-xs" text-anchor="middle">0.10</text>
+<text x="296" y="131" class="t-xs" text-anchor="middle">0.35</text>
+<text x="330" y="131" class="t-xs" text-anchor="middle">0.33</text>
+<path d="M76,176 V182 H346 V176" fill="none" stroke="var(--mm)" stroke-width="1.4"/>
+<text x="211" y="196" class="t-sm" text-anchor="middle" style="fill: var(--mm); font-weight: 600">window 2: SNPs 3–10</text>
+<text x="8" y="216" class="t-sm" style="fill: var(--fg); font-weight: 600">Pairs above 0.3, in order; the lower MAF goes:</text>
+<text x="8" y="231" class="t-sm" style="fill: var(--fg)">1–2  r² 0.81 → drop 2 (0.30 &lt; 0.32)</text>
+<text x="8" y="245" class="t-sm" style="fill: var(--fg)">3–7  r² 0.35 → drop 3 (0.12 &lt; 0.20)</text>
+<text x="8" y="259" class="t-sm" style="fill: var(--fg)">4–5  r² 0.55 → drop 5 (0.41 &lt; 0.45)</text>
+<text x="8" y="273" class="t-sm">5–6  r² 0.62 → nothing: SNP 5 is gone</text>
+<text x="8" y="287" class="t-sm" style="fill: var(--fg)">7–8  r² 0.40 → drop 8 (0.10 &lt; 0.20)</text>
+<text x="8" y="301" class="t-sm" style="fill: var(--fg)">window 2, 9–10  r² 0.50 → drop 10 (0.33 &lt; 0.35)</text>
+<text x="8" y="319" class="t-sm" style="fill: var(--fg); font-weight: 600">.prune.in: 1 4 6 7 9 · .prune.out: 2 3 5 8 10</text>
+</svg>
+<svg viewBox="0 0 360 300" role="img" aria-labelledby="mm-b-t mm-b-d">
+<title id="mm-b-t">Step 3 drawn as one box of the QC pipeline</title>
+<desc id="mm-b-d">Five stages from top to bottom. Statistic: r² of allele counts for each pair of SNPs inside the window. Distribution: near 0 for most pairs, high inside LD blocks, falling with distance. Threshold: r² above 0.3 in windows of 50 SNPs, moved 5 SNPs at a time. Remove: nothing is removed from the fileset; the lower-MAF SNP of each pair goes to .prune.out. Record: the .prune.in and .prune.out lists and the log; steps 4 to 6 apply .prune.in with --extract.</desc>
+<text x="8" y="18" class="t-b">B · Step 3 in the QC pipeline</text>
+<g>
+<rect x="8" y="30" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="56" class="t-b" style="fill: var(--mm)">Statistic</text>
+<text x="112" y="48" class="t-sm" style="fill: var(--fg)">r² of allele counts for each</text>
+<text x="112" y="63" class="t-sm" style="fill: var(--fg)">pair of SNPs inside the window</text>
+<polygon points="54,77 66,77 60,85" fill="var(--mm)"/>
+<rect x="8" y="88" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="114" class="t-b" style="fill: var(--mm)">Distribution</text>
+<text x="112" y="106" class="t-sm" style="fill: var(--fg)">near 0 for most pairs; high in</text>
+<text x="112" y="121" class="t-sm" style="fill: var(--fg)">LD blocks, falling with distance</text>
+<polygon points="54,135 66,135 60,143" fill="var(--mm)"/>
+<rect x="8" y="146" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="172" class="t-b" style="fill: var(--mm)">Threshold</text>
+<text x="112" y="164" class="t-sm" style="fill: var(--fg)">r² &gt; 0.3 in windows of 50 SNPs,</text>
+<text x="112" y="179" class="t-sm" style="fill: var(--fg)">moved 5 SNPs at a time</text>
+<polygon points="54,193 66,193 60,201" fill="var(--mm)"/>
+<rect x="8" y="204" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="230" class="t-b" style="fill: var(--mm)">Remove</text>
+<text x="112" y="222" class="t-sm" style="fill: var(--fg)">nothing from the fileset; the lower-</text>
+<text x="112" y="237" class="t-sm" style="fill: var(--fg)">MAF SNP of a pair → .prune.out</text>
+<polygon points="54,251 66,251 60,259" fill="var(--mm)"/>
+<rect x="8" y="262" width="344" height="34" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="283" class="t-b" style="fill: var(--mm)">Record</text>
+<text x="112" y="276" class="t-sm" style="fill: var(--fg)">.prune.in, .prune.out and the .log;</text>
+<text x="112" y="290" class="t-sm" style="fill: var(--fg)">--extract .prune.in in steps 4–6</text>
+</g>
+</svg>
+    </div>
+    <figcaption><span class="illustrative">Illustrative</span> Panel A uses made-up values of r² and of the minor allele frequency (MAF, the numbers under the SNPs) for ten SNPs, with a window of 8 SNPs moved 2 at a time and the practical's threshold of 0.3; the practical's windows hold 50 SNPs and move 5 at a time. Filled circles are kept SNPs, dashed red circles SNPs set aside; arcs join the pairs with r² above 0.3, and all other pairs are below it. <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+  </figure>
+  <p class="mm-statement">Inside a window of 50 consecutive SNPs, PLINK computes r² for every pair and, while some pair is above 0.3, sets aside the SNP of that pair with the lower minor allele frequency; then it moves the window 5 SNPs on. The data are not changed: the SNPs kept go to <code>.prune.in</code>, which steps 4–6 read so that each group of correlated SNPs counts about once.</p>
+  <ul class="mm-hooks">
+    <li><strong>Why prune.</strong> Relatedness, heterozygosity and PCA add up evidence over SNPs; a block of correlated SNPs adds the same evidence many times.</li>
+    <li><strong>The statistic: r² of allele counts.</strong> The squared correlation of two SNPs' 0/1/2 columns across people, which needs no haplotypes and is capped by the two allele frequencies.</li>
+    <li><strong>A greedy rule in a sliding window.</strong> Pairs are checked in order; the first pair above the threshold loses its lower-MAF SNP, until no pair in the window is above it.</li>
+    <li><strong>Lists, not a new fileset.</strong> <code>.prune.in</code> and <code>.prune.out</code>; steps 4–6 apply <code>.prune.in</code> with <code>--extract</code>, and the association analysis keeps every SNP.</li>
+    <li><strong>Settings and limits.</strong> Window, step and threshold trade the number of SNPs kept against how independent they are; SNPs further apart than the window, and long-range LD regions, are not handled by pruning alone.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and earlier pages</div>
+  <p>Linkage disequilibrium (LD) and its measure r², and why LD falls with distance: <a href="linkage-disequilibrium.html#measures">Linkage disequilibrium · measures</a>, <a href="linkage-disequilibrium.html#decay">LD decay</a> and <a href="../0-biological-foundations/haplotypes-ld.html#measure-r2">Lecture 0 · r²</a>. Pruning compared with clumping: <a href="../0-biological-foundations/haplotypes-ld.html#pruning-clumping">Lecture 0 · LD pruning and clumping</a>. This step reads the fileset made in <a href="qc-missingness.html">step 1</a>; the practical applies no filter in <a href="qc-hwe.html">step 2</a>.</p>
+</aside>
+
+<h2 id="why">Why steps 4–6 need nearly independent SNPs <span class="tag core">Core</span></h2>
+<p>The practical gives the reason in two sentences: "Many downstream QC analyses, including PLINK's Identity-by-Descent (IBD), heterozygosity rate, and principal component analysis (PCA), can be influenced by correlated markers in linkage disequilibrium (LD). We therefore use an approximately LD-independent marker set for these analyses so that regions of high LD do not receive disproportionate weight."<sup><a href="#src-1">1</a></sup> Each of the three analyses combines information across SNPs as if every SNP were a separate piece of evidence:</p>
+<ul>
+  <li><strong>Relatedness (<a href="qc-relatedness.html">step 4</a>).</strong> <code>--genome</code> counts, for each pair of people, the SNPs at which they share 0, 1 or 2 alleles and turns the counts into estimates of identity by descent. The PLINK documentation warns: "These calculations are not LD-aware. It is usually a good idea to perform some form of LD-based pruning before invoking them."<sup><a href="#src-4">4</a></sup></li>
+  <li><strong>Heterozygosity (<a href="qc-heterozygosity.html">step 5</a>).</strong> <code>--het</code> compares each person's number of homozygous genotypes with the number expected from the allele frequencies, summed over SNPs. The documentation of <code>--het</code> and <code>--ibc</code> ends: "These calculations do not take LD into account. It is usually a good idea to perform some form of LD-based pruning before invoking them."<sup><a href="#src-4">4</a></sup></li>
+  <li><strong>Principal components (<a href="qc-pca.html">step 6</a>).</strong> PCA finds the directions in which many SNPs vary together across people. A long stretch of correlated SNPs is such a direction even when it reflects the haplotypes of one region rather than genome-wide ancestry, so it can take a component of its own (<a href="population-structure.html#ld-relatives">Population structure · regions of strong LD</a>). In the practical's words, "regions of strong or long-range LD can disproportionately influence individual components".<sup><a href="#src-1">1</a></sup></li>
+</ul>
+<p>The PLINK documentation gives an example of the size of the effect. <code>--check-sex</code> compares each person's recorded sex with an inbreeding coefficient F computed from the X chromosome: by default, F below 0.2 gives a female call and F above 0.8 a male call. Without LD pruning, among people recorded as female in the 1000 Genomes phase 1 data, "NA19332 has an F estimate just under 0.88, and there are others with F &gt; 0.8", values that give male calls; after <code class="wrap">--indep-pairphase 20000 2000 0.5</code>, "the largest female F estimate drops to about 0.66".<sup><a href="#src-4">4</a></sup> No genotype changed. What changed is how many times each stretch of haplotype was counted. (PennCATH has no X chromosome, so the practical cannot run this check; see <a href="plink-data.html#bim">the .bim file</a>.)</p>
+<p>Pruning is therefore a means to these three analyses, not a quality filter. The SNPs it sets aside are not faulty, and a GWAS tests every SNP that passes quality control, not the pruned set.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 85 · Linkage disequilibrium: what it is and why it is studied</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-085.jpg" alt="Lecture 1, slide 85, titled Linkage disequilibrium (LD), with three questions. What are we talking about? The correlation between genetic markers in a population, how it is measured or estimated, and how it is quantified; typically measured using r squared (see appendix); high r squared between two SNPs requires both have similar MAFs. What are the underlying biological mechanisms? Mutation and recombination in meiosis; selection; demographics. Why study? To assess the number of independent tests in the genome; to identify a minimum number of variants that retain coverage of genetic variation in the genome, i.e. through correlation structure; to impute markers that are not directly genotyped; to help understand the origins and biological properties of genetic variation in the genome." loading="lazy"><figcaption>Lecture 1 · slide 85</figcaption></figure>
+    <div>
+      <p>The slide defines LD as "the correlation between genetic markers in a population", measured with r², and states the property that shapes this step: "high r² between two SNPs requires both have similar MAFs" (the <a href="#statistic">statistic section</a> works out what that means for a threshold of 0.3). Two of its reasons to study LD use the same correlation structure as pruning. Counting "the number of independent tests in the genome" needs to know how many SNPs carry separate information (<a href="../0-biological-foundations/haplotypes-ld.html#effective-tests">Lecture 0 · effective number of tests</a>). Finding "a minimum number of variants that retain coverage" is tag SNP selection (<a href="../0-biological-foundations/haplotypes-ld.html#tag-snps">Lecture 0 · tag SNPs</a>): it keeps SNPs that are correlated with the SNPs left out, so that each one has a proxy. Pruning has the reverse aim: it keeps SNPs that are not correlated with each other and does not check whether a SNP it sets aside still has a proxy. The mechanisms in the middle of the slide, recombination above all, explain why correlation usually falls with distance, which is why checking pairs of nearby SNPs catches most of it.</p>
+    </div>
+  </div>
+</aside>
+
+<h2 id="statistic">The statistic: r² of allele counts <span class="tag core">Core</span></h2>
+<p>For each pair of SNPs in the window, PLINK computes r²: the squared correlation between the two SNPs' columns of allele counts, where each person has 0, 1 or 2 copies of the counted allele at each SNP. It uses <a class="term" href="glossary.html#founder">founders</a> only and, for each pair, only the people with a call at both SNPs. The documentation says the pruning commands "are currently based on correlations between genotype allele counts; phase is not considered".<sup><a href="#src-2">2</a></sup></p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} r^2 = \frac{c_{xy}^2}{c_{xx}\,c_{yy}} \\[4pt] c_{xy} = \sum_{i} (x_i - \bar{x})(y_i - \bar{y}) \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(i\)</dt><dd>A person: the sums run over the founders with a genotype call at both SNPs.</dd>
+    <dt>\(x_i\), \(y_i\)</dt><dd>Person \(i\)'s allele counts at the first and the second SNP: 0, 1 or 2 copies of the counted allele (<a href="plink-data.html#a1-a2">A1</a>).</dd>
+    <dt>\(\bar{x}\), \(\bar{y}\)</dt><dd>The mean allele counts over the same people.</dd>
+    <dt>\(c_{xy}\)</dt><dd>The sum of cross-products of the deviations from the means: the covariance of the two columns times the number of people.</dd>
+    <dt>\(c_{xx}\), \(c_{yy}\)</dt><dd>The same sum for one SNP with itself, \(\sum_i (x_i - \bar{x})^2\) and \(\sum_i (y_i - \bar{y})^2\): each column's variance times the number of people.</dd>
+    <dt>\(r^2\)</dt><dd>The squared correlation, from 0 to 1.</dd>
+  </dl>
+  <p class="eq-intuition">\(r^2\) is the share of the variance of one SNP's allele counts that a straight line in the other SNP's counts explains. It is 1 when one column is an exact linear function of the other, as for two SNPs whose alleles always occur on the same haplotypes, and near 0 when a person's genotype at one SNP says nothing about the other. Counting the other allele at one SNP replaces \(x_i\) by \(2 - x_i\), which changes the sign of \(c_{xy}\) and leaves \(r^2\) unchanged, so the choice of A1 does not matter. No haplotypes are needed: under random mating, this correlation of genotype columns estimates the haplotype \(r^2\) of the LD measures (<a href="linkage-disequilibrium.html#genotype-r2">why allele counts stand in for haplotypes</a>). A SNP with no variation has \(c_{xx} = 0\) and no defined \(r^2\); PLINK sets such monomorphic SNPs aside before it checks any pair.</p>
+</div>
+<p>Slide 85's remark that high r² "requires both have similar MAFs" puts a ceiling on r² that depends only on the two SNPs' minor allele frequencies (<a href="../0-biological-foundations/haplotypes-ld.html#measure-r2">Lecture 0</a> derives it). Solving it for the threshold shows which pairs can be pruned at all:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} r^2_{\max} = \frac{m_1(1 - m_2)}{(1 - m_1)\,m_2} \\[4pt] r^2_{\max} &gt; t \iff m_1 &gt; \frac{t\,m_2}{1 - m_2 + t\,m_2} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(m_1\), \(m_2\)</dt><dd>The two SNPs' minor allele frequencies, named so that \(m_1 \le m_2 \le 0.5\).</dd>
+    <dt>\(r^2_{\max}\)</dt><dd>The largest r² that any arrangement of the alleles on haplotypes allows with these frequencies, reached when every copy of the rarer minor allele is on a haplotype that also carries the other minor allele.</dd>
+    <dt>\(t\)</dt><dd>The r² threshold of the pruning: 0.3 in the practical.</dd>
+  </dl>
+  <p class="eq-intuition">The first line divides the odds of the rarer minor allele, \(m_1/(1 - m_1)\), by the odds of the other, \(m_2/(1 - m_2)\): it is 1 only for equal frequencies and falls as they move apart. The second line solves \(r^2_{\max} &gt; t\) for \(m_1\). With \(t = 0.3\) and a SNP at \(m_2 = 0.3\), a partner can exceed the threshold only if \(m_1 &gt; 0.09/0.79 \approx 0.114\). A SNP with a minor allele frequency of 0.05 can exceed 0.3 only with partners whose frequency lies between about 0.016 (from the second line) and 0.149 (from the first line, with the SNP as \(m_1\)). Pruning at 0.3 therefore never sets a rare SNP aside because of a common neighbor, or a common SNP because of a rare one: whether a rare SNP stays depends only on neighbors of similar frequency.</p>
+</div>
+
+<h2 id="algorithm">How --indep-pairwise decides <span class="tag core">Core</span></h2>
+<p>The documentation describes the rule in one sentence: "at each step, pairs of variants in the current window with squared correlation greater than the threshold are noted, and variants are greedily pruned from the window until no such pairs remain".<sup><a href="#src-2">2</a></sup> The PLINK 1.9 source code fills in the details:<sup><a href="#src-3">3</a></sup></p>
+<ol>
+  <li><strong>Chromosome by chromosome, in file order.</strong> The SNPs of each chromosome are taken in the order of the <code>.bim</code> file, after any filters in the same command; a window never spans two chromosomes. SNPs on chromosome 0 (position unknown) are ignored and appear in neither list.</li>
+  <li><strong>Monomorphic SNPs first.</strong> A SNP with a single genotype among the founders is set aside as soon as it enters a window.</li>
+  <li><strong>Pairs in order; the lower MAF goes.</strong> The first window holds the first 50 SNPs. PLINK checks SNP 1 against each later SNP in the window, then SNP 2 against each later SNP, and so on. At the first pair with r² above 0.3 it sets aside the SNP with the lower minor allele frequency (the later of the two when the frequencies are equal) and moves on to the next SNP. It repeats these passes until no pair of remaining SNPs in the window is above 0.3. A SNP that has been set aside takes no further part.</li>
+  <li><strong>Slide by the step.</strong> The window then moves 5 SNPs along the chromosome, counting SNPs already set aside, and gains the next 5 SNPs. Only pairs that include a new SNP can be above the threshold, because all other pairs were settled in the previous window.</li>
+  <li><strong>Report.</strong> At the end of each chromosome the log says "Pruned N variants from chromosome C, leaving M."; at the end of the run, "Pruning complete. X of Y variants removed." and the names of the two lists.</li>
+</ol>
+<p>Three consequences follow. The rule is greedy and local: each decision is final and depends on the order of the SNPs and on the window, so the result is one reasonable set, not the largest possible set of uncorrelated SNPs. Within each correlated group it favors the SNPs with the higher minor allele frequency. And SNPs further apart than the window are never compared, so two kept SNPs can still have r² above 0.3 if no window contained both.</p>
+
+<div class="widget" id="w-prune-window">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Prune 48 SNPs one decision at a time</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It simulates 48 SNPs in 300 people and steps through the pruning rule of plink --indep-pairwise, one decision at a time, with an adjustable window, step and r² threshold.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Press Next decision a few times. The first window covers SNPs 1–12, and each red outline is a pair above the threshold. Each decision sets aside the lower-MAF SNP of the first such pair in PLINK's order; the pairs of that SNP fade, and an outlined pair can disappear without a decision of its own. Run to the end and read the two lists. Then change one setting at a time (each change jumps to the final result): a threshold of 0.1 keeps fewer SNPs and 0.8 keeps more; a window of 48 SNPs compares every pair, so no orange pairs remain; a window of 4, or a step as large as the window, leaves orange pairs, kept SNPs that are still correlated because no window contained both. The simulation and the lab's PLINK emulator apply the same rule and give the same lists on the same genotypes.</p>
+
+<h3 id="outputs">The two lists and the log</h3>
+<p><code>--indep-pairwise</code> writes plain text files, one SNP ID per line, without a header, chromosome by chromosome in the order of the <code>.bim</code> file. The documentation calls them "valid input for --extract/--exclude in a future PLINK run".<sup><a href="#src-2">2</a>, <a href="#src-3">3</a></sup></p>
+<dl class="cols-doc">
+  <dt><code>PREFIX.prune.in</code></dt><dd>The SNPs kept: the nearly independent set that steps 4–6 use.</dd>
+  <dt><code>PREFIX.prune.out</code></dt><dd>The SNPs set aside, both those removed for LD and the monomorphic ones.</dd>
+  <dt><code>PREFIX.log</code></dt><dd>One "Pruned N variants from chromosome C, leaving M." line per chromosome, the total ("Pruning complete. X of Y variants removed."), and "Marker lists written to PREFIX.prune.in and PREFIX.prune.out".</dd>
+</dl>
+<p>Every SNP that enters the step, apart from any on chromosome 0, is in exactly one list, so the line counts of <code>.prune.in</code> and <code>.prune.out</code> add up to the number of lines of the input <code>.bim</code> file.</p>
+
+<h2 id="run-it">Run it in the browser <span class="tag core">Core</span></h2>
+<p>The practical prunes the fileset that step 1 produced:</p>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="3">--indep-pairwise 50 5 0.3</span> <span class="part" data-n="4">--out ${analysis_dir}/toy.geno0.01.mind0.01</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code> — PLINK 1.9 (in the lab, its emulator).</li>
+    <li><code>--bfile …toy.geno0.01.mind0.01</code> — the fileset written by step 1, after <code>--geno 0.01</code> and <code>--mind 0.01</code>. Step 2 wrote a report but no new fileset.</li>
+    <li><code>--indep-pairwise 50 5 0.3</code> — the window size (50 SNPs; with a <code>kb</code> suffix, as in <code>250kb</code>, a length in kilobases), the step (5 SNPs; always a number of SNPs, and PLINK warns unless it is 1 with a window in kb) and the r² threshold (0.3; at least 0 and below 1). All three are required; there are no defaults.<sup><a href="#src-2">2</a>, <a href="#src-3">3</a></sup></li>
+    <li><code>--out …toy.geno0.01.mind0.01</code> — the prefix of <code>.prune.in</code>, <code>.prune.out</code> and <code>.log</code>. Reusing the input's prefix, as the practical does, keeps the lists next to the fileset they describe; the new <code>.log</code> replaces the one an earlier command wrote with the same prefix.</li>
+  </ol>
+</div>
+<p>Run it in the terminal below (<strong>Run next</strong> runs the suggested commands one at a time; a click on a suggestion puts it on the command line). The terminal's setup has already run step 1 on the toy data, so the input exists even if you opened this page first.</p>
+<div class="lab" id="lab-prune" data-title="Step 3 · LD pruning of the toy data">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="lab-script">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/toy.geno0.01.mind0.01
+head -n 5 ${analysis_dir}/toy.geno0.01.mind0.01.prune.in
+wc -l ${analysis_dir}/toy.geno0.01.mind0.01.prune.in ${analysis_dir}/toy.geno0.01.mind0.01.prune.out ${analysis_dir}/toy.geno0.01.mind0.01.bim
+cat ${analysis_dir}/toy.geno0.01.mind0.01.prune.in ${analysis_dir}/toy.geno0.01.mind0.01.prune.out | sort | uniq -d | wc -l
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in --freq --out ${analysis_dir}/toy.LD0.3</pre>
+</div>
+<p>What each command shows:</p>
+<ul>
+  <li>The PLINK output: one "Pruned …" line per chromosome and the total. In the file browser, <code>.prune.in</code> and <code>.prune.out</code> appear next to the fileset.</li>
+  <li><code>head</code> and <code>wc -l</code>: the lists hold bare IDs, and the two counts add up to the lines of the <code>.bim</code> file (the last line of <code>wc</code> is the sum of all three files, which you can ignore).</li>
+  <li><code class="wrap">cat … | sort | uniq -d | wc -l</code> joins the two lists, sorts the IDs and prints only IDs that occur twice: 0 means no SNP is in both lists.</li>
+  <li><code>--extract</code> with the list keeps only the listed SNPs for the rest of the command; the line "--extract: … variants remaining." in the output confirms the count. Steps 4–6 use the list in the same way, with <code>--genome</code>, <code>--het</code> and <code>--pca</code> in place of <code>--freq</code>.</li>
+</ul>
+<p>On the toy data, the input has <span data-card="qc_snps">?</span> SNPs: <span data-card="prune_in">?</span> are kept in <code>.prune.in</code> and <span data-card="prune_out">?</span> set aside in <code>.prune.out</code>, and the <code>--extract</code> line reports <span data-card="prune_in">?</span> variants remaining. The toy data have <span data-card="prune_input_monomorphic">?</span> monomorphic SNPs, so every SNP in <code>.prune.out</code> was set aside for LD.</p>
+
+<h3 id="extract">Using the list in steps 4–6</h3>
+<p><code>--extract FILE</code> keeps only the variants listed in <code>FILE</code> and drops all others from the current command; <code>--exclude FILE</code> does the opposite.<sup><a href="#src-7">7</a></sup> PLINK applies <code>--extract</code> early, before any calculation, so everything later in the command sees only the pruned SNPs (<a href="tools.html#plink-order">order of operations</a>). The practical's step 4 command is</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/penncath.geno0.01.mind0.01.prune.in \
+      --genome --out ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3</pre>
+<p>and steps 5 and 6 differ only in the calculation (<code>--het</code>; <code>--maf 0.05 --pca</code>). The full fileset stays as it is, and the <code>LD0.3</code> in the output prefix records which SNPs the results rest on.<sup><a href="#src-1">1</a></sup> A list belongs to the SNP set it was made from: after merging PennCATH with the 1000 Genomes reference in <a href="qc-reference-pca.html">step 7</a>, the practical does not reuse it, "because it was created from PennCATH's full marker set, not from the much smaller set of variants shared after the merge", and uses a marker set supplied already pruned.<sup><a href="#src-1">1</a></sup></p>
+
+<h2 id="parameters">Choose the window, step and threshold <span class="tag core">Core</span></h2>
+<p>The three numbers are a choice, and published protocols differ:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>LD-pruning settings in the practical and in two published sources</caption>
+  <thead><tr><th>Source</th><th>Command</th><th>Window · step · r²</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Source">Session 1 practical<sup><a href="#src-1">1</a></sup></td><td data-label="Command"><code>--indep-pairwise 50 5 0.3</code></td><td data-label="Window · step · r²">50 SNPs · 5 · 0.3</td><td data-label="Notes">For IBD, heterozygosity and PCA of the study</td></tr>
+    <tr><td data-label="Source">Anderson et al. 2010<sup><a href="#src-6">6</a></sup></td><td data-label="Command"><code>--indep-pairwise 50 5 0.2</code></td><td data-label="Window · step · r²">50 SNPs · 5 · 0.2</td><td data-label="Notes">After excluding high-LD regions with <code>--exclude … --range</code></td></tr>
+    <tr><td data-label="Source">PLINK documentation, <code>--check-sex</code> example<sup><a href="#src-4">4</a></sup></td><td data-label="Command"><code class="wrap">--indep-pairphase 20000 2000 0.5</code></td><td data-label="Window · step · r²">20,000 SNPs · 2,000 · 0.5</td><td data-label="Notes">r² from estimated haplotypes instead of allele counts</td></tr>
+  </tbody>
+</table>
+</div>
+<ul>
+  <li><strong>Window.</strong> A window counted in SNPs covers more or less of the genome depending on how densely the array samples it. PennCATH has one SNP every 3.3 kb on average (<a href="snp-data.html#molecules">SNPs per chromosome</a>), so 50 consecutive SNPs span about 160 kb on average, and less where the array is dense. A window in kilobases (<code>250kb 1 0.3</code>, for example) fixes the physical length instead. The units matter: the protocol of Anderson et al. describes pruning so that "no pair of SNPs within a given window (say, 50kb) is correlated (typically taken as r2&gt;0.2)", while its command uses a window of 50 SNPs.<sup><a href="#src-6">6</a></sup></li>
+  <li><strong>Step.</strong> Each window starts the step's number of SNPs after the one before, so consecutive windows share all but that many SNPs. With a step of 1, every pair of SNPs less than a window apart shares some window and is compared. With a larger step, only pairs at most the window minus the step apart are sure to be compared (45 SNPs for <code>50 5</code>); pairs further apart may fall on either side of every window's edge. With a step as large as the window, consecutive windows do not overlap and pairs on either side of a boundary are never compared (the widget's orange pairs). PLINK accepts a step larger than the window, but then some SNPs never enter a window at all.<sup><a href="#src-3">3</a></sup></li>
+  <li><strong>Threshold.</strong> A lower threshold keeps fewer SNPs that are more nearly independent; a higher one keeps more. The r² is a squared correlation: 0.3 allows correlations up to about ±0.55 between kept neighbors, 0.1 up to about ±0.32.</li>
+</ul>
+<p>Try other settings on the toy data. Each command writes its lists under a prefix that names its settings, and the widget below collects every pruning run of the page, including those from the terminals:</p>
+<div class="lab" id="lab-settings" data-title="Step 3 · the same toy data, other settings">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="lab-script">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.1 --out ${analysis_dir}/toy.prune_50_5_0.1
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.8 --out ${analysis_dir}/toy.prune_50_5_0.8
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 50 0.3 --out ${analysis_dir}/toy.prune_50_50_0.3
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 250kb 1 0.3 --out ${analysis_dir}/toy.prune_250kb_1_0.3
+wc -l ${analysis_dir}/*.prune.in</pre>
+</div>
+<div class="widget" id="w-prune-params">
+  <div class="widget-head"><span class="badge">Interactive</span><span class="wtitle">How many toy SNPs each setting keeps</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It runs plink --indep-pairwise in the in-browser lab with the window, step and threshold you choose, and compares the number of SNPs each run keeps.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to look for.</strong> The widget lists every <code>.prune.in</code> in the analysis folder with the settings read from its log, so the runs from both terminals appear as soon as they finish; choose other settings and press its button to add more. Compare the thresholds first: the number kept rises with the threshold, because fewer pairs exceed a higher r². (Because each decision depends on the ones before, the rule does not guarantee this for every set of SNPs, but over many SNPs the trend is clear.) Then compare a step of 5 with a step of 50 at the same window: the larger step compares fewer pairs and usually keeps more SNPs. A window in kb keeps a different number again, because the number of SNPs it holds varies with how densely the SNPs are spaced.</p>
+<p>Of the <span data-card="qc_snps">?</span> toy SNPs, the practical's <code>50 5 0.3</code> keeps <span data-card="prune_in">?</span>. A threshold of 0.1 keeps <span data-card="prune_in_50_5_0_1">?</span> and one of 0.8 keeps <span data-card="prune_in_50_5_0_8">?</span>; a step of 50 keeps <span data-card="prune_in_50_50_0_3">?</span>, and a window of 250 kb keeps <span data-card="prune_in_250kb_1_0_3">?</span>.</p>
+
+<h3 id="long-range">Long-range LD regions</h3>
+<p>A window of 50 SNPs spans about 160 kb in PennCATH, but in some regions SNPs stay correlated over millions of base pairs. Price et al. found 24 such autosomal <a class="term" href="glossary.html#long-range-ld-region">long-range LD regions</a>, "each spanning &gt;2 megabases (Mb)", by asking which SNPs drove the top principal components of 327 European Americans genotyped on the Illumina 550K array. Their table includes a region on chromosome 6 (25.5–33.5 Mb) that contains the <a href="../0-biological-foundations/haplotypes-ld.html#mhc">MHC</a>, and regions on chromosomes 8 (112–115 Mb) and 11 (46–57 Mb). One known cause is an inversion, a segment that is reversed on some copies of a chromosome: a crossover inside the segment between a reversed and a standard copy produces chromosomes with missing or duplicated pieces, which are rarely passed on, so the alleles inside each orientation stay together over millions of base pairs. Price et al. note that "inversions are known to suppress viable recombination" and that an inversion polymorphism at 8–12 Mb on chromosome 8 has been shown to cause long-range LD there.<sup><a href="#src-5">5</a></sup> In such a region a pruned set still holds many SNPs that are correlated with each other at distances beyond the window, and together they can form a principal component of their own (<a href="population-structure.html#ld-relatives">Population structure</a>).</p>
+<p>The toy data contain a region of this kind, modeled on the chromosome 8 inversion (<a href="practical-overview.html#toy-dataset">the toy dataset</a>): on chromosome <span data-card="long_range_chr">?</span>, from <span data-card="long_range_start_mb">?</span> to <span data-card="long_range_end_mb">?</span> Mb, the simulation gave its <span data-card="long_range_snps">?</span> SNPs two groups of haplotypes, one for each orientation, with no recombination between them. Of these SNPs, <span data-card="long_range_snps_qc">?</span> pass step 1. The practical's settings keep <span data-card="long_range_snps_prune_in">?</span> of them, and a window of 250 kb keeps <span data-card="long_range_snps_prune_in_250kb">?</span>: in this region a window of 250 kb holds only a few SNPs at a time, so it never compares SNPs that are far apart but in strong LD. The SNPs that remain matter for <a href="qc-pca.html">step 6</a>. In a PCA of the toy SNPs without pruning (not part of the practical), component <span data-card="pca_unpruned_inversion_pc">?</span> sorts people by their number of inverted copies of the region, with a correlation of <span data-card="pca_unpruned_inversion_r">?</span> in absolute value; in the practical's PCA of the pruned SNPs, the component that follows the copy number most closely is component <span data-card="pca_pruned_inversion_pc">?</span>, with a correlation of only <span data-card="pca_pruned_inversion_r">?</span>.</p>
+<p>Anderson et al. therefore remove such regions before pruning, with PLINK 1.07's syntax <code class="wrap">--exclude high-LD-regions.txt --range</code>.<sup><a href="#src-6">6</a></sup> In PLINK 1.9 the same exclusion is <code>--exclude range FILE</code>, where each line of <code>FILE</code> names one region: chromosome, start and end in base pairs (the end included) and a name.<sup><a href="#src-7">7</a></sup></p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+      --exclude range high_ld_regions.txt \
+      --indep-pairwise 50 5 0.3 --out ${analysis_dir}/penncath.geno0.01.mind0.01.nohighld
+<span class="cm"># high_ld_regions.txt: one region per line, "chromosome start end name",</span>
+<span class="cm"># with positions in the genome build of the .bim file</span></pre>
+<p>Two cautions. Positions differ between genome builds: PennCATH's are on GRCh37 (<a href="snp-data.html#positions">positions and genome builds</a>), and Price et al. do not state the build of their table, so a region list must come from a source that names its build, or be converted. And <code>--exclude</code>, like <code>--extract</code>, acts before the pruning, so the regions' SNPs are in neither output list; they are simply left out of the analyses that use <code>.prune.in</code>. The practical does not exclude long-range LD regions; its study PCA in step 6 uses the pruned list as it is.<sup><a href="#src-1">1</a></sup> The lab's emulator does not support <code>--exclude range</code>.</p>
+
+<h3 id="removed-flagged">Removed, flagged and recorded</h3>
+<p>Nothing is removed in this step. The fileset from step 1 is unchanged, and the SNPs in <code>.prune.out</code> stay in it for the association analysis. The lists are the record: <code>.prune.in</code> says which SNPs steps 4–6 rest on, <code>.prune.out</code> which were set aside, and the log how many on each chromosome. Keep the lists with the fileset they were made from. If a later step removes people or SNPs, the allele frequencies and r² behind the lists change, so a list should be remade for the fileset it is applied to; the practical's note on step 7 makes the same point for merged data.<sup><a href="#src-1">1</a></sup></p>
+
+<h2 id="in-r">In R <span class="tag core">Core</span></h2>
+<p>The practical does not read the lists in R. The code below checks them against the <code>.bim</code> file and shows where pruning set aside the most SNPs: the share of SNPs kept on each chromosome, then the stretches of 50 consecutive SNPs, the length of the practical's window, with the lowest share kept (with their positions and their length in kb), and the share along the chromosome that holds the most of the 20 lowest stretches. A stretch with a low share kept is a stretch of strong LD, and several low stretches in a row mark a long region of it.</p>
+<span class="code-label r">r</span>
+<pre class="code"><span class="kw">library</span>(data.table)
+<span class="kw">library</span>(dplyr)
+<span class="kw">library</span>(ggplot2)
+
+analysis_dir &lt;- Sys.getenv(<span class="str">"analysis_dir"</span>)
+prefix &lt;- file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01"</span>)
+bim &lt;- fread(paste0(prefix, <span class="str">".bim"</span>), header = FALSE,
+             col.names = c(<span class="str">"CHR"</span>, <span class="str">"SNP"</span>, <span class="str">"CM"</span>, <span class="str">"BP"</span>, <span class="str">"A1"</span>, <span class="str">"A2"</span>))
+kept_ids &lt;- fread(paste0(prefix, <span class="str">".prune.in"</span>), header = FALSE)$V1
+bim &lt;- bim %&gt;% mutate(kept = SNP %in% kept_ids)
+bim %&gt;% count(kept)                    <span class="cm"># TRUE: lines of .prune.in; FALSE: lines of .prune.out</span>
+
+<span class="cm"># Share of SNPs kept on each chromosome</span>
+per_chr &lt;- bim %&gt;%
+  group_by(CHR) %&gt;%
+  summarise(snps = n(), kept_snps = sum(kept), share = kept_snps / snps)
+per_chr
+ggplot(per_chr, aes(x = factor(CHR), y = share)) +
+  geom_col() +
+  labs(x = <span class="str">"Chromosome"</span>, y = <span class="str">"Share of SNPs kept"</span>) +
+  theme_classic()
+
+<span class="cm"># Stretches of consecutive SNPs with the lowest share kept</span>
+stretch_snps &lt;- 50                     <span class="cm"># the practical's window</span>
+stretches &lt;- bim %&gt;%
+  group_by(CHR) %&gt;%
+  mutate(stretch = (row_number() - 1) %/% stretch_snps) %&gt;%
+  group_by(CHR, stretch) %&gt;%
+  summarise(start_Mb = min(BP) / 1e6, end_Mb = max(BP) / 1e6,
+            span_kb = (max(BP) - min(BP)) / 1e3,
+            snps = n(), share = mean(kept), .groups = <span class="str">"drop"</span>) %&gt;%
+  filter(snps == stretch_snps)         <span class="cm"># full stretches only</span>
+stretches %&gt;% arrange(share) %&gt;% head(10)
+
+<span class="cm"># The chromosome with the most of the 20 lowest stretches, and the share kept along it</span>
+low_chr &lt;- stretches %&gt;% arrange(share) %&gt;% head(20) %&gt;%
+  count(CHR, sort = TRUE) %&gt;% slice(1) %&gt;% pull(CHR)
+ggplot(filter(stretches, CHR == low_chr), aes(x = start_Mb, y = share)) +
+  geom_line() +
+  labs(x = paste(<span class="str">"Position on chromosome"</span>, low_chr, <span class="str">"(Mb, GRCh37)"</span>),
+       y = <span class="str">"Share of SNPs kept"</span>) +
+  theme_classic()</pre>
+<p>New functions on this page, with the pandas equivalent:</p>
+<dl class="cols-doc">
+  <dt><code>paste0(a, b)</code>, <code>paste(a, b)</code></dt><dd>Join strings, without a separator and with a space, like <code>a + b</code> and <code>" ".join([a, b])</code> in Python.</dd>
+  <dt><code>fread(...)$V1</code></dt><dd>A file read with <code>header = FALSE</code> gets columns <code>V1</code>, <code>V2</code>, …; <code>$V1</code> extracts the first as a vector, like <code>df[0].to_numpy()</code>.</dd>
+  <dt><code class="wrap">group_by(CHR) %&gt;% summarise(...)</code></dt><dd>One output row per chromosome, with the summaries computed within it, like <code>df.groupby("CHR").agg(...)</code>. A summary can use one defined before it in the same call (<code>share = kept_snps / snps</code>). After grouping by two columns, <code>.groups = "drop"</code> returns an ungrouped table, so that later steps act on all rows at once.</dd>
+  <dt><code>group_by(CHR) %&gt;% mutate(...)</code></dt><dd>Computes a new column within each chromosome and keeps every row, like <code class="wrap">df.groupby("CHR").transform(...)</code>.</dd>
+  <dt><code>row_number()</code>, <code>%/%</code></dt><dd>The row's position within its group (1, 2, …); integer division, like <code>//</code>. Together they number consecutive stretches of 50 rows on each chromosome: 0 for rows 1–50, 1 for rows 51–100, and so on.</dd>
+  <dt><code>slice(1)</code></dt><dd>Keeps the first row, like <code>df.iloc[[0]]</code>; after <code>count(CHR, sort = TRUE)</code>, that is the chromosome counted most often.</dd>
+  <dt><code>factor(CHR)</code></dt><dd>Treats chromosome numbers as categories, so the plot has one bar per chromosome.</dd>
+  <dt><code>geom_col</code>, <code>geom_line</code></dt><dd>Bars whose heights are the values given; a line through the points in order of x.</dd>
+</dl>
+<p>On PennCATH the stretches at the top of the table are candidates for the regions of strong and long-range LD described <a href="#long-range">above</a>; compare their positions with a published list in the same genome build before drawing conclusions. The same analysis runs in the browser on the toy lists. The toy data have far fewer SNPs than PennCATH, so the browser version uses stretches of 10 SNPs; <code>analysis_dir</code> is already defined there, and dplyr and ggplot2 are loaded instead of the much larger <code>tidyverse</code>.</p>
+<div class="rlab" id="r-prune" data-title="Step 3 in R · the toy pruning lists" data-packages="data.table,dplyr,ggplot2">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="rlab-code">library(data.table)
+library(dplyr)
+library(ggplot2)
+
+prefix &lt;- file.path(analysis_dir, "toy.geno0.01.mind0.01")
+bim &lt;- fread(paste0(prefix, ".bim"), header = FALSE,
+             col.names = c("CHR", "SNP", "CM", "BP", "A1", "A2"))
+kept_ids &lt;- fread(paste0(prefix, ".prune.in"), header = FALSE)$V1
+bim &lt;- bim %&gt;% mutate(kept = SNP %in% kept_ids)
+bim %&gt;% count(kept)
+
+# Share of SNPs kept on each chromosome
+per_chr &lt;- bim %&gt;%
+  group_by(CHR) %&gt;%
+  summarise(snps = n(), kept_snps = sum(kept), share = kept_snps / snps)
+per_chr
+ggplot(per_chr, aes(x = factor(CHR), y = share)) +
+  geom_col() +
+  labs(x = "Chromosome", y = "Share of SNPs kept") +
+  theme_classic()
+
+# Stretches of consecutive SNPs with the lowest share kept
+stretch_snps &lt;- 10
+stretches &lt;- bim %&gt;%
+  group_by(CHR) %&gt;%
+  mutate(stretch = (row_number() - 1) %/% stretch_snps) %&gt;%
+  group_by(CHR, stretch) %&gt;%
+  summarise(start_Mb = min(BP) / 1e6, end_Mb = max(BP) / 1e6,
+            span_kb = (max(BP) - min(BP)) / 1e3,
+            snps = n(), share = mean(kept), .groups = "drop") %&gt;%
+  filter(snps == stretch_snps)
+stretches %&gt;% arrange(share) %&gt;% head(10)
+
+# The chromosome with the most of the 20 lowest stretches, and the share kept along it
+low_chr &lt;- stretches %&gt;% arrange(share) %&gt;% head(20) %&gt;%
+  count(CHR, sort = TRUE) %&gt;% slice(1) %&gt;% pull(CHR)
+ggplot(filter(stretches, CHR == low_chr), aes(x = start_Mb, y = share)) +
+  geom_line() + geom_point() +
+  labs(x = paste("Position on chromosome", low_chr, "(Mb)"), y = "Share of SNPs kept") +
+  theme_classic()</pre>
+</div>
+<p>On the toy lists, <code>count(kept)</code> gives <span data-card="prune_out">?</span> FALSE and <span data-card="prune_in">?</span> TRUE. The code picks chromosome <span data-card="long_range_chr">?</span> for the last plot: several of the 20 lowest stretches lie there, between <span data-card="long_range_start_mb">?</span> and <span data-card="long_range_end_mb">?</span> Mb in the planted long-range LD region, and the plot shows the share kept staying low across that whole region. The other low stretches are scattered over many chromosomes, and each covers a much shorter piece of chromosome than a stretch in the long-range region (compare span_kb in the table): they are the short, dense LD blocks of the simulation. Chromosome <span data-card="long_range_chr">?</span> also has the lowest share kept in the per-chromosome plot.</p>
+
+<h2 id="real-data">On your own computer: the real data <span class="tag core">Core</span></h2>
+<p>After steps 1 and 2 on your own computer, run the practical's command for PennCATH, then read its result and count the monomorphic SNPs among its input:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+      --indep-pairwise 50 5 0.3 \
+      --out ${analysis_dir}/penncath.geno0.01.mind0.01
+<span class="prompt">$ </span>grep -E "Pruned|Pruning complete" ${analysis_dir}/penncath.geno0.01.mind0.01.log
+<span class="prompt">$ </span>wc -l ${analysis_dir}/penncath.geno0.01.mind0.01.prune.in \
+        ${analysis_dir}/penncath.geno0.01.mind0.01.prune.out
+<span class="cm"># SNPs with MAF 0 (column 5 of the .frq file) in the input of the step</span>
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 --freq \
+      --out ${analysis_dir}/penncath.step3
+<span class="prompt">$ </span>awk 'NR &gt; 1 &amp;&amp; $5 == 0' ${analysis_dir}/penncath.step3.frq | wc -l</pre>
+<p>What to look at in the real output:</p>
+<ul>
+  <li><strong>The log.</strong> PennCATH has SNPs on chromosomes 1–22 only, so there are 22 "Pruned …" lines, then the total. The practical does not quote the numbers; read them from your log.</li>
+  <li><strong>Monomorphic SNPs.</strong> <a href="plink-data.html#a1-a2">The data page</a> counts 26,153 SNPs with a single allele in the input <code>.bim</code> file. Every one that passes step 1 is set aside at once and counted in <code>.prune.out</code> together with the SNPs removed for LD. The last two commands separate the two: <code>--freq</code> writes each SNP's minor allele frequency, and <code>awk</code> counts the SNPs whose frequency is 0. The rest of <code>.prune.out</code> is the SNPs removed for LD.</li>
+  <li><strong>Where pruning sets aside the most.</strong> The R code above lists the stretches of 50 SNPs with the lowest share kept. Several neighboring stretches with a low share make a long region of strong LD, where SNPs kept in different windows can still be correlated with each other; check its position against a published list of long-range LD regions in GRCh37 coordinates.</li>
+  <li><strong>The steps that follow.</strong> Steps 4–6 read <code class="wrap">penncath.geno0.01.mind0.01.prune.in</code> with <code>--extract</code>; their log lines "--extract: … variants remaining." should match the line count of the list.</li>
+</ul>
+<p>How the real data differ from the toy data. The real fileset has hundreds of thousands of SNPs, so pruning takes longer than in the lab, and its LD comes from real recombination history, with blocks, hotspots and long-range regions. The practical reports that GrafAnc (<a href="qc-grafanc.html">step 8</a>) assigns more than 99% of PennCATH people to its European (EUR) continental group and a small number to its Middle East and North Africa (MEN) group,<sup><a href="#src-1">1</a></sup> so the pruning reflects the LD of a sample of mostly European genetic ancestry. LD extends less far in samples of African ancestry (<a href="linkage-disequilibrium.html#populations">LD across populations</a>), so the same settings would be expected to keep a larger share of SNPs there; a pruned list from one sample is not a pruned list for another.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Mistakes that are easy to make in this step</div>
+  <ul>
+    <li><strong>Treating pruning as a quality filter.</strong> <code>.prune.out</code> lists correlated SNPs, not bad ones. Running the GWAS on <code>.prune.in</code> would throw away most of the genome's coverage for no gain.</li>
+    <li><strong>Misreading the three numbers.</strong> <code>50 5 0.3</code> is window, step and threshold, in that order. The window is a number of SNPs unless it ends in <code>kb</code>, and the threshold is on r², not r.</li>
+    <li><strong>Expecting a pruned fileset.</strong> <code>--indep-pairwise</code> writes lists only. Adding <code>--make-bed</code> to the same command writes the unpruned data, because PLINK writes the fileset before it prunes (<a href="tools.html#plink-order">order of operations</a>); apply the list with <code>--extract</code>.</li>
+    <li><strong>Reusing a list for other data.</strong> A list made from one fileset does not fit a merged or re-filtered one; the practical makes this point for the merge with 1000 Genomes.</li>
+    <li><strong>Confusing <code>--prune</code> with pruning.</strong> PLINK's <code>--prune</code> "filters out all samples with missing phenotypes"; it has nothing to do with LD.<sup><a href="#src-7">7</a></sup></li>
+    <li><strong>Assuming kept SNPs are uncorrelated everywhere.</strong> Only pairs that shared a window were compared. SNPs further apart, and long-range LD regions such as the MHC, can still be correlated.</li>
+    <li><strong>Thinning at random instead.</strong> <code>--thin</code> and <code>--thin-count</code> keep random SNPs whatever their LD; the documentation notes that LD-based pruning "is normally more useful than these three commands".<sup><a href="#src-7">7</a></sup></li>
+  </ul>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>Relatedness, heterozygosity and PCA add up evidence over SNPs, so correlated SNPs give a stretch of haplotype extra weight; they need a nearly independent set of SNPs.</li>
+    <li><code class="wrap">plink --indep-pairwise 50 5 0.3</code> computes r² of allele counts for pairs of SNPs in a window of 50 SNPs; while a pair is above 0.3 it sets aside the SNP with the lower minor allele frequency; then the window moves 5 SNPs.</li>
+    <li>\(r^2\) cannot exceed \(m_1(1 - m_2)/[(1 - m_1)m_2]\) for minor allele frequencies \(m_1 \le m_2\), so only SNPs of similar frequency can be pruned against each other.</li>
+    <li>The step writes <code>.prune.in</code> (kept) and <code>.prune.out</code> (set aside, including monomorphic SNPs); it changes no data. Steps 4–6 apply <code>.prune.in</code> with <code>--extract</code>; the association analysis uses every SNP.</li>
+    <li>Settings trade SNPs kept against independence; pairs further apart than the window, and long-range LD regions such as the MHC, need separate handling, for example <code>--exclude range</code> with regions in the data's genome build.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Why do steps 4–6 use <code>.prune.in</code>, while a GWAS tests every SNP that passes quality control?</summary><div class="a"><p>Steps 4–6 combine evidence over SNPs: IBD estimates from shared alleles, F from homozygous genotypes, principal components from SNPs that vary together. Correlated SNPs repeat the same evidence, so a block of them weighs more than its information warrants; the PLINK documentation calls these calculations not "LD-aware". A GWAS asks a separate question at each SNP, whether that SNP is associated with the trait. Correlation between SNPs does not bias that test, and dropping SNPs would lose the chance to find a signal at them, so it uses all SNPs that pass quality control.</p></div></details>
+  <details class="q"><summary>A window holds SNPs A, B and C, in that order, with minor allele frequencies 0.40, 0.25 and 0.35. Their r² values are 0.45 for A–B, 0.60 for A–C and 0.20 for B–C. With a threshold of 0.3, which SNPs does PLINK keep?</summary><div class="a"><p>Only A. In the first pass PLINK checks A against B: 0.45 &gt; 0.3, and B has the lower minor allele frequency (0.25 &lt; 0.40), so B goes and the pass moves on to the next SNP; B is gone, and C has no later SNP. The second pass checks A against C: 0.60 &gt; 0.3, and C has the lower frequency (0.35 &lt; 0.40), so C goes. No pair remains. The pair B–C, below the threshold, played no part. The result keeps the most common SNP of the group.</p></div></details>
+  <details class="q"><summary>Can a SNP with a minor allele frequency of 0.02 be set aside because of a neighbor with a minor allele frequency of 0.40, at a threshold of 0.3? Which partners could set it aside?</summary><div class="a"><p>No. The largest possible r² for these frequencies is \(0.02 \times 0.60/(0.98 \times 0.40) = 0.012/0.392 \approx 0.031\), far below 0.3. For partners less common than the SNP, the second line of the formula gives \(m_1 &gt; 0.3 \times 0.02/(0.98 + 0.006) \approx 0.006\); for partners more common, the first line with the SNP as \(m_1\) requires \(0.02(1 - m_2)/(0.98\,m_2) &gt; 0.3\), that is \(m_2 &lt; 0.02/0.314 \approx 0.064\). Only SNPs with minor allele frequencies between about 0.006 and 0.064 can set it aside.</p></div></details>
+  <details class="q"><summary>Run it in the lab: how many toy SNPs are in <code>.prune.in</code> and in <code>.prune.out</code>, and do they add up to the input <code>.bim</code>? Is any SNP in both lists?</summary><div class="a"><p>Run the first four commands of the step 3 terminal. <code>wc -l</code> prints the three line counts (and their total, which you can ignore): <span data-card="prune_in">?</span>, <span data-card="prune_out">?</span> and <span data-card="qc_snps">?</span>. The first two add up to the third, because every SNP that enters the step ends in exactly one list. The <code>sort | uniq -d | wc -l</code> line prints 0: no ID occurs twice in the joined lists.</p></div></details>
+  <details class="q"><summary>Run it in the lab: prune the toy data at thresholds of 0.1, 0.3 and 0.8. How does the number kept change, and why does a threshold of 0.8 still set some SNPs aside?</summary><div class="a"><p>Run the second terminal's commands, or choose the settings in the widget. The toy data keep <span data-card="prune_in_50_5_0_1">?</span>, <span data-card="prune_in">?</span> and <span data-card="prune_in_50_5_0_8">?</span> SNPs at 0.1, 0.3 and 0.8. The number kept rises with the threshold, because fewer pairs exceed a higher r². At 0.8 a SNP is set aside only if it shares a window with a SNP of higher minor allele frequency whose allele counts predict its own almost perfectly (r² above 0.8), or if it is monomorphic, which sets it aside at every threshold.</p></div></details>
+  <details class="q"><summary>Two SNPs in <code>.prune.in</code> have r² = 0.6 with each other. How can that be?</summary><div class="a"><p>They were never in the same window: they are 50 or more SNPs apart, or more than 45 apart and placed so that no window of 50 SNPs, moved 5 at a time, contained both. Pruning compares only pairs within a window, so correlation over longer distances, as in long-range LD regions such as the MHC, survives. Excluding those regions with <code>--exclude range</code>, or a larger window, reduces such pairs.</p></div></details>
+  <details class="q"><summary>You add <code>--make-bed --out pruned</code> to the practical's pruning command, expecting a pruned fileset. What do you get, and what should you run instead?</summary><div class="a"><p>A copy of the unpruned data: PLINK writes the fileset before it prunes, and <code>--indep-pairwise</code> only writes the two lists. To get a pruned fileset, run a second command with <code>--extract …prune.in --make-bed</code>; the practical skips the fileset and puts <code>--extract</code> directly into the commands of steps 4–6.</p></div></details>
+  <details class="q"><summary>A collaborator sends a file of long-range LD regions for <code>--exclude range</code>, with positions taken from a 2008 paper. What do you check before using it on PennCATH?</summary><div class="a"><p>The genome build. PennCATH's positions are on GRCh37, and the same region has different coordinates in other builds, so a list in another build would exclude the wrong SNPs. Price et al. do not name the build of their table, so use a list whose build is stated, or convert the positions. Also check the format, one region per line with chromosome, start, end (included) and a name, and the log line of <code>--exclude</code>, which reports how many SNPs remain.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/ld#indep" target="_blank" rel="noopener">PLINK 1.9: LD-based variant pruning</a> <span class="src">· PLINK documentation</span> <span class="level intermediate">intermediate</span> — <code>--indep</code>, <code>--indep-pairwise</code> and <code>--indep-pairphase</code>, their parameters and outputs.</li>
+    <li><a href="https://doi.org/10.1016/j.ajhg.2008.06.005" target="_blank" rel="noopener">Price et al. 2008, Long-range LD can confound genome scans in admixed populations</a> <span class="src">· Am J Hum Genet</span> <span class="level advanced">advanced</span> — the 24 long-range LD regions and how they distort principal components.</li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Anderson et al. 2010, Data quality control in genetic case-control association studies</a> <span class="src">· Nature Protocols</span> <span class="level intermediate">intermediate</span> — pruning inside a full QC protocol, with the exclusion of high-LD regions before IBD and PCA.</li>
+    <li><a href="https://github.com/chrchang/plink-ng/blob/master/1.9/plink_ld.c" target="_blank" rel="noopener">PLINK 1.9 source: plink_ld.c</a> <span class="src">· GitHub</span> <span class="level advanced">advanced</span> — the function <code>ld_prune</code>, the exact window walk and tie rule described on this page.</li>
+    <li><a href="../0-biological-foundations/haplotypes-ld.html#pruning-clumping">Lecture 0 · LD pruning and clumping</a> <span class="src">· this site</span> <span class="level intro">intro</span> — pruning next to clumping, which uses association results.</li>
+    <li><a href="linkage-disequilibrium.html#to-pruning">Linkage disequilibrium · from LD to LD pruning</a> <span class="src">· this lecture</span> <span class="level intro">intro</span> — r², LD decay and the PLINK LD commands that lead to this step.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">DCEG Statistical Genetics Workshop. Session 1 practical: Introduction to GWAS quality control (<code>01_qc.Rmd</code>), QC steps 3–8. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1" target="_blank" rel="noopener">dceg-workshops.github.io/statistical_genetics_workshop</a>; code at <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a>.</li>
+    <li id="src-2">Chang CC, Purcell SM, et al. PLINK 1.9 documentation: Linkage disequilibrium, variant pruning (<code>--indep-pairwise</code>). <a href="https://www.cog-genomics.org/plink/1.9/ld#indep" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/ld</a></li>
+    <li id="src-3">PLINK 1.9 source code: <code>plink_ld.c</code> (functions <code>ld_prune</code>, <code>ld_prune_start_chrom</code>, <code>ld_prune_write</code>) and <code>plink.c</code> (parameter checks for <code>--indep-pairwise</code>). <a href="https://github.com/chrchang/plink-ng/tree/master/1.9" target="_blank" rel="noopener">github.com/chrchang/plink-ng</a></li>
+    <li id="src-4">PLINK 1.9 documentation: Identity by descent (<a href="https://www.cog-genomics.org/plink/1.9/ibd" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/ibd</a>); Basic statistics, inbreeding coefficients (<a href="https://www.cog-genomics.org/plink/1.9/basic_stats#ibc" target="_blank" rel="noopener">--het, --ibc</a>) and sex checks (<a href="https://www.cog-genomics.org/plink/1.9/basic_stats#check_sex" target="_blank" rel="noopener">--check-sex</a>).</li>
+    <li id="src-5">Price AL, Weale ME, Patterson N, Myers SR, Need AC, Shianna KV, Ge D, Rotter JI, Torres E, Taylor KD, Goldstein DB, Reich D. Long-range LD can confound genome scans in admixed populations. <em>Am J Hum Genet</em>. 2008;83:132–135. <a href="https://doi.org/10.1016/j.ajhg.2008.06.005" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2008.06.005</a></li>
+    <li id="src-6">Anderson CA, Pettersson FH, Clarke GM, Cardon LR, Morris AP, Zondervan KT. Data quality control in genetic case-control association studies. <em>Nat Protoc</em>. 2010;5:1564–1573. <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-7">PLINK 1.9 documentation: Input filtering, <code>--extract</code>/<code>--exclude</code> with <code>range</code> (<a href="https://www.cog-genomics.org/plink/1.9/filter#snp" target="_blank" rel="noopener">filter#snp</a>), <code>--prune</code> (<a href="https://www.cog-genomics.org/plink/1.9/filter#prune" target="_blank" rel="noopener">filter#prune</a>) and <code>--thin</code> (<a href="https://www.cog-genomics.org/plink/1.9/filter#thin" target="_blank" rel="noopener">filter#thin</a>); Input, the range format of <code>--make-set</code> (<a href="https://www.cog-genomics.org/plink/1.9/input#make_set" target="_blank" rel="noopener">input#make_set</a>).</li>
+    <li id="src-8">Lecture 1, slide 85 (linkage disequilibrium: definition, mechanisms and uses).</li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

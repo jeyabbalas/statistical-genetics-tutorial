@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC step 7: merging with 1000 Genomes and reference-based PCA · Lecture 1</title>
+<meta name="description" content="How the practical merges the study's genotypes with the 1000 Genomes reference samples: why the first merge fails, what --flip repairs and what it cannot (A/T and C/G SNPs), why --geno 0.1 keeps only shared SNPs, and how to read study people on a PCA of reference populations.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/grafanc-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-reference-pca-strand.js"></script>
+<script defer src="assets/js/widgets/qc-reference-pca-merged.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-reference-pca"]. */
+body[data-page="qc-reference-pca"] .sc-rows { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 0 0 10px; }
+@media (max-width: 600px) { body[data-page="qc-reference-pca"] .sc-rows { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="qc-reference-pca"] .sc-row { border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px 10px; margin: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; }
+body[data-page="qc-reference-pca"] .sc-row legend { font-weight: 700; font-size: 0.86rem; padding: 0 4px; }
+body[data-page="qc-reference-pca"] .sc-row label { flex-direction: column; align-items: flex-start; gap: 2px; font-size: 0.8rem; }
+body[data-page="qc-reference-pca"] .sc-row input[type="number"] { width: 5.5em; }
+body[data-page="qc-reference-pca"] .sc-out { font-family: var(--font); font-size: 0.9rem; }
+body[data-page="qc-reference-pca"] .sc-out p { margin: 0.3em 0; }
+body[data-page="qc-reference-pca"] .sc-step + .sc-step { border-top: 1px dashed var(--border-strong); margin-top: 8px; padding-top: 6px; }
+body[data-page="qc-reference-pca"] .sc-h { font-weight: 700; font-size: 0.86rem; color: var(--fg); }
+body[data-page="qc-reference-pca"] .sc-chip { display: inline-block; min-width: 1.6em; text-align: center; font-family: var(--mono); font-weight: 700; font-size: 0.85rem; color: #fff; border-radius: 4px; padding: 0 3px; margin: 0 1px; }
+body[data-page="qc-reference-pca"] .sc-zero { background: var(--bg-sunk); color: var(--fg-muted); }
+body[data-page="qc-reference-pca"] table.cases td:first-child { white-space: nowrap; }
+body[data-page="qc-reference-pca"] #main p code, body[data-page="qc-reference-pca"] #main li code, body[data-page="qc-reference-pca"] #main dd code { overflow-wrap: anywhere; }
+body[data-page="qc-reference-pca"] .widget label { flex-wrap: wrap; max-width: 100%; }
+body[data-page="qc-reference-pca"] .widget select { max-width: calc(100vw - 80px); }
+</style>
+</head>
+<body data-page="qc-reference-pca">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Step 7 of 8 · Page 21 of 23</p>
+  <h1>QC step 7: merging with 1000 Genomes and reference-based PCA</h1>
+  <p class="lede">Where do the study's people sit relative to people sampled on several continents? To answer this, the practical combines the study's genotypes with those of the 1000 Genomes reference samples and runs a principal component analysis (PCA) on the combined file. The combination works only if both files write every shared SNP with the same two letters, read from the same strand of the DNA, and most of this step is about making sure they do.</p>
+  <div class="chips">
+    <span class="chip core">Slides 69, 93, 104–105</span>
+    <span class="chip">plink --bmerge · --flip · --pca</span>
+    <span class="chip data">Writes: …-merge.missnp, .eigenvec, .eigenval</span>
+    <span class="chip time">≈ 60 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="7" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Repair the merge SNP by SNP, then place people on reference axes</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 316" role="img" aria-labelledby="mm-t mm-d">
+<title id="mm-t">Step 7 as two rows of the QC pipeline</title>
+<desc id="mm-d">Five columns: statistic, distribution, threshold, remove or flag, record. Row 1, SNPs during the merge: the statistic is the allele letters of each shared SNP in both .bim files; the SNPs fall into four cases (same letters, opposite strand, A/T or C/G, different alleles); a SNP with three or more distinct letters is listed in the -merge.missnp file; the action is to flip the listed SNPs and merge again, then drop SNPs typed in only one file with --geno 0.1; the record is the .missnp file and the merge logs. Row 2, people in the PCA: the statistic is PC1 to PC20 for each person from SNPs typed in both files; the distribution is a scatter of reference people colored by super-population with study people in black; the practical sets no threshold, an optional rule is a region fixed in advance; the action is to flag people outside it while labels stay relative to the reference; the record is the .eigenvec file, the flagged IDs and the rule.</desc>
+<defs><marker id="mm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<text x="76" y="18" class="t-b t-mm" text-anchor="middle">statistic</text>
+<text x="226" y="18" class="t-b t-mm" text-anchor="middle">distribution</text>
+<text x="376" y="18" class="t-b t-mm" text-anchor="middle">threshold</text>
+<text x="526" y="18" class="t-b t-mm" text-anchor="middle">remove or flag</text>
+<text x="676" y="18" class="t-b t-mm" text-anchor="middle">record</text>
+<text x="10" y="46" class="t-b">SNPs · the merge (--bmerge, --flip)</text>
+<rect x="10" y="56" width="132" height="96" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="76" y="80" class="t-sm" text-anchor="middle">allele letters of</text>
+<text x="76" y="97" class="t-sm" text-anchor="middle">each shared SNP</text>
+<text x="76" y="114" class="t-sm" text-anchor="middle">in both .bim files</text>
+<line x1="144" y1="104" x2="158" y2="104" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="160" y="56" width="132" height="96" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="226" y="78" class="t-sm" text-anchor="middle">same letters</text>
+<text x="226" y="95" class="t-sm" text-anchor="middle">opposite strand</text>
+<text x="226" y="112" class="t-sm" text-anchor="middle">A/T or C/G SNP</text>
+<text x="226" y="129" class="t-sm" text-anchor="middle">different alleles</text>
+<line x1="294" y1="104" x2="308" y2="104" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="310" y="56" width="132" height="96" rx="8" fill="#f3f1ff" stroke="#4c3fb0" stroke-width="1.4"/>
+<text x="376" y="84" class="t-sm" text-anchor="middle">3 or more distinct</text>
+<text x="376" y="101" class="t-sm" text-anchor="middle">letters: the SNP is</text>
+<text x="376" y="118" class="t-sm" text-anchor="middle">listed in .missnp</text>
+<line x1="444" y1="104" x2="458" y2="104" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="460" y="56" width="132" height="96" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="526" y="78" class="t-sm" text-anchor="middle">--flip the listed</text>
+<text x="526" y="95" class="t-sm" text-anchor="middle">SNPs, merge again;</text>
+<text x="526" y="112" class="t-sm" text-anchor="middle">--geno 0.1 drops</text>
+<text x="526" y="129" class="t-sm" text-anchor="middle">one-file SNPs</text>
+<line x1="594" y1="104" x2="608" y2="104" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="610" y="56" width="132" height="96" rx="8" fill="#fbf6e0" stroke="#d9c98a"/>
+<text x="676" y="92" class="t-sm" text-anchor="middle">-merge.missnp</text>
+<text x="676" y="109" class="t-sm" text-anchor="middle">and the merge logs</text>
+<text x="10" y="180" class="t-b">People · the PCA (--pca)</text>
+<rect x="10" y="190" width="132" height="96" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="76" y="218" class="t-sm" text-anchor="middle">PC1–PC20 for each</text>
+<text x="76" y="235" class="t-sm" text-anchor="middle">person, from SNPs</text>
+<text x="76" y="252" class="t-sm" text-anchor="middle">typed in both files</text>
+<line x1="144" y1="238" x2="158" y2="238" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="160" y="190" width="132" height="96" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="226" y="212" class="t-sm" text-anchor="middle">PC scatter:</text>
+<text x="226" y="229" class="t-sm" text-anchor="middle">reference colored</text>
+<text x="226" y="246" class="t-sm" text-anchor="middle">by super-population,</text>
+<text x="226" y="263" class="t-sm" text-anchor="middle">study people black</text>
+<line x1="294" y1="238" x2="308" y2="238" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="310" y="190" width="132" height="96" rx="8" fill="#f3f1ff" stroke="#4c3fb0" stroke-width="1.4"/>
+<text x="376" y="218" class="t-sm" text-anchor="middle">practical: none;</text>
+<text x="376" y="235" class="t-sm" text-anchor="middle">optional: a region</text>
+<text x="376" y="252" class="t-sm" text-anchor="middle">fixed in advance</text>
+<line x1="444" y1="238" x2="458" y2="238" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="460" y="190" width="132" height="96" rx="8" fill="#fff" stroke="#9aa3ae"/>
+<text x="526" y="218" class="t-sm" text-anchor="middle">flag people outside;</text>
+<text x="526" y="235" class="t-sm" text-anchor="middle">labels stay relative</text>
+<text x="526" y="252" class="t-sm" text-anchor="middle">to the reference</text>
+<line x1="594" y1="238" x2="608" y2="238" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mm-arr)"/>
+<rect x="610" y="190" width="132" height="96" rx="8" fill="#fbf6e0" stroke="#d9c98a"/>
+<text x="676" y="218" class="t-sm" text-anchor="middle">.eigenvec,</text>
+<text x="676" y="235" class="t-sm" text-anchor="middle">flagged IDs</text>
+<text x="676" y="252" class="t-sm" text-anchor="middle">and the rule used</text>
+<text x="10" y="308" class="t-sm">The practical removes nobody at this step: it repairs the merge and shows where the study's people sit.</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 340 560" role="img" aria-labelledby="mm-t2 mm-d2">
+<title id="mm-t2">Step 7 as two rows of the QC pipeline</title>
+<desc id="mm-d2">For SNPs during the merge: the statistic is the allele letters of each shared SNP in both files; SNPs fall into four cases; a SNP with three or more distinct letters is listed in -merge.missnp; listed SNPs are flipped and merged again and --geno 0.1 drops SNPs typed in one file; the record is the .missnp file and the logs. For people in the PCA: the statistic is PC1 to PC20 from SNPs typed in both files; the distribution is a scatter with reference people colored and study people in black; the practical sets no threshold; people outside an optional region are flagged; the record is the .eigenvec file, the flagged IDs and the rule.</desc>
+<text x="10" y="20" class="t-b">SNPs · the merge</text>
+<line x1="10" y1="30" x2="330" y2="30" stroke="#d0d6de"/>
+<text x="10" y="50" class="t-b t-mm">statistic</text>
+<text x="112" y="50" class="t-sm">allele letters of each shared SNP</text>
+<text x="112" y="65" class="t-sm">in both .bim files</text>
+<line x1="10" y1="74" x2="330" y2="74" stroke="#d0d6de"/>
+<text x="10" y="94" class="t-b t-mm">distribution</text>
+<text x="112" y="94" class="t-sm">same · opposite strand · A/T or C/G</text>
+<text x="112" y="109" class="t-sm">· different alleles</text>
+<line x1="10" y1="118" x2="330" y2="118" stroke="#d0d6de"/>
+<text x="10" y="138" class="t-b t-mm">threshold</text>
+<text x="112" y="138" class="t-sm">3 or more distinct letters: the SNP</text>
+<text x="112" y="153" class="t-sm">is listed in -merge.missnp</text>
+<line x1="10" y1="162" x2="330" y2="162" stroke="#d0d6de"/>
+<text x="10" y="182" class="t-b t-mm">remove or flag</text>
+<text x="112" y="182" class="t-sm">--flip listed SNPs, merge again;</text>
+<text x="112" y="197" class="t-sm">--geno 0.1 drops one-file SNPs</text>
+<line x1="10" y1="206" x2="330" y2="206" stroke="#d0d6de"/>
+<text x="10" y="226" class="t-b t-mm">record</text>
+<text x="112" y="226" class="t-sm">-merge.missnp and the merge logs</text>
+<text x="10" y="276" class="t-b">People · the PCA</text>
+<line x1="10" y1="286" x2="330" y2="286" stroke="#d0d6de"/>
+<text x="10" y="306" class="t-b t-mm">statistic</text>
+<text x="112" y="306" class="t-sm">PC1–PC20 for each person, from</text>
+<text x="112" y="321" class="t-sm">SNPs typed in both files</text>
+<line x1="10" y1="330" x2="330" y2="330" stroke="#d0d6de"/>
+<text x="10" y="350" class="t-b t-mm">distribution</text>
+<text x="112" y="350" class="t-sm">scatter: reference colored by</text>
+<text x="112" y="365" class="t-sm">super-population, study in black</text>
+<line x1="10" y1="374" x2="330" y2="374" stroke="#d0d6de"/>
+<text x="10" y="394" class="t-b t-mm">threshold</text>
+<text x="112" y="394" class="t-sm">practical: none; optional: a</text>
+<text x="112" y="409" class="t-sm">region fixed in advance</text>
+<line x1="10" y1="418" x2="330" y2="418" stroke="#d0d6de"/>
+<text x="10" y="438" class="t-b t-mm">remove or flag</text>
+<text x="112" y="438" class="t-sm">flag people outside it; labels</text>
+<text x="112" y="453" class="t-sm">stay relative to the reference</text>
+<line x1="10" y1="462" x2="330" y2="462" stroke="#d0d6de"/>
+<text x="10" y="482" class="t-b t-mm">record</text>
+<text x="112" y="482" class="t-sm">.eigenvec, flagged IDs, the rule</text>
+<text x="10" y="526" class="t-sm">The practical removes nobody at this step: it</text>
+<text x="10" y="542" class="t-sm">repairs the merge and shows where people sit.</text>
+</svg>
+  </figure>
+  <p class="mm-statement">Step 7 runs the QC pipeline twice. For SNPs, the statistic is the set of allele letters that the two files report, and the rule "three or more letters" decides which SNPs PLINK refuses to merge. For people, the statistic is a position on principal components computed together with 2,504 reference people, and nobody is removed: the positions describe genetic similarity to the reference samples.</p>
+  <ul class="mm-hooks">
+    <li><strong>A reference panel gives the axes meaning.</strong> On its own, the study's PCA in step 6 shows clusters without names. Reference people with documented sampling labels show what each direction separates (<a href="#what-it-finds">what the step finds</a>).</li>
+    <li><strong>Merging compares letters, not biology.</strong> PLINK matches SNPs by ID and refuses a SNP when the two files together show three or more allele letters. <code>--flip</code> repairs SNPs reported on the other strand, but A/T and C/G SNPs pass the letter test whichever strand they are on (<a href="#statistic">the statistics</a>).</li>
+    <li><strong>Merge, flip, merge again, then keep only shared SNPs.</strong> After the merge, a SNP typed in only one file is missing for everyone in the other (for PennCATH, most of its SNPs); <code>--geno 0.1</code> removes such SNPs before PCA (<a href="#run">run it</a>).</li>
+    <li><strong>Study people over reference clusters.</strong> The plot shows whether the study's people overlap one reference group, spread between groups, or sit apart from all of them (<a href="#distribution">look at the PCA</a>).</li>
+    <li><strong>Similarity, not identity.</strong> A position near the EUR cluster means "genetically similar to the 1000 Genomes samples labeled EUR", not "European"; any rule for flagging people is set in advance and recorded (<a href="#threshold">choose a rule</a>).</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and earlier pages</div>
+  <p>Strands and why the same SNP can be written with different letters: <a href="../0-biological-foundations/dna.html#strands-in-snp-data">Lecture 0 · Strands in SNP data</a> and <a href="snp-data.html#strands">The data: SNPs · Strands</a>, with the letters of PennCATH and the 1000 Genomes panel compared in <a href="snp-data.html#strand-penncath">PennCATH against the panel</a>. Reference samples and population labels: <a href="../0-biological-foundations/ancestry.html#reference-samples">Lecture 0 · Reference samples</a> and <a href="../0-biological-foundations/ancestry.html#descriptors">Population descriptors</a>. PCA on genotypes: <a href="../0-biological-foundations/ancestry.html#pca">Lecture 0 · PCA</a>, <a href="population-structure.html#pca">Population structure · PCA</a>, what PCs depend on in <a href="population-structure.html#pca-limits">Population structure · What PCs depend on</a>, and <a href="qc-pca.html">step 6</a>.</p>
+</aside>
+
+<h2 id="what-it-finds">What the step finds <span class="tag core">Core</span></h2>
+
+<p>Step 6 ran PCA on the study's people alone. Its first PCs show the largest directions of genetic variation among those people, and clusters, if any, but nothing in that plot says what a cluster is. A cluster can be a group of people whose families come from one region, a set of samples genotyped in a different batch, or a group of relatives. Step 7 adds people whose sampling is documented. If the study's people fall on top of the reference people sampled in, say, Europe, and away from those sampled in East Asia, the axes acquire an interpretation in terms of the reference samples.</p>
+
+<p>The step does four jobs:</p>
+<ul>
+  <li><strong>Describe the study's genetic similarity to the reference groups.</strong> The practical's question for PennCATH is which 1000 Genomes clusters its participants overlap.</li>
+  <li><strong>Find people who sit apart from the rest of the study.</strong> A person far from the study's main group may have different genetic ancestry from most participants, or the sample may be swapped or contaminated. Steps 4–6 found some of these problems; step 7 shows them against a reference.</li>
+  <li><strong>Inform the analysis plan.</strong> Whether to analyze everyone together and adjust for principal components (Session 2), to analyze groups separately, or to restrict the analysis to a prespecified group is a design decision, and it needs this picture.</li>
+  <li><strong>Test the data handling.</strong> The merge only succeeds when the two files agree on every shared SNP's alleles, so problems with strand, allele coding and SNP names surface here first.</li>
+</ul>
+
+<p>Why it matters for the association tests: allele frequencies differ between populations (<a href="../0-biological-foundations/allele-frequencies.html#differences">Lecture 0 · Frequency differences</a>). If cases and controls differ in genetic ancestry, every SNP whose frequency differs between the groups looks associated with the disease. That is <a href="../0-biological-foundations/ancestry.html#stratification">population stratification</a>, a form of confounding. Steps 6–8 describe the structure; Session 2 adjusts for it.</p>
+
+<h3 id="reference-panel">The reference: 1000 Genomes phase 3</h3>
+
+<p>The 1000 Genomes Project sequenced the whole genomes of 2,504 people from 26 populations and published their genotypes at more than 88 million variant sites.<sup><a href="#src-3">3</a></sup> Each person carries two labels: a population (for example GBR, "British in England and Scotland") and one of five super-populations: AFR (African), AMR (admixed American), EAS (East Asian), EUR (European) and SAS (South Asian). Lecture 0 lists all 26 populations with their sizes (<a href="../0-biological-foundations/ancestry.html#reference-samples">Lecture 0 · Reference samples</a>). The practical describes the labels as "defined initially using sampling criteria based on geography, community engagement, and strict self-reported grandparental ancestry".<sup><a href="#src-1">1</a></sup> They record how people were recruited. They are not measurements of anyone's genome, and the populations overlap genetically.</p>
+
+<p>The workshop provides a reduced version of the reference: the PLINK fileset <code>all_pops_1kgenomes_markersForPCA</code>, with all 2,504 people and 17,490 SNPs on chromosomes 1–22 chosen for PCA and already LD-pruned (the practical says so; the selection procedure is not documented). In its <code>.fam</code> file the family ID and the individual ID are both the 1000 Genomes sample name, such as <code>HG00096</code>, and sex and phenotype are unknown. The labels are not in the fileset. They are in a separate text file from the 1000 Genomes FTP site, <code>integrated_call_samples_v3.20130502.ALL.panel</code>, with one line per person and the columns <code>sample</code>, <code>pop</code>, <code>super_pop</code> and <code>gender</code>. The practical gets that file by cloning the GitHub repository of akt, a toolkit that happens to include a copy of it.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 93 · Variation differs between populations</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-093.jpg" alt="Lecture 1, slide 93: a table of variant sites per genome (about 3.8 million SNPs and 570,000 indels) and a plot of the number of non-reference alleles per person for each of the 26 1000 Genomes populations, with the African populations highest, about 4.8 to 5 million, and the others about 4 to 4.3 million." loading="lazy"><figcaption>Lecture 1 · slide 93</figcaption></figure>
+    <div><p>The slide lists the 26 population codes that the practical's reference uses, grouped by color into the five super-populations. Each cross is one person; the horizontal axis is the number of positions at which that person's genome differs from the reference genome. People sampled in Africa carry the most variants, and the admixed American populations (CLM, MXL, PEL, PUR) spread between the African and the other groups. For step 7 this means that the 1000 Genomes samples cover a wide range of genetic variation, so that a study's people can be placed relative to it.</p></div>
+  </div>
+</aside>
+
+<h3 id="strand-problems">What goes wrong when two files meet</h3>
+
+<p>Two datasets genotyped in different laboratories, on different arrays or by sequencing, describe the same SNP in their own way. The merge exposes every difference:</p>
+<ul>
+  <li><strong>Strand.</strong> DNA has two complementary strands: A pairs with T and C with G (<a href="../0-biological-foundations/dna.html#strands-in-snp-data">Lecture 0</a>). A SNP that one file writes as A/G (read on one strand) another file can write as T/C (read on the other). Array manufacturers define their own strand conventions, so array data and sequence data often disagree for a share of the SNPs.</li>
+  <li><strong>Allele order.</strong> One file may list the alleles as A/G and the other as G/A. PLINK's allele 1 is usually the minor allele in the file that wrote it (<a href="plink-data.html">The data: PLINK files</a>), so the order differs between datasets whenever the minor allele differs. This is harmless for merging: PLINK compares sets of letters.</li>
+  <li><strong>A/T and C/G SNPs.</strong> When the two alleles are complements of each other, the SNP reads A/T on both strands. A strand difference leaves no trace in the letters (<a href="../0-biological-foundations/dna.html#strands-in-snp-data">strand-ambiguous SNPs</a>).</li>
+  <li><strong>Names and positions.</strong> PLINK matches SNPs by ID only. The same SNP under two names (an old and a merged rsID, or <code>chr:pos</code> in one file) becomes two SNPs, each missing in one dataset. The same name at two positions, for example because the files use different genome builds (<a href="../0-biological-foundations/dna.html#reference-genome">GRCh37 or GRCh38</a>), triggers the warning <code>Multiple positions seen for variant</code>.</li>
+  <li><strong>Different SNP sets.</strong> An array types a few hundred thousand SNPs; the reference file here has 17,490. Only SNPs in both files carry information about how the two groups of people compare.</li>
+</ul>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 69 · Strand-ambiguous SNPs</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-069.jpg" alt="Lecture 1, slide 69: two invented studies report the same SNPs. For rs8675309 study A reports the G allele against T and study B the C allele against A: the same result read from opposite strands, which the letters reveal. For rs90210 study A says G increases a trait relative to C, study B says C decreases it relative to G: with a C/G SNP the letters cannot show which strand each study used. The slide ends: be as clear about strand as you can be." loading="lazy"><figcaption>Lecture 1 · slide 69</figcaption></figure>
+    <div><p>The slide's first pair of studies uses a G/T SNP. Study B's C/A is study A's G/T read from the other strand, which you can tell because C and A are not among study A's letters. The second pair uses a C/G SNP, where the complement of each letter is the other letter: "G increases the trait" in one study and "C decreases it" in the other could be the same finding on opposite strands or a real disagreement. A merge meets the same problem without effect sizes: PLINK cannot tell the two cases apart and merges the SNP either way.</p></div>
+  </div>
+</aside>
+
+<h2 id="statistic">The statistics: allele letters, then principal components <span class="tag core">Core</span></h2>
+
+<h3 id="merge-rule">The merge rule: count the letters</h3>
+
+<p><code>--bmerge</code> reads the study fileset (the <code>--bfile</code>) and the reference fileset. The result contains the union of the people and the union of the SNPs: everyone from both files, and every SNP that appears in either. After writing the merged list of people (a <code>.fam</code> file) and before writing any genotypes, PLINK checks each SNP whose ID appears in both <code>.bim</code> files. It collects the allele letters of the two rows, ignoring a <code>0</code> (the code PLINK writes when it saw only one allele), and counts the distinct letters. Two or fewer: the SNP merges, whatever the order of allele 1 and allele 2. Three or more: the SNP's ID is written to a file named <code><var>out</var>-merge.missnp</code>, and when the check has finished, PLINK stops with the error <code>N variants with 3+ alleles present</code> and writes no merged <code>.bed</code> or <code>.bim</code>.<sup><a href="#src-2">2</a></sup> (The <code>-merge</code> in the name comes from the temporary file name PLINK uses for the merged fileset before <code>--make-bed</code> writes the final one.)</p>
+
+<div class="table-wrap">
+<table class="cases">
+  <caption>How the merge treats one SNP that is in both files</caption>
+  <thead><tr><th>Study .bim</th><th>Reference .bim</th><th>Letters in both</th><th>First merge</th><th>After <code>--flip</code> and a second merge</th></tr></thead>
+  <tbody>
+    <tr><td>A G</td><td>A G</td><td>A, G</td><td>merges</td><td>not flipped; correct</td></tr>
+    <tr><td>G A</td><td>A G</td><td>A, G</td><td>merges</td><td>not flipped; correct</td></tr>
+    <tr><td>T C</td><td>A G</td><td>A, C, G, T</td><td>listed in .missnp</td><td>flipped to A G; merges, correct</td></tr>
+    <tr><td>A T</td><td>A T</td><td>A, T</td><td>merges</td><td>not flipped; correct only if both files used the same strand</td></tr>
+    <tr><td>A C</td><td>A G</td><td>A, C, G</td><td>listed in .missnp</td><td>flipped to T G; still 3 letters: exclude</td></tr>
+    <tr><td>0 C</td><td>A G</td><td>A, C, G</td><td>listed in .missnp</td><td>flipped to 0 G; merges, correct</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The rule tests letters, not genotypes. It catches a strand difference only when the complement letters are new letters, so it misses every A/T and C/G SNP. It also cannot detect a SNP that is named the same in both files but is a different variant with the same two letters.</p>
+
+<h3 id="flip">What <code>--flip</code> changes, and what it cannot fix</h3>
+
+<p><code>--flip <var>file</var></code> reads a list of SNP IDs and replaces each allele letter of those SNPs by its complement: A↔T, C↔G. The genotypes themselves are unchanged; a person who carried two copies of allele 1 still does, but allele 1 is now written with the other strand's letter. The practical flips exactly the SNPs listed in <code>.missnp</code> and merges again. If the second merge succeeds, every listed SNP was a strand difference. If it fails again, the new <code>.missnp</code> lists SNPs whose alleles differ on both strands; those are excluded, for example with <code>--exclude</code>.</p>
+
+<p>A/T and C/G SNPs never reach <code>.missnp</code>, so the practical never flips them. If one file reports such a SNP on the other strand, the merge silently pairs the study's A with the reference's A although the study's A is the reference's T. Every study person's genotype is then counted for the wrong allele: someone with two copies of the reference's A is recorded with none. Allele frequencies can reveal this when they are not close to 0.5.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ d_{\mathrm{same}} = \lvert \hat{p}_{\mathrm{S}} - \hat{p}_{\mathrm{R}} \rvert \]
+  \[ d_{\mathrm{flip}} = \lvert \hat{p}_{\mathrm{S}} - (1 - \hat{p}_{\mathrm{R}}) \rvert \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{p}_{\mathrm{S}}\)</dt><dd>The frequency of one letter of an A/T or C/G SNP (say A) in the study, estimated from the study's genotypes; between 0 and 1.</dd>
+    <dt>\(\hat{p}_{\mathrm{R}}\)</dt><dd>The frequency of the same letter in the reference, best taken from the reference group most similar to the study (for PennCATH, the EUR samples).</dd>
+    <dt>\(d_{\mathrm{same}}\)</dt><dd>How far apart the two frequencies are if both files read the SNP from the same strand.</dd>
+    <dt>\(d_{\mathrm{flip}}\)</dt><dd>How far apart they are if the files read opposite strands: then the study's A is the reference's T, whose frequency is \(1 - \hat{p}_{\mathrm{R}}\).</dd>
+  </dl>
+  <p class="eq-intuition">Two populations with similar genetic ancestry have similar allele frequencies, so the correct reading gives the smaller distance. With \(\hat{p}_{\mathrm{S}} = 0.79\) and \(\hat{p}_{\mathrm{R}} = 0.22\), \(d_{\mathrm{same}} = 0.57\) and \(d_{\mathrm{flip}} = 0.01\): the study reports the other strand, and the SNP must be flipped. Choosing the smaller distance is the same as asking whether both frequencies lie on the same side of 0.5, because \(d_{\mathrm{flip}}^2 - d_{\mathrm{same}}^2 = (2\hat{p}_{\mathrm{S}} - 1)(2\hat{p}_{\mathrm{R}} - 1)\). Near 0.5 the two readings give almost the same frequencies: with \(\hat{p}_{\mathrm{S}} = 0.47\) and \(\hat{p}_{\mathrm{R}} = 0.45\) the distances are 0.02 and 0.08, and a frequency difference of a few percentage points between two populations could swap the answer. Harmonization software therefore gives up above a minor allele frequency of 0.42 (the TwoSampleMR default) and drops the SNP.</p>
+</div>
+
+<div class="widget" id="w-strand">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Will this SNP merge?</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The table above lists the same cases.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Start with "Opposite strand": the first merge sees four letters, <code>--flip</code> turns T/C into A/G, and the second merge goes through. Switch to "A/T SNP, opposite strand": the merge never complains, nothing is flipped, and only the frequencies show that every study genotype now counts the wrong allele. "C/G SNP near 50%" is the case no method can settle from frequencies. "Different alleles" stays at three letters after the flip, so it is not a strand problem. Change the letters yourself to check any row of the table.</p>
+
+<p>The usual remedies are to exclude A/T and C/G SNPs from both files before merging, as Anderson et al. do,<sup><a href="#src-4">4</a></sup> to resolve them with the frequency comparison above, or to align both files to a documented strand (the forward strand of the reference genome) before merging. A PCA uses thousands of SNPs, so dropping a few dozen A/T and C/G SNPs costs almost nothing. The workshop's reference file contains such SNPs (count them with the command in <a href="#real-data">the real-data section</a>), and the practical keeps them, as it notes: "a production analysis would typically resolve them with additional reference/allele-frequency information or exclude ambiguous variants when appropriate".<sup><a href="#src-1">1</a></sup></p>
+
+<h3 id="shared-snps">SNPs typed in only one file</h3>
+
+<p>After the merge, a SNP that only the study typed has no genotypes for the reference people, and a SNP that only the reference typed has none for the study's people. PLINK stores those genotypes as missing. The missing fraction of such a SNP depends only on the two sample sizes.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ m_{\mathrm{S}} = \frac{n_{\mathrm{R}}}{n_{\mathrm{S}} + n_{\mathrm{R}}} \]
+  \[ m_{\mathrm{R}} = \frac{n_{\mathrm{S}}}{n_{\mathrm{S}} + n_{\mathrm{R}}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(n_{\mathrm{S}}\)</dt><dd>The number of study people in the merged file.</dd>
+    <dt>\(n_{\mathrm{R}}\)</dt><dd>The number of reference people in the merged file (2,504).</dd>
+    <dt>\(m_{\mathrm{S}}\)</dt><dd>The missing fraction of a SNP typed only in the study (at least this much; study genotypes that failed add to it).</dd>
+    <dt>\(m_{\mathrm{R}}\)</dt><dd>The missing fraction of a SNP typed only in the reference.</dd>
+  </dl>
+  <p class="eq-intuition">Everyone in the other file lacks the SNP, so the missing fraction is the other file's share of the people. For PennCATH after step 1, with 1,380 study people, the practical computes \(m_{\mathrm{S}} = 2504/3884 \approx 0.645\) and \(m_{\mathrm{R}} = 1380/3884 \approx 0.355\).<sup><a href="#src-1">1</a></sup> Both are far above 0.1, so <code>--geno 0.1</code> removes every one-file SNP and leaves the SNPs typed in both. The filter works only while each file holds more than a tenth of the people: \(m_{\mathrm{R}} &gt; 0.1\) exactly when \(n_{\mathrm{S}} &gt; n_{\mathrm{R}}/9\). A study of 200 people merged with the same reference gives \(m_{\mathrm{R}} = 200/2704 \approx 0.074\), and the reference-only SNPs would survive.</p>
+</div>
+<p>In the lab, the merged file holds <span data-card="merge2_people">?</span> people: the <span data-card="qc_people">?</span> toy study people left after step 1 and the <span data-card="ref_people">?</span> people of <code>toy_1kg</code>. Each file holds far more than a tenth of them, so <code>--geno 0.1</code> removes every one-file SNP here too; a question at the end of the page computes both fractions with the shell.</p>
+
+<p>Without this filter the PCA would use thousands of SNPs that are missing for one whole group. Their missingness pattern alone separates the study from the reference, and the first PC would measure "which file a person came from". The more robust approach for any sample size is to make the list of shared SNP IDs explicitly and keep only those (<a href="#threshold">below</a>).</p>
+
+<h3 id="pca-merged">PCA on the merged data</h3>
+
+<p>The PCA itself is the computation of <a href="qc-pca.html">step 6</a>: PLINK standardizes each person's genotype at each SNP by the SNP's allele frequency, builds the relationship matrix between all pairs of people, and writes the top 20 eigenvectors as PC1–PC20.<sup><a href="#src-2">2</a></sup> Three things differ here:</p>
+<ul>
+  <li><strong>The SNPs.</strong> Only SNPs typed in both files survive <code>--geno 0.1</code>, and <code>--maf 0.05</code> then removes SNPs whose minor allele frequency in the merged sample is below 5%. The practical does not apply the study's <code>.prune.in</code> list from step 3: it was built from the study's full SNP set, while the reference's SNPs were already pruned.<sup><a href="#src-1">1</a></sup></li>
+  <li><strong>The people who define the axes.</strong> PCA finds the directions of largest variation among everyone in the file. With 2,504 reference people from five continental groups, those directions mostly separate the reference groups. Variation within the study's own group gets the later PCs or none.</li>
+  <li><strong>Joint analysis rather than projection.</strong> The practical computes the PCs from everyone together, so the axes would shift if the study were larger or more varied. An alternative computes the PCs from the reference people only and places the study's people on those fixed axes (projection; <a href="#projection">below</a>).</li>
+</ul>
+
+<p>Each output file, column by column:</p>
+<dl class="cols-doc">
+  <dt>-merge.missnp</dt><dd>Written only when the merge fails. One SNP ID per line, sorted, each a SNP with three or more distinct allele letters across the two files. It is the input of <code>--flip</code>.</dd>
+  <dt>.eigenvec</dt><dd>One line per person in the merged file, no header, separated by spaces: family ID, individual ID, then PC1 to PC20. In R, <code>fread</code> names the columns V1, V2, …, so PC1 is V3. For the reference people both IDs are the sample name (HG00096); for the study's people they are the study's IDs.</dd>
+  <dt>.eigenval</dt><dd>Twenty numbers, one per line: the eigenvalue of each PC, which measures how much variation it captures (<a href="qc-pca.html">step 6</a>).</dd>
+  <dt>.panel (1000 Genomes)</dt><dd>Tab-separated with a header: <code>sample</code> (the sample name, matching the reference's family and individual IDs), <code>pop</code> (one of the 26 population codes), <code>super_pop</code> (AFR, AMR, EAS, EUR or SAS) and <code>gender</code>. The study's people are not in it. The real file's header line ends with two extra tabs, so it names six columns over four columns of data: R's <code>fread</code> warns "Detected 6 column names but the data has 4 columns" and adds two empty columns. The warning is harmless. The toy panel has no extra tabs.</dd>
+</dl>
+
+<h2 id="run">Run it in the browser <span class="tag core">Core</span></h2>
+
+<p>Step 7 has three parts: merge (it fails, on purpose), flip and merge again, then compute PCs on the merged file. The commands are the practical's, with <code>toy</code> in place of <code>penncath</code> and a toy version of the reference, <code>toy_1kg</code>; the first suggested command is not in the practical and predicts the outcome of the first merge. When the page loads, the terminal's setup runs the two step 1 filters (<code>--geno 0.01</code>, then <code>--mind 0.01</code>), so <code>toy.geno0.01.mind0.01</code> is ready and this page works without the earlier ones. Press <strong>Run next</strong> to go through the suggested commands in order, or click one and press Enter; the sections after the terminal explain each part of the output.</p>
+
+<div class="lab" id="lab-merge" data-title="Step 7 · merge with the reference, flip, merge again, PCA">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="lab-script">awk 'BEGIN { comp["A"] = "T"; comp["T"] = "A"; comp["C"] = "G"; comp["G"] = "C" }
+  FILENAME ~ /toy_1kg/ { ref[$2] = $5 $6; pos[$2] = $1 ":" $4; next }
+  ($2 in ref) {
+    if (($1 ":" $4) != pos[$2]) moved++
+    if (($5 $6) == ref[$2] || ($6 $5) == ref[$2]) kind = (($5 $6) ~ /^(AT|TA|CG|GC)$/) ? "A/T or C/G" : "same alleles"
+    else if ((comp[$5] comp[$6]) == ref[$2] || (comp[$6] comp[$5]) == ref[$2]) kind = "complementary alleles"
+    else kind = "other"
+    n[kind]++
+  }
+  END { split("same alleles,complementary alleles,A/T or C/G,other", kinds, ",")
+        for (i = 1; i &lt;= 4; i++) print n[kinds[i]] + 0, kinds[i]
+        print moved + 0, "at a different position" }' \
+  ${reference_dir}/toy_1kg.bim ${analysis_dir}/toy.geno0.01.mind0.01.bim
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --bmerge ${reference_dir}/toy_1kg.bed \
+      ${reference_dir}/toy_1kg.bim \
+      ${reference_dir}/toy_1kg.fam \
+      --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes || true
+ls ${analysis_dir}
+wc -l ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp
+head -5 ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp
+snp=$(head -1 ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp)
+grep -w "$snp" ${analysis_dir}/toy.geno0.01.mind0.01.bim ${reference_dir}/toy_1kg.bim
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --flip ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp \
+      --make-bed \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs
+grep -w "$snp" ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs.bim
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs \
+      --bmerge ${reference_dir}/toy_1kg.bed \
+      ${reference_dir}/toy_1kg.bim \
+      ${reference_dir}/toy_1kg.fam \
+      --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes \
+      --geno 0.1 --maf 0.05 --pca \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+head -3 ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes.eigenvec
+cd ${analysis_dir}
+git clone https://github.com/Illumina/akt.git
+head -3 ${analysis_dir}/akt/data/integrated_call_samples_v3.20130502.ALL.panel
+cut -f3 ${analysis_dir}/akt/data/integrated_call_samples_v3.20130502.ALL.panel | sort | uniq -c</pre>
+</div>
+
+<h3 id="run-predict">Predict which SNPs the merge will refuse</h3>
+
+<p>The merge matches SNPs by ID and then compares their allele letters, so the two <code>.bim</code> files are enough to predict which shared SNPs it will refuse. The first suggested command makes that prediction before anything is merged:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk 'BEGIN { comp["A"] = "T"; comp["T"] = "A"; comp["C"] = "G"; comp["G"] = "C" }
+  FILENAME ~ /toy_1kg/ { ref[$2] = $5 $6; pos[$2] = $1 ":" $4; next }
+  ($2 in ref) {
+    if (($1 ":" $4) != pos[$2]) moved++
+    if (($5 $6) == ref[$2] || ($6 $5) == ref[$2]) kind = (($5 $6) ~ /^(AT|TA|CG|GC)$/) ? "A/T or C/G" : "same alleles"
+    else if ((comp[$5] comp[$6]) == ref[$2] || (comp[$6] comp[$5]) == ref[$2]) kind = "complementary alleles"
+    else kind = "other"
+    n[kind]++
+  }
+  END { split("same alleles,complementary alleles,A/T or C/G,other", kinds, ",")
+        for (i = 1; i &lt;= 4; i++) print n[kinds[i]] + 0, kinds[i]
+        print moved + 0, "at a different position" }' \
+  ${reference_dir}/toy_1kg.bim ${analysis_dir}/toy.geno0.01.mind0.01.bim</pre>
+<p>awk reads the reference's <code>.bim</code> first: for its lines (<code>FILENAME ~ /toy_1kg/</code>) it stores the two allele letters, written next to each other as one string such as <code>AG</code>, and the position, both keyed by SNP ID, and <code>next</code> skips the remaining rules. The array <code>comp</code> maps each letter to its complement. For every study SNP whose ID the reference also has (<code>$2 in ref</code>), the command counts one of four kinds:</p>
+<ul>
+  <li><strong>same alleles</strong>: the study's two letters are the reference's, in either order, and they are not an A/T or C/G pair. The merge accepts the SNP.</li>
+  <li><strong>A/T or C/G</strong>: the same letters, forming an A/T or C/G pair, whose complements are the same pair. The merge accepts the SNP whichever strand each file reports (<a href="#flip">above</a>).</li>
+  <li><strong>complementary alleles</strong>: the study's letters are the complements of the reference's. The merge sees four letters and refuses the SNP; <code>--flip</code> repairs it.</li>
+  <li><strong>other</strong>: anything else, such as a third letter, or the −9 that PennCATH writes in place of a missing letter (<a href="plink-data.html#a1-a2">The data: PLINK files · A1 and A2</a>). The merge refuses the SNP, and a flip cannot repair it. A 0 in place of a letter is the exception: PLINK reads 0 as a missing allele and takes the letter from the other file, so the merge accepts such a SNP if its one letter matches.</li>
+</ul>
+<p>At the end, <code>split</code> puts the four names in a fixed order so that every count is printed, 0 included (<code>+ 0</code> turns an unset count into 0), and the last line counts shared SNPs whose chromosome or position differs between the two files. The four counts add up to the number of shared SNPs. <code>c ? a : b</code> is awk's conditional expression, Python's <code>a if c else b</code>. Before running the merge, predict how many lines its <code>.missnp</code> file will have: the complementary SNPs plus the "other" SNPs, less any with a 0 whose letter matches. The <code>wc -l</code> after the merge checks the prediction.</p>
+
+<h3 id="run-merge">The first merge fails, on purpose</h3>
+
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="3">--bmerge ${reference_dir}/toy_1kg.bed ${reference_dir}/toy_1kg.bim ${reference_dir}/toy_1kg.fam</span> <span class="part" data-n="4">--make-bed</span> <span class="part" data-n="5">--out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes</span> <span class="part" data-n="6">|| true</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code> — PLINK 1.9.</li>
+    <li><code>--bfile PREFIX</code> — the base fileset: the study after the step 1 filters. Its people and SNPs come first in the merged file.</li>
+    <li><code>--bmerge BED BIM FAM</code> — the fileset to merge in, given as its three file names (PLINK 1.9 also accepts a single prefix). The merge happens before any other operation in the command.<sup><a href="#src-2">2</a></sup></li>
+    <li><code>--make-bed</code> — write the merged people and SNPs as a new fileset.</li>
+    <li><code>--out PREFIX</code> — the output name. A failed merge leaves <code>PREFIX-merge.missnp</code>, <code>PREFIX.log</code> and <code>PREFIX-merge.fam</code> (the merged list of people, which PLINK writes before it compares the SNPs), but no <code>.bed</code> or <code>.bim</code>.</li>
+    <li><code>|| true</code> — shell syntax, not PLINK: run <code>true</code> if PLINK fails, so the line as a whole reports success and a script continues (<a href="tools.html#exit-status">The tools · Exit status</a>).</li>
+  </ol>
+</div>
+
+<p>Read the output from the top. PLINK first reports the base fileset (<code>… people loaded from ….fam</code>), then the fileset to merge (<code>… people to be merged from ….fam</code>) and how many of those people are new; no person should be in both files. The same three lines follow for SNPs (<code>markers</code>): how many the base has, how many the reference has, and how many of the reference's SNPs are new rather than already in the base. Then comes the error <code>… variants with 3+ alleles present</code> with PLINK's advice: try <code>--flip</code> with the <code>.missnp</code> file, and beware that "strand errors involving SNPs with A/T or C/G alleles probably remain in your data".<sup><a href="#src-2">2</a></sup></p>
+<p>In the lab, the base fileset has <span data-card="qc_people">?</span> people and <span data-card="qc_snps">?</span> SNPs. <code>toy_1kg</code> adds <span data-card="ref_people">?</span> people, all new, and <span data-card="ref_snps">?</span> SNPs, of which <span data-card="merge1_ref_only_snps">?</span> are new and <span data-card="merge1_shared_snps">?</span> are already in the base. The error reports <span data-card="merge1_missnp">?</span> variants with three or more alleles, the count of complementary SNPs that the first suggested command printed: no shared toy SNP is of the "other" kind. PLINK then stops with exit status <span data-card="merge1_exit_code">?</span>, a failure, which <code>|| true</code> turns into success for the shell.</p>
+
+<p>The next suggested commands inspect what the failed merge left behind. <code>ls</code> shows that it wrote <code>….merge1kgenomes-merge.missnp</code>, a log and <code>….merge1kgenomes-merge.fam</code>, but no <code>.bed</code>. <code>wc -l</code> counts the list's lines (one SNP each) and <code>head -5</code> shows the first five. Then two commands compare one listed SNP in both files:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>snp=$(head -1 ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp)
+<span class="prompt">$ </span>grep -w "$snp" ${analysis_dir}/toy.geno0.01.mind0.01.bim ${reference_dir}/toy_1kg.bim</pre>
+<p>The first stores the list's first SNP ID in a shell variable, <code>snp</code>: <code>$( … )</code> runs a command and substitutes its output. The second prints the lines of both <code>.bim</code> files that contain that ID as a whole word (<code>-w</code>), each prefixed with its file name. Compare the last two columns, the allele letters: the two letters in one file should be the complements of the two in the other (A for T, C for G), possibly in the other order. That is the signature of a SNP reported on opposite strands.</p>
+
+<h3 id="run-flip">Flip, then merge again</h3>
+
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="2">--flip ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp</span> <span class="part" data-n="3">--make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs</span></div>
+  <ol class="cmd-parts">
+    <li>The study fileset, not the failed merge (which does not exist).</li>
+    <li><code>--flip FILE</code> — complement the allele letters of the SNPs listed in FILE. The log reports <code>--flip: N SNPs flipped.</code></li>
+    <li>Save the flipped fileset under a new name; without <code>--make-bed</code> the flip would be applied and then thrown away.</li>
+  </ol>
+</div>
+
+<p>Running <code>grep -w "$snp"</code> on the flipped <code>.bim</code> shows the same SNP with complemented letters, which now match the reference's. The second merge is the first command with <code>_flipSNPs</code> as the base. This time it ends with <code>Merged fileset written to …-merge.bed + …-merge.bim + …-merge.fam</code> and then <code>--make-bed to ….bed + ….bim + ….fam … done.</code> If it fails again, the SNPs now in <code>.missnp</code> differ in a way a flip cannot repair, and the usual fix is <code>--exclude</code> with that list on the flipped fileset before a third merge.</p>
+<p>In the lab, <code>--flip</code> reports <span data-card="flip_snps">?</span> SNPs flipped, every SNP of the <code>.missnp</code> list, and the second merge reports <code>Performing single-pass merge (<span data-card="merge2_people">?</span> people, <span data-card="merge2_snps">?</span> variants).</code>: the study's <span data-card="qc_snps">?</span> SNPs plus the reference's <span data-card="merge1_ref_only_snps">?</span> new ones. The toy data contain no SNP that a flip cannot repair, so no third merge is needed.</p>
+
+<h3 id="run-pca">PCA on the shared SNPs</h3>
+
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes</span> <span class="part" data-n="2">--geno 0.1</span> <span class="part" data-n="3">--maf 0.05</span> <span class="part" data-n="4">--pca</span> <span class="part" data-n="5">--out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes</span></div>
+  <ol class="cmd-parts">
+    <li>The merged fileset.</li>
+    <li><code>--geno 0.1</code> — drop SNPs missing in more than 10% of people, which removes the one-file SNPs (<a href="#shared-snps">above</a>). The log line is <code>… variants removed due to missing genotype data (--geno).</code></li>
+    <li><code>--maf 0.05</code> — then drop SNPs whose minor allele frequency in the merged sample is below 0.05: <code>… variants removed due to minor allele threshold(s)</code>. PLINK applies <code>--geno</code> before <code>--maf</code> whatever the order on the command line (<a href="tools.html#plink-order">The tools · Order of operations</a>).</li>
+    <li><code>--pca</code> — compute the top 20 PCs from the remaining SNPs and people.</li>
+    <li>The output prefix: <code>.eigenvec</code>, <code>.eigenval</code> and <code>.log</code>. The same prefix as the merged fileset is fine, since no new <code>.bed</code> is written.</li>
+  </ol>
+</div>
+
+<p>The number of SNPs left after both filters is the number of SNPs the PCs are built from; the log states it in the line <code>… variants and … people pass filters and QC.</code> Check it before trusting the plot: a few hundred shared SNPs separate continental groups, but finer structure needs more. PLINK 1.9.0 also warns that monomorphic variants are present; after <code>--maf 0.05</code> none is, and <a href="qc-pca.html#monomorphic-warning">step 6 explains why the warning appears anyway</a>. Then look at the first lines of the <code>.eigenvec</code> file with <code>head -3</code>: the study's people come first, with their family and individual IDs, followed by 20 numbers each.</p>
+<p>In the lab, <code>--geno 0.1</code> removes <span data-card="merged_geno_removed">?</span> SNPs, exactly the SNPs typed in only one file (the study's SNPs that <code>toy_1kg</code> lacks, and the reference's <span data-card="merge1_ref_only_snps">?</span> new ones). <code>--maf 0.05</code> removes <span data-card="merged_maf_removed">?</span> more, and the PCs are built from <span data-card="merged_pca_snps">?</span> SNPs and <span data-card="merged_pca_people">?</span> people.</p>
+
+<h3 id="run-labels">Labels for the reference people</h3>
+
+<p>The practical runs <code>git clone https://github.com/Illumina/akt.git</code> in the analysis folder. It copies the whole akt repository, and the only file used is <code>akt/data/integrated_call_samples_v3.20130502.ALL.panel</code>. In the lab, <code>git clone</code> creates that folder with a toy version of the file, listing the people of <code>toy_1kg</code>. The last two suggested commands look at its first lines and count the people per super-population with <code>cut</code>, <code>sort</code> and <code>uniq -c</code>:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>head -3 ${analysis_dir}/akt/data/integrated_call_samples_v3.20130502.ALL.panel
+<span class="prompt">$ </span>cut -f3 ${analysis_dir}/akt/data/integrated_call_samples_v3.20130502.ALL.panel | sort | uniq -c</pre>
+<p><code>cut -f3</code> keeps the third tab-separated column (<code>super_pop</code>), <code>sort</code> puts equal values next to each other, and <code>uniq -c</code> counts each run of equal lines. The full panel lists 2,504 people: AFR 661, AMR 347, EAS 504, EUR 503 and SAS 489, plus the header line.<sup><a href="#src-3">3</a></sup></p>
+
+<h3 id="run-palindromic">Check the A/T and C/G SNPs against the reference <span class="tag optional">Optional</span></h3>
+
+<p>The merge accepted every A/T and C/G SNP without a message, whichever strand each file reports. The frequency comparison of <a href="#flip">What <code>--flip</code> changes</a> can check them: compute each SNP's allele frequencies in the study and in the reference's EUR people, the reference group closest to most of the toy study, and ask which reading of the study's letters brings the two frequencies closer. The terminal below does it with the files of the step 7 terminal:</p>
+
+<div class="lab" id="lab-palindromic" data-title="Step 7, optional · A/T and C/G SNPs: same strand or other strand?">
+<pre class="lab-script">if [ ! -d "${analysis_dir}/akt" ]; then
+  cd ${analysis_dir}
+  git clone https://github.com/Illumina/akt.git
+fi
+awk 'NR == FNR { ref[$2] = 1; next } ($2 in ref) &amp;&amp; ($5 $6 ~ /^(AT|TA|CG|GC)$/) { print $2 }' \
+    ${reference_dir}/toy_1kg.bim ${analysis_dir}/toy.geno0.01.mind0.01.bim &gt; ${analysis_dir}/palindromic.txt
+wc -l ${analysis_dir}/palindromic.txt
+awk '$3 == "EUR" { print $1, $1 }' ${analysis_dir}/akt/data/integrated_call_samples_v3.20130502.ALL.panel &gt; ${analysis_dir}/eur_ref.txt
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --extract ${analysis_dir}/palindromic.txt \
+      --freq --out ${analysis_dir}/palindromic.study
+plink --bfile ${reference_dir}/toy_1kg --keep ${analysis_dir}/eur_ref.txt \
+      --extract ${analysis_dir}/palindromic.txt --freq --out ${analysis_dir}/palindromic.eur
+head -3 ${analysis_dir}/palindromic.study.frq ${analysis_dir}/palindromic.eur.frq
+awk 'NR == FNR { if (FNR &gt; 1) { a1[$2] = $3; p[$2] = $5 }; next }
+     FNR &gt; 1 { pr = ($3 == a1[$2]) ? $5 : 1 - $5
+               ds = p[$2] - pr; if (ds &lt; 0) ds = -ds
+               df = p[$2] - (1 - pr); if (df &lt; 0) df = -df
+               print $2, a1[$2], p[$2], pr, (df &lt; ds ? "other strand" : "same strand") }' \
+    ${analysis_dir}/palindromic.study.frq ${analysis_dir}/palindromic.eur.frq</pre>
+</div>
+
+<p>The first block clones akt for the panel file if the step 7 terminal has not done it yet. The first awk program lists the shared SNPs whose two letters form an A/T or C/G pair, the kind that the classifier of <a href="#run-predict">Predict which SNPs the merge will refuse</a> counted. The second writes the panel's EUR people, each name twice (family and individual ID), in the format that <code>--keep</code> reads. <code>--freq</code> writes a <code>.frq</code> file with one row per SNP: <code>A1</code>, the allele that is rarer among the people analyzed, its frequency in the column <code>MAF</code>, and <code>A2</code>, the other allele. The last program reads the study's file first and stores each SNP's <code>A1</code> and its frequency. For each SNP of the reference's file it takes the reference's frequency of the same letter (<code>pr</code>, which is 1 − <code>MAF</code> when the reference's <code>A1</code> is the other letter), computes the two distances of the strand section's equation, and prints the reading with the smaller distance.</p>
+
+<p>In the lab, <span data-card="sim_palindromic_swapped">?</span> SNPs come out as "other strand": for each of them the study's frequency of a letter is far from the reference's frequency of that letter and close to the reference's frequency of its complement. They are the A/T and C/G SNPs that the toy study writes on the reverse strand (<span data-card="sim_palindromic_swapped_ids">?</span>), and they sit in the merged fileset with their alleles exchanged for every study person. Before a PCA the safe choice is to drop such SNPs, or all A/T and C/G SNPs as the <a href="#shared-route">explicit route</a> below does; for a SNP with frequencies near 0.5 the comparison cannot decide.</p>
+
+<h2 id="distribution">Look at the merged PCA <span class="tag core">Core</span></h2>
+
+<div class="widget" id="w-refpca">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The merged PCA: toy study and toy reference panel</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It plots the .eigenvec file that the terminal above writes, with the reference people colored by super-population from the panel file.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The widget reads two files the terminal wrote, the merged <code>.eigenvec</code> and the panel file from the akt clone, and redraws whenever either is written again (press <em>Run the step 7 commands</em> if you skipped the terminal). Reference people are colored by their panel label and study people are drawn in the text color on top; hover over or tap a point for its IDs. Change the axes to PC2 against PC3, as the practical's second plot does, and then to later PCs: the reference groups separate on the first few PCs and overlap on later ones. The rectangle rule at the bottom is one of the rules in <a href="#threshold">Choose a rule and act</a>: a study person is flagged when, on either plotted PC, they lie more than <em>k</em> standard deviations of the chosen reference group from that group's mean. Change <em>k</em>, the group and the PCs, and watch how much the list of flagged IDs depends on these choices. Once the explicit shared-SNP route (<a href="#shared-route">below</a>) or the PCA of the last question on this page has been run, the file menu offers that PCA too.</p>
+
+<p>Three patterns are worth looking for. Study people who lie inside one reference cluster are genetically similar to that group's reference samples. Study people spread along a line between two clusters usually have recent ancestors from both groups (<a href="../0-biological-foundations/ancestry.html#admixture-models">admixture</a>); the 1000 Genomes ASW and ACB samples, and the AMR populations, lie between clusters in the same way. Study people far from every cluster have genetic ancestry that the reference does not sample well, or a technical problem (contamination, a strand error affecting many SNPs) that moves them. Remember that the first PCs are dominated by the reference: two study people who look identical on PC1 and PC2 may still differ on later PCs.</p>
+
+<p><strong>The toy data.</strong> The toy study was simulated as mostly European-like: <span data-card="sim_european_like">?</span> of its <span data-card="study_people">?</span> people were drawn from the allele frequencies of toy EUR populations, <span data-card="sim_african_like">?</span> from AFR, <span data-card="sim_east_asian_like">?</span> from EAS and <span data-card="sim_south_asian_like">?</span> from SAS populations, and <span data-card="sim_admixed">?</span> are admixed, with European-like and African-like ancestors in different proportions (<a href="practical-overview.html#toy-dataset">The practical · The toy dataset</a>). <code>toy_1kg</code> holds <span data-card="ref_people">?</span> simulated people, <span data-card="ref_eur">?</span> in each of the <span data-card="ref_super_populations">?</span> super-populations, from <span data-card="ref_populations">?</span> toy populations named after 1000 Genomes populations. Many toy SNPs are written on the reverse strand in the study, as some genotyping arrays report them: the <span data-card="merge1_missnp">?</span> of them that <code>toy_1kg</code> also has and that are not A/T or C/G made the first merge fail, and <span data-card="sim_palindromic_swapped">?</span> A/T and C/G SNPs merged with their alleles exchanged (<a href="#run-palindromic">the optional check above</a>). On PC1 against PC2 the study's people lie on the cluster of the super-population they were drawn from; the admixed people lie between EUR and AFR, and the South-Asian-like people between EUR and EAS. The rule's default (<em>k</em> = 3 around EUR, on PC1 and PC2) flags every person who was not drawn as European-like, plus a few European-like people at the edge of their cloud. With only <span data-card="ref_eur">?</span> EUR reference people, the group's standard deviation is itself estimated imprecisely, so the edge of the rectangle is uncertain. Raise <em>k</em> and the European-like people leave the list first; near the top of the slider the South-Asian-like people, the closest to EUR, leave it too.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 104–105 · What PCs can and cannot show</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-104.jpg" alt="Lecture 1, slide 104: PCA of European individuals from Novembre et al. 2008, with the first two PCs rotated so that the plot resembles a map of Europe; the slide notes that the picture is by design too pretty, because people were assigned a country only if all observed grandparents came from it." loading="lazy"><figcaption>Lecture 1 · slide 104</figcaption></figure>
+    <div><p>Slide 104: the famous map-like PCA of Europe kept a person only if all their recorded grandparents came from one country, so the clean clusters partly reflect who was sampled. Slide 105: in a New York City biobank that enrolls the patients of a hospital system, the participants fill the space between the reference clusters. The reference's "islands of color" are, in the words of the figure's caption, "a by-product of sampling strategy". When the study's people fall between clusters in step 7, that is the expected picture for many real populations, not a failure of the method.</p></div>
+  </div>
+  <div class="slide-strip">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-105.jpg" alt="Lecture 1, slide 105: from Lewis et al. 2022, 31,705 participants of the BioMe biobank in New York City projected on two PCs together with 4,149 reference individuals from 87 populations; the reference panel forms colored islands while the biobank participants form a continuous gray cloud between and around them. The slide asks who is in the data and who is not." loading="lazy"><figcaption>Lecture 1 · slide 105</figcaption></figure>
+  </div>
+</aside>
+
+<h2 id="threshold">Choose a rule and act <span class="tag core">Core</span></h2>
+
+<p><strong>The practical's choice.</strong> Step 7 removes nobody. Its purpose is to look: the practical's conclusion for PennCATH is that "the PennCATH samples lie predominantly within or very close to the cluster formed by 1KG samples carrying the EUR reference label", to be read "as reference-based genetic similarity, not as a categorical determination that every participant is 'European'".<sup><a href="#src-1">1</a></sup> The decision about flagging people comes in the exercise, after GrafAnc (<a href="qc-grafanc.html">step 8</a>), and the practical's advice there is explicit: "Do not exclude a sample solely because its GrafAnc label differs from the majority."<sup><a href="#src-1">1</a></sup></p>
+
+<p><strong>Rules used in published pipelines.</strong> Each needs to be fixed before looking at association results and recorded with the IDs it flags.</p>
+<ul>
+  <li><strong>A region on the PCs around the intended reference group.</strong> Anderson et al. merged their study with HapMap reference samples, computed PCs, and excluded "all individuals with a 2nd principal component score less than 0.072" because the study aimed at people of European descent.<sup><a href="#src-4">4</a></sup> Variants of this rule draw an ellipse, or a fixed number of standard deviations, around the reference group's center.</li>
+  <li><strong>Iterated outlier removal.</strong> EIGENSOFT's smartpca removes people more than 6 standard deviations from the mean along any of the top 10 PCs, recomputes the PCs, and repeats up to five times.<sup><a href="#src-5">5</a></sup> This uses the study's own spread, not a reference.</li>
+  <li><strong>A classifier trained on reference labels.</strong> gnomAD trains a random forest on the PCs of reference samples with known labels and assigns each person to a "genetic ancestry group" only when the classifier is confident; everyone else is left unassigned.<sup><a href="#src-6">6</a></sup></li>
+  <li><strong>Keep everyone and adjust.</strong> Analyze all people together and include PCs as covariates, or use a mixed model (Session 2), or analyze reference-relative groups separately and combine the results. This keeps the study's sample size and its diversity.<sup><a href="#src-7">7</a>,<a href="#src-8">8</a></sup></li>
+</ul>
+
+<p><strong>Remove versus flag.</strong> A flag is information attached to an ID: it can change how the person is analyzed (for example in a sensitivity analysis) without discarding their data. Removal is for samples that fail a quality check (a swapped or contaminated sample). Restricting an analysis to one group is a design choice, which the practical accepts "when that restriction is scientifically justified and prespecified".<sup><a href="#src-1">1</a></sup> Whichever you choose, the merged file serves only this step: the association analysis in Session 2 uses the study's own fileset, never a file that contains the 2,504 reference people.</p>
+
+<h3 id="shared-route">Make the shared SNP list explicit</h3>
+
+<p>Instead of relying on <code>--geno 0.1</code>, list the IDs present in both <code>.bim</code> files and keep only those before merging. The same command can drop A/T and C/G SNPs, the approach of Anderson et al.<sup><a href="#src-4">4</a></sup> The list does not repair strands, so the merge still fails once and the flip is still needed; but every SNP left is in both files, so the PCA needs no <code>--geno 0.1</code>. The terminal below runs the whole route from the step 1 output:</p>
+
+<div class="lab" id="lab-shared" data-title="Step 7, another route · an explicit list of shared SNPs">
+<pre class="lab-script">awk 'NR == FNR { ref[$2] = 1; next }
+     ($2 in ref) &amp;&amp; !($5$6 ~ /^(AT|TA|CG|GC)$/) { print $2 }' \
+    ${reference_dir}/toy_1kg.bim ${analysis_dir}/toy.geno0.01.mind0.01.bim \
+    &gt; ${analysis_dir}/shared_snps.txt
+wc -l ${analysis_dir}/shared_snps.txt
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --extract ${analysis_dir}/shared_snps.txt \
+      --make-bed --out ${analysis_dir}/toy.shared
+plink --bfile ${reference_dir}/toy_1kg --extract ${analysis_dir}/shared_snps.txt \
+      --make-bed --out ${analysis_dir}/toy_1kg.shared
+plink --bfile ${analysis_dir}/toy.shared --bmerge ${analysis_dir}/toy_1kg.shared \
+      --make-bed --out ${analysis_dir}/toy.shared.merge1kgenomes || true
+plink --bfile ${analysis_dir}/toy.shared \
+      --flip ${analysis_dir}/toy.shared.merge1kgenomes-merge.missnp \
+      --make-bed --out ${analysis_dir}/toy.shared_flipSNPs
+plink --bfile ${analysis_dir}/toy.shared_flipSNPs --bmerge ${analysis_dir}/toy_1kg.shared \
+      --make-bed --out ${analysis_dir}/toy.shared.merge1kgenomes
+plink --bfile ${analysis_dir}/toy.shared.merge1kgenomes --maf 0.05 --pca \
+      --out ${analysis_dir}/toy.shared.merge1kgenomes</pre>
+</div>
+
+<p>The awk program reads the reference <code>.bim</code> first (<code>NR == FNR</code> is true only while awk reads the first file) and remembers each SNP ID; for the study's <code>.bim</code> it prints the ID when the reference has it and the two allele columns, joined (<code>$5$6</code>), are not one of the four A/T and C/G pairs. <code>--extract</code> keeps only the listed SNPs, in each fileset. <code>--bmerge</code> here takes a single prefix instead of three file names. Compare the two PCA logs, the line <code>… variants and … people pass filters and QC</code> in each: the difference is mostly the A/T and C/G SNPs, which this route drops and the other keeps. Then choose this route's file in the widget above and compare the two plots.</p>
+<p>In the lab, <code>shared_snps.txt</code> lists the <span data-card="merge1_shared_snps">?</span> shared SNPs less the A/T and C/G ones that the first suggested command counted. The first merge of this route fails again with <span data-card="merge1_missnp">?</span> SNPs in its <code>.missnp</code>, the same complementary SNPs as before, because the list removed none of them. This route's PCA uses fewer SNPs than the <span data-card="merged_pca_snps">?</span> of the <code>--geno 0.1</code> route, and the difference is exactly the number of A/T and C/G SNPs, among them the <span data-card="sim_palindromic_swapped">?</span> that the study reports on the other strand.</p>
+
+<h3 id="projection">Projection instead of a joint PCA <span class="tag optional">Optional</span></h3>
+
+<p>The practical computes PCs from the study and the reference together. A common alternative computes the PCs from the reference people alone and then places each study person on those axes. The axes then do not depend on the study's size or composition. PLINK 1.9 does this with <code>--pca</code> plus <code>--within</code> (a file assigning people to clusters) and <code>--pca-cluster-names</code>: the PCs come from the named clusters and everyone else is projected.<sup><a href="#src-2">2</a></sup> Anderson et al. used the equivalent option of smartpca.<sup><a href="#src-4">4</a></sup> The price is a known bias: projected scores are pulled toward the center of the plot ("shrinkage bias, where projected PC scores regress toward the mean"), so a projected person looks less distinct than a reference person of the same ancestry would.<sup><a href="#src-9">9</a></sup> Why this happens, and how much: <a href="population-structure.html#projection-shrinkage">Population structure · Projection and shrinkage</a>.</p>
+
+<h2 id="in-r">In R <span class="tag core">Core</span></h2>
+
+<p>The practical's R code reads the eigenvectors and the panel file, attaches the panel's labels to the reference people, and draws the study's people on top in black. On your own computer, with the files from <a href="#real-data">the next section</a>:</p>
+
+<span class="code-label r">R</span>
+<pre class="code">library(tidyverse)
+library(data.table)
+
+pc_with1kgenomes &lt;- fread(file.path(analysis_dir, "penncath.geno0.01.mind0.01.merge1kgenomes.eigenvec"))
+pop_info_1kgenomes &lt;- fread(file.path(analysis_dir, "akt/data/integrated_call_samples_v3.20130502.ALL.panel"))
+
+pc_with1kgenomes &lt;- pc_with1kgenomes %&gt;%
+  rename(PC1 = V3, PC2 = V4, PC3 = V5) %&gt;%
+  left_join(pop_info_1kgenomes, by = c("V1" = "sample"))
+
+ggplot(pc_with1kgenomes, aes(x = PC1, y = PC2)) +
+  geom_point(data = subset(pc_with1kgenomes, !is.na(super_pop)),
+             aes(color = super_pop), alpha = 0.5) +
+  geom_point(data = subset(pc_with1kgenomes, is.na(super_pop)),
+             color = "black") +
+  labs(title = "PC1 vs. PC2", color = "1KG ref ancestry labels") +
+  theme_classic()</pre>
+
+<p>What each function does, for readers who know pandas better than R:</p>
+<ul>
+  <li><code>fread(path)</code> (data.table) reads a delimited text file and guesses the separator and whether there is a header, like <code>pandas.read_csv(path, sep=None)</code>. The <code>.eigenvec</code> file has no header, so the columns are named V1, V2, …; the panel file has one (with the real panel, <code>fread</code> prints a harmless warning about it; see the <code>.panel</code> entry in <a href="#pca-merged">PCA on the merged data</a>).</li>
+  <li><code>file.path(a, b)</code> joins folder and file names, like <code>os.path.join</code>.</li>
+  <li><code>%&gt;%</code> passes the result on the left as the first argument of the function on the right, so a chain reads top to bottom, like method chaining in pandas.</li>
+  <li><code>rename(PC1 = V3)</code> (dplyr) renames columns, new name on the left, like <code>df.rename(columns={"V3": "PC1"})</code>.</li>
+  <li><code>left_join(x, y, by = c("V1" = "sample"))</code> keeps every row of x and adds the matching columns of y where x's <code>V1</code> equals y's <code>sample</code>, like <code>x.merge(y, how="left", left_on="V1", right_on="sample")</code>. The reference people's family ID is their sample name, so they match; the study's people do not, and their <code>pop</code> and <code>super_pop</code> become <code>NA</code> (R's missing value).</li>
+  <li><code>subset(df, condition)</code> keeps the rows where the condition is true, like <code>df[condition]</code>; <code>is.na(x)</code> tests for missing values, like <code>isna()</code>.</li>
+  <li><code>ggplot(data, aes(x = PC1, y = PC2))</code> starts a plot and maps columns to axes; each <code>+ geom_point(...)</code> adds a layer of points, here first the reference colored by <code>super_pop</code> with 50% transparency (<code>alpha = 0.5</code>), then the study in black on top. <code>labs</code> sets titles and <code>theme_classic</code> a plain style.</li>
+</ul>
+<p>To see PC2 against PC3, replace <code>x = PC1, y = PC2</code> by <code>x = PC2, y = PC3</code>, as the practical's second plot does. To count study people near each reference group, compute each group's center with <code>group_by(super_pop) %&gt;% summarize(c1 = mean(PC1), c2 = mean(PC2))</code> and the distance of each study person from it.</p>
+
+<p>The same analysis runs on the toy data in the R console below. It loads <code>dplyr</code> and <code>ggplot2</code> instead of the whole tidyverse, which is a large download in the browser. The first run downloads R into the page, which takes a few seconds; if you skipped the terminal, the console first runs the step 7 commands. The last lines do the count suggested above: for each study person, the reference group whose center on PC1 and PC2 is nearest.</p>
+
+<div class="rlab" id="rlab-refpca" data-title="Step 7 in R · the merged PCA of the toy data" data-packages="data.table,dplyr,ggplot2">
+<pre class="lab-setup">if [ ! -f "${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes.eigenvec" ]; then
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --bmerge ${reference_dir}/toy_1kg.bed ${reference_dir}/toy_1kg.bim ${reference_dir}/toy_1kg.fam --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes || true
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --flip ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs --bmerge ${reference_dir}/toy_1kg.bed ${reference_dir}/toy_1kg.bim ${reference_dir}/toy_1kg.fam --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+    plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes --geno 0.1 --maf 0.05 --pca --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+fi
+if [ ! -d "${analysis_dir}/akt" ]; then
+    cd ${analysis_dir}
+    git clone https://github.com/Illumina/akt.git
+fi</pre>
+<pre class="rlab-code">library(data.table)
+library(dplyr)
+library(ggplot2)
+
+pc_with1kgenomes &lt;- fread(file.path(analysis_dir, "toy.geno0.01.mind0.01.merge1kgenomes.eigenvec"))
+pop_info_1kgenomes &lt;- fread(file.path(analysis_dir, "akt/data/integrated_call_samples_v3.20130502.ALL.panel"))
+
+pc_with1kgenomes &lt;- pc_with1kgenomes %&gt;%
+  rename(PC1 = V3, PC2 = V4, PC3 = V5) %&gt;%
+  left_join(pop_info_1kgenomes, by = c("V1" = "sample"))
+
+ggplot(pc_with1kgenomes, aes(x = PC1, y = PC2)) +
+  geom_point(data = subset(pc_with1kgenomes, !is.na(super_pop)),
+             aes(color = super_pop), alpha = 0.5) +
+  geom_point(data = subset(pc_with1kgenomes, is.na(super_pop)),
+             color = "black") +
+  labs(title = "PC1 vs. PC2 (toy data)", color = "1KG ref ancestry labels") +
+  theme_classic()
+
+# Center of each reference group on PC1 and PC2
+centers &lt;- pc_with1kgenomes %&gt;%
+  filter(!is.na(super_pop)) %&gt;%
+  group_by(super_pop) %&gt;%
+  summarize(c1 = mean(PC1), c2 = mean(PC2))
+centers
+
+# Nearest center for each study person, then a count per group
+study &lt;- pc_with1kgenomes %&gt;% filter(is.na(super_pop))
+d2 &lt;- outer(study$PC1, centers$c1, "-")^2 + outer(study$PC2, centers$c2, "-")^2
+study$nearest &lt;- centers$super_pop[apply(d2, 1, which.min)]
+study %&gt;% count(nearest)</pre>
+</div>
+
+<p>The new functions: <code>group_by(super_pop) %&gt;% summarize(c1 = mean(PC1))</code> computes one row per group, like <code>df.groupby("super_pop").agg(c1=("PC1", "mean"))</code>. <code>outer(x, y, "-")</code> builds the matrix of all differences \(x_i - y_j\), one row per study person and one column per group, like NumPy broadcasting <code>x[:, None] - y[None, :]</code>; squaring and adding the two PCs gives squared distances. <code>apply(d2, 1, which.min)</code> finds, in each row (margin 1), the position of the smallest value, like <code>d2.argmin(axis=1)</code>. <code>count(nearest)</code> counts study people per nearest group, like <code>value_counts()</code>. Nearest center is a crude rule: it assigns everyone, including people far from every group and people between two groups.</p>
+
+<h2 id="real-data">On your own computer: the real data <span class="tag core">Core</span></h2>
+
+<p>With the folders and variables from <a href="setup.html">Set up your computer</a> (<code>input_dir</code>, <code>reference_dir</code>, <code>analysis_dir</code>) and the step 1 output in <code>${analysis_dir}</code>, the practical's commands are:</p>
+
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+      --bmerge ${reference_dir}/all_pops_1kgenomes_markersForPCA.bed \
+      ${reference_dir}/all_pops_1kgenomes_markersForPCA.bim \
+      ${reference_dir}/all_pops_1kgenomes_markersForPCA.fam \
+      --make-bed --out ${analysis_dir}/penncath.geno0.01.mind0.01.merge1kgenomes || true
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+      --flip ${analysis_dir}/penncath.geno0.01.mind0.01.merge1kgenomes-merge.missnp \
+      --make-bed --out ${analysis_dir}/penncath.geno0.01.mind0.01_flipSNPs
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01_flipSNPs \
+      --bmerge ${reference_dir}/all_pops_1kgenomes_markersForPCA.bed \
+      ${reference_dir}/all_pops_1kgenomes_markersForPCA.bim \
+      ${reference_dir}/all_pops_1kgenomes_markersForPCA.fam \
+      --make-bed --out ${analysis_dir}/penncath.geno0.01.mind0.01.merge1kgenomes
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01.merge1kgenomes \
+      --geno 0.1 --maf 0.05 --pca \
+      --out ${analysis_dir}/penncath.geno0.01.mind0.01.merge1kgenomes
+<span class="prompt">$ </span>cd ${analysis_dir}
+<span class="prompt">$ </span>git clone https://github.com/Illumina/akt.git</pre>
+
+<p>Cloning akt downloads the whole repository for one small file. The same file is on the 1000 Genomes FTP site; this downloads only the file, into the folder the R code expects:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>mkdir -p ${analysis_dir}/akt/data
+<span class="prompt">$ </span>curl -o ${analysis_dir}/akt/data/integrated_call_samples_v3.20130502.ALL.panel \
+      https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel</pre>
+
+<p><strong>Predict the first merge before running it.</strong> This is the command from <a href="#run-predict">Predict which SNPs the merge will refuse</a> with the real file names; <code>/markersForPCA/</code> recognizes the reference's file:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>awk 'BEGIN { comp["A"] = "T"; comp["T"] = "A"; comp["C"] = "G"; comp["G"] = "C" }
+  FILENAME ~ /markersForPCA/ { ref[$2] = $5 $6; pos[$2] = $1 ":" $4; next }
+  ($2 in ref) {
+    if (($1 ":" $4) != pos[$2]) moved++
+    if (($5 $6) == ref[$2] || ($6 $5) == ref[$2]) kind = (($5 $6) ~ /^(AT|TA|CG|GC)$/) ? "A/T or C/G" : "same alleles"
+    else if ((comp[$5] comp[$6]) == ref[$2] || (comp[$6] comp[$5]) == ref[$2]) kind = "complementary alleles"
+    else kind = "other"
+    n[kind]++
+  }
+  END { split("same alleles,complementary alleles,A/T or C/G,other", kinds, ",")
+        for (i = 1; i &lt;= 4; i++) print n[kinds[i]] + 0, kinds[i]
+        print moved + 0, "at a different position" }' \
+  ${reference_dir}/all_pops_1kgenomes_markersForPCA.bim ${input_dir}/penncath.bim</pre>
+<p>For this site the command was run on the two downloaded <code>.bim</code> files, before any QC. The reference has 17,490 SNPs, and 17,213 of them share an ID with <code>penncath.bim</code>, all at the same chromosome and position. Of the shared SNPs, 8,585 have the same allele pair, 8,599 (about half) have the complementary pair, 27 are A/T or C/G, and 2 are "other": PennCATH writes −9 in place of one of their allele letters (<a href="plink-data.html#a1-a2">The data: PLINK files · A1 and A2</a>). So about half of the shared SNPs are written on the opposite strand, and the practical's <code>--flip</code> with the <code>.missnp</code> list is the right repair for them. The 2 SNPs with −9 have no genotype call for about half of the people (counted in <code>penncath.bed</code>), so step 1's <code>--geno 0.01</code> removes them before the merge.</p>
+<p>The merge uses the study after step 1, which has fewer SNPs. Run the command again with <code>${analysis_dir}/penncath.geno0.01.mind0.01.bim</code> in place of <code>${input_dir}/penncath.bim</code>, and write down how many lines you expect in <code>-merge.missnp</code>: the complementary SNPs plus any "other" SNPs (there should be none left). Then run the merge and compare with <code>wc -l</code>. For comparison, the result for this site, after real PLINK 1.9.0's step 1: 11,586 reference SNPs still shared (5,878 with the same allele pair, 5,692 complementary, 16 A/T or C/G, no "other"), and 5,692 lines in the first merge's <code>-merge.missnp</code>, the number its error message reports.</p>
+
+<p><strong>What to look at.</strong></p>
+<ul>
+  <li>The first merge's log (<code>….merge1kgenomes.log</code>): how many reference SNPs are already in PennCATH (the shared SNPs; the four counts of the second pass add up to that number), and whether the number of lines in <code>.missnp</code> (<code>wc -l</code>) matches your prediction.</li>
+  <li>The flip's log: <code>--flip: N SNPs flipped.</code> N should equal the number of lines of <code>.missnp</code>, and the second merge should end with <code>Merged fileset written to</code>. If it does not, open the log: <code>|| true</code> is only on the first merge, but a failure further down a script is easy to miss.</li>
+  <li>SNPs whose allele is written as −9. PLINK 1.9 reads −9 as the name of an allele, so a shared SNP with −9 in one file and two letters in the other gives the merge three allele names, and a flip cannot repair it; the fix is <code>--exclude</code> (<a href="#run-flip">Flip, then merge again</a>). With the practical's files this does not happen: the only 2 shared SNPs with −9 fail step 1, and the second pass reports no "other" SNPs. It can happen when PennCATH is merged with other files: <code>awk '$5 == "-9" || $6 == "-9"' ${analysis_dir}/penncath.geno0.01.mind0.01.bim | wc -l</code> counts the SNPs with −9 left after step 1.</li>
+  <li>The PCA log: the SNPs removed by <code>--geno</code> and by <code>--maf</code>, and the number left. That number, not 17,490, is what the PCs are built from. With real PLINK 1.9.0, <code>--geno 0.1</code> removes 564,721 SNPs: the 564,041 one-file SNPs and 680 shared SNPs that the reference file leaves uncalled for about a fifth of its people or more. <code>--maf 0.05</code> removes 9 more, leaving 10,897 SNPs and 3,884 people.</li>
+  <li>The A/T and C/G SNPs, which the merge cannot check: the second pass counts how many enter the merged file unchecked. The frequency comparison in <a href="#flip">What <code>--flip</code> changes</a> can check each one against the reference's EUR samples.</li>
+  <li>The plots of PC1 against PC2 and PC2 against PC3. The practical's reading is quoted in <a href="#threshold">Choose a rule and act</a>; check it yourself, and look for study people outside the cluster they mostly overlap.</li>
+</ul>
+
+<p><strong>How the real data differ from the toy data.</strong> PennCATH has 1,401 people and 861,473 SNPs before QC (from its PLINK log) and 1,380 people after step 1 (from the practical); the reference has 2,504 people and 17,490 SNPs. The published PennCATH GWAS included 1,401 patients described as "white patients", recruited before coronary angiography at the University of Pennsylvania Medical Center,<sup><a href="#src-10">10</a></sup> and the practical finds the PennCATH samples "predominantly within or very close to" the EUR reference cluster.<sup><a href="#src-1">1</a></sup></p>
+<p>The toy study has <span data-card="study_people">?</span> people and <span data-card="study_snps">?</span> SNPs before QC and <span data-card="qc_people">?</span> people after step 1; <code>toy_1kg</code> has <span data-card="ref_people">?</span> people and <span data-card="ref_snps">?</span> SNPs, from <span data-card="ref_populations">?</span> toy populations in <span data-card="ref_super_populations">?</span> super-populations. The toy study was given a few people of other genetic ancestries on purpose, so that the plot has something to find (<a href="#distribution">The toy data</a>); its proportions say nothing about PennCATH. Its genotypes and allele frequencies are simulated, so its PC values cannot be compared with those of the real files.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfalls</span> Common mistakes in step 7</div>
+  <ul>
+    <li><strong><code>|| true</code> hides every failure.</strong> It makes the first merge's expected error harmless, but it would hide a missing file or a typo too. Read the log, and check that the second merge wrote its <code>.bed</code> file.</li>
+    <li><strong>A/T and C/G SNPs merge silently.</strong> <code>--flip</code> never touches them, because they never reach <code>.missnp</code>. Exclude them before merging or check their frequencies.</li>
+    <li><strong>Different SNP names or genome builds.</strong> The merge matches IDs only. A SNP named differently in the two files becomes two one-file SNPs; the same name at two positions produces <code>Multiple positions seen for variant</code> warnings. Convert both files to the same build and naming first (<a href="../0-biological-foundations/dna.html#reference-genome">liftover</a>).</li>
+    <li><strong>Forgetting <code>--geno 0.1</code>, or a small study.</strong> PCs computed with one-file SNPs separate the two files by missingness. With a study smaller than about a ninth of the reference, <code>--geno 0.1</code> no longer removes the reference-only SNPs; extract the shared SNPs explicitly.</li>
+    <li><strong>Using the study's <code>.prune.in</code> on the merged data.</strong> It was built from the study's full SNP set and may keep almost none of the shared SNPs.</li>
+    <li><strong>Running the association on the merged file.</strong> It contains 2,504 reference people with no phenotype. Downstream analyses use the study's own files.</li>
+    <li><strong>Reading reference labels as identities.</strong> A study person near the EUR cluster is genetically similar to the 1000 Genomes EUR samples. That is neither a self-identified ethnicity nor a race, and a person between clusters is not "misclassified".</li>
+  </ul>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>Step 7 merges the study with 2,504 reference people from 26 populations so that the PCs can be read against documented samples.</li>
+    <li><code>--bmerge</code> refuses SNPs whose two rows together show three or more allele letters and lists them in <code>-merge.missnp</code>; <code>--flip</code> on that list repairs SNPs reported on the other strand.</li>
+    <li>A/T and C/G SNPs pass the letter test on either strand. Exclude them, or resolve them with allele frequencies when the minor allele frequency is well below 0.5.</li>
+    <li>After the merge, one-file SNPs are missing for everyone in the other file; <code>--geno 0.1</code> removes them when both files hold more than a tenth of the people.</li>
+    <li>The practical removes nobody here. Positions describe genetic similarity to the reference samples; any flagging rule is fixed in advance and recorded.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Run the first merge in the terminal. How many SNPs does PLINK refuse, and what do their rows in the two .bim files have in common?</summary><div class="a"><p>Run the first <code>plink … --bmerge … || true</code> command, then <code>wc -l</code> on <code>toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp</code>. Take one listed ID and <code>grep -w</code> it in <code>toy.geno0.01.mind0.01.bim</code> and <code>toy_1kg.bim</code>: the study row's letters are the complements of the reference row's letters (for example T/C against A/G), so together the two rows show four letters. In the lab the list has <span data-card="merge1_missnp">?</span> lines.</p></div></details>
+  <details class="q"><summary>The second merge succeeds. What does that tell you about the SNPs that were in .missnp, and what does it not tell you?</summary><div class="a"><p>Every listed SNP became a two-letter SNP after complementing the study's letters, so each was a strand difference, not a different variant. It says nothing about A/T and C/G SNPs: they were never listed, so the success of the second merge does not show that they are on the same strand in both files.</p></div></details>
+  <details class="q"><summary>A SNP is G/C in the study and C/G in the reference. Can it appear in .missnp? How would you decide whether the study reports the other strand?</summary><div class="a"><p>No. The two rows show only the letters C and G, on either strand, so the merge accepts it. Compare frequencies: if the study's frequency of G is 0.80 and the reference's (EUR) frequency of G is 0.18, the same-strand reading is 0.62 away and the opposite-strand reading 0.02 away, so the study reports the other strand and the SNP must be flipped. If both frequencies were near 0.5 (minor allele frequency above about 0.42), exclude the SNP.</p></div></details>
+  <details class="q"><summary>In the merged toy fileset, what fraction of genotypes is missing for a SNP typed only in the toy study? Compute it with the shell, then check one such SNP.</summary><div class="a"><p>Count people: <code>wc -l</code> on the merged <code>.fam</code> gives \(n_{\mathrm{S}} + n_{\mathrm{R}}\), and <code>wc -l</code> on <code>toy_1kg.fam</code> gives \(n_{\mathrm{R}}\). The missing fraction is \(n_{\mathrm{R}}/(n_{\mathrm{S}} + n_{\mathrm{R}})\). To check, run <code>plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes --missing --out ${analysis_dir}/merged</code> and look up a study-only SNP in <code>merged.lmiss</code>: its <code>F_MISS</code> is that fraction or slightly more. In the lab the merged <code>.fam</code> has <span data-card="merge2_people">?</span> lines and <code>toy_1kg.fam</code> has <span data-card="ref_people">?</span>. awk can do the division: <code>awk 'FNR == 1 { f++ } { n[f]++ } END { print n[1] / n[2] }' ${reference_dir}/toy_1kg.fam ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes.fam</code> counts the lines of each file (<code>f</code> goes up by one at the first line of each file) and prints the fraction. A study-only SNP to look up is the first line of <code>awk 'NR == FNR { ref[$2] = 1; next } !($2 in ref) { print $2 }' ${reference_dir}/toy_1kg.bim ${analysis_dir}/toy.geno0.01.mind0.01.bim</code>.</p></div></details>
+  <details class="q"><summary>Why does the practical not apply PennCATH's .prune.in list to the merged data?</summary><div class="a"><p>The list was made by pruning PennCATH's full SNP set in step 3, so it keeps one SNP from each correlated group among PennCATH's SNPs. Most of the 17,490 reference SNPs need not be on that list even when PennCATH typed them, so extracting it would discard many shared SNPs for no reason. The reference marker set was already pruned when it was made.</p></div></details>
+  <details class="q"><summary>A study person lies halfway between the AFR and EUR clusters on PC1. What can you conclude, and what not?</summary><div class="a"><p>The person's genotypes are about equally similar to the 1000 Genomes AFR and EUR samples on this axis, which is the pattern of a person whose recent ancestors include people from both groups; the 1000 Genomes ASW samples sit in a similar place. You cannot conclude how the person identifies, what their race or ethnicity is, or that the sample is faulty. Other PCs and GrafAnc (step 8) add detail, and the analysis keeps the person unless a prespecified rule says otherwise.</p></div></details>
+  <details class="q"><summary>What changes if you run the merged PCA without --geno 0.1? Try it in the terminal.</summary><div class="a"><p>Run <code>plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes --maf 0.05 --pca --out ${analysis_dir}/nogeno</code> and compare the log's SNP count with the run that used <code>--geno 0.1</code>: it is much larger, because the one-file SNPs are kept. Then choose "Without --geno 0.1" in the file menu of the widget above. In the lab, PC1 and PC2 look much as before, because the continental differences among the reference people still dominate them. The change is on the later PCs: try PC3 against PC4. On one axis the reference people bunch together near 0 while the study's people split into three groups, by their number of inverted copies of the chromosome 8 region of <a href="qc-pca.html">step 6</a>: almost all of the region's SNPs are study-only, and this PCA uses no pruned list. On the other, the study's African-like and admixed people stand apart from every reference person, including the AFR people they overlapped in the practical's PCA. PLINK computes each pair's similarity from the SNPs that both people have, so two study people are compared on thousands of study-only SNPs, and a study person and a reference person on the shared SNPs alone. Part of what those PCs measure is therefore which file a person came from. How high up the list of PCs this reaches depends on the number of one-file SNPs and on the sizes of the two files.</p></div></details>
+  <details class="q"><summary>The R code joins by c("V1" = "sample"). Why does that work for the reference people, and why do the study's people end up black?</summary><div class="a"><p>V1 is the family ID column of the <code>.eigenvec</code> file. In the reference fileset the family ID equals the sample name (HG00096), which is the panel's <code>sample</code> column, so every reference person finds their row. The study's family IDs are not in the panel, so <code>left_join</code> keeps those rows with <code>super_pop</code> missing (<code>NA</code>), and the second <code>geom_point</code> layer draws exactly those rows in black.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/data#merge" target="_blank" rel="noopener">PLINK 1.9: merging filesets</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — <code>--bmerge</code>, merge modes, and what to do about "3+ alleles" errors, including the flip-and-retry procedure.</li>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/data#flip" target="_blank" rel="noopener">PLINK 1.9: --flip and --flip-scan</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — the flip, and an LD-based check that can find strand errors among A/T and C/G SNPs.</li>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/strat#pca" target="_blank" rel="noopener">PLINK 1.9: --pca</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — the output files and how to project people onto PCs computed from a subset.</li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Data quality control in genetic case-control association studies</a> <span class="src">· Anderson et al. 2010, Nature Protocols</span> <span class="level intermediate">intermediate</span> — the step-by-step protocol, including the merge with a reference, the strand fix and an ancestry threshold.</li>
+    <li><a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">A tutorial on conducting genome-wide association studies: quality control and statistical analysis</a> <span class="src">· Marees et al. 2018</span> <span class="level intro">intro</span> — a PLINK tutorial with scripts that merge a study with 1000 Genomes.</li>
+    <li><a href="https://www.internationalgenome.org/data-portal/population" target="_blank" rel="noopener">IGSR data portal: populations</a> <span class="src">· International Genome Sample Resource</span> <span class="level intro">intro</span> — how each of the 26 populations was sampled.</li>
+    <li><a href="https://doi.org/10.1126/science.abm7530" target="_blank" rel="noopener">Getting genetic ancestry right for science and society</a> <span class="src">· Lewis et al. 2022, Science</span> <span class="level intro">intro</span> — why reference clusters look discrete and how to describe people relative to them.</li>
+    <li><a href="https://doi.org/10.17226/26902" target="_blank" rel="noopener">Using Population Descriptors in Genetics and Genomics Research</a> <span class="src">· National Academies 2023</span> <span class="level intermediate">intermediate</span> — the recommendations behind "genetic similarity" language.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">DCEG Statistical Genetics Workshop. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">Session 1 practical: quality control</a>, QC steps 6–7 and the exercise; code at <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/tree/main/src" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a>.</li>
+    <li id="src-2">Purcell S, Chang C. PLINK 1.9 documentation: <a href="https://www.cog-genomics.org/plink/1.9/data#merge" target="_blank" rel="noopener">data management (merge, flip)</a>, <a href="https://www.cog-genomics.org/plink/1.9/strat#pca" target="_blank" rel="noopener">population stratification (PCA)</a>, <a href="https://www.cog-genomics.org/plink/1.9/order" target="_blank" rel="noopener">order of operations</a>; merge behavior and messages also checked in the PLINK 1.9 source code (<a href="https://github.com/chrchang/plink-ng" target="_blank" rel="noopener">plink-ng</a>, file <code>1.9/plink_data.c</code>).</li>
+    <li id="src-3">The 1000 Genomes Project Consortium. A global reference for human genetic variation. <em>Nature</em>. 2015;526:68–74. <a href="https://doi.org/10.1038/nature15393" target="_blank" rel="noopener">doi:10.1038/nature15393</a>. Sample panel: <a href="https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/" target="_blank" rel="noopener">integrated_call_samples_v3.20130502.ALL.panel</a>.</li>
+    <li id="src-4">Anderson CA, Pettersson FH, Clarke GM, Cardon LR, Morris AP, Zondervan KT. Data quality control in genetic case-control association studies. <em>Nat Protoc</em>. 2010;5:1564–1573. <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-5">Price AL, Patterson NJ, Plenge RM, Weinblatt ME, Shadick NA, Reich D. Principal components analysis corrects for stratification in genome-wide association studies. <em>Nat Genet</em>. 2006;38:904–909. <a href="https://doi.org/10.1038/ng1847" target="_blank" rel="noopener">doi:10.1038/ng1847</a>. Outlier defaults (6 standard deviations, top 10 PCs, 5 iterations) from the <a href="https://github.com/DReichLab/EIG/blob/master/POPGEN/README" target="_blank" rel="noopener">EIGENSOFT smartpca documentation</a>.</li>
+    <li id="src-6">gnomAD. <a href="https://gnomad.broadinstitute.org/news/2023-11-genetic-ancestry/" target="_blank" rel="noopener">Genetic ancestry in gnomAD</a> (2023): PCA of reference samples and a random-forest classifier; unassigned individuals form a "remaining" group.</li>
+    <li id="src-7">Lewis ACF, Molina SJ, Appelbaum PS, et al. Getting genetic ancestry right for science and society. <em>Science</em>. 2022;376:250–252. <a href="https://doi.org/10.1126/science.abm7530" target="_blank" rel="noopener">doi:10.1126/science.abm7530</a></li>
+    <li id="src-8">National Academies of Sciences, Engineering, and Medicine. <em>Using Population Descriptors in Genetics and Genomics Research: A New Framework for an Evolving Field</em>. Washington, DC: National Academies Press; 2023. <a href="https://doi.org/10.17226/26902" target="_blank" rel="noopener">doi:10.17226/26902</a></li>
+    <li id="src-9">Jin Y, Wang H, Naj AC, Wang LS, Lee WP. GrafAnc: reliable and reproducible inference of continental and regional population structure. <em>HGG Adv</em>. 2026;7(1):100530. <a href="https://doi.org/10.1016/j.xhgg.2025.100530" target="_blank" rel="noopener">doi:10.1016/j.xhgg.2025.100530</a> (discusses the shrinkage of projected PC scores).</li>
+    <li id="src-10">Reilly MP, Li M, He J, et al. Identification of ADAMTS7 as a novel locus for coronary atherosclerosis and association of ABO with myocardial infarction in the presence of coronary atherosclerosis: two genome-wide association studies. <em>Lancet</em>. 2011;377:383–392. <a href="https://doi.org/10.1016/S0140-6736(10)61996-4" target="_blank" rel="noopener">doi:10.1016/S0140-6736(10)61996-4</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

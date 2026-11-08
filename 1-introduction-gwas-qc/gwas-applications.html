@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Using GWAS results, sharing them, and their limits · Lecture 1</title>
+<meta name="description" content="What GWAS summary statistics are used for (polygenic scores, heritability and genetic correlation, Mendelian randomization, drug targets), how they are shared and protected, and what a GWAS cannot tell us (the winner’s curse, Eurocentric samples, residual stratification, family effects, missing heritability): the Applications-to-Outlook half of Uffelmann et al. 2021, with three interactive widgets.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<!-- Widgets for this page, one file each: assets/js/widgets/PAGEKEY-NAME.js -->
+<script defer src="assets/js/widgets/gwas-applications-prs.js"></script>
+<script defer src="assets/js/widgets/gwas-applications-mr.js"></script>
+<script defer src="assets/js/widgets/gwas-applications-winners-curse.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="gwas-applications"]. */
+body[data-page="gwas-applications"] .mental-model figure figcaption { font-size: 0.85rem; color: var(--fg-muted); margin-top: 6px; }
+body[data-page="gwas-applications"] pre.scorefile { font-size: 0.78rem; }
+body[data-page="gwas-applications"] ul.ethics li { margin-bottom: 0.45em; }
+</style>
+</head>
+<body data-page="gwas-applications">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part C · GWAS from start to finish · Page 10 of 23</p>
+  <h1>Using GWAS results, sharing them, and their limits</h1>
+  <p class="lede">A GWAS ends with summary statistics: for every variant, an effect estimate, its standard error and a p-value. This page follows the second half of the session’s reading: what those numbers are used for (polygenic scores, heritability and genetic correlation, causal inference and drug discovery), how they are shared while protecting the people who gave their DNA, and what a GWAS cannot tell us.</p>
+  <div class="chips">
+    <span class="chip core">Reading: Applications, Reproducibility and data deposition, Limitations and optimizations, Outlook; Fig. 4; Table 3</span>
+    <span class="chip time">≈ 75 min</span>
+    <span class="chip data">Shows up in the data as: summary-statistics files in the GWAS Catalog; scoring files in the PGS Catalog</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">One table of summary statistics, many uses, each with its own way to fail</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 262" role="img" aria-labelledby="mmw-t mmw-d">
+<title id="mmw-t">The eight steps of a GWAS; this page covers step h and what happens to the results</title>
+<desc id="mmw-d">Eight boxes in reading order: a data collection, b genotyping, c quality control, d imputation, e association test, f meta-analysis, g replication, h post-GWAS analyses. Step h, the uses of GWAS results, is highlighted.</desc>
+<defs><marker id="mmw-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<g opacity="0.62">
+<rect x="16" y="16" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="34" cy="36" r="11" fill="var(--fg-faint)"/>
+<text x="34" y="40.5" class="t-b" text-anchor="middle" style="fill:#fff">a</text>
+<text x="52" y="41" class="t-b">Data collection</text>
+<text x="26" y="65" class="t-sm">Recruit people; record</text>
+<text x="26" y="81" class="t-sm">phenotype and covariates</text>
+<text x="176" y="103" class="t-xs" text-anchor="end">Page 8</text>
+</g>
+<line x1="187" y1="64.0" x2="202" y2="64.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="0.62">
+<rect x="204" y="16" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="222" cy="36" r="11" fill="var(--fg-faint)"/>
+<text x="222" y="40.5" class="t-b" text-anchor="middle" style="fill:#fff">b</text>
+<text x="240" y="41" class="t-b">Genotyping</text>
+<text x="214" y="65" class="t-sm">Array or sequencing</text>
+<text x="214" y="81" class="t-sm">gives genotype calls</text>
+<text x="364" y="103" class="t-xs" text-anchor="end">Page 8</text>
+</g>
+<line x1="375" y1="64.0" x2="390" y2="64.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="0.62">
+<rect x="392" y="16" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="410" cy="36" r="11" fill="var(--fg-faint)"/>
+<text x="410" y="40.5" class="t-b" text-anchor="middle" style="fill:#fff">c</text>
+<text x="428" y="41" class="t-b">Quality control</text>
+<text x="402" y="65" class="t-sm">Remove bad SNPs and</text>
+<text x="402" y="81" class="t-sm">people; relatives, ancestry</text>
+<text x="552" y="103" class="t-xs" text-anchor="end">Pages 8, 11–23</text>
+</g>
+<line x1="563" y1="64.0" x2="578" y2="64.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="0.62">
+<rect x="580" y="16" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="598" cy="36" r="11" fill="var(--fg-faint)"/>
+<text x="598" y="40.5" class="t-b" text-anchor="middle" style="fill:#fff">d</text>
+<text x="616" y="41" class="t-b">Imputation</text>
+<text x="590" y="65" class="t-sm">Phase; infer untyped SNPs</text>
+<text x="590" y="81" class="t-sm">from reference haplotypes</text>
+<text x="740" y="103" class="t-xs" text-anchor="end">Page 8</text>
+</g>
+<g opacity="0.62">
+<rect x="16" y="150" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="34" cy="170" r="11" fill="var(--fg-faint)"/>
+<text x="34" y="174.5" class="t-b" text-anchor="middle" style="fill:#fff">e</text>
+<text x="52" y="175" class="t-b">Association test</text>
+<text x="26" y="199" class="t-sm">One regression per SNP,</text>
+<text x="26" y="215" class="t-sm">adjusted for covariates</text>
+<text x="176" y="237" class="t-xs" text-anchor="end">Page 9</text>
+</g>
+<line x1="187" y1="198.0" x2="202" y2="198.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="0.62">
+<rect x="204" y="150" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="222" cy="170" r="11" fill="var(--fg-faint)"/>
+<text x="222" y="174.5" class="t-b" text-anchor="middle" style="fill:#fff">f</text>
+<text x="240" y="175" class="t-b">Meta-analysis</text>
+<text x="214" y="199" class="t-sm">Combine the summary</text>
+<text x="214" y="215" class="t-sm">statistics of cohorts</text>
+<text x="364" y="237" class="t-xs" text-anchor="end">Page 9</text>
+</g>
+<line x1="375" y1="198.0" x2="390" y2="198.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="0.62">
+<rect x="392" y="150" width="170" height="96" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="410" cy="170" r="11" fill="var(--fg-faint)"/>
+<text x="410" y="174.5" class="t-b" text-anchor="middle" style="fill:#fff">g</text>
+<text x="428" y="175" class="t-b">Replication</text>
+<text x="402" y="199" class="t-sm">Confirm in independent</text>
+<text x="402" y="215" class="t-sm">people</text>
+<text x="552" y="237" class="t-xs" text-anchor="end">Page 9</text>
+</g>
+<line x1="563" y1="198.0" x2="578" y2="198.0" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+<g opacity="1">
+<rect x="580" y="150" width="170" height="96" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="598" cy="170" r="11" fill="var(--accent)"/>
+<text x="598" y="174.5" class="t-b" text-anchor="middle" style="fill:#fff">h</text>
+<text x="616" y="175" class="t-b">Post-GWAS</text>
+<text x="590" y="199" class="t-sm">Fine-map; genes; scores,</text>
+<text x="590" y="215" class="t-sm">MR, genetic correlation</text>
+<text x="740" y="237" class="t-xs" text-anchor="end">Pages 9–10</text>
+</g>
+<path d="M665.0,113 V129 H101.0 V147" fill="none" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmw-arr)"/>
+</svg>
+<svg class="only-narrow" viewBox="0 0 320 542" role="img" aria-labelledby="mmn-t mmn-d">
+<title id="mmn-t">The eight steps of a GWAS; this page covers step h and what happens to the results</title>
+<desc id="mmn-d">Eight boxes in reading order: a data collection, b genotyping, c quality control, d imputation, e association test, f meta-analysis, g replication, h post-GWAS analyses. Step h, the uses of GWAS results, is highlighted.</desc>
+<defs><marker id="mmn-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<g opacity="0.62">
+<rect x="8" y="6" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="33.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="37.5" class="t-b" text-anchor="middle" style="fill:#fff">a</text>
+<text x="48" y="28" class="t-b">Data collection</text>
+<text x="304" y="28" class="t-xs" text-anchor="end">Page 8</text>
+<text x="48" y="47" class="t-sm">Recruit; record phenotype, covariates</text>
+</g>
+<line x1="28" y1="61" x2="28" y2="72" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="74" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="101.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="105.5" class="t-b" text-anchor="middle" style="fill:#fff">b</text>
+<text x="48" y="96" class="t-b">Genotyping</text>
+<text x="304" y="96" class="t-xs" text-anchor="end">Page 8</text>
+<text x="48" y="115" class="t-sm">Array or sequencing gives genotype calls</text>
+</g>
+<line x1="28" y1="129" x2="28" y2="140" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="142" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="169.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="173.5" class="t-b" text-anchor="middle" style="fill:#fff">c</text>
+<text x="48" y="164" class="t-b">Quality control</text>
+<text x="304" y="164" class="t-xs" text-anchor="end">Pages 8, 11–23</text>
+<text x="48" y="183" class="t-sm">Remove bad SNPs and people</text>
+</g>
+<line x1="28" y1="197" x2="28" y2="208" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="210" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="237.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="241.5" class="t-b" text-anchor="middle" style="fill:#fff">d</text>
+<text x="48" y="232" class="t-b">Imputation</text>
+<text x="304" y="232" class="t-xs" text-anchor="end">Page 8</text>
+<text x="48" y="251" class="t-sm">Infer untyped SNPs from a panel</text>
+</g>
+<line x1="28" y1="265" x2="28" y2="276" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="278" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="305.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="309.5" class="t-b" text-anchor="middle" style="fill:#fff">e</text>
+<text x="48" y="300" class="t-b">Association test</text>
+<text x="304" y="300" class="t-xs" text-anchor="end">Page 9</text>
+<text x="48" y="319" class="t-sm">One regression per SNP, with covariates</text>
+</g>
+<line x1="28" y1="333" x2="28" y2="344" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="346" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="373.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="377.5" class="t-b" text-anchor="middle" style="fill:#fff">f</text>
+<text x="48" y="368" class="t-b">Meta-analysis</text>
+<text x="304" y="368" class="t-xs" text-anchor="end">Page 9</text>
+<text x="48" y="387" class="t-sm">Combine cohorts' summary statistics</text>
+</g>
+<line x1="28" y1="401" x2="28" y2="412" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="0.62">
+<rect x="8" y="414" width="304" height="54" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<circle cx="28" cy="441.0" r="11" fill="var(--fg-faint)"/>
+<text x="28" y="445.5" class="t-b" text-anchor="middle" style="fill:#fff">g</text>
+<text x="48" y="436" class="t-b">Replication</text>
+<text x="304" y="436" class="t-xs" text-anchor="end">Page 9</text>
+<text x="48" y="455" class="t-sm">Confirm in independent people</text>
+</g>
+<line x1="28" y1="469" x2="28" y2="480" stroke="#5a6370" stroke-width="1.5" marker-end="url(#mmn-arr)"/>
+<g opacity="1">
+<rect x="8" y="482" width="304" height="54" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2"/>
+<circle cx="28" cy="509.0" r="11" fill="var(--accent)"/>
+<text x="28" y="513.5" class="t-b" text-anchor="middle" style="fill:#fff">h</text>
+<text x="48" y="504" class="t-b">Post-GWAS</text>
+<text x="304" y="504" class="t-xs" text-anchor="end">Pages 9–10</text>
+<text x="48" y="523" class="t-sm">Fine-map; genes; scores, MR</text>
+</g>
+</svg>
+    <figcaption>The steps of a GWAS, a to h. This page covers what is done with the results of step h, how they are shared, and the limits of the whole design. <a href="gwas-design.html">Page 8</a> covers steps a–d and <a href="gwas-analysis.html">page 9</a> steps e–h. <span class="fig-credit">Drawn for this lecture, following Fig. 1 of Uffelmann et al. 2021.</span></figcaption>
+  </figure>
+  <p class="mm-statement">The summary statistics of a GWAS, an estimate \(\hat{\beta}_j\) and a standard error for every variant \(j\), are reused far beyond the loci that pass 5 × 10⁻⁸. Summed over many variants they give each person a polygenic score; regressed on LD they give heritability and genetic correlations; set against a second GWAS they give causal estimates by Mendelian randomization; mapped to genes they point to drug targets. Every use inherits the limits of the GWAS: estimates inflated at the threshold, samples mostly of European ancestry, and associations that mix the direct effect of a person’s own genotype with ancestry, family environment and the way people choose partners.</p>
+  <ul class="mm-hooks">
+    <li><strong>Predict.</strong> A polygenic score adds up \(\hat{\beta}_j g_{ij}\) over many variants (Fig. 4 of the reading); its accuracy, \(R^2\) or AUC, is capped by the SNP-heritability, grows with the size of the GWAS and falls with genetic distance from the GWAS sample.</li>
+    <li><strong>Describe.</strong> SNP-heritability and genetic correlation measure how much of one trait, and how much of two traits jointly, all common SNPs explain; a genetic correlation can come from four kinds of pleiotropy and does not show causation.</li>
+    <li><strong>Infer causes.</strong> Two-sample Mendelian randomization combines many SNPs by inverse-variance weighting; MR-Egger and the weighted median detect and tolerate SNPs that act on the outcome through other paths.</li>
+    <li><strong>Share.</strong> Summary statistics go to public databases (Table 3 of the reading); individual-level data stay under controlled access; FAIR data, fair terms for researchers everywhere and preregistration make results reusable and credible.</li>
+    <li><strong>Know the limits.</strong> The winner’s curse, Eurocentric and selected samples, residual stratification, indirect effects of relatives’ genotypes and assortative mating, missing heritability, extreme polygenicity and ethical questions.</li>
+    <li><strong>Look ahead.</strong> Larger, more diverse and sequenced samples, better phenotypes, drug targets with genetic support and studies of treatment response.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> Polygenic scores, heritability and Mendelian randomization</div>
+  <p>Lecture 0 defines polygenic scores, heritability, SNP-heritability and missing heritability (<a href="../0-biological-foundations/genotype-to-phenotype.html#prs">polygenic scores</a>; <a href="../0-biological-foundations/genotype-to-phenotype.html#heritability">heritability</a>) and shows who is in GWAS samples (<a href="../0-biological-foundations/ancestry.html#diversity">diversity</a>). Page 1 explains Mendelian randomization with one variant (<a href="genetic-epidemiology.html#mendelian-randomization">page 1</a>), and page 9 explains summary statistics and LD score regression (<a href="gwas-analysis.html#summary-statistics">page 9</a>).</p>
+</aside>
+
+<h2 id="polygenic-scores">Polygenic scores: predicting from summary statistics <span class="tag core">Core</span></h2>
+
+<p>A polygenic score (PRS, for polygenic risk score, or PGS) is a weighted sum of a person’s effect alleles: \(\mathrm{PRS}_i = \sum_j \hat{\beta}_j g_{ij}\), where \(g_{ij}\) is the number of copies (0, 1 or 2) of variant \(j\)’s effect allele that person \(i\) carries and the weight \(\hat{\beta}_j\) is that allele’s estimated effect (<a href="../0-biological-foundations/genotype-to-phenotype.html#prs">Lecture 0 · polygenic scores</a>). The weights come from a GWAS of one group of people, the discovery sample; the score is then computed for other people, the target sample, from their genotypes alone<sup><a href="#src-1">1</a></sup>. Fig. 4 of the reading lays out the four steps, redrawn below. Scores are used to find people at high risk of a disease, for example to start screening earlier, and to add information to clinical risk models (<a href="genetic-epidemiology.html#risk-stratified">page 1 · risk-stratified screening</a>).</p>
+
+<figure class="fig">
+  <div class="fig-body"><div class="fig-panels">
+<svg viewBox="0 0 300 222" role="img" aria-labelledby="fpa-t fpa-d">
+<title id="fpa-t">a. GWAS summary statistics</title>
+<desc id="fpa-d">A table from a discovery GWAS with one row per SNP: SNP1, effect allele G, other allele A, effect plus 0.20; SNP2, T, C, minus 0.10; SNP3, A, G, plus 0.15; SNP4, C, T, plus 0.05. Effects are log odds ratios per copy of the effect allele.</desc>
+<circle cx="13" cy="13" r="10" fill="var(--accent)"/><text x="13" y="17" class="t-b" text-anchor="middle" style="fill:#fff">a</text><text x="30" y="18" class="t-b">GWAS summary statistics</text>
+<text x="16" y="52" class="t-xs" text-anchor="start" style="fill:var(--fg-muted)">SNP</text>
+<text x="122" y="52" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">effect</text>
+<text x="190" y="52" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">other</text>
+<text x="266" y="52" class="t-xs" text-anchor="end" style="fill:var(--fg-muted)">effect</text>
+<text x="122" y="64" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">allele</text>
+<text x="190" y="64" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">allele</text>
+<text x="266" y="64" class="t-xs" text-anchor="end" style="fill:var(--fg-muted)">(log OR)</text>
+<line x1="12" x2="288" y1="72" y2="72" stroke="#b9c1cc"/>
+<rect x="12" y="77" width="276" height="26" fill="var(--bg-sunk)"/>
+<text x="16" y="94" class="t-sm" style="fill:var(--fg)">SNP1</text>
+<text x="122" y="94" class="t-sm" text-anchor="middle" style="fill:var(--accent);font-weight:700">G</text>
+<text x="190" y="94" class="t-sm" text-anchor="middle" style="fill:var(--fg)">A</text>
+<text x="266" y="94" class="t-sm" text-anchor="end" style="fill:var(--fg);font-family:var(--mono);font-size:12px">+0.20</text>
+<text x="16" y="120" class="t-sm" style="fill:var(--fg)">SNP2</text>
+<text x="122" y="120" class="t-sm" text-anchor="middle" style="fill:var(--accent);font-weight:700">T</text>
+<text x="190" y="120" class="t-sm" text-anchor="middle" style="fill:var(--fg)">C</text>
+<text x="266" y="120" class="t-sm" text-anchor="end" style="fill:var(--fg);font-family:var(--mono);font-size:12px">−0.10</text>
+<rect x="12" y="129" width="276" height="26" fill="var(--bg-sunk)"/>
+<text x="16" y="146" class="t-sm" style="fill:var(--fg)">SNP3</text>
+<text x="122" y="146" class="t-sm" text-anchor="middle" style="fill:var(--accent);font-weight:700">A</text>
+<text x="190" y="146" class="t-sm" text-anchor="middle" style="fill:var(--fg)">G</text>
+<text x="266" y="146" class="t-sm" text-anchor="end" style="fill:var(--fg);font-family:var(--mono);font-size:12px">+0.15</text>
+<text x="16" y="172" class="t-sm" style="fill:var(--fg)">SNP4</text>
+<text x="122" y="172" class="t-sm" text-anchor="middle" style="fill:var(--accent);font-weight:700">C</text>
+<text x="190" y="172" class="t-sm" text-anchor="middle" style="fill:var(--fg)">T</text>
+<text x="266" y="172" class="t-sm" text-anchor="end" style="fill:var(--fg);font-family:var(--mono);font-size:12px">+0.05</text>
+<text x="14" y="212" class="t-xs">From people who are not in the target sample.</text>
+</svg>
+<svg viewBox="0 0 300 222" role="img" aria-labelledby="fpb-t fpb-d">
+<title id="fpb-t">b. Genotypes in the target sample</title>
+<desc id="fpb-d">Genotypes of four people at the four SNPs, with the number of copies of the effect allele under each genotype. Person 1: GG 2, CT 1, AA 2, CT 1. Person 2: AG 1, TT 2, AG 1, TT 0. Person 3: AA 0, CC 0, GG 0, CC 2. Person 4: AG 1, CT 1, AA 2, CC 2.</desc>
+<circle cx="13" cy="13" r="10" fill="var(--accent)"/><text x="13" y="17" class="t-b" text-anchor="middle" style="fill:#fff">b</text><text x="30" y="18" class="t-b">Genotypes in the target sample</text>
+<text x="112" y="52" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">SNP1</text>
+<text x="160" y="52" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">SNP2</text>
+<text x="208" y="52" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">SNP3</text>
+<text x="256" y="52" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">SNP4</text>
+<line x1="12" x2="288" y1="60" y2="60" stroke="#b9c1cc"/>
+<rect x="12" y="64" width="276" height="34" fill="var(--bg-sunk)"/>
+<text x="16" y="84" class="t-sm" style="fill:var(--fg)">Person 1</text>
+<text x="112" y="81" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--accent);font-weight:700">G</tspan><tspan style="fill:var(--accent);font-weight:700">G</tspan></text>
+<text x="112" y="94" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">2</text>
+<text x="160" y="81" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--fg)">C</tspan><tspan style="fill:var(--accent);font-weight:700">T</tspan></text>
+<text x="160" y="94" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">1</text>
+<text x="208" y="81" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--accent);font-weight:700">A</tspan><tspan style="fill:var(--accent);font-weight:700">A</tspan></text>
+<text x="208" y="94" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">2</text>
+<text x="256" y="81" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--accent);font-weight:700">C</tspan><tspan style="fill:var(--fg)">T</tspan></text>
+<text x="256" y="94" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">1</text>
+<text x="16" y="118" class="t-sm" style="fill:var(--fg)">Person 2</text>
+<text x="112" y="115" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--fg)">A</tspan><tspan style="fill:var(--accent);font-weight:700">G</tspan></text>
+<text x="112" y="128" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">1</text>
+<text x="160" y="115" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--accent);font-weight:700">T</tspan><tspan style="fill:var(--accent);font-weight:700">T</tspan></text>
+<text x="160" y="128" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">2</text>
+<text x="208" y="115" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--accent);font-weight:700">A</tspan><tspan style="fill:var(--fg)">G</tspan></text>
+<text x="208" y="128" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">1</text>
+<text x="256" y="115" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--fg)">T</tspan><tspan style="fill:var(--fg)">T</tspan></text>
+<text x="256" y="128" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">0</text>
+<rect x="12" y="132" width="276" height="34" fill="var(--bg-sunk)"/>
+<text x="16" y="152" class="t-sm" style="fill:var(--fg)">Person 3</text>
+<text x="112" y="149" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--fg)">A</tspan><tspan style="fill:var(--fg)">A</tspan></text>
+<text x="112" y="162" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">0</text>
+<text x="160" y="149" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--fg)">C</tspan><tspan style="fill:var(--fg)">C</tspan></text>
+<text x="160" y="162" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">0</text>
+<text x="208" y="149" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--fg)">G</tspan><tspan style="fill:var(--fg)">G</tspan></text>
+<text x="208" y="162" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">0</text>
+<text x="256" y="149" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--accent);font-weight:700">C</tspan><tspan style="fill:var(--accent);font-weight:700">C</tspan></text>
+<text x="256" y="162" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">2</text>
+<text x="16" y="186" class="t-sm" style="fill:var(--fg)">Person 4</text>
+<text x="112" y="183" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--fg)">A</tspan><tspan style="fill:var(--accent);font-weight:700">G</tspan></text>
+<text x="112" y="196" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">1</text>
+<text x="160" y="183" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--fg)">C</tspan><tspan style="fill:var(--accent);font-weight:700">T</tspan></text>
+<text x="160" y="196" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">1</text>
+<text x="208" y="183" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--accent);font-weight:700">A</tspan><tspan style="fill:var(--accent);font-weight:700">A</tspan></text>
+<text x="208" y="196" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">2</text>
+<text x="256" y="183" class="t-sm t-mono" text-anchor="middle"><tspan style="fill:var(--accent);font-weight:700">C</tspan><tspan style="fill:var(--accent);font-weight:700">C</tspan></text>
+<text x="256" y="196" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">2</text>
+<text x="14" y="212" class="t-xs">Small numbers: copies of the effect allele (blue).</text>
+</svg>
+<svg viewBox="0 0 300 222" role="img" aria-labelledby="fpc-t fpc-d">
+<title id="fpc-t">c. Each person’s score</title>
+<desc id="fpc-d">Each person’s score is the sum over SNPs of the effect times the count of effect alleles. Person 1: 0.40 minus 0.10 plus 0.30 plus 0.05 equals 0.65. Person 2: 0.20 minus 0.20 plus 0.15 plus 0 equals 0.15. Person 3: 0 plus 0 plus 0 plus 0.10 equals 0.10. Person 4: 0.20 minus 0.10 plus 0.30 plus 0.10 equals 0.50.</desc>
+<circle cx="13" cy="13" r="10" fill="var(--accent)"/><text x="13" y="17" class="t-b" text-anchor="middle" style="fill:#fff">c</text><text x="30" y="18" class="t-b">Each person’s score</text>
+<text x="14" y="52" class="t-xs" style="fill:var(--fg-muted)">score = sum over SNPs of effect × count</text>
+<line x1="12" x2="288" y1="60" y2="60" stroke="#b9c1cc"/>
+<rect x="12" y="73" width="276" height="30" fill="var(--bg-sunk)"/>
+<text x="16" y="92" class="t-sm" style="fill:var(--fg)">P1</text>
+<text x="40" y="92" class="t-sm" style="fill:var(--fg);font-family:var(--mono)">0.40 − 0.10 + 0.30 + 0.05</text>
+<text x="284" y="92" class="t-sm" text-anchor="end" style="fill:var(--accent);font-family:var(--mono);font-weight:700">= 0.65</text>
+<text x="16" y="122" class="t-sm" style="fill:var(--fg)">P2</text>
+<text x="40" y="122" class="t-sm" style="fill:var(--fg);font-family:var(--mono)">0.20 − 0.20 + 0.15 + 0.00</text>
+<text x="284" y="122" class="t-sm" text-anchor="end" style="fill:var(--accent);font-family:var(--mono);font-weight:700">= 0.15</text>
+<rect x="12" y="133" width="276" height="30" fill="var(--bg-sunk)"/>
+<text x="16" y="152" class="t-sm" style="fill:var(--fg)">P3</text>
+<text x="40" y="152" class="t-sm" style="fill:var(--fg);font-family:var(--mono)">0.00 + 0.00 + 0.00 + 0.10</text>
+<text x="284" y="152" class="t-sm" text-anchor="end" style="fill:var(--accent);font-family:var(--mono);font-weight:700">= 0.10</text>
+<text x="16" y="182" class="t-sm" style="fill:var(--fg)">P4</text>
+<text x="40" y="182" class="t-sm" style="fill:var(--fg);font-family:var(--mono)">0.20 − 0.10 + 0.30 + 0.10</text>
+<text x="284" y="182" class="t-sm" text-anchor="end" style="fill:var(--accent);font-family:var(--mono);font-weight:700">= 0.50</text>
+<text x="14" y="212" class="t-xs">Real scores sum thousands to millions of SNPs.</text>
+</svg>
+<svg viewBox="0 0 300 222" role="img" aria-labelledby="fpd-t fpd-d">
+<title id="fpd-t">d. Scores and the test</title>
+<desc id="fpd-d">A bell-shaped distribution of scores across everyone in the target sample, with the four people marked: person 3 and person 2 near the low end, person 4 and person 1 near the high end. Below, two regression models: model 0, trait on covariates; model 1, trait on score plus covariates. The gain in variance explained, or in AUC for a disease, from model 0 to model 1 measures the score’s accuracy.</desc>
+<circle cx="13" cy="13" r="10" fill="var(--accent)"/><text x="13" y="17" class="t-b" text-anchor="middle" style="fill:#fff">d</text><text x="30" y="18" class="t-b">Scores and the test</text>
+<path d="M20 118.9 L22.2 118.7 L24.3 118.5 L26.5 118.3 L28.7 118 L30.8 117.7 L33 117.4 L35.2 117.1 L37.3 116.7 L39.5 116.2 L41.7 115.7 L43.8 115.2 L46 114.6 L48.2 114 L50.3 113.2 L52.5 112.5 L54.7 111.6 L56.8 110.7 L59 109.7 L61.2 108.6 L63.3 107.5 L65.5 106.3 L67.7 105 L69.8 103.6 L72 102.1 L74.2 100.5 L76.3 98.9 L78.5 97.1 L80.7 95.3 L82.8 93.4 L85 91.5 L87.2 89.4 L89.3 87.4 L91.5 85.2 L93.7 83 L95.8 80.8 L98 78.5 L100.2 76.2 L102.3 73.9 L104.5 71.6 L106.7 69.3 L108.8 67 L111 64.8 L113.2 62.6 L115.3 60.5 L117.5 58.5 L119.7 56.5 L121.8 54.7 L124 52.9 L126.2 51.3 L128.3 49.8 L130.5 48.5 L132.7 47.3 L134.8 46.3 L137 45.5 L139.2 44.9 L141.3 44.4 L143.5 44.1 L145.7 44 L147.8 44.1 L150 44.4 L152.2 44.9 L154.3 45.5 L156.5 46.3 L158.7 47.3 L160.8 48.5 L163 49.8 L165.2 51.3 L167.3 52.9 L169.5 54.7 L171.7 56.5 L173.8 58.5 L176 60.5 L178.2 62.6 L180.3 64.8 L182.5 67 L184.7 69.3 L186.8 71.6 L189 73.9 L191.2 76.2 L193.3 78.5 L195.5 80.8 L197.7 83 L199.8 85.2 L202 87.4 L204.2 89.4 L206.3 91.5 L208.5 93.4 L210.7 95.3 L212.8 97.1 L215 98.9 L217.2 100.5 L219.3 102.1 L221.5 103.6 L223.7 105 L225.8 106.3 L228 107.5 L230.2 108.6 L232.3 109.7 L234.5 110.7 L236.7 111.6 L238.8 112.5 L241 113.2 L243.2 114 L245.3 114.6 L247.5 115.2 L249.7 115.7 L251.8 116.2 L254 116.7 L256.2 117.1 L258.3 117.4 L260.5 117.7 L262.7 118 L264.8 118.3 L267 118.5 L269.2 118.7 L271.3 118.9 L273.5 119 L275.7 119.2 L277.8 119.3 L280 119.4 L280 120 L20 120 Z" fill="var(--accent-soft)" stroke="none"/>
+<path d="M20 118.9 L22.2 118.7 L24.3 118.5 L26.5 118.3 L28.7 118 L30.8 117.7 L33 117.4 L35.2 117.1 L37.3 116.7 L39.5 116.2 L41.7 115.7 L43.8 115.2 L46 114.6 L48.2 114 L50.3 113.2 L52.5 112.5 L54.7 111.6 L56.8 110.7 L59 109.7 L61.2 108.6 L63.3 107.5 L65.5 106.3 L67.7 105 L69.8 103.6 L72 102.1 L74.2 100.5 L76.3 98.9 L78.5 97.1 L80.7 95.3 L82.8 93.4 L85 91.5 L87.2 89.4 L89.3 87.4 L91.5 85.2 L93.7 83 L95.8 80.8 L98 78.5 L100.2 76.2 L102.3 73.9 L104.5 71.6 L106.7 69.3 L108.8 67 L111 64.8 L113.2 62.6 L115.3 60.5 L117.5 58.5 L119.7 56.5 L121.8 54.7 L124 52.9 L126.2 51.3 L128.3 49.8 L130.5 48.5 L132.7 47.3 L134.8 46.3 L137 45.5 L139.2 44.9 L141.3 44.4 L143.5 44.1 L145.7 44 L147.8 44.1 L150 44.4 L152.2 44.9 L154.3 45.5 L156.5 46.3 L158.7 47.3 L160.8 48.5 L163 49.8 L165.2 51.3 L167.3 52.9 L169.5 54.7 L171.7 56.5 L173.8 58.5 L176 60.5 L178.2 62.6 L180.3 64.8 L182.5 67 L184.7 69.3 L186.8 71.6 L189 73.9 L191.2 76.2 L193.3 78.5 L195.5 80.8 L197.7 83 L199.8 85.2 L202 87.4 L204.2 89.4 L206.3 91.5 L208.5 93.4 L210.7 95.3 L212.8 97.1 L215 98.9 L217.2 100.5 L219.3 102.1 L221.5 103.6 L223.7 105 L225.8 106.3 L228 107.5 L230.2 108.6 L232.3 109.7 L234.5 110.7 L236.7 111.6 L238.8 112.5 L241 113.2 L243.2 114 L245.3 114.6 L247.5 115.2 L249.7 115.7 L251.8 116.2 L254 116.7 L256.2 117.1 L258.3 117.4 L260.5 117.7 L262.7 118 L264.8 118.3 L267 118.5 L269.2 118.7 L271.3 118.9 L273.5 119 L275.7 119.2 L277.8 119.3 L280 119.4" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+<line x1="20" x2="280" y1="120" y2="120" stroke="#5a6370"/>
+<line x1="95.8" x2="95.8" y1="114" y2="126" stroke="#1d2127" stroke-width="2"/>
+<text x="95.8" y="138" class="t-xs" text-anchor="middle" style="fill:var(--fg)">P3</text>
+<line x1="106.7" x2="106.7" y1="114" y2="126" stroke="#1d2127" stroke-width="2"/>
+<text x="106.7" y="150" class="t-xs" text-anchor="middle" style="fill:var(--fg)">P2</text>
+<line x1="182.5" x2="182.5" y1="114" y2="126" stroke="#1d2127" stroke-width="2"/>
+<text x="182.5" y="138" class="t-xs" text-anchor="middle" style="fill:var(--fg)">P4</text>
+<line x1="215" x2="215" y1="114" y2="126" stroke="#1d2127" stroke-width="2"/>
+<text x="215" y="150" class="t-xs" text-anchor="middle" style="fill:var(--fg)">P1</text>
+<text x="280" y="138" class="t-xs" text-anchor="end" style="fill:var(--fg-muted)">score →</text>
+<text x="14" y="176" class="t-xs" style="fill:var(--fg)">model 0: trait ~ covariates</text>
+<text x="14" y="192" class="t-xs" style="fill:var(--fg)">model 1: trait ~ score + covariates</text>
+<text x="14" y="212" class="t-xs">Accuracy: the gain in R² (or AUC), 0 → 1.</text>
+</svg>
+  </div></div>
+  <figcaption><span class="fig-title">A polygenic score in four steps.</span> a, The discovery GWAS gives each SNP an effect allele and a weight, here a log odds ratio. b, People in the target sample are genotyped at the same SNPs, and each genotype becomes a count of effect alleles. c, Each person’s score is the sum of weight × count. d, The scores are tested in the target sample: a model with the score and the covariates is compared with a model with the covariates only, and the gain in \(R^2\) (or in AUC, for a disease) measures accuracy. The four SNPs, four people and all numbers are made up. <span class="illustrative">Illustrative</span> <span class="fig-credit">Drawn for this lecture, following Fig. 4 of Uffelmann et al. 2021.</span></figcaption>
+</figure>
+
+<h3 id="prs-methods">Choosing the variants and their weights</h3>
+
+<p>The marginal GWAS estimates are imperfect weights. Neighboring SNPs in LD carry the same signal, so adding all of them counts it several times, and most estimates are noisy. The simplest method, clumping and thresholding (C+T, also called pruning and thresholding), keeps the most significant SNP of each LD block (<a href="../0-biological-foundations/haplotypes-ld.html#pruning-clumping">Lecture 0 · clumping</a>) and then only the SNPs whose p-value is below a threshold; several thresholds between 5 × 10⁻⁸ and 1 are tried, and the best one is chosen in a separate validation sample<sup><a href="#src-1">1</a>, <a href="#src-2">2</a></sup>. Bayesian methods keep all SNPs and re-estimate their joint effects from the summary statistics and an LD reference panel, shrinking small, noisy estimates toward zero: LDpred and LDpred2 use a prior in which a fraction of the SNPs is causal, PRS-CS a continuous shrinkage prior<sup><a href="#src-3">3</a>, <a href="#src-4">4</a>, <a href="#src-5">5</a></sup>. The reading lists further methods that add functional annotations or combine GWAS of several ancestry groups<sup><a href="#src-1">1</a></sup>. Two cautions apply to every method: the LD reference must match the ancestry of the discovery GWAS, and the target sample must not share people with the discovery GWAS, or the accuracy is inflated<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="prs-accuracy">How accurate can a score be?</h3>
+
+<p>For a quantitative trait, accuracy is the share of the trait’s variance that the score explains in the target sample. Step d of the figure fits two regressions, H0: trait ~ covariates and H1: trait ~ score + covariates, and reports the gain \(R^2_{\mathrm{H1}} - R^2_{\mathrm{H0}}\), called the incremental \(R^2\), as the accuracy of the score<sup><a href="#src-1">1</a></sup>. For a disease, logistic regression gives a pseudo-\(R^2\). Its value depends on the share of cases in the sample, so it is converted to the liability scale, on which the disease is the upper tail of a normally distributed liability (<a href="../0-biological-foundations/genotype-to-phenotype.html#architecture">Lecture 0 · liability threshold</a>), using the prevalence of the disease in the population<sup><a href="#src-1">1</a>, <a href="#src-6">6</a></sup>.</p>
+
+<p>A score cannot explain more than the SNP-heritability \(h^2_{\mathrm{SNP}}\), the variance that all SNPs together explain, and with a GWAS of finite size it explains less, because every weight carries estimation error. Daetwyler and colleagues derived the expected accuracy<sup><a href="#src-7">7</a></sup>:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \E[R^2] = h^2_{\mathrm{SNP}} \cdot \frac{N h^2_{\mathrm{SNP}}}{N h^2_{\mathrm{SNP}} + M} \]</div>
+  <dl class="eq-terms">
+    <dt>\(R^2\)</dt><dd>Squared correlation between the score and the trait in the target sample; for a disease, on the liability scale.</dd>
+    <dt>\(h^2_{\mathrm{SNP}}\)</dt><dd>SNP-heritability of the trait, from 0 to 1: the ceiling of \(R^2\).</dd>
+    <dt>\(N\)</dt><dd>Number of people in the discovery GWAS.</dd>
+    <dt>\(M\)</dt><dd>Number of independent effects over which the heritability is spread: the independent causal variants or, in Daetwyler’s derivation, the independent chromosome segments. Tens of thousands for a typical complex trait.</dd>
+  </dl>
+  <p class="eq-intuition">Each of the \(M\) effects explains \(h^2_{\mathrm{SNP}}/M\) of the variance, and a GWAS of \(N\) people estimates each with sampling variance of about \(1/N\), so \(N h^2_{\mathrm{SNP}}/M\) is the ratio of signal to noise for a typical effect. The fraction approaches 1 when that ratio is large and 0 when it is small, and the score reaches half its ceiling at \(N = M/h^2_{\mathrm{SNP}}\). With \(h^2_{\mathrm{SNP}} = 0.2\) and \(M = 50{,}000\), a GWAS of 300,000 people gives \(R^2 = 0.2 \times 60{,}000/110{,}000 = 0.109\), 55% of the ceiling; 90% of the ceiling needs \(N h^2_{\mathrm{SNP}} = 9M\), or 2.25 million people. The formula assumes additive effects of equal size and a target sample of the same ancestry as the GWAS.</p>
+</div>
+
+<p>For a disease, the usual measure is the area under the receiver operating characteristic curve (AUC). Choose a cut-off and call everyone above it high-risk: the true-positive rate (sensitivity, or detection rate) is the share of future cases above the cut-off, and the false-positive rate is the share of non-cases above it. The ROC curve plots the two against each other as the cut-off moves from the highest score to the lowest. The area under it equals the probability that a randomly chosen case has a higher score than a randomly chosen non-case: 0.5 for a useless score, 1 for a perfect one<sup><a href="#src-1">1</a></sup>. Wray and colleagues showed that the AUC follows from the \(R^2\) on the liability scale and the prevalence<sup><a href="#src-8">8</a></sup>, which is how the widget below turns the expected \(R^2\) into an AUC.</p>
+
+<div class="widget" id="w-prs">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">How accurate can a polygenic score be? From GWAS size to absolute risk</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The equation above and the worked numbers below give the same results.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> With the defaults (\(h^2_{\mathrm{SNP}} = 0.2\), \(M = 50{,}000\), a GWAS of 300,000 people, prevalence 5%), the expected \(R^2\) is 0.109, 55% of the ceiling, and the AUC is 0.699. Move \(N\) to 1 million: \(R^2\) rises to 0.160 but the AUC only to 0.739; at 10 million the score is close to its ceiling (\(R^2 = 0.195\), AUC 0.763). With 10,000 people it is nearly useless (\(R^2 = 0.008\), AUC 0.554). Fewer causal variants (\(M = 5{,}000\)) or a higher heritability (0.5) give much better scores from the same GWAS (AUC 0.756 and 0.853). Now read the second and third lines of the readout: at the defaults, people in the top 10% of scores have 3.2 times the risk of everyone else, yet their absolute risk is 13.2% against 4.1%, and the top 10% contains only 26% of all cases. Lower the prevalence to 1%: the AUC rises to 0.741, but the absolute risk in the top 10% falls to 3.4%.</p>
+
+<h3 id="absolute-risk">Relative risk is not absolute risk</h3>
+
+<p>A score’s relative risk, the risk in one group divided by the risk in another, can be large while the absolute risk, the probability that a person in the group develops the disease, stays small. In the widget’s default, the top 10% have 3.2 times the risk of the other 90%, but 87% of them do not get the disease, and three-quarters of all cases arise in the other 90%. The reading’s best-performing example is glaucoma: people in the top 10% of a glaucoma score had an odds ratio of 4.2 for advanced glaucoma compared with the other 90%<sup><a href="#src-1">1</a>, <a href="#src-9">9</a></sup>. For coronary artery disease, a genome-wide score found 8.0% of the population with at least three times the risk of the rest<sup><a href="#src-10">10</a></sup>; yet, at a false-positive rate of 5%, the same score would detect only about 15% of the people who develop the disease and miss 85%<sup><a href="#src-1">1</a>, <a href="#src-11">11</a></sup>. A high odds ratio or AUC therefore does not make a useful screening test, and the reading stresses that the cut-off for “high risk” weighs the costs of false positives against those of false negatives, so it differs between uses<sup><a href="#src-1">1</a></sup>.</p>
+
+<p>Reclassification measures ask the clinical question directly. When a score is added to an existing risk model, some future cases move up a risk category (correctly) and some move down, and some non-cases move down (correctly) and some up. The net reclassification index adds, over cases and non-cases, the share moved in the right direction minus the share moved in the wrong one<sup><a href="#src-12">12</a></sup>. The reading names such measures as more clinically relevant than odds ratios or AUC<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="portability">Scores transfer poorly across ancestries</h3>
+
+<p>Accuracy decays as the genetic distance between the discovery and the target sample grows. Most discovery samples are of European ancestry, so scores are least accurate in groups labeled African ancestry; Lecture 0 gives the numbers for 17 traits in UK Biobank and for height (<a href="../0-biological-foundations/genotype-to-phenotype.html#prs">Lecture 0 · polygenic scores</a>)<sup><a href="#src-1">1</a>, <a href="#src-13">13</a></sup>. The causes are predictable. Allele frequencies and LD patterns differ between populations, so a SNP chosen in one tags the causal variant less well in another (<a href="population-structure.html#ld-differs">page 7</a>), and environments, and the ways they modify genetic effects, differ too. Even within one population, subtle stratification can shift the average score by region<sup><a href="#src-1">1</a>, <a href="#src-14">14</a></sup>. The reading names larger and more diverse discovery samples as the most effective remedy, with the largest benefit for the groups now under-represented<sup><a href="#src-1">1</a></sup>.</p>
+
+<p>Published scores are collected in the PGS Catalog, which on 23 October 2026 held 7,029 scores for 820 traits from 850 publications, each with its variants, weights and evaluations<sup><a href="#src-15">15</a>, <a href="#src-16">16</a></sup>. The <span class="no-autolink">Polygenic Risk Score Reporting Standards</span> (PRS-RS) list what a study should report: the samples and their ancestry, the method, the variants and weights, and the accuracy in each group<sup><a href="#src-17">17</a></sup>.</p>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> A PGS Catalog scoring file</div>
+  <p>A score is shared as a text file with a header and one row per variant (format version 2.0; the values below are placeholders)<sup><a href="#src-16">16</a></sup>:</p>
+  <pre class="scorefile"><code>###PGS CATALOG SCORING FILE
+#format_version=2.0
+#pgs_id=PGS…
+#trait_reported=…
+#genome_build=GRCh38
+#variants_number=…
+#weight_type=beta
+rsID   chr_name   chr_position   effect_allele   other_allele   effect_weight
+…</code></pre>
+  <p>The header gives the genome build, which must match the positions of the target genotypes, and the weight type (a beta, a log odds ratio, …). Each row gives the variant, the effect allele whose count multiplies the weight, the other allele and the weight. PLINK’s <code>--score</code> reads the variant, allele and weight columns and computes each person’s score; by default it reports the weighted sum divided by the number of alleles scored, which rescales every score by the same factor and leaves their order unchanged.</p>
+</aside>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 51 · Session 6 covers polygenic risk scores</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-051.jpg" alt="Lecture 1, slide 51: Session 6, October 28. A box labeled Polygenic Risk Scores above two connected boxes, Genome-Wide Association Studies and Post-GWAS Studies; the second is captioned: predict future/latent trait values" loading="lazy"><figcaption>Lecture 1 · slide 51</figcaption></figure>
+    <div><p>The course map places polygenic scores among the post-GWAS studies, with the purpose “predict future/latent trait values”. A future value is a disease that has not happened yet; a latent value is one that is not observed directly, such as the liability of the threshold model, which is the scale on which this section measures accuracy. The Session 6 practical compares the two families of methods described above, clumping and thresholding against LDpred2, on chromosome 22 (<a href="field-map.html#course">page 2 · the sessions</a>).</p></div>
+  </div>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> “Risk prediction” and Fig. 4</div>
+  <p>The reading defines a polygenic score as a weighted sum of risk alleles with GWAS effect sizes as weights, names pruning and thresholding as the simplest method and LD-aware, functional and multi-ancestry methods as improvements, describes \(R^2\) from the H0/H1 comparison and pseudo-\(R^2\) on the liability scale, and states that SNP-heritability caps accuracy. It then gives the glaucoma example, discusses the AUC and the choice of cut-off, the coronary artery disease score that misses 85% of cases at a 5% false-positive rate, reclassification, the loss of accuracy with ancestral distance, and the PRS-RS and the PGS Catalog. Fig. 4 shows the four steps redrawn above<sup><a href="#src-1">1</a></sup>.</p>
+</aside>
+
+<h2 id="genetic-architecture">Heritability and genetic correlation <span class="tag core">Core</span></h2>
+
+<p>The genetic architecture of a trait is the number of variants that affect it, their effect sizes and their allele frequencies<sup><a href="#src-1">1</a></sup>. Genotypes and GWAS summary statistics of unrelated people estimate two summaries of it: the SNP-heritability of one trait and the genetic correlation between two.</p>
+
+<h3 id="snp-heritability">SNP-heritability</h3>
+
+<p>Heritability is the share of a trait’s variance that is due to genetic differences between people in a population. Narrow-sense heritability \(h^2\) counts additive effects only; broad-sense heritability \(H^2\) also counts dominance and interactions between variants (<a href="../0-biological-foundations/genotype-to-phenotype.html#heritability">Lecture 0 · heritability</a>)<sup><a href="#src-1">1</a></sup>. Twin studies estimate it from relatives. SNP-heritability \(h^2_{\mathrm{SNP}}\) is the part that the measured SNPs explain together, estimated in unrelated people. Genome-based restricted maximum likelihood (GREML), implemented in the program GCTA, fits the mixed model of page 9 without a tested SNP<sup><a href="#src-1">1</a>, <a href="#src-18">18</a></sup>:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \Var(\mathbf{y}) = \sigma^2_{\mathrm{A}}\boldsymbol{\psi} + \sigma^2_{\mathrm{e}}\mathbf{I} \\[4pt] h^2_{\mathrm{SNP}} = \frac{\sigma^2_{\mathrm{A}}}{\sigma^2_{\mathrm{A}} + \sigma^2_{\mathrm{e}}} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\mathbf{y}\)</dt><dd>Trait values of the \(N\) people, after removing the effects of the covariates.</dd>
+    <dt>\(\boldsymbol{\psi}\)</dt><dd>Genetic relationship matrix (\(N \times N\)) computed from the SNPs: entry \((i, k)\) measures how much more persons \(i\) and \(k\) share alleles than their allele frequencies predict; close to 0 for unrelated people (<a href="gwas-analysis.html#mixed-models">page 9</a>).</dd>
+    <dt>\(\sigma^2_{\mathrm{A}}\)</dt><dd>Variance of the trait due to the additive effects of all the SNPs.</dd>
+    <dt>\(\sigma^2_{\mathrm{e}}, \mathbf{I}\)</dt><dd>Residual variance, and the \(N \times N\) identity matrix: residuals are independent between people.</dd>
+    <dt>\(h^2_{\mathrm{SNP}}\)</dt><dd>SNP-heritability, from 0 to 1.</dd>
+  </dl>
+  <p class="eq-intuition">Among unrelated people the entries of \(\boldsymbol{\psi}\) scatter slightly around 0. If the trait is heritable, pairs with slightly positive entries have slightly more similar traits. With \(N\) people there are about \(N^2/2\) pairs, so these tiny similarities add up to a usable estimate: 294,831 SNPs in 3,925 unrelated people gave \(h^2_{\mathrm{SNP}} = 0.45\) for height in 2010<sup><a href="#src-19">19</a></sup>, when the significant SNPs known then explained about 5%<sup><a href="#src-20">20</a></sup>. Close relatives are removed first (pairs with a relationship above 0.025 in that study), because their large entries would also pick up shared environment and rare variants that the SNPs do not tag.</p>
+</div>
+
+<p>LD score regression estimates the same quantity from summary statistics alone: the slope of the regression of \(z_j^2\) on the LD scores is \(N h^2_{\mathrm{SNP}}/M\) (<a href="gwas-analysis.html#qq-plot">page 9 · LD score regression</a>)<sup><a href="#src-1">1</a>, <a href="#src-21">21</a></sup>. Both methods measure only the variance explained by additive effects of the genotyped or imputed SNPs. Rare variants are poorly tagged by array SNPs and are mostly missed: from whole-genome sequences of 25,465 unrelated people, Wainschtein and colleagues estimated a heritability of 0.68 for height and 0.30 for body mass index (standard errors 0.10) and found much of it in rare variants in regions of low LD<sup><a href="#src-22">22</a></sup>. Heritability is not a fixed property of a trait: it varies with age, sex, social factors and the precision of the phenotype, and uncorrected population structure inflates it<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="genetic-correlation">Genetic correlation</h3>
+
+<p>Many SNPs are associated with several traits, some of them seemingly unrelated<sup><a href="#src-1">1</a></sup>. In 558 well-powered GWAS from a collection of 4,155, the trait-associated loci covered more than half of the genome, and 90% of them overlapped loci of other traits<sup><a href="#src-23">23</a></sup>. The genetic correlation \(r_g\) summarizes this sharing for a pair of traits: the correlation, across the genome, between the additive genetic effects on trait 1 and on trait 2. It runs from −1 to 1 and is positive when alleles that raise one trait tend to raise the other<sup><a href="#src-1">1</a></sup>. GCTA estimates it with a two-trait version of the model above; cross-trait LD score regression estimates it from two sets of summary statistics<sup><a href="#src-24">24</a></sup>:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} \E[z_{1j} z_{2j}] ={}& \frac{\sqrt{N_1 N_2}\,\rho_g}{M}\,\ell_j \\ &+ \frac{\rho\, N_s}{\sqrt{N_1 N_2}} \\[6pt] r_g ={}& \frac{\rho_g}{\sqrt{h^2_1\, h^2_2}} \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(z_{1j}, z_{2j}\)</dt><dd>z-statistics of SNP \(j\) in the GWAS of trait 1 and of trait 2, for the same effect allele.</dd>
+    <dt>\(N_1, N_2\)</dt><dd>Numbers of people in the two GWAS.</dd>
+    <dt>\(\rho_g\)</dt><dd>Genetic covariance: the covariance between the additive genetic effects on the two traits, summed over all SNPs.</dd>
+    <dt>\(M\)</dt><dd>Number of SNPs over which the LD scores were computed.</dd>
+    <dt>\(\ell_j\)</dt><dd>LD score of SNP \(j\): the sum of its \(r^2\) with nearby SNPs, itself included (page 9).</dd>
+    <dt>\(N_s, \rho\)</dt><dd>Number of people included in both GWAS, and the correlation between the two traits among them.</dd>
+    <dt>\(h^2_1, h^2_2\)</dt><dd>SNP-heritabilities of the two traits, each from its own LD score regression.</dd>
+    <dt>\(r_g\)</dt><dd>Genetic correlation, from −1 to 1.</dd>
+  </dl>
+  <p class="eq-intuition">A SNP with a high LD score tags more causal variants, so if the two traits share causal effects, its two z-statistics tend to move together more strongly: the slope of \(z_{1j} z_{2j}\) on \(\ell_j\) is proportional to \(\rho_g\). People who are in both GWAS make the two z-statistics of every SNP correlated by the same amount, whatever its LD score, so they shift only the intercept. With \(N_1 = N_2 = 200{,}000\), 50,000 people in both and a correlation of 0.3 between the traits, the intercept is \(0.3 \times 50{,}000/200{,}000 = 0.075\), and the slope, and hence \(r_g\), is unchanged. Dividing \(\rho_g\) by the geometric mean of the two heritabilities turns the covariance into a correlation.</p>
+</div>
+
+<p>A genome-wide \(r_g\) near zero can hide regions where the effects on two traits point the same way and others where they point in opposite directions. SUPERGNOVA, ρ-HESS and LAVA estimate local genetic correlations, region by region<sup><a href="#src-1">1</a>, <a href="#src-25">25</a>, <a href="#src-26">26</a>, <a href="#src-27">27</a></sup>.</p>
+
+<p>The reading adds two warnings<sup><a href="#src-1">1</a></sup>. First, read \(r_g\) together with the heritabilities: if both traits have low SNP-heritability, even \(r_g = 1\) explains little of why the traits are correlated in the population. Second, a genetic correlation says nothing about whether one trait causes the other. Four patterns produce it:</p>
+
+<figure class="fig">
+  <div class="fig-body"><div class="fig-panels">
+<svg viewBox="0 0 260 200" role="img" aria-labelledby="fpl1-t fpl1-d">
+<title id="fpl1-t">a. Vertical pleiotropy</title>
+<desc id="fpl1-d">A SNP affects trait A, and trait A causes trait B, so the SNP is associated with both traits through one causal path.</desc>
+<defs><marker id="fpl1-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5a6370"/></marker></defs>
+<circle cx="13" cy="13" r="10" fill="var(--accent)"/><text x="13" y="17" class="t-b" text-anchor="middle" style="fill:#fff">a</text><text x="30" y="18" class="t-b">Vertical pleiotropy</text>
+<circle cx="36" cy="70" r="16" fill="#fff" stroke="var(--accent)" stroke-width="1.6"/><text x="36" y="74" class="t-xs" text-anchor="middle" style="fill:var(--accent);font-weight:700">SNP</text>
+<rect x="92" y="56" width="68" height="28" rx="6" fill="var(--bg-sunk)" stroke="#5a6370"/><text x="126" y="74" class="t-sm" text-anchor="middle" style="fill:var(--fg)">trait A</text>
+<rect x="178" y="116" width="68" height="28" rx="6" fill="var(--bg-sunk)" stroke="#5a6370"/><text x="212" y="134" class="t-sm" text-anchor="middle" style="fill:var(--fg)">trait B</text>
+<line x1="53" y1="70" x2="90" y2="70" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl1-arr)"/>
+<line x1="141.8" y1="84.9" x2="198.2" y2="115.1" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl1-arr)"/>
+<text x="14" y="172" class="t-xs">One causal path: A causes B, so every</text>
+<text x="14" y="185" class="t-xs">variant that changes A also changes B.</text>
+</svg>
+<svg viewBox="0 0 260 200" role="img" aria-labelledby="fpl2-t fpl2-d">
+<title id="fpl2-t">b. Horizontal pleiotropy</title>
+<desc id="fpl2-d">One SNP affects trait A and trait B through two separate paths.</desc>
+<defs><marker id="fpl2-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5a6370"/></marker></defs>
+<circle cx="13" cy="13" r="10" fill="var(--accent)"/><text x="13" y="17" class="t-b" text-anchor="middle" style="fill:#fff">b</text><text x="30" y="18" class="t-b">Horizontal pleiotropy</text>
+<circle cx="46" cy="98" r="16" fill="#fff" stroke="var(--accent)" stroke-width="1.6"/><text x="46" y="102" class="t-xs" text-anchor="middle" style="fill:var(--accent);font-weight:700">SNP</text>
+<rect x="136" y="48" width="68" height="28" rx="6" fill="var(--bg-sunk)" stroke="#5a6370"/><text x="170" y="66" class="t-sm" text-anchor="middle" style="fill:var(--fg)">trait A</text>
+<rect x="136" y="120" width="68" height="28" rx="6" fill="var(--bg-sunk)" stroke="#5a6370"/><text x="170" y="138" class="t-sm" text-anchor="middle" style="fill:var(--fg)">trait B</text>
+<line x1="62" y1="92.3" x2="133.2" y2="67" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl2-arr)"/>
+<line x1="62" y1="103.7" x2="133.2" y2="129" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl2-arr)"/>
+<text x="14" y="172" class="t-xs">One variant acts on both traits</text>
+<text x="14" y="185" class="t-xs">through two separate paths.</text>
+</svg>
+<svg viewBox="0 0 260 200" role="img" aria-labelledby="fpl3-t fpl3-d">
+<title id="fpl3-t">c. LD-induced pleiotropy</title>
+<desc id="fpl3-d">Two different SNPs in linkage disequilibrium: SNP1 affects trait A and SNP2 affects trait B, so the region is associated with both.</desc>
+<defs><marker id="fpl3-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5a6370"/></marker></defs>
+<circle cx="13" cy="13" r="10" fill="var(--accent)"/><text x="13" y="17" class="t-b" text-anchor="middle" style="fill:#fff">c</text><text x="30" y="18" class="t-b">LD-induced pleiotropy</text>
+<circle cx="40" cy="60" r="16" fill="#fff" stroke="var(--accent)" stroke-width="1.6"/><text x="40" y="64" class="t-xs" text-anchor="middle" style="fill:var(--accent);font-weight:700">S1</text>
+<circle cx="40" cy="138" r="16" fill="#fff" stroke="var(--accent)" stroke-width="1.6"/><text x="40" y="142" class="t-xs" text-anchor="middle" style="fill:var(--accent);font-weight:700">S2</text>
+<rect x="136" y="46" width="68" height="28" rx="6" fill="var(--bg-sunk)" stroke="#5a6370"/><text x="170" y="64" class="t-sm" text-anchor="middle" style="fill:var(--fg)">trait A</text>
+<rect x="136" y="124" width="68" height="28" rx="6" fill="var(--bg-sunk)" stroke="#5a6370"/><text x="170" y="142" class="t-sm" text-anchor="middle" style="fill:var(--fg)">trait B</text>
+<line x1="40" y1="78" x2="40" y2="120" stroke="#b42318" stroke-width="1.5" stroke-dasharray="4 3"/>
+<text x="50" y="103" class="t-xs" style="fill:#b42318">LD</text>
+<line x1="57" y1="60" x2="133" y2="60" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl3-arr)"/>
+<line x1="57" y1="138" x2="133" y2="138" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl3-arr)"/>
+<text x="14" y="172" class="t-xs">Two variants, each acting on one trait,</text>
+<text x="14" y="185" class="t-xs">inherited together because of LD.</text>
+</svg>
+<svg viewBox="0 0 260 200" role="img" aria-labelledby="fpl4-t fpl4-d">
+<title id="fpl4-t">d. Polygenicity-induced</title>
+<desc id="fpl4-d">Four SNPs, S1 to S4, each affecting trait A, trait B or both; across many such variants the shared signal is a mixture of the other three patterns.</desc>
+<defs><marker id="fpl4-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5a6370"/></marker></defs>
+<circle cx="13" cy="13" r="10" fill="var(--accent)"/><text x="13" y="17" class="t-b" text-anchor="middle" style="fill:#fff">d</text><text x="30" y="18" class="t-b">Polygenicity-induced</text>
+<rect x="166" y="48" width="68" height="28" rx="6" fill="var(--bg-sunk)" stroke="#5a6370"/><text x="200" y="66" class="t-sm" text-anchor="middle" style="fill:var(--fg)">trait A</text>
+<rect x="166" y="114" width="68" height="28" rx="6" fill="var(--bg-sunk)" stroke="#5a6370"/><text x="200" y="132" class="t-sm" text-anchor="middle" style="fill:var(--fg)">trait B</text>
+<line x1="52.9" y1="45.6" x2="165" y2="55.9" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl4-arr)"/>
+<line x1="52.9" y1="76.2" x2="165" y2="64.1" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl4-arr)"/>
+<line x1="52.2" y1="83.2" x2="165" y2="119.7" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl4-arr)"/>
+<line x1="52.9" y1="114.1" x2="165" y2="127.9" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl4-arr)"/>
+<line x1="52.9" y1="144.7" x2="165" y2="136.1" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl4-arr)"/>
+<line x1="50.7" y1="137.4" x2="165.1" y2="70.5" stroke="#5a6370" stroke-width="1.5" marker-end="url(#fpl4-arr)"/>
+<circle cx="36" cy="44" r="16" fill="#fff" stroke="var(--accent)" stroke-width="1.6"/><text x="36" y="48" class="t-xs" text-anchor="middle" style="fill:var(--accent);font-weight:700">S1</text>
+<circle cx="36" cy="78" r="16" fill="#fff" stroke="var(--accent)" stroke-width="1.6"/><text x="36" y="82" class="t-xs" text-anchor="middle" style="fill:var(--accent);font-weight:700">S2</text>
+<circle cx="36" cy="112" r="16" fill="#fff" stroke="var(--accent)" stroke-width="1.6"/><text x="36" y="116" class="t-xs" text-anchor="middle" style="fill:var(--accent);font-weight:700">S3</text>
+<circle cx="36" cy="146" r="16" fill="#fff" stroke="var(--accent)" stroke-width="1.6"/><text x="36" y="150" class="t-xs" text-anchor="middle" style="fill:var(--accent);font-weight:700">S4</text>
+<text x="14" y="172" class="t-xs">Many variants, some acting on A, some on B,</text>
+<text x="14" y="185" class="t-xs">some on both: a mixture of a–c.</text>
+</svg>
+  </div></div>
+  <figcaption><span class="fig-title">Four ways a variant, or a region, can be associated with two traits.</span> a, Vertical pleiotropy: the variant affects trait A, and trait A causes trait B. b, Horizontal pleiotropy: the variant affects both traits through separate paths. c, LD-induced pleiotropy: two different variants in LD each affect one trait, so the region is associated with both. d, Polygenicity-induced pleiotropy: many variants, each acting on one or both traits; the genome-wide pattern mixes a–c. Only a means that one trait causes the other. <span class="fig-credit">Drawn for this lecture from the four kinds of pleiotropy listed in Uffelmann et al. 2021.</span></figcaption>
+</figure>
+
+<p>A genetic correlation can also arise without any shared biology. When one trait of a person is correlated with a different trait of that person’s partner (cross-trait assortative mating), the children inherit alleles that raise the first trait together with alleles that raise the second more often than chance predicts, so the two sets of alleles become correlated in the population. Border and colleagues found that this could account for substantial parts of many published genetic correlations, and that some genetic correlations between psychiatric disorders are consistent with cross-trait assortative mating alone<sup><a href="#src-28">28</a></sup>. Mendelian randomization, the next section, is the tool for the causal question.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 50 · Session 5 covers heritability and other post-GWAS analyses</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-050.jpg" alt="Lecture 1, slide 50: Session 5, October 14. A box labeled Post-GWAS Analysis: Heritability, Functional Enrichment, Integrative Analyses above two connected boxes, Genome-Wide Association Studies and Post-GWAS Studies, the second captioned understanding biologic mechanisms behind genetic associations" loading="lazy"><figcaption>Lecture 1 · slide 50</figcaption></figure>
+    <div><p>Session 5 takes three post-GWAS analyses further. Heritability is this section. Functional enrichment asks whether associated variants concentrate in particular genes, pathways or cell types (<a href="gwas-analysis.html#pathways">page 9 · pathways</a>). Integrative analyses combine GWAS with other data, such as the transcriptome-wide association study, which tests genetically predicted gene expression (<a href="genetic-epidemiology.html#twas">page 1 · TWAS</a>). The session’s overview lists TWAS and SNP-heritability with GCTA and LD score regression as its topics (<a href="field-map.html#course">page 2</a>).</p></div>
+  </div>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> “Understanding trait genetic architecture”</div>
+  <p>The reading defines genetic architecture, separates broad- and narrow-sense heritability, names GREML in GCTA and LD score regression as the standard estimators of SNP-heritability, notes the contribution of rare variants, and warns that heritability varies with age, sex and social factors and is inflated by stratification. It defines genetic correlation, names SUPERGNOVA, ρ-HESS and LAVA for local correlations, asks that genetic correlations be read together with heritabilities, and lists the four kinds of pleiotropy drawn above<sup><a href="#src-1">1</a></sup>.</p>
+</aside>
+
+<h2 id="mendelian-randomization">Mendelian randomization with many variants <span class="tag core">Core</span></h2>
+
+<p>Mendelian randomization (MR) uses genetic variants as instrumental variables: stand-ins for an exposure, such as LDL cholesterol, that are fixed at conception and so are not affected by the confounders of the exposure and the outcome. Page 1 explains the idea and the three assumptions (the variants are associated with the exposure, are not associated with confounders, and affect the outcome only through the exposure) and estimates the causal effect from one variant as the Wald ratio \(\hat{\beta}_{GY}/\hat{\beta}_{GX}\) (<a href="genetic-epidemiology.html#mendelian-randomization">page 1 · Mendelian randomization</a>)<sup><a href="#src-1">1</a></sup>. GWAS summary statistics made MR routine. In two-sample MR the variants’ effects on the exposure come from one GWAS and their effects on the outcome from a GWAS of other people (<a href="genetic-epidemiology.html#two-sample">page 1 · two-sample MR</a>). With tens or hundreds of variants, each gives its own Wald ratio, and they are combined.</p>
+
+<p>Write \(\hat{\beta}_{Xj}\) and \(\hat{\beta}_{Yj}\) for SNP \(j\)’s estimated effects on the exposure and on the outcome (page 1’s \(\hat{\beta}_{GX}\) and \(\hat{\beta}_{GY}\)), and \(\theta\) for the causal effect of the exposure on the outcome. If SNP \(j\) changes the exposure by \(\gamma_j\), its effect on the outcome is \(\theta\gamma_j + \alpha_j\), where \(\alpha_j\) is a direct effect that bypasses the exposure: horizontal pleiotropy, which breaks the third assumption. For valid instruments \(\alpha_j = 0\), and the points \((\hat{\beta}_{Xj}, \hat{\beta}_{Yj})\) scatter around a line through the origin with slope \(\theta\).</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \hat{\theta}_{\mathrm{IVW}} = \frac{\sum_j w_j\, \hat{\beta}_{Xj}\, \hat{\beta}_{Yj}}{\sum_j w_j\, \hat{\beta}_{Xj}^2} \\[4pt] w_j = \frac{1}{\SE(\hat{\beta}_{Yj})^2} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(j\)</dt><dd>Index of the SNPs used as instruments, \(j = 1, \dots, J\): independent SNPs (after clumping), each associated with the exposure at p &lt; 5 × 10⁻⁸.</dd>
+    <dt>\(\hat{\beta}_{Xj}\)</dt><dd>Estimated effect of SNP \(j\)’s allele on the exposure, from the exposure GWAS.</dd>
+    <dt>\(\hat{\beta}_{Yj}, \SE(\hat{\beta}_{Yj})\)</dt><dd>Estimated effect of the same allele on the outcome, and its standard error, from the outcome GWAS.</dd>
+    <dt>\(w_j\)</dt><dd>Weight of SNP \(j\): the inverse of the sampling variance of its outcome effect.</dd>
+    <dt>\(\hat{\theta}_{\mathrm{IVW}}\)</dt><dd>Inverse-variance-weighted estimate of the causal effect: the change in the outcome per unit change in the exposure.</dd>
+  </dl>
+  <p class="eq-intuition">This is the slope of a weighted regression of \(\hat{\beta}_{Yj}\) on \(\hat{\beta}_{Xj}\) through the origin. It is also an inverse-variance-weighted average of the Wald ratios \(\hat{\beta}_{Yj}/\hat{\beta}_{Xj}\), whose variances are about \(\SE(\hat{\beta}_{Yj})^2/\hat{\beta}_{Xj}^2\), so SNPs with large effects on the exposure count most<sup><a href="#src-29">29</a></sup>. If the direct effects \(\alpha_j\) average zero (balanced pleiotropy), the estimate stays centered on \(\theta\), but the SNPs scatter more than their standard errors allow, which Cochran’s \(Q\) detects (<a href="gwas-analysis.html#meta-analysis">page 9</a>). If they share a direction (directional pleiotropy), the line through the origin tilts and the estimate is biased. In the widget’s default sample of 30 SNPs with \(\theta = 0.4\), \(\hat{\theta}_{\mathrm{IVW}} = 0.381\) with a standard error of 0.032.</p>
+</div>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \hat{\beta}_{Yj} = b_0 + \theta_{\mathrm{E}}\, \hat{\beta}_{Xj} + \varepsilon_j \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{\beta}_{Xj} &gt; 0\)</dt><dd>Orientation: for every SNP the counted allele is the one that raises the exposure, so that the intercept does not depend on an arbitrary choice of allele.</dd>
+    <dt>\(b_0\)</dt><dd>Intercept: the average direct effect of a SNP on the outcome, the outcome effect expected at zero effect on the exposure. A nonzero \(b_0\) is evidence of directional pleiotropy.</dd>
+    <dt>\(\theta_{\mathrm{E}}\)</dt><dd>Slope: the MR-Egger estimate of the causal effect.</dd>
+    <dt>\(\varepsilon_j\)</dt><dd>Residual of SNP \(j\); the regression is weighted by \(w_j\), as above.</dd>
+  </dl>
+  <p class="eq-intuition">Freeing the intercept lets the line cross the vertical axis above or below the origin, so an average direct effect no longer tilts the slope. The slope is consistent when the direct effects are independent of the SNPs’ effects on the exposure (the InSIDE assumption: instrument strength independent of direct effect)<sup><a href="#src-30">30</a></sup>. The price is precision, and the method needs SNPs whose effects on the exposure differ in size: in the widget’s default sample the Egger slope is 0.321 with a standard error of 0.058, against 0.032 for IVW. Set \(\theta = 0\) and the directional pleiotropy to 0.01: IVW reports 0.095 (p ≈ 0.008), a causal effect that does not exist, while the Egger slope is −0.061 (p ≈ 0.28) and its intercept, 0.014 (p ≈ 0.001), flags the pleiotropy.</p>
+</div>
+
+<p>A third estimator, the weighted median, takes the median of the Wald ratios with each SNP weighted by its precision. It is consistent as long as SNPs that carry at least half of the total weight are valid instruments, whatever the others do<sup><a href="#src-31">31</a></sup>. Because IVW, MR-Egger and the weighted median fail under different conditions, studies report all three: agreement is reassuring, disagreement points to pleiotropy. The TwoSampleMR R package and the MR-Base platform, whose database is now OpenGWAS, align the alleles of the two GWAS and run these methods<sup><a href="#src-32">32</a></sup>.</p>
+
+<div class="widget" id="w-mr">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Two-sample Mendelian randomization with 30 SNPs: IVW and MR-Egger</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The two equations above and their worked numbers describe what it shows.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> In the default sample (true \(\theta = 0.4\), no directional pleiotropy, a little balanced pleiotropy), both lines run close to the true slope: IVW 0.381 (SE 0.032), MR-Egger 0.321 (SE 0.058) with an intercept near zero (0.0054, p ≈ 0.22), and Cochran’s \(Q = 34.3\) on 29 degrees of freedom (\(I^2 = 16\%\)). Set \(\theta = 0\) and the directional pleiotropy to 0.01: the IVW line tilts upward (0.095, p ≈ 0.008) although the exposure has no effect, while the Egger line stays nearly flat and moves up the vertical axis (intercept 0.014, p ≈ 0.001). Press “New sample” several times: over 200 such samples IVW is significant at 0.05 in about 96% and MR-Egger in 8%. Return to \(\theta = 0.4\), set the directional pleiotropy back to 0 and raise the balanced pleiotropy to 0.02: the SNPs scatter widely, \(Q\) jumps to 104 (\(I^2 = 72\%\)) and the IVW standard error grows to 0.055, but the estimate stays near the truth (0.317 in this sample).</p>
+
+<p>MR inherits the problems of the GWAS it uses. If the instruments were selected in the same exposure GWAS that estimates their effects, those effects are inflated by the winner’s curse (<a href="#winners-curse">below</a>), and weak instruments bias two-sample estimates toward zero (page 1). Population stratification, assortative mating and the effects of parents’ genotypes on their children’s environment also bias MR in unrelated people; within-family MR, which uses differences between siblings, avoids these biases at a cost in precision (<a href="#family-effects">below</a>)<sup><a href="#src-33">33</a></sup>.</p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Mendelian randomization, in “Understanding trait genetic architecture”</div>
+  <p>The reading introduces MR as an epidemiological technique that uses genetic variants as instrumental variables for an environmental exposure and assesses causal relations between phenotypes from GWAS summary statistics, useful when a randomized controlled trial is not feasible. It lists the three assumptions: the variants are associated with the exposure, are not associated with confounders, and are associated with the outcome only through the exposure<sup><a href="#src-1">1</a></sup>.</p>
+</aside>
+
+<h2 id="sharing">Sharing results: openness, privacy and reproducibility <span class="tag core">Core</span></h2>
+
+<p>Most GWAS need more than 10,000 people to give reproducible results, and the largest combine millions, so GWAS depend on collaboration and on agreements to share data<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="data-sharing">A history of sharing</h3>
+
+<p>Genomics began with a commitment to open data. In February 1996 the sequencing centers of the Human Genome Project agreed in Bermuda to release their DNA sequence into the public domain daily<sup><a href="#src-34">34</a></sup>; in the words of these Bermuda Principles, “all human genomic sequence information, generated by centres funded for large-scale human sequencing, should be freely available and in the public domain”<sup><a href="#src-1">1</a></sup>. (The reading dates them to 1997, when a second meeting in Bermuda reaffirmed them.) The 2003 Fort Lauderdale Agreement extended prepublication release to other community resources and divided responsibility among funders, data producers and data users. Consortia such as the Psychiatric Genomics Consortium and the COVID-19 Host Genetics Initiative build on these agreements, and the Global Alliance for Genomics and Health (GA4GH) writes shared standards so that genomic databases can work together<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="privacy">Privacy and controlled access</h3>
+
+<p>Genotypes identify people, so individual-level data are shared under controlled access: a researcher applies to a data access committee, which checks that the proposed use is compatible with the participants’ consent, and the researcher’s institution signs an agreement on how the data will be stored and used. dbGaP, the database of genotypes and phenotypes of the US National Institutes of Health (NIH), holds NIH-funded studies in two tiers: open access for descriptions and summary-level information, and controlled access for individual-level genotypes and phenotypes<sup><a href="#src-35">35</a></sup>.</p>
+
+<p>Summary statistics were long considered anonymous. In 2008, Homer and colleagues showed that, given a person’s genotypes at many thousands of SNPs, one can test whether that person contributed DNA to a mixture from the allele frequencies of the mixture<sup><a href="#src-36">36</a></sup>. The same test applies to the allele frequencies published for the cases of a GWAS, so it could reveal that a known person is in a disease group. The NIH responded by moving such genomic summary results into controlled access<sup><a href="#src-37">37</a></sup>. In November 2018 it restored unrestricted access to summary results from most studies, keeping in controlled access those designated as sensitive, such as studies of potentially stigmatizing traits or of identifiable or isolated populations<sup><a href="#src-38">38</a></sup>. In the European Union, the General Data Protection Regulation (GDPR) set strict requirements for consent and de-identification that complicate sharing within and between countries; other jurisdictions, including some in Africa, have strengthened privacy laws, and researchers have proposed codes of conduct that would let institutions show compliance and share across borders<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="fair-and-equity">Reusable, and fair to the researchers</h3>
+
+<p>Data are reusable only if others can find and read them. The FAIR principles ask that data be findable, accessible, interoperable and reusable, and many funders now require them for GWAS<sup><a href="#src-1">1</a>, <a href="#src-39">39</a></sup>. A second kind of fairness concerns researchers: shared data should give scientists at smaller institutions and in low- and middle-income countries the same chance to analyze and publish as the large centers that produce or host the data. The Ebola Data Platform and the H3Africa Consortium wrote governance principles for this, among them solidarity, reciprocity, transparency and trust, and a review of data-sharing initiatives found five functions of good governance: enabling access, ensuring legal compliance, supporting appropriate use and limiting harm, promoting equity, and serving the public benefit<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="databases">Where summary statistics are shared</h3>
+
+<p>Full summary statistics are now routinely deposited: on 29 October 2026 the GWAS Catalog held 226,087 sets of them<sup><a href="#src-40">40</a></sup>. The reading asks that every set include the genome build, the variant identifier and position, the alleles and strand, the effect size and its standard error, the p-value and test statistic, the allele frequency and the sample size<sup><a href="#src-1">1</a></sup>; the GWAS Catalog’s format, GWAS-SSF, specifies these as columns (<a href="gwas-analysis.html#summary-statistics">page 9</a>)<sup><a href="#src-41">41</a></sup>, and GWAS-VCF stores them in the variant call format<sup><a href="#src-42">42</a></sup>. Table 3 of the reading lists the main databases.</p>
+
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Databases of GWAS summary statistics, with what each holds. Compiled for this lecture, following Table 3 of Uffelmann et al. 2021; counts from each resource as cited.</caption>
+  <thead><tr><th>Database</th><th>What it holds</th><th>Where</th></tr></thead>
+  <tbody>
+    <tr><td>GWAS Catalog</td><td data-label="What it holds">Lead associations curated from published GWAS, and full summary statistics deposited by authors in GWAS-SSF format<sup><a href="#src-40">40</a></sup></td><td data-label="Where"><a href="https://www.ebi.ac.uk/gwas/" target="_blank" rel="noopener">ebi.ac.uk/gwas</a></td></tr>
+    <tr><td>GeneATLAS</td><td data-label="What it holds">Associations of 778 traits with genotyped and imputed variants in 452,264 UK Biobank participants of European ancestry<sup><a href="#src-43">43</a></sup></td><td data-label="Where"><a href="https://doi.org/10.1038/s41588-018-0248-z" target="_blank" rel="noopener">Canela-Xandri et al. 2018</a></td></tr>
+    <tr><td>Pan-UKBB</td><td data-label="What it holds">16,131 GWAS of 7,228 UK Biobank phenotypes, run separately in six continental ancestry groups (site checked 8 November 2026)</td><td data-label="Where"><a href="https://pan.ukbb.broadinstitute.org/" target="_blank" rel="noopener">pan.ukbb.broadinstitute.org</a></td></tr>
+    <tr><td>GWAS Atlas</td><td data-label="What it holds">Publicly available GWAS (4,155 in the first release) with SNP-heritability, genetic correlations and functional follow-up<sup><a href="#src-23">23</a></sup></td><td data-label="Where"><a href="https://doi.org/10.1038/s41588-019-0481-0" target="_blank" rel="noopener">Watanabe et al. 2019</a></td></tr>
+    <tr><td>FinnGen results</td><td data-label="What it holds">GWAS of disease end points defined from the Finnish national health registers, released in rounds<sup><a href="#src-44">44</a></sup></td><td data-label="Where"><a href="https://www.finngen.fi/en/access_results" target="_blank" rel="noopener">finngen.fi</a></td></tr>
+    <tr><td>dbGaP</td><td data-label="What it holds">The NIH archive of genotype–phenotype studies: summary results open for most studies, individual-level data under controlled access<sup><a href="#src-35">35</a>, <a href="#src-38">38</a></sup></td><td data-label="Where"><a href="https://www.ncbi.nlm.nih.gov/gap/" target="_blank" rel="noopener">ncbi.nlm.nih.gov/gap</a></td></tr>
+    <tr><td>OpenGWAS</td><td data-label="What it holds">More than 50,000 harmonized GWAS summary datasets, queried from R for Mendelian randomization (site checked 8 November 2026)<sup><a href="#src-32">32</a></sup></td><td data-label="Where"><a href="https://opengwas.io/" target="_blank" rel="noopener">opengwas.io</a></td></tr>
+    <tr><td>PheWeb.jp</td><td data-label="What it holds">GWAS of 220 phenotypes in BioBank Japan and their meta-analyses with UK Biobank and FinnGen<sup><a href="#src-45">45</a></sup></td><td data-label="Where"><a href="https://pheweb.jp/" target="_blank" rel="noopener">pheweb.jp</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="preregistration">Preregistration</h3>
+
+<p>Reproducibility also depends on how analyses are chosen. In a preregistration, the hypotheses, data, variables and analysis decisions are recorded with a time stamp before the analysis is run. This prevents adjusting the analysis after seeing the results and hypothesizing after the results are known (HARKing), practices that inflate the type 1 error rate<sup><a href="#src-1">1</a>, <a href="#src-46">46</a></sup>. A GWAS itself tests every variant and is reported whatever it finds, so it gains little; the analyses that follow it (fine-mapping, enrichment, Mendelian randomization, scores) involve many more choices and gain more<sup><a href="#src-1">1</a></sup>. Plans can be deposited at the Open Science Framework under an embargo. In a registered report, a journal reviews the introduction and methods before the data are analyzed and commits to publishing the results whatever they show, which reduces publication bias<sup><a href="#src-1">1</a></sup>.</p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> “Reproducibility and data deposition” and Table 3</div>
+  <p>The reading covers collaboration and data sharing (the Bermuda Principles, the Fort Lauderdale Agreement, consortia and GA4GH), data protection (GDPR, consent, codes of conduct, privacy notices and impact assessments), the FAIR principles, data equity and governance, summary-statistics databases (Table 3) with the GWAS-VCF format and a minimum list of columns, and preregistration and registered reports<sup><a href="#src-1">1</a></sup>.</p>
+</aside>
+
+<h2 id="limitations">What a GWAS cannot tell us <span class="tag core">Core</span></h2>
+
+<p>The reading names two methodological challenges, residual population stratification and extreme polygenicity, and a set of ethical ones<sup><a href="#src-1">1</a></sup>. This section adds the statistical limits that the other pages point to: the winner’s curse, the selection of the people studied, and the family and social pathways that a GWAS of unrelated people folds into one estimate.</p>
+
+<h3 id="winners-curse">The winner’s curse</h3>
+
+<p>A SNP is reported when its test statistic passes the threshold. Among SNPs with the same true effect, those whose estimates happened to be pushed up by sampling error pass more often, so the estimates of the reported SNPs are, on average, too large. This is the winner’s curse; it is strongest for effects near the threshold, which in a polygenic trait are most of the discoveries<sup><a href="#src-1">1</a>, <a href="#src-47">47</a>, <a href="#src-48">48</a></sup>. In units of standard errors, the estimate for one SNP is \(\hat{z} = \hat{\beta}/\SE(\hat{\beta})\), normally distributed around \(\mu = \beta/\SE(\hat{\beta})\) with standard deviation 1, and the reported SNPs are those with \(\hat{z} &gt; c\), where \(c = 5.45\) for p &lt; 5 × 10⁻⁸.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \E[\hat{z} \mid \hat{z} &gt; c] = \mu + \frac{\phi(c - \mu)}{Q(c - \mu)} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{z}\)</dt><dd>Estimated effect divided by its standard error in the discovery GWAS.</dd>
+    <dt>\(\mu\)</dt><dd>True effect divided by the standard error: the expected \(z\). It grows with the square root of the sample size.</dd>
+    <dt>\(c\)</dt><dd>Critical value: 5.45 for the genome-wide threshold (two-sided p &lt; 5 × 10⁻⁸).</dd>
+    <dt>\(\phi\)</dt><dd>Density of the standard normal distribution.</dd>
+    <dt>\(Q\)</dt><dd>Upper tail probability of the standard normal distribution; \(Q(c - \mu)\) is the power, the probability that the SNP passes, ignoring the negligible chance of passing in the wrong direction.</dd>
+  </dl>
+  <p class="eq-intuition">The second term is the average excess of the SNPs that passed. When \(\mu\) is well below \(c\), only the luckiest estimates pass and the excess is large; when \(\mu\) is well above \(c\), almost every estimate passes and the excess vanishes. With \(\mu = 4.5\): \(c - \mu = 0.95\), \(\phi(0.95) = 0.254\) and \(Q(0.95) = 0.171\), so only 17% of such SNPs are found and their estimates average \(4.5 + 0.254/0.171 = 5.99\), 1.33 times the truth. With \(\mu = 7\) the power is 94% and the excess only 2%. An independent replication sample involves no selection, so its estimates are unbiased; this is why the reading calls the comparison of discovery and replication estimates the gold standard for calibrating effect sizes<sup><a href="#src-1">1</a></sup>.</p>
+</div>
+
+<div class="widget" id="w-winners-curse">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The winner’s curse: estimates of significant SNPs against their true effect</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The equation above and its worked numbers describe what it shows.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> At the default (true effect 4.5 standard errors, threshold 5 × 10⁻⁸), about 17% of the simulated SNPs pass, and their estimates average 5.99 standard errors, 1.33 times the truth. The same SNPs in an independent replication of the same size average 4.5, and only about 17% of them are significant again at the same threshold. Move the true effect to 5.45: power is 50% and the overestimate 1.15-fold; at 7, power is 94% and the overestimate 1.02-fold. At 3, only 0.7% pass, and their estimates are almost twice the truth (1.93-fold). Switch the threshold to 0.05 with the true effect at 4.5: nearly every SNP passes and the overestimate disappears; at a true effect of 2 it returns (52% power, 1.39-fold).</p>
+
+<p>The bias matters downstream. A replication planned with the discovery estimate is underpowered. A polygenic score that uses discovery estimates as weights gives too much weight to SNPs that passed by luck. MR instruments selected and estimated in the same exposure GWAS have exaggerated effects on the exposure. The remedies are separate samples for selecting SNPs and for estimating their effects, or statistical corrections that re-estimate each effect given that it passed the threshold<sup><a href="#src-48">48</a></sup>.</p>
+
+<h3 id="ancestry-bias">Who is in GWAS samples</h3>
+
+<p>Most GWAS participants have been of European ancestry: 88% in 2017, with 72% of discoveries made in participants recruited in the United States, the United Kingdom and Iceland<sup><a href="#src-49">49</a></sup>; Lecture 0 shows more recent counts (<a href="../0-biological-foundations/ancestry.html#diversity">Lecture 0 · diversity</a>). This costs everyone. Variants that are common in other populations but rare or absent in Europe are missed; scores lose accuracy outside Europe (<a href="#portability">above</a>); and fine-mapping, which gains resolution from populations with different LD, stays coarse. The PAGE study, a GWAS of 26 traits in 49,839 people of non-European ancestry, found 27 new loci and 38 secondary signals at known loci, effect sizes that differed between ancestry groups for some published associations, and better fine-mapping resolution<sup><a href="#src-50">50</a></sup>. The ancestry groups of such studies are assigned by algorithms relative to reference panels and are not the same as race or ethnicity (<a href="../0-biological-foundations/ancestry.html#descriptors">Lecture 0 · population descriptors</a>).</p>
+
+<p>Samples are selected in other ways too. Case–control studies fix the share of cases by design, so absolute risks and liability-scale measures need the population prevalence from elsewhere. Biobank volunteers are, on average, healthier and better educated than the population they come from<sup><a href="#src-51">51</a></sup>; associations among them can be biased if taking part depends on the trait or its causes (<a href="gwas-design.html#recruitment-bias">page 8 · selection bias</a>).</p>
+
+<h3 id="stratification-limits">Stratification that survives correction</h3>
+
+<p>Principal components and mixed models remove most confounding by ancestry (<a href="gwas-analysis.html#confounding">page 9</a>), but not all of it<sup><a href="#src-1">1</a></sup>. Residual stratification shows most in meta-analyses of many cohorts and in polygenic scores that sum thousands of SNPs below genome-wide significance, where small biases add up. It occurs even in samples that look homogeneous: studies have found geographic structure and related biases in UK Biobank, whose participants mostly identified as white British (<a href="../0-biological-foundations/ancestry.html#residual">Lecture 0 · when PCs are not enough</a>). The corrections rely on common variants and miss structure created by recent demographic history, which rare variants and shared segments of identity by descent reveal better<sup><a href="#src-1">1</a>, <a href="#src-14">14</a></sup>. Family-based designs are immune to stratification but have less power for the same number of people.</p>
+
+<h3 id="family-effects">Direct effects, indirect effects and assortative mating</h3>
+
+<p>A GWAS of unrelated people estimates, for each allele, the sum of several paths (figure)<sup><a href="#src-52">52</a></sup>. The direct genetic effect is the effect of the allele in a person’s own genome on that person’s trait. Indirect genetic effects act through relatives: parents’ alleles shape the environment they provide, whether or not they pass those alleles on; this is also called genetic nurture, or a dynastic effect<sup><a href="#src-53">53</a>, <a href="#src-33">33</a></sup>. Population stratification adds associations through ancestry. Assortative mating, the tendency of people to choose partners who resemble them in a trait, correlates alleles that affect the trait across the genome. Kong and colleagues computed polygenic scores for educational attainment from the alleles that parents did not transmit to 21,637 children: these alleles, absent from the children’s genomes, had an effect 29.9% as large as that of the transmitted alleles<sup><a href="#src-53">53</a></sup>.</p>
+
+<figure class="fig scroll-x" style="--min-w: 600px">
+  <div class="fig-body">
+<svg viewBox="0 0 680 300" role="img" aria-labelledby="ffam-t ffam-d">
+<title id="ffam-t">Three routes from genotype to trait in a population GWAS</title>
+<desc id="ffam-d">Boxes and arrows. Parents’ genotypes pass transmitted alleles to the child’s genotype, which affects the child’s trait: the direct effect. Parents’ genotypes, including alleles they did not transmit, also shape the family environment through the parents’ own traits and behavior, which affects the child’s trait: the indirect effect, also called genetic nurture or a dynastic effect. Ancestry, social background and assortative mating influence both the parents’ genotypes and the family environment: confounding. A GWAS of unrelated people estimates the sum of these routes; a comparison of siblings removes the routes through the parents and through ancestry.</desc>
+<defs><marker id="ffam-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#1d2127"/></marker><marker id="ffam-arr-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#b42318"/></marker><marker id="ffam-arr-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0a62c2"/></marker></defs>
+<rect x="16" y="14" width="200" height="46" rx="8" fill="#fef3f2" stroke="#b42318" stroke-width="1.4"/>
+<text x="116.0" y="34.0" class="t-b" text-anchor="middle" style="fill:var(--fg)">Ancestry, social background</text>
+<text x="116.0" y="49.0" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">and assortative mating</text>
+<rect x="16" y="128" width="200" height="46" rx="8" fill="#fff" stroke="#5a6370" stroke-width="1.4"/>
+<text x="116.0" y="148.0" class="t-b" text-anchor="middle" style="fill:var(--fg)">Parents’ genotypes</text>
+<text x="116.0" y="163.0" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">both copies of each parent</text>
+<rect x="266" y="66" width="196" height="46" rx="8" fill="#fff" stroke="#5a6370" stroke-width="1.4"/>
+<text x="364.0" y="86.0" class="t-b" text-anchor="middle" style="fill:var(--fg)">Family environment</text>
+<text x="364.0" y="101.0" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">parents’ traits and behavior</text>
+<rect x="266" y="222" width="196" height="46" rx="8" fill="#fff" stroke="#5a6370" stroke-width="1.4"/>
+<text x="364.0" y="242.0" class="t-b" text-anchor="middle" style="fill:var(--fg)">Child’s genotype</text>
+<text x="364.0" y="257.0" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted)">the alleles transmitted</text>
+<rect x="512" y="144" width="152" height="46" rx="8" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+<text x="588.0" y="171.0" class="t-b" text-anchor="middle" style="fill:var(--fg)">Child’s trait</text>
+<path d="M116 60 L116 124" fill="none" stroke="#b42318" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ffam-arr-r)"/>
+<path d="M216 37 C 250 37, 300 40, 330 62" fill="none" stroke="#b42318" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ffam-arr-r)"/>
+<path d="M216 151 C 240 151, 250 100, 262 92" fill="none" stroke="#1d2127" stroke-width="1.6" marker-end="url(#ffam-arr)"/>
+<path d="M216 160 C 240 165, 250 235, 262 241" fill="none" stroke="#1d2127" stroke-width="1.6" marker-end="url(#ffam-arr)"/>
+<path d="M462 245 C 490 245, 500 200, 512 184" fill="none" stroke="#0a62c2" stroke-width="2.2" marker-end="url(#ffam-arr-b)"/>
+<path d="M462 89 C 490 89, 500 140, 512 154" fill="none" stroke="#1d2127" stroke-width="1.8" marker-end="url(#ffam-arr)"/>
+<text x="230" y="214" class="t-xs" text-anchor="end" style="fill:var(--fg)">transmitted</text>
+<text x="230" y="114" class="t-xs" text-anchor="end" style="fill:var(--fg)">all alleles</text>
+<text x="478" y="282" class="t-b" text-anchor="middle" style="fill:#0a62c2">direct effect</text>
+<text x="496" y="70" class="t-b" style="fill:var(--fg)">indirect effect</text>
+<text x="496" y="83" class="t-xs" style="fill:var(--fg-muted)">(genetic nurture)</text>
+<text x="232" y="20" class="t-xs" style="fill:#b42318">confounding</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">What a population GWAS estimate contains.</span> Parents pass one allele of each pair to the child (transmitted) and shape the family environment through their own traits and behavior, which depend on all their alleles. The child’s trait depends on the child’s genotype (direct effect, blue) and on the family environment (indirect effect). Ancestry, social background and assortative mating influence both the parents’ genotypes and the environment (confounding, red). A GWAS of unrelated people estimates the sum of these routes; a comparison of siblings removes the routes through the parents and through ancestry. <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<p>Siblings separate the paths. A within-sibship GWAS regresses the difference in the trait between two siblings on the difference in their allele counts:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \Delta y = \beta_{\mathrm{W}}\, \Delta x + \Delta\varepsilon \]</div>
+  <dl class="eq-terms">
+    <dt>\(\Delta y\)</dt><dd>Difference in the trait between the two siblings of a pair.</dd>
+    <dt>\(\Delta x\)</dt><dd>Difference in their counts of the effect allele, from −2 to 2.</dd>
+    <dt>\(\beta_{\mathrm{W}}\)</dt><dd>Within-sibship effect of the allele: an estimate of the direct effect.</dd>
+    <dt>\(\Delta\varepsilon\)</dt><dd>Difference in the residuals of the two siblings.</dd>
+  </dl>
+  <p class="eq-intuition">Siblings have the same parents, the same ancestry and much of the same family environment, so these cancel in the difference. What remains in \(\Delta x\) is which allele of each parent each sibling happened to inherit, which is random, so \(\Delta x\) is independent of everything the parents are and do. The cost is power. For an allele with frequency \(p\), \(\Var(\Delta x) = 2p(1 - p)\), the variance of a single person’s genotype, so \(n\) sibling pairs (\(2n\) people) carry as much genotype variation as \(n\) unrelated people, and the standard error is larger than in a population GWAS of the same \(2n\) people.</p>
+</div>
+
+<p>In 178,086 siblings from 19 cohorts, within-sibship estimates were smaller than population estimates for height, educational attainment, age at first birth, number of children, cognitive ability, depressive symptoms and smoking; the genetic correlation between educational attainment and body mass index shrank toward zero; and molecular traits such as LDL cholesterol gave consistent estimates<sup><a href="#src-52">52</a></sup>. For educational attainment, within-family analyses suggest that at least half of the predictive accuracy of polygenic scores comes from indirect genetic effects, stratification and assortative mating<sup><a href="#src-54">54</a></sup>. Within-family MR uses the same sibling differences<sup><a href="#src-33">33</a></sup>.</p>
+
+<h3 id="missing-heritability">Missing heritability</h3>
+
+<p>In 2009 the genome-wide significant SNPs for height explained about 5% of its variance, against a twin heritability of about 80%: the missing heritability (<a href="../0-biological-foundations/genotype-to-phenotype.html#heritability">Lecture 0 · heritability</a>)<sup><a href="#src-20">20</a></sup>. The gap has narrowed from three directions. Most of it was in SNPs with effects too small to pass the threshold: all common SNPs together explained about 45%, and by 2022 the significant SNPs in 5.4 million people explained about 40% in samples labeled European ancestry<sup><a href="#src-19">19</a>, <a href="#src-55">55</a></sup>. Part is in rare variants that arrays tag poorly and that whole-genome sequencing recovers<sup><a href="#src-22">22</a></sup>. And part may not exist. Young pointed out that rare variants shared by two people usually come from a recent common ancestor, so sequence-based estimates can also pick up environments shared by such relatives, and that heritability estimated from the random variation in relatedness between siblings and other relatives (55–68% for height in Iceland) is lower than twin estimates, which suggests that twin studies may overestimate it<sup><a href="#src-54">54</a></sup>.</p>
+
+<h3 id="polygenicity">Thousands of small effects</h3>
+
+<p>For many traits, thousands of variants each have a small effect. The reading names this extreme polygenicity as a challenge: no single locus explains much, most associated variants are noncoding, and for most loci the causal gene is still unknown (<a href="gwas-analysis.html#functional-follow-up">page 9 · from variants to genes</a>)<sup><a href="#src-1">1</a></sup>. Exome and genome sequencing find rare variants of larger effect, often in protein-coding sequence, whose mechanisms are easier to work out; where none exist, the strategy is to look for genes, pathways and cell types in which the effects of many variants converge. Polygenicity also means that two people with the same disease can carry different sets of risk alleles that act through different biological routes, which matters if those routes respond differently to treatment<sup><a href="#src-1">1</a></sup>.</p>
+
+<h3 id="ethics">Ethical questions</h3>
+
+<p>Beyond data protection and equity, the reading lists these issues<sup><a href="#src-1">1</a></sup>:</p>
+<ul class="ethics">
+  <li><strong>Consent.</strong> Broad consent asks permission to store samples and data for future research that is not yet specified; tiered consent offers a choice for each kind of use. Both are widely considered appropriate (<a href="../0-biological-foundations/uk-biobank.html#consent">Lecture 0 · what UK Biobank participants agreed to</a>).</li>
+  <li><strong>Returning results.</strong> Individual results that are medically actionable, robustly associated with a condition and predictive of one unlikely to be diagnosed otherwise should be offered to participants who agreed to receive them, although this may not yet be possible where resources are scarce.</li>
+  <li><strong>Diversity and inclusion.</strong> GWAS should benefit people everywhere. That needs samples that represent the world’s populations, a diverse workforce, leadership by Indigenous researchers in culturally appropriate genomics, and tracking of diversity in real time.</li>
+  <li><strong>Polygenic scores and determinism.</strong> Scores raise the question of how to communicate risk, and invite genetic determinism, the belief that traits are fixed and cannot be changed. Embryo selection by polygenic scores is highly controversial, and determinism can stigmatize patients and their families. Findings must not be sensationalized or tied to stereotypes, as in the claim of a “warrior” predisposition among Māori.</li>
+  <li><strong>Commercial testing.</strong> Direct-to-consumer companies sell risk profiles and ancestry estimates, sometimes of questionable validity, and recruit participants online, which raises questions of evidence, consent, privacy and benefit sharing; few international guidelines exist.</li>
+</ul>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 48 · Session 3 adds social factors to the map</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-048.jpg" alt="Lecture 1, slide 48: Session 3, September 30, population descriptors and gene–environment interactions. Boxes for genome-wide association and post-GWAS studies are linked to a gray molecular-genetics box; a bracket on the right adds a box labeled Social factors, with the note: social and environmental contexts influence genetic associations, including what gets studied, how, in which population, and how those results are interpreted" loading="lazy"><figcaption>Lecture 1 · slide 48</figcaption></figure>
+    <div><p>The new box on this slide frames several limits of this section: the social context decides which traits are studied, in whom, with which population labels, and how the results are read. Session 3 takes up two of them: how to describe the ancestry of study participants (<a href="../0-biological-foundations/ancestry.html#descriptors">Lecture 0 · population descriptors</a>; <a href="population-structure.html">page 7</a>) and gene–environment interactions, genetic effects that depend on the environment (<a href="../0-biological-foundations/genotype-to-phenotype.html#gxe">Lecture 0 · genes and environment</a>), which its practical simulates with multiplicative and additive interactions (<a href="field-map.html#course">page 2</a>). <a href="social-context.html">Page 3</a> discusses the social context of the field.</p></div>
+  </div>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> A population GWAS estimate is not a direct genetic effect</div>
+  <p>For traits shaped by family and social environment, such as educational attainment, the estimate from unrelated people mixes the effect of a person’s own alleles with indirect genetic effects, stratification and assortative mating, and so do the polygenic scores, heritabilities, genetic correlations and MR estimates built from it. Before reading an allele’s association as biology acting in the person, compare within-family estimates: for LDL cholesterol they agree with the population estimates, for educational attainment they are much smaller<sup><a href="#src-52">52</a></sup>.</p>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> “Limitations and optimizations”</div>
+  <p>The reading names two methodological challenges: population stratification, which persists after correction, especially in meta-analyses, polygenic scores, UK Biobank and analyses of rare variants, and which family-based designs avoid at a cost in power; and extreme polygenicity, with rare variants of large effect and genetic heterogeneity between patients. It then discusses ethical challenges: consent, return of results, diversity and inclusion, Indigenous genomics, communication of polygenic risk, genetic determinism, embryo selection, stigma and direct-to-consumer testing<sup><a href="#src-1">1</a></sup>. The winner’s curse appears earlier, in the reading’s discussion of significance thresholds and replication (<a href="gwas-analysis.html#replication">page 9</a>).</p>
+</aside>
+
+<h2 id="outlook">Outlook: where GWAS are heading <span class="tag core">Core</span></h2>
+
+<p>The reading’s outlook names four trends<sup><a href="#src-1">1</a></sup>. Samples pass a million people. Exome and whole-genome sequencing replace arrays, reach rare variants and may explain much of the missing heritability. Phenotypes move to both extremes: minimal phenotyping, such as a single questionnaire item or a registry code in very many people, buys power, while deep phenotyping, such as individual symptoms rather than diagnoses, buys precision. And more participants come from under-represented populations.</p>
+
+<p>GWAS can also make drug development cheaper and more successful. Drug mechanisms with human genetic support are more likely to reach approval, 2.6 times as likely in the most recent estimate (<a href="genetic-epidemiology.html#genetic-support">page 1 · genetic support for drugs</a>)<sup><a href="#src-56">56</a>, <a href="#src-57">57</a></sup>. The reading’s example began with rare variants rather than with a GWAS: PCSK9 inhibitors for high LDL cholesterol followed from the discovery of rare variants in the gene <i>PCSK9</i>, first in families (<a href="../0-biological-foundations/genotype-to-phenotype.html#pcsk9">Lecture 0 · PCSK9</a>)<sup><a href="#src-1">1</a></sup>. GWAS genes also suggest drug repurposing, the use of an approved drug for a new disease: a rheumatoid arthritis GWAS pointed to <i>CDK4</i> and <i>CDK6</i>, whose protein products are targets of drugs approved for cancer<sup><a href="#src-58">58</a></sup>. Open Targets and GREP link GWAS genes to drug targets, compounds and indications<sup><a href="#src-59">59</a>, <a href="#src-60">60</a></sup>.</p>
+
+<p>GWAS of treatment response could separate likely responders from non-responders before treatment. Many people who take a common drug do not benefit from it: each of the ten highest-grossing drugs in the United States helps between 1 in 25 and 1 in 4 of the people who take it<sup><a href="#src-1">1</a>, <a href="#src-61">61</a></sup>. (The reading prints 1 in 24 for the lower figure.) GWAS results also direct new collaborations between geneticists and molecular biologists: the International Common Disease Alliance aims to turn genetic maps of common diseases into biological and medical insight, and the BRAINSCAPES consortium designs GWAS-informed functional studies in neurobiology<sup><a href="#src-1">1</a></sup>.</p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> “Outlook”</div>
+  <p>The reading closes with larger and sequencing-based GWAS, minimal and deep phenotyping, diversity, drug development (GWAS-supported targets fail less often for lack of efficacy; PCSK9; CDK4/6 inhibitors for rheumatoid arthritis; Open Targets and GREP), treatment-response GWAS and personalized medicine, and transdisciplinary consortia. Its last sentence lists the promise of the next 15 years: more refined phenotypes, links from genetics to biology, genetically informed drugs, better risk prediction, and benefits for the global community<sup><a href="#src-1">1</a></sup>.</p>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>A polygenic score is \(\sum_j \hat{\beta}_j g_{ij}\) with weights from an independent GWAS. Clumping and thresholding selects SNPs; LDpred2 and PRS-CS re-estimate all of them jointly with an LD reference.</li>
+    <li>Accuracy (\(R^2\), AUC) is capped by the SNP-heritability, grows with GWAS size as \(N h^2_{\mathrm{SNP}}/(N h^2_{\mathrm{SNP}} + M)\) and falls with genetic distance from the discovery sample. A large relative risk can come with a small absolute risk, and a good AUC is not a good screening test.</li>
+    <li>GREML and LD score regression estimate SNP-heritability; cross-trait LD score regression estimates genetic correlation, which can come from vertical, horizontal, LD-induced or polygenicity-induced pleiotropy, or from cross-trait assortative mating, and does not show causation.</li>
+    <li>Two-sample MR combines Wald ratios by inverse-variance weighting. MR-Egger (free intercept, InSIDE assumption) and the weighted median (valid if at least half the weight is valid) tolerate some pleiotropy at a cost in precision.</li>
+    <li>Summary statistics are shared openly, in standard formats, through databases such as the GWAS Catalog; individual-level data and sensitive summary results stay under controlled access because genotypes identify people. FAIR data, equity for researchers and preregistration make results reusable and credible.</li>
+    <li>Significant estimates are inflated (the winner’s curse); samples are mostly of European ancestry and selected; population estimates mix direct effects with indirect genetic effects, stratification and assortative mating, which within-family designs separate.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Using the weights of the four-step figure (SNP1 G +0.20, SNP2 T −0.10, SNP3 A +0.15, SNP4 C +0.05), what is the score of a person with genotypes AG, CT, GG and CC?</summary><div class="a"><p>Count the effect alleles: AG has one G (1 × 0.20 = 0.20), CT has one T (1 × −0.10 = −0.10), GG has no A (0) and CC has two C (2 × 0.05 = 0.10). The score is 0.20 − 0.10 + 0 + 0.10 = 0.20, between person 2 (0.15) and person 4 (0.50) of the figure. Counting the other allele at SNP3 instead (G, weight −0.15) would add the same constant to everyone’s score and leave the ranking unchanged.</p></div></details>
+  <details class="q"><summary>A trait has \(h^2_{\mathrm{SNP}} = 0.3\) spread over \(M = 60{,}000\) independent effects. What \(R^2\) do you expect from a score built on a GWAS of 200,000 people, and how many people would reach 80% of the ceiling?</summary><div class="a"><p>\(N h^2_{\mathrm{SNP}} = 60{,}000 = M\), so the fraction is \(60{,}000/120{,}000 = 0.5\) and \(\E[R^2] = 0.3 \times 0.5 = 0.15\). For 80% of the ceiling, \(N h^2_{\mathrm{SNP}}/(N h^2_{\mathrm{SNP}} + M) = 0.8\), so \(N h^2_{\mathrm{SNP}} = 4M = 240{,}000\) and \(N = 800{,}000\). Each further step toward the ceiling costs more people than the last.</p></div></details>
+  <details class="q"><summary>A disease affects 1% of people. A polygenic score puts the top 10% at three times the risk of the other 90%. What is the absolute risk in the top 10%, and what share of all cases arises there?</summary><div class="a"><p>Let \(r\) be the risk in the other 90%. Then \(0.1 \times 3r + 0.9 \times r = 1.2r = 0.01\), so \(r = 0.83\%\) and the risk in the top 10% is 2.5%. Of 1,000 people, 2.5 of the 100 in the top 10% and 7.5 of the 900 others develop the disease: the top 10% contains 25% of the cases, and 97.5% of its members do not get the disease. A relative risk of 3 is a modest screening tool for a rare disease.</p></div></details>
+  <details class="q"><summary>Cross-trait LD score regression gives a genetic correlation of 0.5 between two traits. A colleague concludes that trait A causes trait B. What else could produce the correlation, and how would you test the causal claim?</summary><div class="a"><p>Horizontal pleiotropy (variants acting on both traits through separate paths), LD-induced pleiotropy (different causal variants in LD), a polygenic mixture of these, cross-trait assortative mating and residual stratification can all produce it; only vertical pleiotropy means causation. Mendelian randomization in both directions, with IVW, MR-Egger and the weighted median, addresses the causal question, and within-family analyses or estimates from siblings remove assortative mating and stratification. Check the heritabilities too: if they are low, the genetic correlation explains little of the observed correlation.</p></div></details>
+  <details class="q"><summary>A two-sample MR with 40 SNPs gives an IVW estimate of 0.30 (p = 10⁻⁶), an MR-Egger slope of 0.05 (p = 0.7) with intercept 0.012 (p = 0.002), and a weighted-median estimate of 0.08 (p = 0.4). How do you read this?</summary><div class="a"><p>The Egger intercept is clearly nonzero, so the SNPs have directional pleiotropy: on average they raise the outcome through paths that bypass the exposure. That biases IVW, which forces the line through the origin. The two estimators that tolerate pleiotropy, under different assumptions, both find small and non-significant effects, so the evidence for a causal effect is weak. The next steps would be to look for the pleiotropic SNPs (for example SNPs associated with known confounders) and to check whether IVW holds without them.</p></div></details>
+  <details class="q"><summary>A SNP reached p = 2 × 10⁻⁸ (\(\hat{z} = 5.6\)) with an odds ratio of 1.20 in a discovery GWAS. Why should a replication not be planned on an odds ratio of 1.20?</summary><div class="a"><p>SNPs that just pass the threshold are those most affected by the winner’s curse. If the true expected \(z\) were 4.5, discovered estimates would average 5.99, 1.33 times the truth; scaling the log odds ratio, \(\ln 1.20 = 0.182\), down by 1.33 gives 0.137, an odds ratio of about 1.15. A replication of the same size would then have about 99% power at p &lt; 0.05 (expected \(z\) 4.5 against a critical value of 1.96) but only about 17% power at p &lt; 5 × 10⁻⁸. Planning on 1.20 would overstate the power.</p></div></details>
+  <details class="q"><summary>Why does a within-sibship GWAS give a much smaller estimate than a population GWAS for educational attainment, but a similar one for LDL cholesterol?</summary><div class="a"><p>The difference between siblings removes everything they share: parents’ genotypes acting through the family environment (indirect genetic effects), ancestry (stratification) and the genetic correlations created by assortative mating. Educational attainment depends strongly on family and social environment, so much of its population estimate came through those paths. LDL cholesterol is a molecular trait whose genetic associations act mostly through the person’s own biology, so removing the family paths changes little.</p></div></details>
+  <details class="q"><summary>Why did the NIH move GWAS summary statistics into controlled access in 2008, and why are most of them open again?</summary><div class="a"><p>Homer and colleagues showed that a person’s genotypes at many thousands of SNPs can reveal whether that person contributed to a pooled sample, using only the pool’s allele frequencies; applied to the case frequencies of a GWAS, this could reveal that a known person had a disease. After a decade of assessing the risks and benefits, the NIH concluded in 2018 that unrestricted access suits most studies, and kept summary results of studies designated as sensitive, such as those of stigmatizing traits or of identifiable or isolated populations, under controlled access.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://choishingwan.github.io/PRS-Tutorial/" target="_blank" rel="noopener">Basic tutorial for polygenic risk score analyses</a> <span class="src">· Choi, Mak and O’Reilly, companion to Nat Protoc 2020</span> <span class="level intermediate">intermediate</span> — a step-by-step polygenic score analysis on example data, from quality control of the summary statistics to choosing a threshold.</li>
+    <li><a href="https://mrcieu.github.io/TwoSampleMR/" target="_blank" rel="noopener">TwoSampleMR documentation</a> <span class="src">· MRC Integrative Epidemiology Unit</span> <span class="level intermediate">intermediate</span> — how to read exposure and outcome summary statistics, harmonize their alleles and run IVW, MR-Egger and weighted-median analyses in R.</li>
+    <li><a href="https://doi.org/10.1038/ng.3406" target="_blank" rel="noopener">An atlas of genetic correlations across human diseases and traits</a> <span class="src">· Bulik-Sullivan et al., Nat Genet 2015</span> <span class="level advanced">advanced</span> — the derivation of cross-trait LD score regression and why sample overlap affects only its intercept.</li>
+    <li><a href="https://doi.org/10.1038/s41588-022-01062-7" target="_blank" rel="noopener">Within-sibship genome-wide association analyses</a> <span class="src">· Howe et al., Nat Genet 2022</span> <span class="level advanced">advanced</span> — population and within-sibship estimates of 25 traits side by side, with their consequences for heritability, genetic correlation and MR.</li>
+    <li><a href="https://doi.org/10.1371/journal.pgen.1008222" target="_blank" rel="noopener">Solving the missing heritability problem</a> <span class="src">· Young, PLoS Genet 2019</span> <span class="level intermediate">intermediate</span> — a short, open-access account of where the missing heritability went and what family data add.</li>
+    <li><a href="https://gwasdiversitymonitor.com/" target="_blank" rel="noopener">GWAS Diversity Monitor</a> <span class="src">· Mills and Rahal</span> <span class="level intro">intro</span> — live counts of GWAS participants by ancestry category, year and disease area.</li>
+    <li><a href="https://www.pgscatalog.org/" target="_blank" rel="noopener">PGS Catalog</a> <span class="src">· EMBL-EBI and partners</span> <span class="level intro">intro</span> — published polygenic scores with their scoring files and the samples in which each was evaluated.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Uffelmann E, Huang QQ, Munung NS, de Vries J, Okada Y, Martin AR, Martin HC, Lappalainen T, Posthuma D. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-2">Choi SW, Mak TS-H, O’Reilly PF. Tutorial: a guide to performing polygenic risk score analyses. <em>Nat Protoc</em>. 2020;15:2759–2772. <a href="https://doi.org/10.1038/s41596-020-0353-1" target="_blank" rel="noopener">doi:10.1038/s41596-020-0353-1</a></li>
+    <li id="src-3">Vilhjálmsson BJ, et al. Modeling linkage disequilibrium increases accuracy of polygenic risk scores. <em>Am J Hum Genet</em>. 2015;97:576–592. <a href="https://doi.org/10.1016/j.ajhg.2015.09.001" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2015.09.001</a></li>
+    <li id="src-4">Privé F, Arbel J, Vilhjálmsson BJ. LDpred2: better, faster, stronger. <em>Bioinformatics</em>. 2020;36:5424–5431. <a href="https://doi.org/10.1093/bioinformatics/btaa1029" target="_blank" rel="noopener">doi:10.1093/bioinformatics/btaa1029</a></li>
+    <li id="src-5">Ge T, Chen CY, Ni Y, Feng YCA, Smoller JW. Polygenic prediction via Bayesian regression and continuous shrinkage priors. <em>Nat Commun</em>. 2019;10:1776. <a href="https://doi.org/10.1038/s41467-019-09718-5" target="_blank" rel="noopener">doi:10.1038/s41467-019-09718-5</a></li>
+    <li id="src-6">Lee SH, Goddard ME, Wray NR, Visscher PM. A better coefficient of determination for genetic profile analysis. <em>Genet Epidemiol</em>. 2012;36:214–224. <a href="https://doi.org/10.1002/gepi.21614" target="_blank" rel="noopener">doi:10.1002/gepi.21614</a></li>
+    <li id="src-7">Daetwyler HD, Villanueva B, Woolliams JA. Accuracy of predicting the genetic risk of disease using a genome-wide approach. <em>PLoS One</em>. 2008;3:e3395. <a href="https://doi.org/10.1371/journal.pone.0003395" target="_blank" rel="noopener">doi:10.1371/journal.pone.0003395</a></li>
+    <li id="src-8">Wray NR, Yang J, Goddard ME, Visscher PM. The genetic interpretation of area under the ROC curve in genomic profiling. <em>PLoS Genet</em>. 2010;6:e1000864. <a href="https://doi.org/10.1371/journal.pgen.1000864" target="_blank" rel="noopener">doi:10.1371/journal.pgen.1000864</a></li>
+    <li id="src-9">Craig JE, et al. Multitrait analysis of glaucoma identifies new risk loci and enables polygenic prediction of disease susceptibility and progression. <em>Nat Genet</em>. 2020;52:160–166. <a href="https://doi.org/10.1038/s41588-019-0556-y" target="_blank" rel="noopener">doi:10.1038/s41588-019-0556-y</a></li>
+    <li id="src-10">Khera AV, et al. Genome-wide polygenic scores for common diseases identify individuals with risk equivalent to monogenic mutations. <em>Nat Genet</em>. 2018;50:1219–1224. <a href="https://doi.org/10.1038/s41588-018-0183-z" target="_blank" rel="noopener">doi:10.1038/s41588-018-0183-z</a></li>
+    <li id="src-11">Wald NJ, Old R. The illusion of polygenic disease risk prediction. <em>Genet Med</em>. 2019;21:1705–1707. <a href="https://doi.org/10.1038/s41436-018-0418-5" target="_blank" rel="noopener">doi:10.1038/s41436-018-0418-5</a></li>
+    <li id="src-12">Pencina MJ, D’Agostino RB Sr, D’Agostino RB Jr, Vasan RS. Evaluating the added predictive ability of a new marker: from area under the ROC curve to reclassification and beyond. <em>Stat Med</em>. 2008;27:157–172. <a href="https://doi.org/10.1002/sim.2929" target="_blank" rel="noopener">doi:10.1002/sim.2929</a></li>
+    <li id="src-13">Martin AR, et al. Clinical use of current polygenic risk scores may exacerbate health disparities. <em>Nat Genet</em>. 2019;51:584–591. <a href="https://doi.org/10.1038/s41588-019-0379-x" target="_blank" rel="noopener">doi:10.1038/s41588-019-0379-x</a></li>
+    <li id="src-14">Zaidi AA, Mathieson I. Demographic history mediates the effect of stratification on polygenic scores. <em>eLife</em>. 2020;9:e61548. <a href="https://doi.org/10.7554/eLife.61548" target="_blank" rel="noopener">doi:10.7554/eLife.61548</a></li>
+    <li id="src-15">Lambert SA, et al. The Polygenic Score Catalog as an open database for reproducibility and systematic evaluation. <em>Nat Genet</em>. 2021;53:420–425. <a href="https://doi.org/10.1038/s41588-021-00783-5" target="_blank" rel="noopener">doi:10.1038/s41588-021-00783-5</a></li>
+    <li id="src-16">Lambert SA, et al. Enhancing the Polygenic Score Catalog with tools for score calculation and ancestry normalization. <em>Nat Genet</em>. 2024;56:1989–1994. Counts from the <a href="https://www.pgscatalog.org/" target="_blank" rel="noopener">PGS Catalog</a>, release of 23 October 2026. <a href="https://doi.org/10.1038/s41588-024-01937-x" target="_blank" rel="noopener">doi:10.1038/s41588-024-01937-x</a></li>
+    <li id="src-17">Wand H, et al. Improving reporting standards for polygenic scores in risk prediction studies. <em>Nature</em>. 2021;591:211–219. <a href="https://doi.org/10.1038/s41586-021-03243-6" target="_blank" rel="noopener">doi:10.1038/s41586-021-03243-6</a></li>
+    <li id="src-18">Yang J, Lee SH, Goddard ME, Visscher PM. GCTA: a tool for genome-wide complex trait analysis. <em>Am J Hum Genet</em>. 2011;88:76–82. <a href="https://doi.org/10.1016/j.ajhg.2010.11.011" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2010.11.011</a></li>
+    <li id="src-19">Yang J, et al. Common SNPs explain a large proportion of the heritability for human height. <em>Nat Genet</em>. 2010;42:565–569. <a href="https://doi.org/10.1038/ng.608" target="_blank" rel="noopener">doi:10.1038/ng.608</a></li>
+    <li id="src-20">Manolio TA, et al. Finding the missing heritability of complex diseases. <em>Nature</em>. 2009;461:747–753. <a href="https://doi.org/10.1038/nature08494" target="_blank" rel="noopener">doi:10.1038/nature08494</a></li>
+    <li id="src-21">Bulik-Sullivan BK, et al. LD Score regression distinguishes confounding from polygenicity in genome-wide association studies. <em>Nat Genet</em>. 2015;47:291–295. <a href="https://doi.org/10.1038/ng.3211" target="_blank" rel="noopener">doi:10.1038/ng.3211</a></li>
+    <li id="src-22">Wainschtein P, et al. Assessing the contribution of rare variants to complex trait heritability from whole-genome sequence data. <em>Nat Genet</em>. 2022;54:263–273. <a href="https://doi.org/10.1038/s41588-021-00997-7" target="_blank" rel="noopener">doi:10.1038/s41588-021-00997-7</a></li>
+    <li id="src-23">Watanabe K, et al. A global overview of pleiotropy and genetic architecture in complex traits. <em>Nat Genet</em>. 2019;51:1339–1348. <a href="https://doi.org/10.1038/s41588-019-0481-0" target="_blank" rel="noopener">doi:10.1038/s41588-019-0481-0</a></li>
+    <li id="src-24">Bulik-Sullivan B, et al. An atlas of genetic correlations across human diseases and traits. <em>Nat Genet</em>. 2015;47:1236–1241. <a href="https://doi.org/10.1038/ng.3406" target="_blank" rel="noopener">doi:10.1038/ng.3406</a></li>
+    <li id="src-25">Zhang Y, et al. SUPERGNOVA: local genetic correlation analysis reveals heterogeneous etiologic sharing of complex traits. <em>Genome Biol</em>. 2021;22:262. <a href="https://doi.org/10.1186/s13059-021-02478-w" target="_blank" rel="noopener">doi:10.1186/s13059-021-02478-w</a></li>
+    <li id="src-26">Shi H, Mancuso N, Spendlove S, Pasaniuc B. Local genetic correlation gives insights into the shared genetic architecture of complex traits. <em>Am J Hum Genet</em>. 2017;101:737–751. <a href="https://doi.org/10.1016/j.ajhg.2017.09.022" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2017.09.022</a></li>
+    <li id="src-27">Werme J, et al. An integrated framework for local genetic correlation analysis. <em>Nat Genet</em>. 2022;54:274–282. <a href="https://doi.org/10.1038/s41588-022-01017-y" target="_blank" rel="noopener">doi:10.1038/s41588-022-01017-y</a></li>
+    <li id="src-28">Border R, et al. Cross-trait assortative mating is widespread and inflates genetic correlation estimates. <em>Science</em>. 2022;378:754–761. <a href="https://doi.org/10.1126/science.abo2059" target="_blank" rel="noopener">doi:10.1126/science.abo2059</a></li>
+    <li id="src-29">Burgess S, Butterworth A, Thompson SG. Mendelian randomization analysis with multiple genetic variants using summarized data. <em>Genet Epidemiol</em>. 2013;37:658–665. <a href="https://doi.org/10.1002/gepi.21758" target="_blank" rel="noopener">doi:10.1002/gepi.21758</a></li>
+    <li id="src-30">Bowden J, Davey Smith G, Burgess S. Mendelian randomization with invalid instruments: effect estimation and bias detection through Egger regression. <em>Int J Epidemiol</em>. 2015;44:512–525. <a href="https://doi.org/10.1093/ije/dyv080" target="_blank" rel="noopener">doi:10.1093/ije/dyv080</a></li>
+    <li id="src-31">Bowden J, Davey Smith G, Haycock PC, Burgess S. Consistent estimation in Mendelian randomization with some invalid instruments using a weighted median estimator. <em>Genet Epidemiol</em>. 2016;40:304–314. <a href="https://doi.org/10.1002/gepi.21965" target="_blank" rel="noopener">doi:10.1002/gepi.21965</a></li>
+    <li id="src-32">Hemani G, et al. The MR-Base platform supports systematic causal inference across the human phenome. <em>eLife</em>. 2018;7:e34408. <a href="https://doi.org/10.7554/eLife.34408" target="_blank" rel="noopener">doi:10.7554/eLife.34408</a></li>
+    <li id="src-33">Brumpton B, et al. Avoiding dynastic, assortative mating, and population stratification biases in Mendelian randomization through within-family analyses. <em>Nat Commun</em>. 2020;11:3519. <a href="https://doi.org/10.1038/s41467-020-17117-4" target="_blank" rel="noopener">doi:10.1038/s41467-020-17117-4</a></li>
+    <li id="src-34">Maxson Jones K, Ankeny RA, Cook-Deegan R. The Bermuda Triangle: the pragmatics, policies, and principles for data sharing in the history of the Human Genome Project. <em>J Hist Biol</em>. 2018;51:693–805. <a href="https://doi.org/10.1007/s10739-018-9538-7" target="_blank" rel="noopener">doi:10.1007/s10739-018-9538-7</a></li>
+    <li id="src-35">Mailman MD, et al. The NCBI dbGaP database of genotypes and phenotypes. <em>Nat Genet</em>. 2007;39:1181–1186. <a href="https://doi.org/10.1038/ng1007-1181" target="_blank" rel="noopener">doi:10.1038/ng1007-1181</a></li>
+    <li id="src-36">Homer N, et al. Resolving individuals contributing trace amounts of DNA to highly complex mixtures using high-density SNP genotyping microarrays. <em>PLoS Genet</em>. 2008;4:e1000167. <a href="https://doi.org/10.1371/journal.pgen.1000167" target="_blank" rel="noopener">doi:10.1371/journal.pgen.1000167</a></li>
+    <li id="src-37">Zerhouni EA, Nabel EG. Protecting aggregate genomic data. <em>Science</em>. 2008;322:44. <a href="https://doi.org/10.1126/science.1165490" target="_blank" rel="noopener">doi:10.1126/science.1165490</a></li>
+    <li id="src-38">National Institutes of Health. Update to NIH management of genomic summary results access. Notice NOT-OD-19-023, 1 November 2018. <a href="https://grants.nih.gov/grants/guide/notice-files/NOT-OD-19-023.html" target="_blank" rel="noopener">grants.nih.gov/grants/guide/notice-files/NOT-OD-19-023.html</a></li>
+    <li id="src-39">Wilkinson MD, et al. The FAIR Guiding Principles for scientific data management and stewardship. <em>Sci Data</em>. 2016;3:160018. <a href="https://doi.org/10.1038/sdata.2016.18" target="_blank" rel="noopener">doi:10.1038/sdata.2016.18</a></li>
+    <li id="src-40">Sollis E, et al. The NHGRI-EBI GWAS Catalog: knowledgebase and deposition resource. <em>Nucleic Acids Res</em>. 2023;51:D977–D985. Counts from the <a href="https://www.ebi.ac.uk/gwas/" target="_blank" rel="noopener">GWAS Catalog home page</a>, release of 29 October 2026. <a href="https://doi.org/10.1093/nar/gkac1010" target="_blank" rel="noopener">doi:10.1093/nar/gkac1010</a></li>
+    <li id="src-41">GWAS Catalog. Summary statistics submission format (GWAS-SSF): mandatory and encouraged fields. <a href="https://www.ebi.ac.uk/gwas/docs/summary-statistics-format" target="_blank" rel="noopener">ebi.ac.uk/gwas/docs/summary-statistics-format</a></li>
+    <li id="src-42">Lyon MS, et al. The variant call format provides efficient and robust storage of GWAS summary statistics. <em>Genome Biol</em>. 2021;22:32. <a href="https://doi.org/10.1186/s13059-020-02248-0" target="_blank" rel="noopener">doi:10.1186/s13059-020-02248-0</a></li>
+    <li id="src-43">Canela-Xandri O, Rawlik K, Tenesa A. An atlas of genetic associations in UK Biobank. <em>Nat Genet</em>. 2018;50:1593–1599. <a href="https://doi.org/10.1038/s41588-018-0248-z" target="_blank" rel="noopener">doi:10.1038/s41588-018-0248-z</a></li>
+    <li id="src-44">Kurki MI, et al. FinnGen provides genetic insights from a well-phenotyped isolated population. <em>Nature</em>. 2023;613:508–518. <a href="https://doi.org/10.1038/s41586-022-05473-8" target="_blank" rel="noopener">doi:10.1038/s41586-022-05473-8</a></li>
+    <li id="src-45">Sakaue S, et al. A cross-population atlas of genetic associations for 220 human phenotypes. <em>Nat Genet</em>. 2021;53:1415–1424. <a href="https://doi.org/10.1038/s41588-021-00931-x" target="_blank" rel="noopener">doi:10.1038/s41588-021-00931-x</a></li>
+    <li id="src-46">Nosek BA, Ebersole CR, DeHaven AC, Mellor DT. The preregistration revolution. <em>Proc Natl Acad Sci USA</em>. 2018;115:2600–2606. <a href="https://doi.org/10.1073/pnas.1708274114" target="_blank" rel="noopener">doi:10.1073/pnas.1708274114</a></li>
+    <li id="src-47">Göring HHH, Terwilliger JD, Blangero J. Large upward bias in estimation of locus-specific effects from genomewide scans. <em>Am J Hum Genet</em>. 2001;69:1357–1369. <a href="https://doi.org/10.1086/324471" target="_blank" rel="noopener">doi:10.1086/324471</a></li>
+    <li id="src-48">Kraft P. Curses—winner’s and otherwise—in genetic epidemiology. <em>Epidemiology</em>. 2008;19:649–651. <a href="https://doi.org/10.1097/EDE.0b013e318181b865" target="_blank" rel="noopener">doi:10.1097/EDE.0b013e318181b865</a></li>
+    <li id="src-49">Mills MC, Rahal C. A scientometric review of genome-wide association studies. <em>Commun Biol</em>. 2019;2:9. <a href="https://doi.org/10.1038/s42003-018-0261-x" target="_blank" rel="noopener">doi:10.1038/s42003-018-0261-x</a></li>
+    <li id="src-50">Wojcik GL, et al. Genetic analyses of diverse populations improves discovery for complex traits. <em>Nature</em>. 2019;570:514–518. <a href="https://doi.org/10.1038/s41586-019-1310-4" target="_blank" rel="noopener">doi:10.1038/s41586-019-1310-4</a></li>
+    <li id="src-51">Fry A, et al. Comparison of sociodemographic and health-related characteristics of UK Biobank participants with those of the general population. <em>Am J Epidemiol</em>. 2017;186:1026–1034. <a href="https://doi.org/10.1093/aje/kwx246" target="_blank" rel="noopener">doi:10.1093/aje/kwx246</a></li>
+    <li id="src-52">Howe LJ, et al. Within-sibship genome-wide association analyses decrease bias in estimates of direct genetic effects. <em>Nat Genet</em>. 2022;54:581–592. <a href="https://doi.org/10.1038/s41588-022-01062-7" target="_blank" rel="noopener">doi:10.1038/s41588-022-01062-7</a></li>
+    <li id="src-53">Kong A, et al. The nature of nurture: effects of parental genotypes. <em>Science</em>. 2018;359:424–428. <a href="https://doi.org/10.1126/science.aan6877" target="_blank" rel="noopener">doi:10.1126/science.aan6877</a></li>
+    <li id="src-54">Young AI. Solving the missing heritability problem. <em>PLoS Genet</em>. 2019;15:e1008222. <a href="https://doi.org/10.1371/journal.pgen.1008222" target="_blank" rel="noopener">doi:10.1371/journal.pgen.1008222</a></li>
+    <li id="src-55">Yengo L, et al. A saturated map of common genetic variants associated with human height. <em>Nature</em>. 2022;610:704–712. <a href="https://doi.org/10.1038/s41586-022-05275-y" target="_blank" rel="noopener">doi:10.1038/s41586-022-05275-y</a></li>
+    <li id="src-56">Nelson MR, et al. The support of human genetic evidence for approved drug indications. <em>Nat Genet</em>. 2015;47:856–860. <a href="https://doi.org/10.1038/ng.3314" target="_blank" rel="noopener">doi:10.1038/ng.3314</a></li>
+    <li id="src-57">Minikel EV, Painter JL, Dong CC, Nelson MR. Refining the impact of genetic evidence on clinical success. <em>Nature</em>. 2024;629:624–629. <a href="https://doi.org/10.1038/s41586-024-07316-0" target="_blank" rel="noopener">doi:10.1038/s41586-024-07316-0</a></li>
+    <li id="src-58">Okada Y, et al. Genetics of rheumatoid arthritis contributes to biology and drug discovery. <em>Nature</em>. 2014;506:376–381. <a href="https://doi.org/10.1038/nature12873" target="_blank" rel="noopener">doi:10.1038/nature12873</a></li>
+    <li id="src-59">Ochoa D, et al. Open Targets Platform: supporting systematic drug–target identification and prioritisation. <em>Nucleic Acids Res</em>. 2021;49:D1302–D1310. <a href="https://doi.org/10.1093/nar/gkaa1027" target="_blank" rel="noopener">doi:10.1093/nar/gkaa1027</a></li>
+    <li id="src-60">Sakaue S, Okada Y. GREP: genome for REPositioning drugs. <em>Bioinformatics</em>. 2019;35:3821–3823. <a href="https://doi.org/10.1093/bioinformatics/btz166" target="_blank" rel="noopener">doi:10.1093/bioinformatics/btz166</a></li>
+    <li id="src-61">Schork NJ. Personalized medicine: time for one-person trials. <em>Nature</em>. 2015;520:609–611. <a href="https://doi.org/10.1038/520609a" target="_blank" rel="noopener">doi:10.1038/520609a</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

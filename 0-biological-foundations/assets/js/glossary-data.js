@@ -1131,7 +1131,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "case",
   "term": "case",
-  "short": "In a study of a disease, a person who has the disease according to the study’s case definition; coded 1 in a binary phenotype column.",
+  "short": "In a study of a disease, a person who has the disease according to the study’s case definition; coded 1 in a binary phenotype column (2 in a PLINK .fam file).",
   "long": "Who is a case depends on the definition: the codes, sources and time window used. Record-based definitions miss some true cases and count some people who never had the disease.",
   "see": [
    "control",
@@ -1995,7 +1995,7 @@ window.GLOSSARY_ENTRIES = [
  {
   "id": "control",
   "term": "control",
-  "short": "In a study of a disease, a person who does not meet the case definition and is used for comparison; coded 0 in a binary phenotype column.",
+  "short": "In a study of a disease, a person who does not meet the case definition and is used for comparison; coded 0 in a binary phenotype column (1 in a PLINK .fam file).",
   "long": "In record-based studies a control has no qualifying record, which does not prove the absence of disease. Many definitions also exclude people with related diagnoses from the controls (see phecode). In a case–control study, controls are sampled from people without the disease.",
   "see": [
    "case",
@@ -2903,8 +2903,7 @@ window.GLOSSARY_ENTRIES = [
   "match": [
    "effect allele",
    "tested allele",
-   "coded allele",
-   "counted allele"
+   "coded allele"
   ],
   "owner": "variation"
  },
@@ -3293,7 +3292,7 @@ window.GLOSSARY_ENTRIES = [
    "EM algorithm",
    "EM"
   ],
-  "short": "An iterative method for maximum-likelihood estimation with missing data. For haplotypes: guess the haplotype frequencies, compute expected haplotype counts given each person's genotypes, re-estimate the frequencies, and repeat until they stop changing.",
+  "short": "An iterative method for maximum-likelihood estimation when some data are unobserved: guess the parameters, compute the expected values of the unobserved data given them, re-estimate the parameters from those expected values, and repeat until they stop changing. For haplotypes: guess the haplotype frequencies, compute expected haplotype counts from each person's genotypes, re-estimate, repeat.",
   "l1": "slides 114, 117",
   "see": [
    "phasing",
@@ -5761,7 +5760,7 @@ window.GLOSSARY_ENTRIES = [
    "opposite homozygotes"
   ],
   "short": "The fraction of SNPs where two people share no allele, such as AA and GG. It is near 0 for parent–child pairs but not for full siblings, so KING uses it to tell them apart.",
-  "long": "A parent and child share one allele IBD at every locus, so opposite homozygotes arise only from genotyping errors; full siblings share no allele IBD in about a quarter of the genome.",
+  "long": "A parent and child share one allele IBD at every locus, so opposite homozygotes arise only from genotyping errors; full siblings share no allele IBD in about a quarter of the genome. KING reports IBS0 as this fraction. The IBS0 column of PLINK's <code>--genome full</code> output is instead the number of such SNPs; dividing it by IBS0 + IBS1 + IBS2, the number of SNPs compared, gives the fraction.",
   "see": [
    "ibs",
    "kinship-coefficient",

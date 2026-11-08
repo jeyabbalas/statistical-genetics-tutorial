@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC step 1: missing genotype calls · Lecture 1</title>
+<meta name="description" content="Step 1 of the PLINK quality-control practical: where missing genotype calls come from, how plink --missing measures them per SNP and per person, and why the practical removes SNPs with --geno 0.01 before people with --mind 0.01.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<!-- Widgets for this page, one file each: assets/js/widgets/PAGEKEY-NAME.js -->
+<script defer src="assets/js/widgets/qc-missingness-order.js"></script>
+<!-- The in-browser lab (assets/js/lab/LAB.md); widgets that use it load after lab.js. -->
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-missingness-explorer.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-missingness"]. */
+body[data-page="qc-missingness"] .mm-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px 18px; align-items: start; }
+body[data-page="qc-missingness"] .mm-panels > svg { display: block; width: 100%; height: auto; }
+body[data-page="qc-missingness"] .mo-plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px 16px; margin: 6px 0 10px; }
+body[data-page="qc-missingness"] .mo-plot svg { display: block; width: 100%; height: auto; }
+body[data-page="qc-missingness"] .mo-val { font-family: var(--mono); font-size: 0.86rem; min-width: 2.6em; }
+body[data-page="qc-missingness"] .mo-table-wrap { overflow-x: auto; }
+body[data-page="qc-missingness"] table.mo-table { width: 100%; font-size: 0.86rem; margin: 4px 0 6px; }
+body[data-page="qc-missingness"] table.mo-table caption { text-align: left; font-weight: 600; font-size: 0.86rem; color: var(--fg-muted); margin-bottom: 4px; }
+body[data-page="qc-missingness"] table.mo-table th[scope="row"] { font-weight: 500; text-align: left; }
+body[data-page="qc-missingness"] table.mo-table td { font-family: var(--mono); }
+body[data-page="qc-missingness"] table.mo-table td.mo-warn { color: var(--pitfall); font-weight: 700; }
+body[data-page="qc-missingness"] dl.cols-doc.log-lines { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); }
+body[data-page="qc-missingness"] dl.cols-doc.log-lines > dt { font-weight: 600; overflow-wrap: anywhere; }
+@media (max-width: 560px) { body[data-page="qc-missingness"] dl.cols-doc.log-lines { grid-template-columns: minmax(0, 1fr); } }
+/* Keep short inline code (flags such as --geno 0.01) on one line; long commands carry class="wrap". */
+body[data-page="qc-missingness"] :is(p, li, dd, td, summary, figcaption) > code:not(.wrap) { white-space: nowrap; }
+body[data-page="qc-missingness"] code.wrap { overflow-wrap: anywhere; }
+body[data-page="qc-missingness"] .me-compare { white-space: pre-wrap; }
+body[data-page="qc-missingness"] .me-compare[hidden] { display: none; }
+body[data-page="qc-missingness"] .me-log { white-space: nowrap; }
+body[data-page="qc-missingness"] .widget select { max-width: 100%; }
+body[data-page="qc-missingness"] .widget label.w-pick { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; }
+body[data-page="qc-missingness"] .widget label.w-pick > select { min-width: 0; flex: 1 1 auto; }
+</style>
+</head>
+<body data-page="qc-missingness">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Step 1 of 8 · Page 15 of 23</p>
+  <h1>QC step 1: missing genotype calls</h1>
+  <p class="lede">A genotyping array does not always manage to read a person's genotype at a SNP; when it cannot, the genotype is stored as missing. This step counts the missing calls of every SNP and every person, removes the SNPs and then the people with more than 1% of their calls missing, and explains why a high missing rate also warns that the calls that were made are less trustworthy.</p>
+  <div class="chips">
+    <span class="chip core">plink --missing · --geno 0.01 · --mind 0.01</span>
+    <span class="chip data">Writes: .imiss, .lmiss, .irem and two filtered filesets</span>
+    <span class="chip time">≈ 45 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="1" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">One missing rate per column and per row; remove bad columns first, then judge the rows</h2>
+  <figure>
+    <div class="mm-panels">
+<svg viewBox="0 0 360 300" role="img" aria-labelledby="mm-a-t mm-a-d">
+<title id="mm-a-t">Missing calls in a genotype matrix, counted per SNP and per person</title>
+<desc id="mm-a-d">A matrix of 8 people (rows) by 12 SNPs (columns). Cells are genotypes 0, 1 or 2 shaded light to dark; hatched cells are missing calls. SNP 8 is missing in 5 of 8 people and person 6 is missing at 7 of 12 SNPs; both are outlined in red. Bars to the right give each person's share of missing calls and bars below give each SNP's share; a dashed line marks a threshold that only SNP 8 and person 6 exceed.</desc>
+<defs>
+  <pattern id="mm-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="5" height="5" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="5" stroke="#8a93a0" stroke-width="1.6"/>
+  </pattern>
+</defs>
+<text x="8" y="18" class="t-b">A · The genotype matrix</text>
+<text x="8" y="34" class="t-sm">rows = people, columns = SNPs</text>
+<text x="320" y="30" class="t-sm" text-anchor="middle">F_MISS</text>
+<text x="320" y="43" class="t-sm" text-anchor="middle">per person</text>
+<!-- row 0 --><g>
+<rect x="40" y="50" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="60" y="50" width="18" height="18" fill="var(--g1)"/><rect x="80" y="50" width="18" height="18" fill="var(--g2)"/><rect x="100" y="50" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="120" y="50" width="18" height="18" fill="var(--g1)"/><rect x="140" y="50" width="18" height="18" fill="var(--g1)"/><rect x="160" y="50" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="180" y="50" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="200" y="50" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="220" y="50" width="18" height="18" fill="var(--g2)"/><rect x="240" y="50" width="18" height="18" fill="var(--g1)"/><rect x="260" y="50" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/>
+</g>
+<!-- row 1 --><g>
+<rect x="40" y="70" width="18" height="18" fill="var(--g1)"/><rect x="60" y="70" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="80" y="70" width="18" height="18" fill="var(--g1)"/><rect x="100" y="70" width="18" height="18" fill="var(--g2)"/><rect x="120" y="70" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="140" y="70" width="18" height="18" fill="var(--g1)"/><rect x="160" y="70" width="18" height="18" fill="var(--g1)"/><rect x="180" y="70" width="18" height="18" fill="var(--g1)"/><rect x="200" y="70" width="18" height="18" fill="var(--g2)"/><rect x="220" y="70" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="240" y="70" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="260" y="70" width="18" height="18" fill="var(--g1)"/>
+</g>
+<!-- row 2 --><g>
+<rect x="40" y="90" width="18" height="18" fill="var(--g2)"/><rect x="60" y="90" width="18" height="18" fill="var(--g1)"/><rect x="80" y="90" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="100" y="90" width="18" height="18" fill="var(--g1)"/><rect x="120" y="90" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="140" y="90" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="160" y="90" width="18" height="18" fill="var(--g1)"/><rect x="180" y="90" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="200" y="90" width="18" height="18" fill="var(--g1)"/><rect x="220" y="90" width="18" height="18" fill="var(--g1)"/><rect x="240" y="90" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="260" y="90" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/>
+</g>
+<!-- row 3 --><g>
+<rect x="40" y="110" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="60" y="110" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="80" y="110" width="18" height="18" fill="var(--g1)"/><rect x="100" y="110" width="18" height="18" fill="var(--g1)"/><rect x="120" y="110" width="18" height="18" fill="var(--g2)"/><rect x="140" y="110" width="18" height="18" fill="var(--g1)"/><rect x="160" y="110" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="180" y="110" width="18" height="18" fill="var(--g2)"/><rect x="200" y="110" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="220" y="110" width="18" height="18" fill="var(--g1)"/><rect x="240" y="110" width="18" height="18" fill="var(--g2)"/><rect x="260" y="110" width="18" height="18" fill="var(--g1)"/>
+</g>
+<!-- row 4 --><g>
+<rect x="40" y="130" width="18" height="18" fill="var(--g1)"/><rect x="60" y="130" width="18" height="18" fill="var(--g2)"/><rect x="80" y="130" width="18" height="18" fill="var(--g1)"/><rect x="100" y="130" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="120" y="130" width="18" height="18" fill="var(--g1)"/><rect x="140" y="130" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="160" y="130" width="18" height="18" fill="var(--g2)"/><rect x="180" y="130" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="200" y="130" width="18" height="18" fill="var(--g1)"/><rect x="220" y="130" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="240" y="130" width="18" height="18" fill="var(--g1)"/><rect x="260" y="130" width="18" height="18" fill="var(--g1)"/>
+</g>
+<!-- row 5: the person with poor DNA --><g>
+<rect x="40" y="150" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="60" y="150" width="18" height="18" fill="var(--g1)"/><rect x="80" y="150" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="100" y="150" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="120" y="150" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="140" y="150" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="160" y="150" width="18" height="18" fill="var(--g1)"/><rect x="180" y="150" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="200" y="150" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="220" y="150" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="240" y="150" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="260" y="150" width="18" height="18" fill="var(--g1)"/>
+</g>
+<!-- row 6 --><g>
+<rect x="40" y="170" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="60" y="170" width="18" height="18" fill="var(--g1)"/><rect x="80" y="170" width="18" height="18" fill="var(--g1)"/><rect x="100" y="170" width="18" height="18" fill="var(--g2)"/><rect x="120" y="170" width="18" height="18" fill="var(--g1)"/><rect x="140" y="170" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="160" y="170" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="180" y="170" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="200" y="170" width="18" height="18" fill="var(--g2)"/><rect x="220" y="170" width="18" height="18" fill="var(--g1)"/><rect x="240" y="170" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="260" y="170" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/>
+</g>
+<!-- row 7 --><g>
+<rect x="40" y="190" width="18" height="18" fill="var(--g1)"/><rect x="60" y="190" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="80" y="190" width="18" height="18" fill="var(--g2)"/><rect x="100" y="190" width="18" height="18" fill="var(--g1)"/><rect x="120" y="190" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="140" y="190" width="18" height="18" fill="var(--g2)"/><rect x="160" y="190" width="18" height="18" fill="var(--g1)"/><rect x="180" y="190" width="18" height="18" fill="var(--g1)"/><rect x="200" y="190" width="18" height="18" fill="var(--g0)" stroke="#d9dee5"/><rect x="220" y="190" width="18" height="18" fill="url(#mm-hatch)" stroke="#b9c1cc"/><rect x="240" y="190" width="18" height="18" fill="var(--g1)"/><rect x="260" y="190" width="18" height="18" fill="var(--g2)"/>
+</g>
+<!-- failing column and row -->
+<rect x="178" y="48" width="22" height="162" fill="none" stroke="var(--pitfall)" stroke-width="2" rx="2"/>
+<rect x="38" y="148" width="242" height="22" fill="none" stroke="var(--pitfall)" stroke-width="2" rx="2"/>
+<!-- person bars: F = 1/12, 0, 2/12, 0, 1/12, 7/12, 1/12, 1/12; 60 px = 1.0 -->
+<rect x="290" y="54" width="5" height="10" fill="var(--q1)"/>
+<rect x="290" y="94" width="10" height="10" fill="var(--q1)"/>
+<rect x="290" y="134" width="5" height="10" fill="var(--q1)"/>
+<rect x="290" y="154" width="35" height="10" fill="var(--pitfall)"/>
+<rect x="290" y="174" width="5" height="10" fill="var(--q1)"/>
+<rect x="290" y="194" width="5" height="10" fill="var(--q1)"/>
+<line x1="290" y1="48" x2="290" y2="210" stroke="#8a93a0"/>
+<line x1="305" y1="48" x2="305" y2="210" stroke="var(--pitfall)" stroke-dasharray="3 3"/>
+<!-- SNP bars: F = 1/8 for most columns with a missing call, 5/8 for SNP 8; 40 px = 1.0 -->
+<rect x="44" y="216" width="10" height="5" fill="var(--q1)"/>
+<rect x="84" y="216" width="10" height="5" fill="var(--q1)"/>
+<rect x="104" y="216" width="10" height="5" fill="var(--q1)"/>
+<rect x="124" y="216" width="10" height="5" fill="var(--q1)"/>
+<rect x="144" y="216" width="10" height="5" fill="var(--q1)"/>
+<rect x="184" y="216" width="10" height="25" fill="var(--pitfall)"/>
+<rect x="204" y="216" width="10" height="5" fill="var(--q1)"/>
+<rect x="224" y="216" width="10" height="5" fill="var(--q1)"/>
+<rect x="244" y="216" width="10" height="5" fill="var(--q1)"/>
+<line x1="38" y1="216" x2="280" y2="216" stroke="#8a93a0"/>
+<line x1="38" y1="226" x2="280" y2="226" stroke="var(--pitfall)" stroke-dasharray="3 3"/>
+<text x="160" y="258" class="t-sm" text-anchor="middle">F_MISS per SNP (bars below each column)</text>
+<!-- legend -->
+<rect x="8" y="274" width="12" height="12" fill="var(--g0)" stroke="#b9c1cc"/><text x="24" y="284" class="t-sm">0</text>
+<rect x="38" y="274" width="12" height="12" fill="var(--g1)"/><text x="54" y="284" class="t-sm">1</text>
+<rect x="68" y="274" width="12" height="12" fill="var(--g2)"/><text x="84" y="284" class="t-sm">2</text>
+<rect x="98" y="274" width="12" height="12" fill="url(#mm-hatch)" stroke="#b9c1cc"/><text x="114" y="284" class="t-sm">missing</text>
+<line x1="166" y1="280" x2="184" y2="280" stroke="var(--pitfall)" stroke-dasharray="3 3"/><text x="188" y="284" class="t-sm">threshold</text>
+<rect x="248" y="274" width="12" height="12" fill="none" stroke="var(--pitfall)" stroke-width="2"/><text x="264" y="284" class="t-sm">fails</text>
+</svg>
+<svg viewBox="0 0 360 300" role="img" aria-labelledby="mm-b-t mm-b-d">
+<title id="mm-b-t">Step 1 drawn as one box of the QC pipeline</title>
+<desc id="mm-b-d">Five stages from top to bottom. Statistic: the share of calls missing, F_MISS, per SNP in the .lmiss file and per person in the .imiss file. Distribution: most SNPs and people are near 0, with a long tail of high missing rates. Threshold: fail if F_MISS is greater than 0.01, more than 1% of calls missing. Remove: --geno 0.01 drops SNPs, the rates are counted again, then --mind 0.01 drops people. Record: the counts are in the .log file, the removed people in the .irem file, and the file names record the steps.</desc>
+<text x="8" y="18" class="t-b">B · Step 1 in the QC pipeline</text>
+<g>
+<rect x="8" y="30" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="56" class="t-b" style="fill: var(--mm)">Statistic</text>
+<text x="112" y="48" class="t-sm" style="fill: var(--fg)">share of calls missing (F_MISS),</text>
+<text x="112" y="63" class="t-sm" style="fill: var(--fg)">per SNP (.lmiss), per person (.imiss)</text>
+<polygon points="54,77 66,77 60,85" fill="var(--mm)"/>
+<rect x="8" y="88" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="114" class="t-b" style="fill: var(--mm)">Distribution</text>
+<text x="112" y="106" class="t-sm" style="fill: var(--fg)">most SNPs and people near 0;</text>
+<text x="112" y="121" class="t-sm" style="fill: var(--fg)">a long tail of high missing rates</text>
+<polygon points="54,135 66,135 60,143" fill="var(--mm)"/>
+<rect x="8" y="146" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="172" class="t-b" style="fill: var(--mm)">Threshold</text>
+<text x="112" y="164" class="t-sm" style="fill: var(--fg)">fail if F_MISS &gt; 0.01</text>
+<text x="112" y="179" class="t-sm" style="fill: var(--fg)">(more than 1% of calls missing)</text>
+<polygon points="54,193 66,193 60,201" fill="var(--mm)"/>
+<rect x="8" y="204" width="344" height="44" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="230" class="t-b" style="fill: var(--mm)">Remove</text>
+<text x="112" y="222" class="t-sm" style="fill: var(--fg)">--geno 0.01 drops SNPs, re-count,</text>
+<text x="112" y="237" class="t-sm" style="fill: var(--fg)">then --mind 0.01 drops people</text>
+<polygon points="54,251 66,251 60,259" fill="var(--mm)"/>
+<rect x="8" y="262" width="344" height="34" rx="7" fill="var(--mm-soft)" stroke="var(--mm)"/>
+<text x="18" y="283" class="t-b" style="fill: var(--mm)">Record</text>
+<text x="112" y="276" class="t-sm" style="fill: var(--fg)">counts in the .log, people in .irem,</text>
+<text x="112" y="290" class="t-sm" style="fill: var(--fg)">the steps in the file names</text>
+</g>
+</svg>
+    </div>
+  </figure>
+  <p class="mm-statement">Missingness is measured twice on the same matrix: down each column (one rate per SNP) and along each row (one rate per person). The practical removes the columns that fail first, counts again, and then judges each row only on the columns that are left.</p>
+  <ul class="mm-hooks">
+    <li><strong>Where missing calls come from.</strong> A call is left missing when a person's measured signals do not fall clearly into one genotype cluster. A probe that works poorly affects one column, weak DNA affects one row, and missingness that depends on the genotype or on case status biases the calls that remain.</li>
+    <li><strong>One rate per SNP, one per person.</strong> <code>plink --missing</code> divides missing calls by possible calls: F_MISS per SNP in <code>.lmiss</code> and per person in <code>.imiss</code>.</li>
+    <li><strong>Read the tail.</strong> Most SNPs and most people miss almost nothing; the filters act on a long right tail, and the choice of threshold decides how much of it goes.</li>
+    <li><strong>Columns first, then rows.</strong> <code>--geno 0.01</code>, a fresh count, then <code>--mind 0.01</code>. Given both flags in one command, PLINK would remove people first, judging them on SNPs that are about to be removed.</li>
+    <li><strong>The same code for toy and real data.</strong> The lab, the R analysis and the PennCATH commands differ only in the file prefix.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and earlier pages</div>
+  <p>How an array turns two light signals into a genotype, and why some calls fail: <a href="../0-biological-foundations/samples-to-genotypes.html#calling">Lecture 0 · From light to genotype calls</a>. Why QC reads the genotype matrix along rows and down columns: <a href="../0-biological-foundations/samples-to-genotypes.html#qc">Lecture 0 · Quality control</a>. The files PLINK reads and how a command is built: <a href="plink-data.html">PLINK files inside out</a> and <a href="tools.html#plink-anatomy">anatomy of a PLINK command</a>.</p>
+</aside>
+
+<h2 id="what-it-finds">What the step finds <span class="tag core">Core</span></h2>
+<p>A genotyping array measures two fluorescence intensities for each person at each SNP, one for each allele. Genotype calling works one SNP at a time across many people: the calling software groups the people into three clusters, one for each genotype, and gives each person the genotype of their cluster. A person whose point lies too far from every cluster gets no genotype. This is a <em>no-call</em>, and PLINK stores it in the <code>.bed</code> file as a missing genotype. The share of a SNP's or a person's calls that were made is its call rate; the share that are missing is its missing rate, one minus the call rate. Lecture 0's <a href="../0-biological-foundations/samples-to-genotypes.html#calling">cluster-plot widget</a> lets you move the calling threshold and watch no-calls appear.</p>
+<p>No-calls are not scattered at random over the matrix. They form patterns, and each pattern points to a different failure in the laboratory:</p>
+
+<figure class="fig scroll-x" style="--min-w: 640px">
+  <div class="fig-body">
+<svg viewBox="0 0 700 196" role="img" aria-labelledby="pat-t pat-d">
+<title id="pat-t">Five patterns of missing calls</title>
+<desc id="pat-d">Five small matrices of 6 people by 8 SNPs with missing calls hatched. A column: one SNP is missing in most people. A row: one person is missing at most SNPs. A block: the three people of one plate are missing at four SNPs. Heterozygotes: at one SNP only the people whose true genotype is heterozygous are missing. Cases only: at two SNPs the missing calls are all in the upper three rows, the cases, and none in the three controls.</desc>
+<defs>
+  <pattern id="pat-hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <rect width="5" height="5" fill="#ffffff"/><line x1="0" y1="0" x2="0" y2="5" stroke="#8a93a0" stroke-width="1.6"/>
+  </pattern>
+  <g id="pat-grid">
+    <rect x="0" y="0" width="12" height="12" fill="var(--g1)"/><rect x="14" y="0" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="28" y="0" width="12" height="12" fill="var(--g2)"/><rect x="42" y="0" width="12" height="12" fill="var(--g1)"/><rect x="56" y="0" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="70" y="0" width="12" height="12" fill="var(--g1)"/><rect x="84" y="0" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="98" y="0" width="12" height="12" fill="var(--g2)"/>
+    <rect x="0" y="14" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="14" y="14" width="12" height="12" fill="var(--g1)"/><rect x="28" y="14" width="12" height="12" fill="var(--g1)"/><rect x="42" y="14" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="56" y="14" width="12" height="12" fill="var(--g2)"/><rect x="70" y="14" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="84" y="14" width="12" height="12" fill="var(--g1)"/><rect x="98" y="14" width="12" height="12" fill="var(--g1)"/>
+    <rect x="0" y="28" width="12" height="12" fill="var(--g2)"/><rect x="14" y="28" width="12" height="12" fill="var(--g1)"/><rect x="28" y="28" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="42" y="28" width="12" height="12" fill="var(--g1)"/><rect x="56" y="28" width="12" height="12" fill="var(--g1)"/><rect x="70" y="28" width="12" height="12" fill="var(--g2)"/><rect x="84" y="28" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="98" y="28" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/>
+    <rect x="0" y="42" width="12" height="12" fill="var(--g1)"/><rect x="14" y="42" width="12" height="12" fill="var(--g2)"/><rect x="28" y="42" width="12" height="12" fill="var(--g1)"/><rect x="42" y="42" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="56" y="42" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="70" y="42" width="12" height="12" fill="var(--g1)"/><rect x="84" y="42" width="12" height="12" fill="var(--g2)"/><rect x="98" y="42" width="12" height="12" fill="var(--g1)"/>
+    <rect x="0" y="56" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="14" y="56" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="28" y="56" width="12" height="12" fill="var(--g1)"/><rect x="42" y="56" width="12" height="12" fill="var(--g2)"/><rect x="56" y="56" width="12" height="12" fill="var(--g1)"/><rect x="70" y="56" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="84" y="56" width="12" height="12" fill="var(--g1)"/><rect x="98" y="56" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/>
+    <rect x="0" y="70" width="12" height="12" fill="var(--g1)"/><rect x="14" y="70" width="12" height="12" fill="var(--g1)"/><rect x="28" y="70" width="12" height="12" fill="var(--g2)"/><rect x="42" y="70" width="12" height="12" fill="var(--g1)"/><rect x="56" y="70" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="70" y="70" width="12" height="12" fill="var(--g1)"/><rect x="84" y="70" width="12" height="12" fill="var(--g0)" stroke="#d9dee5"/><rect x="98" y="70" width="12" height="12" fill="var(--g2)"/>
+  </g>
+</defs>
+<!-- panel 1: a column -->
+<text x="16" y="18" class="t-b">A column</text>
+<g transform="translate(16,30)">
+  <use href="#pat-grid"/>
+  <rect x="42" y="0" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="42" y="14" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="42" y="42" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="42" y="56" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="42" y="70" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/>
+</g>
+<text x="16" y="134" class="t-sm">one SNP fails in</text>
+<text x="16" y="148" class="t-sm">most people: weak or</text>
+<text x="16" y="162" class="t-sm">overlapping clusters</text>
+<!-- panel 2: a row -->
+<text x="154" y="18" class="t-b">A row</text>
+<g transform="translate(154,30)">
+  <use href="#pat-grid"/>
+  <rect x="0" y="28" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="14" y="28" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="42" y="28" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="56" y="28" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="70" y="28" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="98" y="28" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/>
+</g>
+<text x="154" y="134" class="t-sm">one person fails at</text>
+<text x="154" y="148" class="t-sm">most SNPs: little or</text>
+<text x="154" y="162" class="t-sm">degraded DNA</text>
+<!-- panel 3: a block -->
+<text x="292" y="18" class="t-b">A block</text>
+<g transform="translate(292,30)">
+  <use href="#pat-grid"/>
+  <rect x="28" y="42" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="42" y="42" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="56" y="42" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="70" y="42" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/>
+  <rect x="28" y="56" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="42" y="56" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="56" y="56" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="70" y="56" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/>
+  <rect x="28" y="70" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="42" y="70" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="56" y="70" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="70" y="70" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/>
+  <line x1="-4" y1="41" x2="114" y2="41" stroke="var(--q2)" stroke-width="1.5" stroke-dasharray="3 2"/>
+</g>
+<text x="292" y="134" class="t-sm">the lower 3 rows</text>
+<text x="292" y="148" class="t-sm">were one plate: they</text>
+<text x="292" y="162" class="t-sm">fail at 4 SNPs</text>
+<!-- panel 4: heterozygotes -->
+<text x="430" y="18" class="t-b">Heterozygotes</text>
+<g transform="translate(430,30)">
+  <use href="#pat-grid"/>
+  <rect x="70" y="0" width="12" height="12" fill="url(#pat-hatch)" stroke="var(--g1)" stroke-width="2"/><rect x="70" y="42" width="12" height="12" fill="url(#pat-hatch)" stroke="var(--g1)" stroke-width="2"/><rect x="70" y="70" width="12" height="12" fill="url(#pat-hatch)" stroke="var(--g1)" stroke-width="2"/>
+</g>
+<text x="430" y="134" class="t-sm">at one SNP, only the</text>
+<text x="430" y="148" class="t-sm">true heterozygotes</text>
+<text x="430" y="162" class="t-sm">(blue frame) fail</text>
+<!-- panel 5: cases only -->
+<text x="568" y="18" class="t-b">Cases only</text>
+<g transform="translate(568,30)">
+  <use href="#pat-grid"/>
+  <rect x="14" y="0" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="14" y="28" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="84" y="14" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><rect x="84" y="28" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/>
+  <line x1="-4" y1="41" x2="114" y2="41" stroke="var(--q2)" stroke-width="1.5" stroke-dasharray="3 2"/>
+</g>
+<text x="568" y="134" class="t-sm">the upper 3 rows are</text>
+<text x="568" y="148" class="t-sm">cases: only they</text>
+<text x="568" y="162" class="t-sm">miss these calls</text>
+<!-- legend -->
+<rect x="16" y="176" width="12" height="12" fill="var(--g0)" stroke="#b9c1cc"/><text x="32" y="186" class="t-sm">genotype 0</text>
+<rect x="104" y="176" width="12" height="12" fill="var(--g1)"/><text x="120" y="186" class="t-sm">1</text>
+<rect x="138" y="176" width="12" height="12" fill="var(--g2)"/><text x="154" y="186" class="t-sm">2</text>
+<rect x="172" y="176" width="12" height="12" fill="url(#pat-hatch)" stroke="#b9c1cc"/><text x="188" y="186" class="t-sm">missing call</text>
+<line x1="270" y1="182" x2="292" y2="182" stroke="var(--q2)" stroke-width="1.5" stroke-dasharray="3 2"/><text x="298" y="186" class="t-sm">boundary between groups of people</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">Five patterns of missing calls.</span> <span class="illustrative">Illustrative</span> Each matrix has 6 people (rows) and 8 SNPs (columns); the patterns are illustrative, not data. The first two are what <code>--geno</code> and <code>--mind</code> remove. The last three are harder: a block can be too small to push any single row or column over a threshold, and missing heterozygotes or missing case genotypes leave calls behind that differ systematically from the truth. <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<div class="table-wrap">
+<table class="compact stack pattern-table">
+  <caption>How each pattern arises and what it does to a GWAS</caption>
+  <thead><tr><th>Pattern</th><th>How it arises in the measurement</th><th>What it does later</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Pattern">A column (one SNP)</td><td data-label="How it arises">The probe for that SNP gives weak, spread-out or overlapping clusters, so many people fall between them. A rare SNP has few heterozygotes, so its heterozygote cluster is poorly defined.<sup><a href="#src-9">9</a></sup></td><td data-label="What it does later">The SNP is tested on fewer people, and the calls that were made are more often wrong, because the same unclear clusters produced them.</td></tr>
+    <tr><td data-label="Pattern">A row (one person)</td><td data-label="How it arises">Too little DNA, degraded DNA, a failed hybridization or scan, or DNA from two people mixed: the person's signals are noisy at many SNPs at once.<sup><a href="#src-5">5</a>,<a href="#src-9">9</a></sup></td><td data-label="What it does later">Noisy calls throughout the person's genotypes. The same people often stand out in the heterozygosity check (<a href="qc-heterozygosity.html">step 5</a>).</td></tr>
+    <tr><td data-label="Pattern">A block (a batch)</td><td data-label="How it arises">A plate or batch of samples processed on another day, with other reagents or on another scanner. Calling is done per batch, so a shift in one batch's signals produces no-calls (or miscalls) in that batch only.</td><td data-label="What it does later">Allele frequencies that differ by batch. If batches line up with cases and controls, the difference looks like an association.</td></tr>
+    <tr><td data-label="Pattern">Genotype-dependent</td><td data-label="How it arises">Heterozygotes lie between the two homozygous clusters, so they fail more often than homozygotes when the clusters are not well separated.</td><td data-label="What it does later">The remaining calls have too few heterozygotes, which the Hardy–Weinberg check of <a href="qc-hwe.html">step 2</a> detects, and a biased allele frequency.</td></tr>
+    <tr><td data-label="Pattern">Case-dependent</td><td data-label="How it arises">Case and control DNA collected, extracted, stored or genotyped differently (another time, laboratory or plate).</td><td data-label="What it does later">Differential missingness: missing rates, and usually error rates, differ between cases and controls, which creates false associations.<sup><a href="#src-7">7</a></sup></td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Missing calls matter for three reasons. First, each missing call removes a person from that SNP's association test, which costs statistical power. Second, a high missing rate is a symptom: the unclear clusters or the poor DNA that produced the no-calls also produce wrong calls, which no missingness count can see.<sup><a href="#src-5">5</a></sup> Third, missingness that is not random biases what is left. If heterozygotes fail more often, the remaining genotypes have too few heterozygotes; if cases fail more often than controls at a SNP, the cases' remaining genotypes differ from the controls' for a technical reason. Errors that are the same in cases and controls mostly cost power, while errors that differ between them create false positives.<sup><a href="#src-5">5</a>,<a href="#src-7">7</a></sup></p>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> 2005 · A case–control study that tested too well</div>
+  <p>Clayton and colleagues genotyped 6,322 SNPs in 816 people with type 1 diabetes and 877 controls. Across all SNPs, the association test statistics were inflated by 11.2% compared with what chance alone produces: more SNPs looked associated than should have. Part of the inflation came from population structure; the rest came from what they called differential bias, differences in how genotypes were scored between the case and the control DNA samples, which had been collected and prepared differently. The lesson for every later GWAS: an artifact that differs between cases and controls produces false-positive associations, so quality control has to compare cases with controls, not only count failures overall.<sup><a href="#src-7">7</a></sup> Lecture 0 shows a single SNP where this happened: a <a href="../0-biological-foundations/samples-to-genotypes.html#calling">fourth cluster called homozygous in the cases but heterozygous in the controls</a>.</p>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021, "Experimentation", Data processing</div>
+  <p>The reading lists the first quality-control steps on called genotypes, among them "filtering SNPs that are missing from a fraction of individuals in the cohort", and notes that the input files of a GWAS include "information on the genotyping batch". Its Table 1 names PLINK for filtering bad SNPs and bad individuals by call rate, and its Fig. 1c shows quality control as the step between genotyping and imputation.<sup><a href="#src-8">8</a></sup></p>
+</aside>
+
+<h2 id="statistic">The statistic: F_MISS <span class="tag core">Core</span></h2>
+<p>Write the genotype matrix as \(n\) rows (people) and \(M\) columns (SNPs), and mark each entry by whether its call is missing. A SNP's missing rate averages its column of marks; a person's missing rate averages their row:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \delta_{ij} = \begin{cases} 1 &amp; \text{call missing} \\ 0 &amp; \text{call made} \end{cases} \\[4pt] \bar{\delta}_{\cdot j} = \frac{1}{n} \sum_{i=1}^{n} \delta_{ij} \qquad \bar{\delta}_{i \cdot} = \frac{1}{M} \sum_{j=1}^{M} \delta_{ij} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(i\), \(j\)</dt><dd>Person \(i = 1, \dots, n\) (a row of the matrix) and SNP \(j = 1, \dots, M\) (a column).</dd>
+    <dt>\(\delta_{ij}\)</dt><dd>The missingness indicator of one entry: 1 if person \(i\) has no call at SNP \(j\), 0 if a genotype was called.</dd>
+    <dt>\(n\)</dt><dd>Number of people in the fileset; the denominator of a SNP's rate. PLINK calls it N_GENO in <code>.lmiss</code>.</dd>
+    <dt>\(\bar{\delta}_{\cdot j}\)</dt><dd>SNP \(j\)'s missing rate: the share of the \(n\) people with no call at SNP \(j\), between 0 and 1. The dot stands for the index that was averaged over (people). PLINK writes it as F_MISS in <code>.lmiss</code>.</dd>
+    <dt>\(M\)</dt><dd>Number of SNPs in the fileset; the denominator of a person's rate (N_GENO in <code>.imiss</code>).</dd>
+    <dt>\(\bar{\delta}_{i \cdot}\)</dt><dd>Person \(i\)'s missing rate: the share of the \(M\) SNPs at which person \(i\) has no call, between 0 and 1 (F_MISS in <code>.imiss</code>).</dd>
+  </dl>
+  <p class="eq-intuition">Both rates are averages of the same 0/1 entries, taken in different directions. A missing rate is a count divided by the number of calls that could have been made, so it can be compared between SNPs and between people: a SNP with 14 missing calls among 1,401 people has a rate of 14/1,401 ≈ 0.0100, and a person with 14 missing calls among 861,473 SNPs has a rate of about 0.000016. The call rate is \(1 - \bar{\delta}\): a SNP with rate 0.01 has a call rate of 99%. The only exceptions to "divide by \(n\) or \(M\)" are sex chromosomes: females have no chromosome Y, so PLINK leaves their chromosome Y entries out of both the counts and the denominators, and it does not count heterozygous calls on a male's single X chromosome as missing in this report.<sup><a href="#src-4">4</a></sup></p>
+</div>
+
+<p>The two directions are linked. Averaging all \(nM\) entries gives the overall missing rate, and it does not matter whether you average the rows first or the columns first:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} \bar{\delta} &amp;= \frac{1}{nM} \sum_{i=1}^{n} \sum_{j=1}^{M} \delta_{ij} \\ &amp;= \frac{1}{n} \sum_{i=1}^{n} \bar{\delta}_{i \cdot} = \frac{1}{M} \sum_{j=1}^{M} \bar{\delta}_{\cdot j} \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\bar{\delta}\)</dt><dd>The overall missing rate: missing calls divided by all \(nM\) entries of the matrix, between 0 and 1.</dd>
+    <dt>\(\frac{1}{n} \sum_{i} \bar{\delta}_{i \cdot}\)</dt><dd>The mean of the \(n\) people's missing rates (the mean of F_MISS in <code>.imiss</code>).</dd>
+    <dt>\(\frac{1}{M} \sum_{j} \bar{\delta}_{\cdot j}\)</dt><dd>The mean of the \(M\) SNPs' missing rates (the mean of F_MISS in <code>.lmiss</code>).</dd>
+  </dl>
+  <p class="eq-intuition">All three expressions count the same missing calls and divide by the same \(nM\), so they are equal. PLINK prints \(1 - \bar{\delta}\) as the "total genotyping rate" in every log. For PennCATH the log says 0.977517, so 2.25% of the 1,206,923,673 calls are missing, about 27 million calls; the average person is missing 2.25% of their SNPs and the average SNP is missing in 2.25% of people.<sup><a href="#src-10">10</a></sup> The averages hide where the missing calls are: the same 2.25% could be spread thinly over every SNP and person, or packed into a few bad SNPs and a few bad people. The distributions, not the means, decide what a filter removes.</p>
+</div>
+
+<h3 id="filter-rule">The filter rule, and the smallest count that fails</h3>
+<p><code>--geno g</code> removes SNP \(j\) when \(\bar{\delta}_{\cdot j} &gt; g\), and <code>--mind m</code> removes person \(i\) when \(\bar{\delta}_{i \cdot} &gt; m\). The inequality is strict: a SNP with a missing rate of exactly 0.01 passes <code>--geno 0.01</code>. Because a rate is a count divided by a whole number, the threshold is really a count:<sup><a href="#src-2">2</a>,<a href="#src-11">11</a></sup></p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ k_{\min} = \lfloor g\,n \rfloor + 1 \]</div>
+  <dl class="eq-terms">
+    <dt>\(k_{\min}\)</dt><dd>The smallest number of missing calls with which a SNP fails the filter (a whole number of people).</dd>
+    <dt>\(g\)</dt><dd>The <code>--geno</code> threshold, a proportion (0.01 in the practical).</dd>
+    <dt>\(n\)</dt><dd>The number of people the SNP's rate is computed over.</dd>
+    <dt>\(\lfloor x \rfloor\)</dt><dd>The floor of \(x\): the largest whole number not greater than \(x\).</dd>
+  </dl>
+  <p class="eq-intuition">A SNP fails when \(k/n &gt; g\), that is when \(k &gt; gn\); the smallest whole number above \(gn\) is \(\lfloor gn \rfloor + 1\), whether or not \(gn\) is itself whole (if it is, \(k = gn\) gives a rate exactly equal to \(g\), which passes). For PennCATH, \(n = 1{,}401\) and \(g = 0.01\) give \(\lfloor 14.01 \rfloor + 1 = 15\): a SNP with 14 missing calls (rate 0.99929%) stays and one with 15 (1.0707%) goes. The same formula with \(M\) in place of \(n\) gives the people's threshold: before any SNP is removed, a PennCATH person fails <code>--mind 0.01</code> with 8,615 or more missing calls out of 861,473 SNPs. After <code>--geno</code>, \(M\) is smaller and so is the count.</p>
+</div>
+<p>The toy data have <span data-card="study_people">?</span> people (\(n\) in the formula), so the same formula gives a much smaller count: a toy SNP fails <code>--geno 0.01</code> with only a few missing calls (work out how many), and a working SNP can collect that many by chance. The terminals below show what this does to the count of failing SNPs.</p>
+
+<h3 id="columns">The two output files, column by column</h3>
+<p><code>--missing</code> writes two whitespace-separated text files with a header line. PLINK pads the columns with spaces so that they line up on screen, which is why the practical reads them with <code>fread</code>, a reader that splits on any run of spaces, and not as comma-separated files.<sup><a href="#src-3">3</a>,<a href="#src-4">4</a></sup></p>
+<p><strong><code>PREFIX.imiss</code></strong>, one line per person:</p>
+<dl class="cols-doc">
+  <dt>FID</dt><dd>Family ID, from column 1 of the <code>.fam</code> file.</dd>
+  <dt>IID</dt><dd>Individual ID, from column 2 of the <code>.fam</code> file. FID and IID together identify the person.</dd>
+  <dt>MISS_PHENO</dt><dd><code>Y</code> if the person's phenotype (column 6 of the <code>.fam</code> file) is missing, <code>N</code> otherwise. It is about the phenotype, not the genotypes.</dd>
+  <dt>N_MISS</dt><dd>Number of SNPs at which the person has no call (\(\sum_j \delta_{ij}\)), not counting chromosome Y entries of females or heterozygous calls on a male's X.</dd>
+  <dt>N_GENO</dt><dd>Number of SNPs at which a call was possible for this person: all SNPs, minus chromosome Y SNPs for females.</dd>
+  <dt>F_MISS</dt><dd>N_MISS / N_GENO, the person's missing rate \(\bar{\delta}_{i \cdot}\); <code>--mind</code> compares this number with its threshold.</dd>
+</dl>
+<p><strong><code>PREFIX.lmiss</code></strong>, one line per SNP, in the order of the <code>.bim</code> file:</p>
+<dl class="cols-doc">
+  <dt>CHR</dt><dd>Chromosome code, from column 1 of the <code>.bim</code> file (1–22; 23 = X, 24 = Y, 25 = the X–Y pseudoautosomal region, 26 = mitochondrial).</dd>
+  <dt>SNP</dt><dd>Variant ID, from column 2 of the <code>.bim</code> file.</dd>
+  <dt>N_MISS</dt><dd>Number of people with no call at this SNP (\(\sum_i \delta_{ij}\)).</dd>
+  <dt>N_GENO</dt><dd>Number of people for whom a call was possible: everyone, except that only males count on chromosome Y.</dd>
+  <dt>F_MISS</dt><dd>N_MISS / N_GENO, the SNP's missing rate \(\bar{\delta}_{\cdot j}\); <code>--geno</code> compares this number with its threshold.</dd>
+</dl>
+<p>In the toy reports, every SNP's N_GENO is <span data-card="study_people">?</span>, the number of people, and every person's N_GENO is <span data-card="study_snps">?</span>, the number of SNPs, because the toy data hold autosomes only. The last line printed by <code class="wrap">sort -g -k5 ${analysis_dir}/toy.lmiss | tail -n 5</code> in the terminal below is the SNP with the most missing calls: its F_MISS of <span data-card="lmiss_max">?</span> is its N_MISS divided by <span data-card="study_people">?</span>.</p>
+
+<h2 id="run-it">Run it in the browser <span class="tag core">Core</span></h2>
+<p>The practical starts with a report that removes nothing: <code>--missing</code> counts and writes, and the data stay as they are.</p>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${input_dir}/toy</span> <span class="part" data-n="3">--missing</span> <span class="part" data-n="4">--out ${analysis_dir}/toy</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code> — PLINK 1.9 (in the lab, the emulator that stands in for it).</li>
+    <li><code>--bfile ${input_dir}/toy</code> — read <code>toy.bed</code>, <code>toy.bim</code> and <code>toy.fam</code> from the input folder. The shell replaces <code>${input_dir}</code> with the folder's path before PLINK starts (<a href="tools.html#variables">shell variables</a>).</li>
+    <li><code>--missing</code> — write the per-person report <code>.imiss</code> and the per-SNP report <code>.lmiss</code>. It takes no number and removes nothing. With <code>--within</code> or <code>--family</code> the per-SNP report is also split by group; the practical does not use this.</li>
+    <li><code>--out ${analysis_dir}/toy</code> — the prefix of every file written: <code>toy.imiss</code>, <code>toy.lmiss</code> and <code>toy.log</code> in the analysis folder.</li>
+  </ol>
+</div>
+<p>The console prints what PLINK read and did. The lines that matter for this step:</p>
+<dl class="cols-doc log-lines">
+  <dt>… variants loaded from .bim file.</dt><dd>\(M\), the number of SNPs: one per line of the <code>.bim</code> file.</dd>
+  <dt>… people (… males, … females) loaded from .fam.</dt><dd>\(n\), the number of people, with the sex column summarized.</dd>
+  <dt>Total genotyping rate is …</dt><dd>\(1 - \bar{\delta}\), the share of all calls that were made.</dd>
+  <dt>--missing: Sample missing data report written to ….imiss, and variant-based missing data report written to ….lmiss.</dt><dd>The two reports. Nothing was filtered, so the next line says that all variants and people pass.</dd>
+</dl>
+<p>Run it in the terminal below: <strong>Run next</strong> runs the suggested commands one at a time, and a click on a suggestion puts it on the command line, where you can change it before pressing Enter. <strong>Show files</strong> opens the folders, where the new reports appear.</p>
+<div class="lab" id="lab-missing" data-title="Step 1 · missing-call reports for the toy data">
+<pre class="lab-script">plink --bfile ${input_dir}/toy --missing --out ${analysis_dir}/toy
+head ${analysis_dir}/toy.lmiss
+sort -g -k5 ${analysis_dir}/toy.lmiss | tail -n 5
+awk 'NR &gt; 1 &amp;&amp; $5 &gt; 0.01' ${analysis_dir}/toy.lmiss | wc -l
+sort -g -k6 ${analysis_dir}/toy.imiss | tail -n 5
+awk 'NR &gt; 1 &amp;&amp; $6 &gt; 0.01' ${analysis_dir}/toy.imiss | wc -l</pre>
+</div>
+<p>Then read the reports the way an analyst would, with standard shell tools:</p>
+<ul>
+  <li><code>head ${analysis_dir}/toy.lmiss</code> shows the header and the first ten SNPs.</li>
+  <li><code class="wrap">sort -g -k5 ${analysis_dir}/toy.lmiss | tail -n 5</code> sorts the SNPs by column 5 (F_MISS) as general numbers (<code>-g</code> understands values such as <code>1e-04</code>) and shows the five worst at the bottom.</li>
+  <li><code class="wrap">awk 'NR &gt; 1 &amp;&amp; $5 &gt; 0.01' ${analysis_dir}/toy.lmiss | wc -l</code> counts the SNPs that <code>--geno 0.01</code> would remove: <code>awk</code> prints the lines after the header (<code>NR &gt; 1</code>) whose fifth field exceeds 0.01, and <code>wc -l</code> counts them.</li>
+  <li>The same two commands with column 6 (<code>-k6</code>, <code>$6</code>) on <code>toy.imiss</code> do it for people.</li>
+</ul>
+<p>In the raw toy data, <span data-card="lmiss_gt_0_01">?</span> of the <span data-card="lmiss_snps">?</span> SNPs and <span data-card="imiss_raw_gt_0_01">?</span> of the <span data-card="study_people">?</span> people have F_MISS above 0.01. The console's total genotyping rate, <span data-card="raw_genotyping_rate">?</span>, is one minus the overall missing rate \(\bar{\delta}\).</p>
+
+<h3 id="run-filters">Apply the filters in the practical's order</h3>
+<p>The practical then removes SNPs, counts again and removes people, in three commands (the first, second and fourth suggestions below; the others inspect the results):</p>
+<div class="lab" id="lab-filters" data-title="Step 1 · remove SNPs, then people">
+<pre class="lab-script">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01
+awk 'NR &gt; 1 &amp;&amp; $6 &gt; 0.01' ${analysis_dir}/toy.geno0.01.imiss | wc -l
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+cat ${analysis_dir}/toy.geno0.01.mind0.01.irem
+wc -l ${input_dir}/toy.bim ${analysis_dir}/toy.geno0.01.bim ${input_dir}/toy.fam ${analysis_dir}/toy.geno0.01.mind0.01.fam</pre>
+</div>
+<p><code>--geno</code> and <code>--mind</code> are filters: on their own they change nothing on disk, so each is paired with <code>--make-bed</code>, which writes the remaining people and SNPs as a new fileset (<a href="tools.html#plink-anatomy">the rules of a PLINK command</a>). The new lines in the console:</p>
+<dl class="cols-doc log-lines">
+  <dt><em>N</em> variants removed due to missing genotype data (--geno).</dt><dd>The SNPs with F_MISS above 0.01. PLINK 1.9 does not write their IDs to a file; compare the old and new <code>.bim</code> files to list them (<a href="#threshold">below</a>).</dd>
+  <dt><em>N</em> people removed due to missing genotype data (--mind).</dt><dd>The people with F_MISS above 0.01, judged on the SNPs that passed <code>--geno</code>.</dd>
+  <dt>IDs written to ….irem .</dt><dd>When <code>--mind</code> removes anyone, their FID and IID go to <code>PREFIX.irem</code>, one person per line.</dd>
+  <dt>Total genotyping rate in remaining samples is …</dt><dd>The genotyping rate after the people were removed; it is higher than before because the worst rows are gone.</dd>
+</dl>
+<p>On the toy data, <code>--geno 0.01</code> removes <span data-card="geno_removed">?</span> SNPs, the same number that the <code>awk</code> count found in <code>toy.lmiss</code>, and leaves <span data-card="geno_snps_left">?</span>. In the re-check, <span data-card="imiss_after_geno_gt_0_01">?</span> people are still above 0.01, against <span data-card="imiss_raw_gt_0_01">?</span> before the SNP filter, and <code>--mind 0.01</code> removes exactly those <span data-card="mind_removed">?</span>: the lines of the <code>.irem</code> file. That leaves <span data-card="qc_people">?</span> people, and the total genotyping rate rises from <span data-card="raw_genotyping_rate">?</span> to <span data-card="qc_genotyping_rate">?</span>. The <code>wc -l</code> line confirms the counts from the files themselves: <span data-card="study_snps">?</span> and <span data-card="qc_snps">?</span> lines in the two <code>.bim</code> files, <span data-card="study_people">?</span> and <span data-card="qc_people">?</span> in the two <code>.fam</code> files.</p>
+<p>Take such counts from the console or from line counts of the <code>.bim</code> and <code>.fam</code> files, not from a <code>.log</code> read later: a command writes its log under its <code>--out</code> prefix and replaces any earlier log with that prefix. The re-check above (<code>--missing --out …toy.geno0.01</code>) overwrites the log of the <code>--geno</code> run, so <code>toy.geno0.01.log</code> no longer has the "variants removed" line, and steps 2 and 3 write their logs over <code>toy.geno0.01.mind0.01.log</code>, the log of the <code>--mind</code> run.</p>
+
+<h2 id="distribution">Look at the distribution <span class="tag core">Core</span></h2>
+<p>A histogram of F_MISS answers the practical's question, "if we filter variants with missingness &gt; 1%, how many would be removed?", and shows more than the count. In array data most SNPs miss almost nothing, so the histogram is one tall bar at 0 and a long, thin tail to the right that is invisible on a linear count scale. Plot the counts on a logarithmic scale, or move a threshold and watch the count of failing SNPs, to see the tail. What to look for:</p>
+<ul>
+  <li><strong>A clear break.</strong> If the bulk ends and a separate group of SNPs sits far out, the threshold belongs in the gap, and its exact value matters little.</li>
+  <li><strong>No break.</strong> If the tail fades smoothly, every threshold removes some SNPs that are merely a little worse than the rest; the choice is a trade-off between SNPs lost and errors kept.</li>
+  <li><strong>People before and after the SNP filter.</strong> A person's F_MISS falls after <code>--geno</code>, because the worst SNPs carried many of everyone's missing calls. People who still stand out afterwards have a problem with their own DNA.</li>
+</ul>
+<div class="widget" id="w-miss-explorer">
+  <div class="widget-head"><span class="badge">Interactive</span><span class="wtitle">The toy data's missing rates, SNP by SNP and person by person</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It reads toy.lmiss, toy.imiss and toy.geno0.01.imiss from the in-browser lab and draws histograms of F_MISS with a threshold you can move.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to look for.</strong> The widget reads the reports that the terminals wrote (or press its button). Start with the SNPs: on the log scale the tall bar at 0 and the tail are both visible, and the readout under the plot counts the SNPs above the red line. Drag the line to see whether the count changes smoothly or stays flat across a gap. Then compare the people before and after the SNP filter: the second histogram is shifted to the left, and the readout under the plot compares how many people exceed the threshold in each.</p>
+<p>In the toy data the SNP histogram has a gap, but the line at 0.01 is not in it. The SNPs planted with failing assays (<a href="practical-overview.html#toy-dataset">the toy dataset</a>) sit far to the right, apart from the rest, and the worst reaches <span data-card="lmiss_max">?</span>. The line cuts instead into the edge of the bulk: with <span data-card="study_people">?</span> people, a few missing calls by chance put a working SNP just above 0.01. Both kinds are among the <span data-card="lmiss_gt_0_01">?</span> SNPs that <code>--geno 0.01</code> removes. For the people, <span data-card="imiss_raw_gt_0_01">?</span> are above the line in the raw report and <span data-card="imiss_after_geno_gt_0_01">?</span> after the SNP filter: those whose DNA the simulation degraded. The others were above it because of the failing SNPs.</p>
+
+<h2 id="threshold">Choose a threshold and act <span class="tag core">Core</span></h2>
+<p>The practical uses 1% for SNPs and 1% for people, and it filters SNPs first. Both choices are judgments, and published pipelines differ:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Missingness thresholds in the practical and in published protocols</caption>
+  <thead><tr><th>Source</th><th>SNPs removed when missing in more than</th><th>People removed when missing at more than</th><th>Order</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Source">Session 1 practical<sup><a href="#src-1">1</a></sup></td><td data-label="SNPs">1% of people (<code>--geno 0.01</code>)</td><td data-label="People">1% of SNPs (<code>--mind 0.01</code>)</td><td data-label="Order">SNPs, recount, people</td></tr>
+    <tr><td data-label="Source">Anderson et al. 2010<sup><a href="#src-5">5</a></sup></td><td data-label="SNPs">3–5% of people (the protocol's text says 3%, its command uses <code>--geno 0.05</code>)</td><td data-label="People">3% of SNPs or more</td><td data-label="Order">People first</td></tr>
+    <tr><td data-label="Source">Marees et al. 2018<sup><a href="#src-6">6</a></sup></td><td data-label="SNPs">20% in a first pass, then 2%</td><td data-label="People">20% in a first pass, then 2%</td><td data-label="Order">SNPs, then people, in each pass</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Three arguments decide the threshold. <strong>The tail.</strong> A threshold in a gap of the distribution removes the failing assays and DNA samples and little else. <strong>The sample size.</strong> With 1,401 people a 1% threshold means 15 missing calls; with 200 people it means 3, and chance alone pushes some working SNPs over it. <strong>What comes next.</strong> Imputation and association tests can handle a few missing calls, but they cannot fix wrong calls, and SNPs with many missing calls carry more wrong calls. A strict threshold costs SNPs; a lenient one keeps errors.</p>
+
+<h3 id="order">Why the order matters</h3>
+<p>Each filter's rates include the failures of the other dimension. A good person's F_MISS counts the missing calls they have at the failing SNPs; a good SNP's F_MISS counts the missing calls of the people with poor DNA. Whichever filter runs first judges with inflated rates:</p>
+<ul>
+  <li><strong>SNPs first</strong> (the practical; Marees et al.): each person is judged only on the SNPs that passed, so people do not lose for the array's failures. The price: people with poor DNA are still in the data when the SNP rates are computed, so a few working SNPs may be removed.</li>
+  <li><strong>People first</strong> (Anderson et al., who argue that a few bad samples should not cost good SNPs<sup><a href="#src-5">5</a></sup>): the SNP rates are computed on the people who passed. The price: every person's rate includes the failing SNPs, so if those hold many missing calls, good people fail.</li>
+</ul>
+<p>The order is not just a matter of taste in PennCATH. The average person there is missing 2.25% of their calls (from the log), more than the 1% threshold, so a person-first filter at 1% would judge people against a threshold that the average person already fails. Filtering SNPs first removes the SNPs that hold most of those missing calls before people are judged.</p>
+<p><strong>One command applies the filters in PLINK's order, not yours.</strong> PLINK reads all flags first and then works through a fixed sequence in which <code>--mind</code> comes before <code>--geno</code>. <code class="wrap">plink --bfile X --geno 0.01 --mind 0.01 --make-bed --out Y</code> therefore removes people first, no matter how the flags are typed (<a href="tools.html#plink-order">PLINK's order of operations</a>).<sup><a href="#src-11">11</a></sup> The practical's separate commands are what make "SNPs first" happen.</p>
+
+<div class="widget" id="w-miss-order">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Which filter goes first: SNPs or people?</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It simulates missing calls for 1,000 people and 2,000 SNPs, with some failing SNPs and some people with poor DNA, applies --geno and --mind in both orders, and compares what each order removes.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> At the defaults (5% of SNPs failing, 3% of people with poor DNA, both thresholds 0.01), panel A shows every person's missing rate computed over all SNPs: the failing SNPs push almost everyone past 0.01, and the people-first order removes nearly all the people with good DNA. Panel B shows the rates after <code>--geno</code> has removed the failing SNPs: the good people move back below the line and only the red ticks, the people with poor DNA, remain beyond it. Now set both thresholds to 0.05: the two orders give almost the same result, which is why a people-first protocol with lenient thresholds works. Set failing SNPs to 0% and people with poor DNA to 10%: now the SNPs-first order removes more working SNPs than people-first, because the poor DNA samples inflate every SNP's rate. No order is free; the practical's order protects people, which matters most when, as in PennCATH, the average missing rate is above the threshold.</p>
+
+<p>On the toy data you can run both orders and compare. The first command is the one-command version, in which PLINK removes people first; the next two are the practical's order:</p>
+<div class="lab" id="lab-order" data-title="Step 1 · both orders on the toy data">
+<pre class="lab-script">plink --bfile ${input_dir}/toy --geno 0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.onecommand
+plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+cat ${analysis_dir}/toy.onecommand.irem
+cat ${analysis_dir}/toy.geno0.01.mind0.01.irem
+wc -l ${analysis_dir}/toy.onecommand.bim ${analysis_dir}/toy.geno0.01.mind0.01.bim ${analysis_dir}/toy.onecommand.fam ${analysis_dir}/toy.geno0.01.mind0.01.fam</pre>
+</div>
+<p>In the practical's order, <code>--geno 0.01</code> removes <span data-card="geno_removed">?</span> SNPs and <code>--mind 0.01</code> then removes <span data-card="mind_removed">?</span> people, those whose DNA the simulation degraded. The one-command version judges people first, on all SNPs, so it removes all <span data-card="imiss_raw_gt_0_01">?</span> people who are above 0.01 in the raw data: the same people with degraded DNA, and people whose missing calls sit mostly at the failing SNPs and who would pass once those SNPs are gone (the simulation planted some of them to show this). With those people gone, fewer SNPs reach the threshold, so the one-command version also keeps some SNPs that the practical's order removes. The two <code>.irem</code> files list the people, and the line counts of the <code>.bim</code> and <code>.fam</code> files show both differences.</p>
+<h3 id="removed-flagged">Removed, flagged and recorded</h3>
+<p><code>--geno</code> and <code>--mind</code> remove: the new fileset no longer contains those SNPs or people. Nothing is lost, because the input fileset is untouched, but the removals must be recorded so that the analysis can be reported and repeated:</p>
+<ul>
+  <li>The console output of each run has the counts ("… variants removed …", "… people removed …"), and so does its <code>.log</code> until a later command with the same <code>--out</code> prefix replaces it. Line counts of the <code>.bim</code> and <code>.fam</code> files give the same numbers at any time.</li>
+  <li><code>toy.geno0.01.mind0.01.irem</code> lists the removed people. PLINK 1.9 writes no such list for SNPs; build one by comparing the <code>.bim</code> files before and after (shown in the real-data section).</li>
+  <li>The file names record what was done: <code>toy.geno0.01.mind0.01</code> is the input after <code>--geno 0.01</code> and then <code>--mind 0.01</code>.</li>
+</ul>
+<p>Some projects flag instead of removing. UK Biobank, for example, kept the samples with outlying missingness or heterozygosity in its data release, marked them in a column, and left the decision to each analysis (<a href="../0-biological-foundations/samples-to-genotypes.html#sample-qc">Lecture 0 · Sample QC</a>).<sup><a href="#src-12">12</a></sup> A flag keeps the choice open; a removal makes it once for every later step. The practical removes, because every later step should see only trusted SNPs and people.</p>
+<h2 id="in-r">In R <span class="tag core">Core</span></h2>
+<p>The practical reads the reports into R, draws the histogram of SNP missing rates and counts the SNPs above 1%. This version does the same and adds the threshold line, a table of counts at several thresholds and the re-check of people after the SNP filter. Run it in R or RStudio on your own computer after the PLINK commands; <code>analysis_dir</code> is the folder from the <a href="setup.html">setup page</a>.</p>
+<span class="code-label r">r</span>
+<pre class="code"><span class="kw">library</span>(data.table)   <span class="cm"># fread(): fast reader for whitespace-separated tables</span>
+<span class="kw">library</span>(dplyr)        <span class="cm"># mutate(), count(), arrange(): data-frame verbs</span>
+<span class="kw">library</span>(ggplot2)      <span class="cm"># ggplot(): plots built in layers</span>
+
+analysis_dir &lt;- Sys.getenv(<span class="str">"analysis_dir"</span>)   <span class="cm"># or write the path in quotes</span>
+
+lmiss &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.lmiss"</span>))
+str(lmiss)   <span class="cm"># CHR, SNP, N_MISS, N_GENO, F_MISS: one row per SNP</span>
+
+<span class="cm"># The practical's question: how many SNPs have more than 1% of calls missing?</span>
+lmiss %&gt;%
+  mutate(missing_gt_1pct = if_else(F_MISS &gt; 0.01, <span class="str">"Yes"</span>, <span class="str">"No"</span>)) %&gt;%
+  count(missing_gt_1pct)
+
+<span class="cm"># The practical's histogram, with the threshold drawn in</span>
+ggplot(lmiss, aes(x = F_MISS)) +
+  geom_histogram(bins = 100) +
+  geom_vline(xintercept = 0.01, linetype = <span class="str">"dashed"</span>, colour = <span class="str">"firebrick"</span>) +
+  labs(title = <span class="str">"Variant missing rate"</span>, x = <span class="str">"F_MISS (share of people with no call)"</span>, y = <span class="str">"SNPs"</span>) +
+  theme_classic()
+
+<span class="cm"># The same histogram with counts on a log scale, to see the tail</span>
+ggplot(lmiss, aes(x = F_MISS)) +
+  geom_histogram(bins = 100) +
+  scale_y_log10() +
+  theme_classic()
+
+<span class="cm"># How many SNPs fail at other thresholds?</span>
+thresholds &lt;- c(0.005, 0.01, 0.02, 0.05, 0.1)
+data.frame(threshold = thresholds,
+           snps_removed = sapply(thresholds, <span class="kw">function</span>(t) sum(lmiss$F_MISS &gt; t)))
+
+<span class="cm"># People, re-checked on the SNPs that passed --geno 0.01</span>
+imiss &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.imiss"</span>))
+imiss %&gt;% count(fails_mind = F_MISS &gt; 0.01)
+imiss %&gt;% arrange(desc(F_MISS)) %&gt;% head(10)</pre>
+<p>What each function does, with the pandas equivalent:</p>
+<dl class="cols-doc">
+  <dt><code>library(pkg)</code></dt><dd>Loads an installed package, as <code>import</code> does in Python. The practical loads the <code>tidyverse</code> bundle, which contains dplyr and ggplot2.</dd>
+  <dt><code>fread(path)</code></dt><dd>From data.table: reads a delimited text file and guesses the separator (here runs of spaces), the header and the column types. Like <code>pd.read_csv(path, sep=r"\s+")</code>. It returns a data.table, which is also a data frame.</dd>
+  <dt><code>file.path(a, b)</code></dt><dd>Joins folder and file names with the right separator, like <code>os.path.join</code>.</dd>
+  <dt><code>%&gt;%</code></dt><dd>The pipe: <code>x %&gt;% f(y)</code> means <code>f(x, y)</code>. It chains steps from left to right, as method chaining does in pandas (<code>df.assign(...).groupby(...)</code>).</dd>
+  <dt><code>mutate(new = expr)</code></dt><dd>Adds or replaces a column computed from other columns, like <code>df.assign(new=...)</code>.</dd>
+  <dt><code>if_else(cond, a, b)</code></dt><dd>Element-wise choice, like <code>np.where(cond, a, b)</code>; <code>a</code> and <code>b</code> must have the same type.</dd>
+  <dt><code>count(col)</code></dt><dd>Number of rows for each value of <code>col</code>, like <code>df.value_counts(col)</code>. The practical writes it as <code>group_by(col) %&gt;% tally()</code>, which gives the same table.</dd>
+  <dt><code class="wrap">ggplot(df, aes(x = col)) + geom_histogram()</code></dt><dd>ggplot2 builds a plot from a data frame, an aesthetic mapping (<code>aes</code>: which column goes on which axis) and layers added with <code>+</code>. <code>geom_histogram</code> bins the x values and draws bars; without <code>bins</code> it uses 30 and prints a message saying so.</dd>
+  <dt><code>geom_vline</code>, <code>scale_y_log10</code>, <code>labs</code>, <code>theme_classic</code></dt><dd>A vertical line at a given x; a log-scaled y axis; titles and axis labels; a plain theme with axis lines and no grid.</dd>
+  <dt><code>sapply(v, f)</code></dt><dd>Applies <code>f</code> to each element of <code>v</code> and collects the results in a vector, like <code>[f(t) for t in v]</code>. <code>sum(x &gt; t)</code> counts the TRUE values.</dd>
+  <dt><code>arrange(desc(col))</code>, <code>head(10)</code></dt><dd>Sort rows by a column, largest first (<code class="wrap">df.sort_values(col, ascending=False)</code>); keep the first 10 rows.</dd>
+</dl>
+<p>The same analysis runs in the browser on the toy reports. The code loads dplyr and ggplot2 instead of the whole <code>tidyverse</code> bundle, which would be a much larger download for the browser's R, and <code>analysis_dir</code> is already defined there.</p>
+<div class="rlab" id="r-missing" data-title="Step 1 in R · the toy missingness reports" data-packages="data.table,dplyr,ggplot2">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --missing --out ${analysis_dir}/toy
+plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01</pre>
+<pre class="rlab-code">library(data.table)
+library(dplyr)
+library(ggplot2)
+
+lmiss &lt;- fread(file.path(analysis_dir, "toy.lmiss"))
+str(lmiss)
+
+# How many SNPs have more than 1% of calls missing?
+lmiss %&gt;%
+  mutate(missing_gt_1pct = if_else(F_MISS &gt; 0.01, "Yes", "No")) %&gt;%
+  count(missing_gt_1pct)
+
+# The practical's histogram, with the threshold drawn in
+ggplot(lmiss, aes(x = F_MISS)) +
+  geom_histogram(bins = 100) +
+  geom_vline(xintercept = 0.01, linetype = "dashed", colour = "firebrick") +
+  labs(title = "Variant missing rate (toy data)", x = "F_MISS", y = "SNPs") +
+  theme_classic()
+
+# How many SNPs fail at other thresholds?
+thresholds &lt;- c(0.005, 0.01, 0.02, 0.05, 0.1)
+data.frame(threshold = thresholds,
+           snps_removed = sapply(thresholds, function(t) sum(lmiss$F_MISS &gt; t)))
+
+# People, re-checked on the SNPs that passed --geno 0.01
+imiss &lt;- fread(file.path(analysis_dir, "toy.geno0.01.imiss"))
+imiss %&gt;% count(fails_mind = F_MISS &gt; 0.01)
+imiss %&gt;% arrange(desc(F_MISS)) %&gt;% head(10)</pre>
+</div>
+
+<h2 id="real-data">On your own computer: the real data <span class="tag core">Core</span></h2>
+<p>With PLINK 1.9 installed and the folders set up as on the <a href="setup.html">setup page</a>, the practical's commands for PennCATH are the lab's commands with <code>penncath</code> in place of <code>toy</code>:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${input_dir}/penncath --missing --out ${analysis_dir}/penncath
+<span class="prompt">$ </span>plink --bfile ${input_dir}/penncath --geno 0.01 --make-bed --out ${analysis_dir}/penncath.geno0.01
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01 --missing --out ${analysis_dir}/penncath.geno0.01
+<span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/penncath.geno0.01.mind0.01</pre>
+<p>To record what was removed:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="cm"># SNPs removed by --geno: in the input .bim but not in the filtered one</span>
+<span class="prompt">$ </span>awk 'NR == FNR { kept[$2]; next } !($2 in kept) { print $2 }' \
+    ${analysis_dir}/penncath.geno0.01.bim ${input_dir}/penncath.bim \
+    &gt; ${analysis_dir}/penncath.geno0.01.removed_snps.txt
+<span class="prompt">$ </span>wc -l ${analysis_dir}/penncath.geno0.01.removed_snps.txt
+<span class="cm"># People removed by --mind, and the counts from the .bim and .fam files</span>
+<span class="prompt">$ </span>cat ${analysis_dir}/penncath.geno0.01.mind0.01.irem
+<span class="prompt">$ </span>wc -l ${input_dir}/penncath.bim ${analysis_dir}/penncath.geno0.01.bim \
+       ${input_dir}/penncath.fam ${analysis_dir}/penncath.geno0.01.mind0.01.fam</pre>
+<p>The <code>awk</code> program reads two files. While it reads the first (<code>NR == FNR</code>, line number in the file equals line number overall) it stores each SNP ID, column 2, as a key of the array <code>kept</code>; on the second file it prints the IDs that are not keys. The counts come from <code>wc -l</code> rather than from the logs, because the re-check with <code>--missing</code> overwrites <code>penncath.geno0.01.log</code> and step 2 overwrites <code>penncath.geno0.01.mind0.01.log</code>.</p>
+<p>What to look at in the real output:</p>
+<ul>
+  <li><strong>The console output.</strong> The first run prints the same counts as the dataset's own log: 861,473 variants, 1,401 people (937 males, 464 females), a total genotyping rate of 0.977517, 463 cases, 470 controls and 468 people with a missing phenotype (PLINK's names for codes 2, 1 and −9; <a href="plink-data.html#phenotype-column">what the codes mean in this copy</a>).<sup><a href="#src-10">10</a></sup> The <code>--geno</code> run adds the number of SNPs removed; the re-check after it prints a higher total genotyping rate; the <code>--mind</code> run adds the number of people removed and the <code>.irem</code> file. Real PLINK 1.9.0 gives these numbers: <code>--geno 0.01</code> removes 291,750 SNPs (33.9%) and leaves 569,723; the re-check prints a total genotyping rate of 0.997631; <code>--mind 0.01</code> removes 21 people and leaves 1,380 (455 cases, 463 controls and 462 people with a missing phenotype).</li>
+  <li><strong>The histogram of SNP missing rates</strong> from the R code: a spike near 0 and a tail. Is there a gap where 1% falls, or does the tail fade smoothly?</li>
+  <li><strong>People before and after the SNP filter.</strong> Compare F_MISS in <code>penncath.imiss</code> and <code>penncath.geno0.01.imiss</code> for the same people. Those still above 1% after the SNP filter are the ones <code>--mind</code> removes.</li>
+  <li><strong>The number of people left.</strong> The practical's step 7 counts 1,380 PennCATH people in the data it merges with 1000 Genomes.<sup><a href="#src-1">1</a></sup> No step between this one and step 7 removes people, so <code>--mind 0.01</code> removed 21 of the 1,401; your <code>.irem</code> file should have 21 lines.</li>
+</ul>
+<p>How the real data differ from the toy data. <strong>Size:</strong> 1,401 people × 861,473 SNPs, a <code>.bed</code> file of 302,377,026 bytes (one byte per four genotypes for each SNP, plus a 3-byte header), against the toy data's <span data-card="study_people">?</span> people × <span data-card="study_snps">?</span> SNPs. The reports are text files with one line per person or SNP, so <code>penncath.lmiss</code> has 861,474 lines; read it with <code>fread</code>, not a spreadsheet. <strong>The array:</strong> PennCATH was genotyped on the Affymetrix Genome-Wide Human SNP Array 6.0, often called Affymetrix 6.0 (<a href="practical-overview.html">practical overview</a>). The genotypes were called before the data reached the workshop, and the intensities behind the calls are not part of the files. <strong>The failures:</strong> the toy data's bad SNPs and people were planted on purpose (<a href="practical-overview.html#toy-dataset">the toy dataset</a>); the real data's failures have to be found, and their causes are unknown. They are also far more common: <code>--geno 0.01</code> removes a third of PennCATH's SNPs (the count above, from the lab's emulator on the real files), against <span data-card="geno_removed">?</span> of the <span data-card="study_snps">?</span> toy SNPs.</p>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Mistakes that are easy to make in this step</div>
+  <ul>
+    <li><strong>Both filters in one command.</strong> <code>--geno 0.01 --mind 0.01</code> on one line removes people first, whatever the order you typed. Run them as separate commands, as the practical does, when you want SNPs first.</li>
+    <li><strong>Forgetting the number.</strong> <code>--geno</code> or <code>--mind</code> without a value uses 0.1, not 0.01. Check the "Options in effect" lines at the top of the log.</li>
+    <li><strong>Reading a stale report.</strong> <code>penncath.imiss</code> describes the raw data. After <code>--geno</code> the people's rates change, which is why the practical runs <code>--missing</code> again and reads <code>penncath.geno0.01.imiss</code>.</li>
+    <li><strong>Reading MISS_PHENO as a genotype column.</strong> It says whether the phenotype is missing; F_MISS is the genotype missing rate.</li>
+    <li><strong>Treating a low missing rate as proof of good calls.</strong> A SNP can be called in everyone and still be miscalled, for example when two clusters merge. Missingness filters catch only what failed visibly; the Hardy–Weinberg check (<a href="qc-hwe.html">step 2</a>) and the heterozygosity check (<a href="qc-heterozygosity.html">step 5</a>) catch some of the rest.</li>
+    <li><strong>Missing only in cases.</strong> <code>--geno</code> looks at the overall rate. A SNP missing in 1.5% of cases and 0.3% of controls passes a 1% filter when cases are half the data, yet it is exactly the differential missingness that creates false associations. PLINK's <code>--test-missing</code> compares the missing rates of cases and controls with Fisher's exact test for every SNP;<sup><a href="#src-13">13</a></sup> the practical does not run it, but production pipelines do (Anderson et al. remove SNPs with a p-value below 0.00001<sup><a href="#src-5">5</a></sup>).</li>
+  </ul>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>A no-call is a genotype the calling software would not assign. No-calls concentrate in SNPs with poorly separated clusters and in people with poor DNA, and they come with wrong calls that no count can see.</li>
+    <li><code>plink --missing</code> writes F_MISS = N_MISS / N_GENO per SNP (<code>.lmiss</code>) and per person (<code>.imiss</code>). The mean of either column equals one minus the log's total genotyping rate: 2.25% of PennCATH's calls are missing.</li>
+    <li><code>--geno g</code> and <code>--mind m</code> remove SNPs and people whose F_MISS is strictly greater than the threshold; with \(n\) people a SNP fails with \(\lfloor gn \rfloor + 1\) or more missing calls (15 for PennCATH at 1%).</li>
+    <li>The practical removes SNPs (<code>--geno 0.01</code>), counts again, and then removes people (<code>--mind 0.01</code>), in separate commands. In one command PLINK would apply <code>--mind</code> first.</li>
+    <li>Record every removal: the counts from the console or from line counts of the <code>.bim</code> and <code>.fam</code> files (a later command with the same <code>--out</code> prefix overwrites the log), the <code>.irem</code> file for people, and a list of removed SNPs made by comparing <code>.bim</code> files.</li>
+    <li>Missingness filters do not test whether missingness differs between cases and controls (<code>--test-missing</code> does) or whether fully called SNPs are miscalled (step 2 helps).</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A study has 1,401 people. What is the smallest number of missing calls with which a SNP fails <code>--geno 0.01</code>, and what about <code>--geno 0.05</code>?</summary><div class="a"><p>A SNP fails when its missing count \(k\) satisfies \(k / 1{,}401 &gt; g\). For \(g = 0.01\): \(0.01 \times 1{,}401 = 14.01\), so \(k \ge 15\); 14 missing calls give 0.99929%, which passes. For \(g = 0.05\): \(0.05 \times 1{,}401 = 70.05\), so \(k \ge 71\). The threshold in calls grows with the sample size, which is why the same percentage is stricter in practice for small studies, where a few chance failures already reach it.</p></div></details>
+  <details class="q"><summary>The PennCATH log reports a total genotyping rate of 0.977517. What is the average person's missing rate, and why does this make the order of the filters matter at a 1% threshold?</summary><div class="a"><p>The mean of the people's missing rates equals the overall missing rate, \(1 - 0.977517 = 0.022483\), so the average person is missing 2.25% of their SNPs. A person-first filter at 1% would therefore compare people with a threshold that the average person already exceeds, and it would remove people whose high rate comes from the bad SNPs rather than from their own DNA. Filtering SNPs first removes those SNPs before people are judged; the practical then removes only the 21 people (1,401 − 1,380) who still miss more than 1% of the remaining SNPs.</p></div></details>
+  <details class="q"><summary>Run it in the lab: how many toy SNPs have F_MISS above 0.01 in <code>toy.lmiss</code>, and does that match what <code>--geno 0.01</code> removes?</summary><div class="a"><p>Run <code class="wrap">awk 'NR &gt; 1 &amp;&amp; $5 &gt; 0.01' ${analysis_dir}/toy.lmiss | wc -l</code> after the <code>--missing</code> command. <code>NR &gt; 1</code> skips the header and <code>$5</code> is F_MISS. Then run the <code>--geno 0.01 --make-bed</code> command and read its line "… variants removed due to missing genotype data (--geno)." The <code>awk</code> count is <span data-card="lmiss_gt_0_01">?</span> and PLINK removes <span data-card="geno_removed">?</span>. The two counts agree, because <code>--geno</code> applies exactly the rule "F_MISS &gt; 0.01" to the same rates, computed on all people. They would differ if the command also contained <code>--mind</code>, because PLINK would remove people first and recompute the SNP rates on those who remain.</p></div></details>
+  <details class="q"><summary>Run it in the lab: which toy person has the highest F_MISS in <code>toy.imiss</code>, and what is their F_MISS in <code>toy.geno0.01.imiss</code>? Why does it change?</summary><div class="a"><p>Run <code class="wrap">sort -g -k6 ${analysis_dir}/toy.imiss | tail -n 3</code> and note the last person's FID, IID and F_MISS; then run <code>grep</code> with that FID on <code class="wrap">${analysis_dir}/toy.geno0.01.imiss</code> (after the re-check command). Their F_MISS is lower in the second file, though still above 0.01: the worst toy person is one of those whose DNA the simulation degraded. Two things change: the numerator loses the person's missing calls at the SNPs that <code>--geno</code> removed, and the denominator, N_GENO, loses those SNPs. Because the removed SNPs had far more missing calls per SNP than the rest, the rate falls for nearly everyone. A person whose rate stays above 0.01 has poor-quality DNA, not just bad luck with the array.</p></div></details>
+  <details class="q"><summary>A colleague runs <code class="wrap">plink --bfile raw --geno 0.01 --mind 0.01 --make-bed --out clean</code> and gets fewer people than the practical's two commands do. Explain.</summary><div class="a"><p>In one command PLINK applies <code>--mind</code> before <code>--geno</code>, whatever the order of the flags. Each person's missing rate is then computed over all SNPs, including the badly genotyped ones that <code>--geno</code> is about to remove, so people whose own DNA is fine can exceed 1% because of the array's failures. The practical's separate commands remove the bad SNPs first and judge people on the SNPs that are left. The colleague may also lose fewer SNPs, because the SNP rates are then computed without the removed people.</p></div></details>
+  <details class="q"><summary>Using only PennCATH's total genotyping rate (0.977517, for 1,401 people and 861,473 SNPs), show that the SNPs removed by <code>--geno 0.01</code> must hold more than half of all missing calls.</summary><div class="a"><p>The number of missing calls is \(0.022483 \times 1{,}401 \times 861{,}473 \approx 27.1\) million. Every SNP that passes <code>--geno 0.01</code> has at most 1% of its 1,401 calls missing, and at most 861,473 SNPs can pass, so the SNPs that remain hold at most \(0.01 \times 1{,}401 \times 861{,}473 \approx 12.1\) million missing calls. The removed SNPs therefore hold at least \(27.1 - 12.1 = 15.0\) million, about 55% of all missing calls, and more if many SNPs are removed. This is why people's rates drop so much after the SNP filter. Real PLINK 1.9.0 gives the actual split: after <code>--geno 0.01</code> the total genotyping rate is 0.997631 over 569,723 SNPs, so the remaining SNPs hold about 1.9 million missing calls and the 291,750 removed SNPs about 25.2 million, 93% of the total.</p></div></details>
+  <details class="q"><summary>What does the <code>.irem</code> file contain, and how do you get the same information for SNPs?</summary><div class="a"><p><code>PREFIX.irem</code> is written by <code>--mind</code> when it removes at least one person: one line per removed person with their FID and IID. PLINK 1.9 writes no equivalent file for <code>--geno</code>; the removed SNPs are the IDs in the input <code>.bim</code> file that are missing from the output <code>.bim</code> file, which the <code>awk</code> command on this page lists (column 2 of each file). With the counts from the console, these lists are the record of what the step removed.</p></div></details>
+  <details class="q"><summary>A SNP is missing in 1.5% of cases and 0.3% of controls, in a study with equal numbers of each. Does <code>--geno 0.01</code> remove it? Should you worry?</summary><div class="a"><p>Its overall missing rate is \((1.5\% + 0.3\%)/2 = 0.9\%\), below 1%, so <code>--geno 0.01</code> keeps it. You should worry: missingness that depends on case status is differential missingness. If the calls that failed in cases were mostly of one genotype (for example heterozygotes between two clusters), the cases' remaining genotypes are shifted relative to the controls', and the association test can report a difference that is purely technical. PLINK's <code>--test-missing</code> tests each SNP's missing rate in cases against controls; protocols remove SNPs with very small p-values (Anderson et al. use 0.00001).</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/filter#missing" target="_blank" rel="noopener">PLINK 1.9: --geno and --mind</a> <span class="src">· PLINK documentation</span> <span class="level intermediate">intermediate</span> — the filters, their defaults, and <code>--oblig-missing</code> for blocks of calls that are missing by design.</li>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/formats#imiss" target="_blank" rel="noopener">PLINK 1.9 file formats: .imiss and .lmiss</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — the exact columns of both reports, including the stratified version.</li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Anderson et al. 2010, Data quality control in genetic case-control association studies</a> <span class="src">· Nature Protocols</span> <span class="level intermediate">intermediate</span> — a step-by-step protocol with PLINK commands, the people-first order and the plots used to choose thresholds.</li>
+    <li><a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">Marees et al. 2018, A tutorial on conducting genome-wide association studies</a> <span class="src">· Int J Methods Psychiatr Res</span> <span class="level intro">intro</span> — a tutorial with scripts that filters SNPs before people, in a lenient and then a strict pass.</li>
+    <li><a href="https://doi.org/10.1002/0471142905.hg0119s68" target="_blank" rel="noopener">Turner et al. 2011, Quality control procedures for genome-wide association studies</a> <span class="src">· Current Protocols in Human Genetics</span> <span class="level intermediate">intermediate</span> — the eMERGE network's QC, including batch effects and marker quality across sites.</li>
+    <li><a href="https://doi.org/10.1002/gepi.20516" target="_blank" rel="noopener">Laurie et al. 2010, Quality control and quality assurance in genotypic data for GWAS</a> <span class="src">· Genetic Epidemiology</span> <span class="level advanced">advanced</span> — how sample quality, duplicate concordance and intensity data reveal errors that call rates miss.</li>
+    <li><a href="../0-biological-foundations/samples-to-genotypes.html#calling">Lecture 0 · From light to genotype calls</a> <span class="src">· this site</span> <span class="level intro">intro</span> — an interactive cluster plot in which no-calls, genotype-dependent missingness and batch effects can be produced and seen.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">DCEG Statistical Genetics Workshop. Session 1 practical: Introduction to GWAS quality control (<code>01_qc.Rmd</code>). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1" target="_blank" rel="noopener">dceg-workshops.github.io/statistical_genetics_workshop</a>; code at <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a>.</li>
+    <li id="src-2">Chang CC, Purcell SM, et al. PLINK 1.9 documentation: Input filtering, missing genotype rates (--geno, --mind). <a href="https://www.cog-genomics.org/plink/1.9/filter#missing" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/filter</a></li>
+    <li id="src-3">PLINK 1.9 documentation: Basic statistics, missing data (--missing). <a href="https://www.cog-genomics.org/plink/1.9/basic_stats#missing" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/basic_stats</a></li>
+    <li id="src-4">PLINK 1.9 documentation: File formats, .imiss and .lmiss. <a href="https://www.cog-genomics.org/plink/1.9/formats#imiss" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/formats</a></li>
+    <li id="src-5">Anderson CA, Pettersson FH, Clarke GM, Cardon LR, Morris AP, Zondervan KT. Data quality control in genetic case-control association studies. <em>Nat Protoc</em>. 2010;5:1564–1573. <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-6">Marees AT, de Kluiver H, Stringer S, Vorspan F, Curis E, Marie-Claire C, Derks EM. A tutorial on conducting genome-wide association studies: quality control and statistical analysis. <em>Int J Methods Psychiatr Res</em>. 2018;27:e1608. <a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">doi:10.1002/mpr.1608</a></li>
+    <li id="src-7">Clayton DG, Walker NM, Smyth DJ, et al. Population structure, differential bias and genomic control in a large-scale, case-control association study. <em>Nat Genet</em>. 2005;37:1243–1246. <a href="https://doi.org/10.1038/ng1653" target="_blank" rel="noopener">doi:10.1038/ng1653</a></li>
+    <li id="src-8">Uffelmann E, Huang QQ, Munung NS, et al. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-9">Lecture 0 of this course, <a href="../0-biological-foundations/samples-to-genotypes.html#array-design">From a blood sample to genotypes: what an array measures, and what it misses</a>, and its sources.</li>
+    <li id="src-10">The practical's input data: <code>penncath.log</code>, written by PLINK v1.90b7 when the workshop rewrote the PennCATH fileset (1,401 people, 861,473 variants, total genotyping rate 0.977517). Shown in full on <a href="tools.html#plink-log">The tools in detail</a>.</li>
+    <li id="src-11">PLINK 1.9 documentation: Order of operations. <a href="https://www.cog-genomics.org/plink/1.9/order" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/order</a>; Chang CC, Chow CC, Tellier LCAM, Vattikuti S, Purcell SM, Lee JJ. Second-generation PLINK: rising to the challenge of larger and richer datasets. <em>GigaScience</em>. 2015;4:7. <a href="https://doi.org/10.1186/s13742-015-0047-8" target="_blank" rel="noopener">doi:10.1186/s13742-015-0047-8</a></li>
+    <li id="src-12">Bycroft C, Freeman C, Petkova D, et al. The UK Biobank resource with deep phenotyping and genomic data. <em>Nature</em>. 2018;562:203–209. <a href="https://doi.org/10.1038/s41586-018-0579-z" target="_blank" rel="noopener">doi:10.1038/s41586-018-0579-z</a></li>
+    <li id="src-13">PLINK 1.9 documentation: Association analysis, case/control missingness test (--test-missing). <a href="https://www.cog-genomics.org/plink/1.9/assoc#test_missing" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/assoc</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,465 @@
+[
+ {
+  "id": "terminal",
+  "term": "Terminal",
+  "aka": [
+   "terminal window"
+  ],
+  "short": "A window in which you type commands as text and read their text output. The program inside it that reads and runs each command is the shell.",
+  "long": "<p>macOS has the Terminal app; Windows has Windows Terminal, which can open a Linux shell under WSL; RStudio and Positron have a Terminal tab. Every line of the practical's bash chunks can be typed into a terminal, one command at a time.</p>",
+  "l1": "The practical's bash chunks run as if typed in a terminal; page 13 shows how the shell turns one line into a program run.",
+  "see": [
+   "shell",
+   "environment-variable",
+   "working-directory"
+  ],
+  "match": [
+   "terminal"
+  ],
+  "owner": "tools"
+ },
+ {
+  "id": "shell",
+  "term": "Shell (bash, zsh)",
+  "aka": [
+   "command line"
+  ],
+  "short": "The program that reads each command line, replaces variables with their values, splits the line into words, and starts the program named by the first word with the other words as its arguments. bash is the usual shell on Linux; zsh is the default in macOS terminals.",
+  "long": "<p>Before running anything the shell joins lines that end in a backslash, substitutes variables such as <code>${analysis_dir}</code>, splits the result at spaces, and searches the folders listed in <code>PATH</code> for the program. The program never sees the variable names, only the resulting words.</p>",
+  "l1": "The practical's code chunks marked <code>{bash}</code> are run by bash.",
+  "see": [
+   "terminal",
+   "path-variable",
+   "environment-variable"
+  ],
+  "match": [
+   "shell",
+   "bash",
+   "zsh"
+  ],
+  "owner": "tools"
+ },
+ {
+  "id": "environment-variable",
+  "term": "Environment variable",
+  "short": "A named value that a running program passes on to every program it starts, such as PATH or HOME. In bash, export NAME=value sets one and ${NAME} reads it; in R, Sys.setenv() and Sys.getenv() do the same.",
+  "l1": "The practical sets <code>input_dir</code>, <code>reference_dir</code> and <code>analysis_dir</code> in R with <code>Sys.setenv()</code> so that every bash chunk can use them, and sets <code>GRAFPATH</code> for GrafAnc.",
+  "see": [
+   "shell",
+   "path-variable",
+   "r-markdown"
+  ],
+  "match": [
+   "environment variable"
+  ],
+  "owner": "tools"
+ },
+ {
+  "id": "working-directory",
+  "term": "Working directory",
+  "aka": [
+   "current directory"
+  ],
+  "short": "The folder a program is running in. A relative path such as analysis/penncath.imiss is looked up from it; cd changes it in the shell and setwd() in R.",
+  "see": [
+   "shell",
+   "environment-variable"
+  ],
+  "match": [
+   "working directory"
+  ],
+  "owner": "tools"
+ },
+ {
+  "id": "path-variable",
+  "term": "PATH (program search path)",
+  "short": "The environment variable that lists, in order, the folders in which the shell looks for a program when you type its name. A program outside these folders gives \"command not found\" unless you type its full path.",
+  "long": "<p>Show it with <code>echo $PATH</code>; <code>which plink</code> shows which file the name <code>plink</code> runs. <code>export PATH=\"$HOME/statgen-workshop/tools:$PATH\"</code> adds a folder for the current session; put that line in the shell's start-up file (<code>~/.zshrc</code> on macOS, <code>~/.bashrc</code> on Linux) to keep it.</p>",
+  "see": [
+   "environment-variable",
+   "shell"
+  ],
+  "match": [
+   "PATH"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "tidyverse",
+  "term": "tidyverse",
+  "short": "A collection of R packages that share one design for working with tables and plots. library(tidyverse) loads the core nine: ggplot2, dplyr, tidyr, readr, purrr, tibble, stringr, forcats and lubridate.",
+  "l1": "The practical loads it at the start of each R section and uses dplyr and ggplot2 from it.",
+  "see": [
+   "dplyr",
+   "ggplot2",
+   "pipe-r",
+   "data-table"
+  ],
+  "links": [
+   {
+    "t": "tidyverse.org",
+    "u": "https://www.tidyverse.org/"
+   },
+   {
+    "t": "Wickham et al. 2019, Welcome to the tidyverse",
+    "u": "https://doi.org/10.21105/joss.01686"
+   }
+  ],
+  "match": [
+   "tidyverse"
+  ],
+  "owner": "tools"
+ },
+ {
+  "id": "dplyr",
+  "term": "dplyr",
+  "short": "The tidyverse package for manipulating tables. Each operation is a function named by a verb, such as filter() to keep rows, mutate() to add a column, count() to count groups and left_join() to combine two tables.",
+  "see": [
+   "tidyverse",
+   "pipe-r"
+  ],
+  "links": [
+   {
+    "t": "dplyr.tidyverse.org",
+    "u": "https://dplyr.tidyverse.org/"
+   }
+  ],
+  "match": [
+   "dplyr"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "ggplot2",
+  "term": "ggplot2",
+  "short": "The tidyverse plotting package. A plot is built from a table, aesthetic mappings (which column sets the x position, the y position or the color) and layers such as geom_histogram() or geom_point(), joined with +.",
+  "see": [
+   "tidyverse"
+  ],
+  "links": [
+   {
+    "t": "Wickham 2010, A layered grammar of graphics",
+    "u": "https://doi.org/10.1198/jcgs.2009.07098"
+   },
+   {
+    "t": "ggplot2.tidyverse.org",
+    "u": "https://ggplot2.tidyverse.org/"
+   }
+  ],
+  "match": [
+   "ggplot2"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "data-table",
+  "term": "data.table",
+  "short": "An R package for large tables. Its fread() reads delimited text files quickly and detects their format, and its syntax DT[i, j, by] selects rows, computes on columns and groups in one expression.",
+  "l1": "Every R step of the practical reads PLINK's reports with <code>fread()</code>.",
+  "see": [
+   "tidyverse"
+  ],
+  "links": [
+   {
+    "t": "Introduction to data.table",
+    "u": "https://rdatatable.gitlab.io/data.table/articles/datatable-intro.html"
+   }
+  ],
+  "match": [
+   "data.table"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "glue-r",
+  "term": "glue (R package)",
+  "short": "An R package that builds text from a template: glue(\"{n} variants\") replaces {n} with the value of the R variable n.",
+  "see": [
+   "tidyverse"
+  ],
+  "links": [
+   {
+    "t": "glue.tidyverse.org",
+    "u": "https://glue.tidyverse.org/"
+   }
+  ],
+  "match": [
+   "glue"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "pipe-r",
+  "term": "Pipe operator (R)",
+  "aka": [
+   "%>%",
+   "|>"
+  ],
+  "short": "An R operator that passes the value on its left as the first argument of the function call on its right, so x %>% f(y) means f(x, y). %>% comes with the tidyverse; |> is built into R since version 4.1.",
+  "see": [
+   "dplyr",
+   "tidyverse"
+  ],
+  "match": [
+   "pipe operator"
+  ],
+  "owner": "tools"
+ },
+ {
+  "id": "git",
+  "term": "git",
+  "aka": [
+   "repository",
+   "git clone"
+  ],
+  "short": "A version-control program that records the history of a set of files; such a set together with its history is a repository. git clone URL copies a repository, history included, into a new folder.",
+  "l1": "The practical clones two repositories: akt (for the 1000 Genomes panel file) and GrafAnc.",
+  "see": [
+   "akt",
+   "grafanc"
+  ],
+  "links": [
+   {
+    "t": "git-scm.com",
+    "u": "https://git-scm.com/"
+   }
+  ],
+  "match": [
+   "git"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "akt",
+  "term": "akt (Ancestry and Kinship Toolkit)",
+  "short": "Illumina's command-line program for ancestry and relatedness from sequencing data. The practical runs none of it: it clones the akt repository only for the 1000 Genomes sample panel file stored there.",
+  "see": [
+   "git",
+   "thousand-genomes",
+   "super-population"
+  ],
+  "links": [
+   {
+    "t": "Arthur et al. 2017",
+    "u": "https://doi.org/10.1093/bioinformatics/btw576"
+   },
+   {
+    "t": "github.com/Illumina/akt",
+    "u": "https://github.com/Illumina/akt"
+   }
+  ],
+  "match": [
+   "akt",
+   "Ancestry and Kinship Toolkit"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "bcftools",
+  "term": "bcftools",
+  "aka": [
+   "BCFtools"
+  ],
+  "short": "A command-line program for VCF and BCF files: viewing, filtering, merging, querying and summarizing variant calls. It is built on the htslib library.",
+  "l1": "The practical loads the Biowulf bcftools module before GrafAnc but never runs bcftools; page 13 explains the most likely reason.",
+  "see": [
+   "htslib",
+   "vcf",
+   "grafanc"
+  ],
+  "links": [
+   {
+    "t": "Danecek et al. 2021",
+    "u": "https://doi.org/10.1093/gigascience/giab008"
+   },
+   {
+    "t": "bcftools manual",
+    "u": "https://samtools.github.io/bcftools/bcftools.html"
+   }
+  ],
+  "match": [
+   "bcftools"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "htslib",
+  "term": "htslib",
+  "aka": [
+   "HTSlib"
+  ],
+  "short": "A C library for reading and writing high-throughput sequencing file formats such as SAM, BAM, CRAM, VCF and BCF. bcftools and samtools are built on it, and GrafAnc uses it to read VCF input.",
+  "see": [
+   "bcftools",
+   "vcf",
+   "grafanc"
+  ],
+  "links": [
+   {
+    "t": "Bonfield et al. 2021",
+    "u": "https://doi.org/10.1093/gigascience/giab007"
+   },
+   {
+    "t": "htslib.org",
+    "u": "https://www.htslib.org/"
+   }
+  ],
+  "match": [
+   "htslib"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "r-markdown",
+  "term": "R Markdown",
+  "aka": [
+   "Rmd",
+   "Quarto",
+   "knitting"
+  ],
+  "short": "A file format (.Rmd) that mixes text with chunks of R, bash or other code. Knitting the file runs the chunks in order and writes a report with the code, its output and the plots. Quarto is Posit's newer system for the same kind of document.",
+  "long": "<p>All R chunks of a document share one R session, but each bash chunk runs as a new bash process, so variables set in one bash chunk are gone in the next; values that every chunk needs are set in R with <code>Sys.setenv()</code>.</p>",
+  "l1": "The practical, <code>01_qc.Rmd</code>, is an R Markdown document with R and bash chunks.",
+  "see": [
+   "environment-variable",
+   "rstudio"
+  ],
+  "links": [
+   {
+    "t": "R Markdown Cookbook: run shell scripts",
+    "u": "https://bookdown.org/yihui/rmarkdown-cookbook/eng-bash.html"
+   },
+   {
+    "t": "quarto.org",
+    "u": "https://quarto.org/"
+   }
+  ],
+  "match": [
+   "R Markdown",
+   "Quarto",
+   "knitting",
+   "knitted"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "barycentric-coordinates",
+  "term": "Barycentric coordinates",
+  "short": "Three weights that add up to 1 and express a point in the plane of a triangle as a weighted average of the triangle's corners. Inside the triangle all three lie between 0 and 1; outside it, at least one is negative.",
+  "l1": "GrafAnc's Pe, Pf and Pa are 100 times a person's barycentric coordinates in its European–African–East Asian triangle, with negative weights set to 0 and the rest rescaled.",
+  "see": [
+   "grafanc"
+  ],
+  "match": [
+   "barycentric coordinate"
+  ],
+  "owner": "tools"
+ },
+ {
+  "id": "conda",
+  "term": "conda",
+  "aka": [
+   "mamba",
+   "Miniforge"
+  ],
+  "short": "A package and environment manager that installs programs and libraries, not only Python packages, into separate environments: folders that each hold their own versions. mamba is a faster program with the same commands.",
+  "see": [
+   "bioconda"
+  ],
+  "links": [
+   {
+    "t": "conda documentation",
+    "u": "https://docs.conda.io/"
+   }
+  ],
+  "match": [
+   "conda",
+   "mamba"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "bioconda",
+  "term": "Bioconda",
+  "short": "A channel (a collection of conda packages) for bioinformatics software, including PLINK, bcftools and htslib.",
+  "see": [
+   "conda"
+  ],
+  "links": [
+   {
+    "t": "Grüning et al. 2018",
+    "u": "https://doi.org/10.1038/s41592-018-0046-7"
+   },
+   {
+    "t": "bioconda.github.io",
+    "u": "https://bioconda.github.io/"
+   }
+  ],
+  "match": [
+   "Bioconda"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "homebrew",
+  "term": "Homebrew",
+  "aka": [
+   "brew"
+  ],
+  "short": "A package manager for macOS and Linux that installs command-line programs with brew install. Its formula plink1 installs PLINK 1.9.",
+  "links": [
+   {
+    "t": "brew.sh",
+    "u": "https://brew.sh/"
+   }
+  ],
+  "match": [
+   "Homebrew"
+  ],
+  "noPlural": true,
+  "owner": "tools"
+ },
+ {
+  "id": "docker",
+  "term": "Docker",
+  "aka": [
+   "container",
+   "container image"
+  ],
+  "short": "Software that runs a program inside a container: an isolated process with its own Linux file system, created from an image that bundles the program with everything it needs. On macOS and Windows, Docker Desktop runs containers inside a Linux virtual machine.",
+  "long": "<p><code>docker run --rm -v HOSTFOLDER:/work IMAGE COMMAND</code> starts a container from <code>IMAGE</code>, runs <code>COMMAND</code> in it with the host folder visible as <code>/work</code>, and deletes the container afterwards. An image is built for one processor architecture; <code>--platform linux/amd64</code> runs an Intel image on Apple Silicon under emulation.</p>",
+  "l1": "The workshop publishes a Docker image with GrafAnc, <code>ghcr.io/dceg-workshops/graftools</code>.",
+  "see": [
+   "cpu-architecture",
+   "wsl"
+  ],
+  "links": [
+   {
+    "t": "docs.docker.com",
+    "u": "https://docs.docker.com/"
+   }
+  ],
+  "match": [
+   "Docker",
+   "Docker container",
+   "Docker image",
+   "container image"
+  ],
+  "owner": "tools"
+ }
+]

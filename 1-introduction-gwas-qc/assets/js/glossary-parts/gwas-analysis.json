@@ -1,0 +1,632 @@
+[
+ {
+  "id": "linear-regression",
+  "term": "Linear regression",
+  "aka": [
+   "least squares",
+   "ordinary least squares",
+   "OLS"
+  ],
+  "short": "A model in which the expected value of an outcome is a straight-line function of one or more predictors; the coefficients are chosen to minimize the sum of squared differences between observed and predicted values. In a GWAS of a quantitative trait, the slope on genotype is the SNP’s effect.",
+  "long": "<p>For one SNP, \\(y_i = \\alpha_0 + \\beta x_i + \\varepsilon_i\\), with \\(y_i\\) the trait value of person \\(i\\), \\(x_i\\) the number of copies (0, 1 or 2) of the effect allele, \\(\\alpha_0\\) the intercept, \\(\\beta\\) the slope and \\(\\varepsilon_i\\) the part of the trait the line does not explain. The least-squares slope is the covariance of genotype and trait divided by the variance of genotype, and its standard error is \\(\\hat{\\sigma}/\\sqrt{\\sum_i (x_i - \\bar{x})^2}\\), where \\(\\hat{\\sigma}\\) is the standard deviation of the residuals and \\(\\bar{x}\\) the mean genotype. Covariates such as age, sex and principal components enter as further predictors, so the slope is estimated holding them fixed.</p>",
+  "l1": "Slide 47 (Session 2 runs these tests); page 9 (the association test) derives it and fits it in a widget.",
+  "see": [
+   "additive-model",
+   "logistic-regression",
+   "z-score",
+   "standard-error",
+   "covariate",
+   "mixed-model"
+  ],
+  "links": [],
+  "match": [
+   "linear regression",
+   "least squares",
+   "least-squares"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "logistic-regression",
+  "term": "Logistic regression",
+  "aka": [
+   "logit model"
+  ],
+  "short": "A regression model for a yes/no outcome, such as case or control: the log of the odds of being a case is a straight-line function of the predictors. In a GWAS, the exponential of the genotype coefficient is the odds ratio per copy of the effect allele.",
+  "long": "<p>The model is \\(\\ln\\big(P/(1-P)\\big) = \\alpha_0 + \\beta x\\), where \\(P\\) is the probability of being a case and \\(x\\) the number of copies of the effect allele. Its coefficients are maximum-likelihood estimates, found by iteration; \\(\\hat{\\beta} = 0.18\\) means an odds ratio of \\(e^{0.18} = 1.20\\) per allele. When cases are few and the variant is rare, the usual Wald test gives too many small p-values, which is why Firth’s correction or the saddle-point approximation (SAIGE, REGENIE) are used.</p>",
+  "l1": "Slide 47 (Session 2 runs these tests); page 9 (the association test for diseases).",
+  "see": [
+   "odds-ratio",
+   "linear-regression",
+   "maximum-likelihood-estimate",
+   "firth-correction",
+   "saddle-point-approximation",
+   "binary-trait"
+  ],
+  "links": [],
+  "match": [
+   "logistic regression"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "z-score",
+  "term": "z-score (Wald statistic)",
+  "aka": [
+   "z-statistic",
+   "Wald statistic",
+   "Wald test"
+  ],
+  "short": "An estimate divided by its standard error: how many standard errors it lies from zero. If the true effect is zero it follows the standard normal distribution, so |z| = 1.96 gives p = 0.05 and |z| = 5.45 gives p = 5 × 10⁻⁸.",
+  "long": "<p>GWAS summary statistics report \\(z = \\hat{\\beta}/\\mathrm{SE}(\\hat{\\beta})\\) for each SNP, or enough to compute it; its square is the chi-square statistic with 1 degree of freedom. Its sign shows which allele raises the trait, so z-scores from different studies can be combined or correlated only after their effect alleles are aligned. Methods that work from summary statistics, such as LD score regression, fine-mapping, TWAS and Mendelian randomization, take z-scores as input.</p><p>Outside genetics, a z-score is any value expressed in standard deviations from a mean.</p>",
+  "l1": "Page 9 (the association test); page 10 (cross-trait LD score regression and the winner’s curse); page 1 (TWAS).",
+  "see": [
+   "standard-error",
+   "p-value",
+   "normal-distribution",
+   "test-statistic",
+   "summary-statistics",
+   "harmonization"
+  ],
+  "links": [],
+  "match": [
+   "z-score",
+   "z score",
+   "z-statistic",
+   "z statistic",
+   "Wald statistic",
+   "Wald test"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "conditional-analysis",
+  "term": "Conditional analysis",
+  "aka": [
+   "conditional and joint analysis",
+   "GCTA-COJO",
+   "stepwise conditional analysis"
+  ],
+  "short": "Re-testing the SNPs of an associated region with the lead SNP’s genotype added as a covariate. A SNP that stays significant carries an independent (secondary) signal; one that loses its association was associated only through LD with the lead SNP.",
+  "long": "<p>Repeating the step with the most significant remaining SNP each time, until none passes the threshold, is stepwise conditional analysis; the number of steps estimates the number of independent signals, but the result depends on the order of selection. GCTA-COJO (conditional and joint analysis) does the same from summary statistics and LD from a reference sample, so it can be applied to a meta-analysis without individual data. Conditional analysis counts signals but does not say which SNP in each signal is causal; Bayesian fine-mapping does that.</p>",
+  "l1": "Slide 49 (Session 4 covers fine-mapping); page 9 (from loci to causal variants); page 6 (LD and fine-mapping).",
+  "see": [
+   "fine-mapping",
+   "lead-variant",
+   "ld",
+   "credible-set",
+   "ld-reference-panel",
+   "susie"
+  ],
+  "links": [
+   {
+    "t": "Yang et al. 2012, Nat Genet: conditional and joint analysis (GCTA-COJO)",
+    "u": "https://doi.org/10.1038/ng.2213"
+   }
+  ],
+  "match": [
+   "conditional analysis",
+   "conditional analyses",
+   "conditional and joint analysis",
+   "GCTA-COJO"
+  ],
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "saige",
+  "term": "SAIGE",
+  "aka": [
+   "Scalable and Accurate Implementation of GEneralized mixed model"
+  ],
+  "short": "A program for GWAS of diseases in large biobanks. It fits a logistic mixed model, so relatives can stay in the analysis, and computes p-values with the saddle-point approximation, which stays accurate when cases are far fewer than controls.",
+  "long": "<p>Step 1 fits the null model (covariates and a random polygenic effect, without the tested SNP) once; step 2 tests each SNP using that fit. For a disease with 1 case per 100 people or fewer, the normal approximation behind standard tests gives far too many small p-values for low-frequency SNPs; the saddle-point approximation corrects this. SAIGE-GENE extends the method to rare-variant tests of whole genes.</p>",
+  "l1": "Page 9 (relatedness and mixed models); page 8 lists it among association tools.",
+  "see": [
+   "mixed-model",
+   "saddle-point-approximation",
+   "regenie",
+   "bolt-lmm",
+   "logistic-regression",
+   "loco"
+  ],
+  "links": [
+   {
+    "t": "Zhou et al. 2018, Nat Genet",
+    "u": "https://doi.org/10.1038/s41588-018-0184-y"
+   },
+   {
+    "t": "SAIGE documentation",
+    "u": "https://saigegit.github.io/SAIGE-doc/"
+   }
+  ],
+  "match": [
+   "SAIGE",
+   "SAIGE-GENE"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "bolt-lmm",
+  "term": "BOLT-LMM",
+  "aka": [],
+  "short": "A program for GWAS with a linear mixed model in very large samples such as UK Biobank. It never builds the genetic relationship matrix, and its prior lets a few SNPs have larger effects, which raises power for many traits.",
+  "long": "<p>BOLT-LMM fits the polygenic background with iterative algorithms whose running time grows roughly as the number of SNPs times the number of people to the power 1.5, far more slowly than methods that build and decompose the full relationship matrix. Its Bayesian mixture prior (most SNPs with tiny effects, a few with larger ones) predicts the background better than the standard model of equal small effects when a trait has some loci of larger effect. It treats a disease as a 0/1 quantitative trait; its authors consider this well calibrated in UK Biobank when at least 10% of people are cases, and recommend SAIGE or REGENIE for rarer diseases.</p>",
+  "l1": "Page 9 (relatedness and mixed models); page 8 lists it among association tools.",
+  "see": [
+   "mixed-model",
+   "genetic-relationship-matrix",
+   "loco",
+   "saige",
+   "regenie"
+  ],
+  "links": [
+   {
+    "t": "Loh et al. 2015, Nat Genet",
+    "u": "https://doi.org/10.1038/ng.3190"
+   },
+   {
+    "t": "Loh et al. 2018, Nat Genet: mixed-model association for biobank-scale datasets",
+    "u": "https://doi.org/10.1038/s41588-018-0144-6"
+   },
+   {
+    "t": "BOLT-LMM manual",
+    "u": "https://alkesgroup.broadinstitute.org/BOLT-LMM/BOLT-LMM_manual.html"
+   }
+  ],
+  "match": [
+   "BOLT-LMM"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "posterior-inclusion-probability",
+  "term": "Posterior inclusion probability (PIP)",
+  "aka": [
+   "PIP"
+  ],
+  "short": "In Bayesian fine-mapping, the probability that a given SNP is a causal variant in its region, given the association statistics, the LD between SNPs and the model’s assumptions.",
+  "long": "<p>Under the simplest assumptions (exactly one causal variant in the region, every SNP equally likely to be it beforehand), each SNP’s PIP is its Bayes factor divided by the sum of the Bayes factors of all SNPs in the region, and the PIPs sum to 1. Two SNPs in perfect LD get the same PIP, because the data cannot tell them apart. Methods that allow several causal variants, such as FINEMAP and SuSiE, give PIPs that can sum to more than 1 over a region: about the expected number of causal variants. A 95% credible set collects SNPs in order of decreasing PIP until their PIPs sum to 0.95.</p>",
+  "l1": "Slide 49 (Session 4 covers fine-mapping); page 9 (fine-mapping) computes PIPs in a widget.",
+  "see": [
+   "fine-mapping",
+   "credible-set",
+   "bayes-factor",
+   "susie",
+   "finemap"
+  ],
+  "links": [
+   {
+    "t": "Schaid, Chen & Larson 2018, Nat Rev Genet: statistical fine-mapping",
+    "u": "https://doi.org/10.1038/s41576-018-0016-z"
+   }
+  ],
+  "match": [
+   "posterior inclusion probability",
+   "PIP"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "bayes-factor",
+  "term": "Bayes factor",
+  "aka": [
+   "approximate Bayes factor",
+   "ABF"
+  ],
+  "short": "The ratio of how probable the data are under one hypothesis to how probable they are under another, for example under ‘this SNP has an effect’ against ‘no effect’. Multiplying the prior odds by the Bayes factor gives the posterior odds.",
+  "long": "<p>Wakefield’s approximate Bayes factor needs only a SNP’s z-score, the sampling variance \\(V = \\mathrm{SE}^2\\) of its estimate and a prior variance \\(W\\) for true effects: \\(\\mathrm{ABF} = \\sqrt{V/(V+W)}\\,\\exp\\!\\big(z^2 W/(2(V+W))\\big)\\). It grows very quickly with \\(|z|\\), so in a fine-mapped region the SNPs with the largest z-scores receive almost all of the posterior probability. Unlike a p-value, it depends on the prior variance and on the sample size through \\(V\\).</p>",
+  "l1": "Slide 49 (Session 4 covers fine-mapping and colocalization); page 9 (fine-mapping).",
+  "see": [
+   "posterior-inclusion-probability",
+   "fine-mapping",
+   "credible-set",
+   "z-score",
+   "colocalization"
+  ],
+  "links": [
+   {
+    "t": "Wakefield 2009, Genet Epidemiol: Bayes factors for genome-wide association studies",
+    "u": "https://doi.org/10.1002/gepi.20359"
+   }
+  ],
+  "match": [
+   "Bayes factor",
+   "approximate Bayes factor",
+   "ABF"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "inverse-variance-weighting",
+  "term": "Inverse-variance weighting (IVW)",
+  "aka": [
+   "IVW",
+   "inverse-variance-weighted average"
+  ],
+  "short": "Combining several estimates of the same quantity in a weighted average in which each estimate’s weight is one over its squared standard error, so precise estimates count more. It is the standard fixed-effect meta-analysis and the main estimator of two-sample Mendelian randomization.",
+  "long": "<p>For estimates \\(\\hat{\\beta}_k\\) with standard errors \\(s_k\\), the combined estimate is \\(\\sum_k w_k \\hat{\\beta}_k / \\sum_k w_k\\) with \\(w_k = 1/s_k^2\\), and its standard error is \\(1/\\sqrt{\\sum_k w_k}\\). Two cohorts with standard errors 0.02 and 0.04 get weights 2,500 and 625, so the first counts four times as much, and the combined standard error is \\(1/\\sqrt{3{,}125} = 0.018\\). In Mendelian randomization the averaged quantities are the per-SNP Wald ratios. Cochran’s Q checks whether the estimates differ more than their standard errors allow.</p>",
+  "l1": "Page 9 (meta-analysis) and page 10 (Mendelian randomization, with a widget).",
+  "see": [
+   "meta-analysis",
+   "fixed-random-effects",
+   "cochran-q",
+   "mendelian-randomization",
+   "wald-ratio",
+   "standard-error"
+  ],
+  "links": [
+   {
+    "t": "Willer, Li & Abecasis 2010, Bioinformatics: METAL",
+    "u": "https://doi.org/10.1093/bioinformatics/btq340"
+   },
+   {
+    "t": "Burgess, Butterworth & Thompson 2013, Genet Epidemiol: Mendelian randomization with summarized data",
+    "u": "https://doi.org/10.1002/gepi.21758"
+   }
+  ],
+  "match": [
+   "inverse-variance weighting",
+   "inverse-variance-weighted",
+   "inverse-variance weighted",
+   "inverse variance weighting",
+   "IVW"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "cochran-q",
+  "term": "Cochran’s Q (heterogeneity statistic)",
+  "aka": [
+   "Cochran's Q",
+   "Q statistic",
+   "I²"
+  ],
+  "short": "A test of whether several estimates of the same quantity differ by more than their standard errors allow: the weighted sum of squared differences between each estimate and their inverse-variance-weighted average.",
+  "long": "<p>For \\(K\\) estimates \\(\\hat{\\beta}_k\\) with standard errors \\(s_k\\), \\(Q = \\sum_k w_k (\\hat{\\beta}_k - \\hat{\\beta}_{\\mathrm{IVW}})^2\\), with weights \\(w_k = 1/s_k^2\\) and \\(\\hat{\\beta}_{\\mathrm{IVW}}\\) the inverse-variance-weighted average of the estimates. If all \\(K\\) estimates share one true value, \\(Q\\) follows a chi-square distribution with \\(K - 1\\) degrees of freedom, so it is about \\(K - 1\\) on average. \\(I^2 = \\max\\big(0, (Q - (K-1))/Q\\big)\\) is the share of the variation beyond chance: 0% for consistent cohorts. In meta-analysis a large \\(Q\\) points to differences between cohorts (in phenotype, ancestry or errors); in Mendelian randomization it points to SNPs with pleiotropic effects.</p>",
+  "l1": "Page 9 (meta-analysis and the forest plot) and page 10 (the Mendelian randomization widget reports it).",
+  "see": [
+   "heterogeneity",
+   "inverse-variance-weighting",
+   "meta-analysis",
+   "chi-square-distribution",
+   "horizontal-pleiotropy"
+  ],
+  "links": [
+   {
+    "t": "Higgins & Thompson 2002, Stat Med: quantifying heterogeneity in a meta-analysis",
+    "u": "https://doi.org/10.1002/sim.1186"
+   }
+  ],
+  "match": [
+   "Cochran’s Q",
+   "Cochran's Q",
+   "Cochran’s heterogeneity statistic",
+   "I²"
+  ],
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "massively-parallel-reporter-assay",
+  "term": "Massively parallel reporter assay (MPRA)",
+  "aka": [
+   "MPRA"
+  ],
+  "short": "A laboratory experiment that tests thousands of short DNA sequences at once for their ability to switch on a reporter gene in cells, each sequence tagged with its own barcode. Testing both alleles of each variant shows which variants change regulatory activity.",
+  "long": "<p>Each candidate sequence (for example 150 base pairs around a GWAS variant, with one or the other allele) is placed next to a minimal promoter and a reporter gene carrying a unique barcode. After the library is put into cells, sequencing counts each barcode in the RNA and in the DNA; their ratio measures the sequence’s activity. A difference between the two alleles marks a variant with a regulatory effect in that cell type, though measured outside its normal place in the genome.</p>",
+  "l1": "Slide 54 (Session 9 covers functional genomics); page 9 (functional follow-up).",
+  "see": [
+   "enhancer",
+   "promoter",
+   "eqtl",
+   "crispr-cas9",
+   "fine-mapping"
+  ],
+  "links": [
+   {
+    "t": "Tewhey et al. 2016, Cell",
+    "u": "https://doi.org/10.1016/j.cell.2016.04.027"
+   }
+  ],
+  "match": [
+   "massively parallel reporter assay",
+   "MPRA"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "chromosome-conformation-capture",
+  "term": "Chromosome conformation capture (3C, Hi-C)",
+  "aka": [
+   "3C",
+   "4C",
+   "5C",
+   "Hi-C",
+   "promoter capture Hi-C"
+  ],
+  "short": "A family of laboratory methods that measure which parts of the genome touch each other inside the nucleus. They can show that an enhancer containing a GWAS variant loops to the promoter of a particular gene, sometimes far away.",
+  "long": "<p>Cells are treated with formaldehyde so that DNA segments in contact are cross-linked; the DNA is cut, the cross-linked ends are joined, and the joined pieces are sequenced. 3C tests one chosen pair of sites, 4C one site against all others, 5C many against many, and Hi-C all pairs across the genome; capture Hi-C enriches contacts that involve promoters. A contact supports, but does not prove, that the enhancer regulates that gene.</p>",
+  "l1": "Slide 54 (Session 9 covers functional genomics); page 9 (functional follow-up).",
+  "see": [
+   "enhancer",
+   "promoter",
+   "chromatin",
+   "eqtl"
+  ],
+  "links": [
+   {
+    "t": "Lieberman-Aiden et al. 2009, Science: Hi-C",
+    "u": "https://doi.org/10.1126/science.1181369"
+   },
+   {
+    "t": "Rao et al. 2014, Cell: a 3D map of the human genome at kilobase resolution",
+    "u": "https://doi.org/10.1016/j.cell.2014.11.021"
+   }
+  ],
+  "match": [
+   "chromosome conformation capture",
+   "Hi-C",
+   "promoter capture Hi-C"
+  ],
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "gene-set-analysis",
+  "term": "Gene-set analysis",
+  "aka": [
+   "pathway analysis",
+   "gene-set enrichment analysis",
+   "MAGMA"
+  ],
+  "short": "A test of whether the genes near a trait’s associated variants fall more often than expected in a predefined set of genes, such as a biological pathway or the genes expressed specifically in one tissue or cell type.",
+  "long": "<p>Genes differ in length and in the number of SNPs and the LD around them, so naive counts are biased toward large genes. MAGMA first computes a gene-level association statistic from all SNPs in and near each gene, allowing for LD, and then regresses those statistics on membership of each gene set, with gene size and SNP density as covariates. Sets come from resources such as Gene Ontology, KEGG and Reactome, or from lists of genes specifically expressed in a cell type.</p>",
+  "l1": "Slide 54 (Session 9 covers functional genomics); page 9 (from variants to genes and pathways).",
+  "see": [
+   "post-gwas-studies",
+   "gene",
+   "cell-type",
+   "tissue",
+   "false-discovery-rate"
+  ],
+  "links": [
+   {
+    "t": "de Leeuw et al. 2015, PLoS Comput Biol: MAGMA",
+    "u": "https://doi.org/10.1371/journal.pcbi.1004219"
+   }
+  ],
+  "match": [
+   "gene-set analysis",
+   "gene set analysis",
+   "gene-set test",
+   "pathway analysis",
+   "MAGMA"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "susie",
+  "term": "SuSiE (sum of single effects)",
+  "aka": [
+   "SuSiE-RSS",
+   "susieR"
+  ],
+  "short": "A Bayesian fine-mapping method that models a region’s association as a sum of a few single effects, each due to one causal variant. It returns a credible set for each effect and a posterior inclusion probability for each SNP.",
+  "long": "<p>Each single effect is fitted as if it were the only causal variant, given the current fits of the others, and the fits are repeated in turn until they settle (iterative Bayesian stepwise selection). Because each effect gets its own credible set, SuSiE shows directly how many independent signals a region holds and how precisely each is located. SuSiE-RSS runs it from summary statistics and an LD matrix, which must match the GWAS sample closely.</p>",
+  "l1": "Slide 49 (Session 4 covers fine-mapping); page 9 (fine-mapping); page 6 (LD).",
+  "see": [
+   "fine-mapping",
+   "credible-set",
+   "posterior-inclusion-probability",
+   "finemap",
+   "conditional-analysis"
+  ],
+  "links": [
+   {
+    "t": "Wang et al. 2020, J R Stat Soc B: SuSiE",
+    "u": "https://doi.org/10.1111/rssb.12388"
+   },
+   {
+    "t": "Zou et al. 2022, PLoS Genet: SuSiE-RSS",
+    "u": "https://doi.org/10.1371/journal.pgen.1010299"
+   }
+  ],
+  "match": [
+   "SuSiE",
+   "SuSiE-RSS"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "finemap",
+  "term": "FINEMAP",
+  "aka": [],
+  "short": "A Bayesian fine-mapping program that works from GWAS summary statistics and an LD matrix. It searches over configurations of a few causal variants in a region and reports each SNP’s posterior inclusion probability and the probability of each number of causal variants.",
+  "long": "<p>Testing every combination of causal SNPs is impossible in large regions, so FINEMAP uses a shotgun stochastic search that concentrates on the configurations with high posterior probability. Like other summary-statistic methods, it needs an LD matrix that matches the GWAS sample; LD from a different reference panel can produce confident but wrong results.</p>",
+  "l1": "Slide 49 (Session 4 covers fine-mapping); page 9 (fine-mapping); page 8 lists it among tools.",
+  "see": [
+   "fine-mapping",
+   "posterior-inclusion-probability",
+   "credible-set",
+   "susie",
+   "ld-reference-panel"
+  ],
+  "links": [
+   {
+    "t": "Benner et al. 2016, Bioinformatics",
+    "u": "https://doi.org/10.1093/bioinformatics/btw018"
+   }
+  ],
+  "match": [
+   "FINEMAP"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "gwas-ssf",
+  "term": "GWAS-SSF (GWAS summary statistics format)",
+  "aka": [
+   "GWAS Catalog summary statistics format"
+  ],
+  "short": "The GWAS Catalog’s standard tab-separated format for GWAS summary statistics, with mandatory columns in a fixed order, so that results from different studies can be read the same way.",
+  "long": "<p>The eight mandatory columns are chromosome, base_pair_location, effect_allele, other_allele, an effect (beta, odds_ratio, hazard_ratio or z-score), standard_error, effect_allele_frequency and the p-value (p_value or neg_log_10_p_value). Encouraged columns include variant_id, rs_id, info, the confidence limits and the sample size n. Fixed column names and an explicit effect allele prevent the most common error in reusing summary statistics: combining studies whose effects refer to different alleles.</p>",
+  "l1": "Page 9 (summary statistics) shows three rows in the format; page 10 (databases of summary statistics).",
+  "see": [
+   "summary-statistics",
+   "gwas-catalog",
+   "harmonization",
+   "effect-allele",
+   "vcf"
+  ],
+  "links": [
+   {
+    "t": "GWAS Catalog: summary statistics format",
+    "u": "https://www.ebi.ac.uk/gwas/docs/summary-statistics-format"
+   },
+   {
+    "t": "Hayhurst et al. 2022, bioRxiv: a community-driven GWAS summary statistics standard",
+    "u": "https://doi.org/10.1101/2022.07.15.500230"
+   }
+  ],
+  "match": [
+   "GWAS-SSF"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "suggestive-significance",
+  "term": "Suggestive significance (p < 1 × 10⁻⁵)",
+  "aka": [
+   "suggestive threshold",
+   "suggestive line"
+  ],
+  "short": "A looser p-value threshold, usually 1 × 10⁻⁵, often drawn as a second line on Manhattan plots. SNPs between it and 5 × 10⁻⁸ are worth following up in more people but are not evidence of association.",
+  "long": "<p>With about a million independent tests, about 10 SNPs with no effect fall below 1 × 10⁻⁵ by chance alone in every GWAS, so most suggestive hits in a small study are false positives. The threshold is useful for choosing SNPs to test in a replication sample or to carry into a meta-analysis.</p>",
+  "l1": "Page 9 (the genome-wide threshold and the Manhattan plot, dashed line).",
+  "see": [
+   "genome-wide-significance",
+   "manhattan-plot",
+   "replication",
+   "multiple-testing"
+  ],
+  "links": [],
+  "match": [
+   "suggestive significance",
+   "suggestive threshold",
+   "suggestive line",
+   "suggestive association"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "molecular-qtl",
+  "term": "Molecular QTL (molQTL)",
+  "aka": [
+   "molQTL",
+   "xQTL",
+   "sQTL",
+   "mQTL",
+   "caQTL"
+  ],
+  "short": "A genetic variant associated with a molecular measurement, such as a gene’s expression (eQTL), its splicing (sQTL), a protein level (pQTL), chromatin accessibility (caQTL) or DNA methylation (mQTL).",
+  "long": "<p>Molecular traits sit closer to the DNA than diseases do, so their QTLs often have large effects and can be found in a few hundred samples. When a GWAS signal and a molecular QTL share the same causal variant (colocalization), the molecular trait suggests the gene and the mechanism through which the variant acts. GTEx mapped eQTLs and sQTLs in 49 tissues; eQTLGen mapped eQTLs in the blood of more than 31,000 people. Catalogs still miss many cell types, developmental stages and conditions, so a GWAS variant without a known QTL may act where nobody has measured.</p>",
+  "l1": "Slides 49 and 54 (Sessions 4 and 9: colocalization and functional genomics); page 9 (from variants to genes).",
+  "see": [
+   "eqtl",
+   "pqtl",
+   "colocalization",
+   "gtex",
+   "splicing",
+   "dna-methylation",
+   "chromatin-accessibility"
+  ],
+  "links": [
+   {
+    "t": "GTEx Consortium 2020, Science",
+    "u": "https://doi.org/10.1126/science.aaz1776"
+   },
+   {
+    "t": "Võsa et al. 2021, Nat Genet: eQTLGen",
+    "u": "https://doi.org/10.1038/s41588-021-00913-z"
+   }
+  ],
+  "match": [
+   "molecular QTL",
+   "molQTL",
+   "xQTL",
+   "sQTL",
+   "mQTL",
+   "caQTL"
+  ],
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "h3k27ac",
+  "term": "H3K27ac (a histone mark of active enhancers)",
+  "aka": [
+   "histone H3 lysine 27 acetylation"
+  ],
+  "short": "A chemical mark, an acetyl group on lysine 27 of histone H3, found at active enhancers and promoters. Maps of H3K27ac in a cell type show which regulatory elements are active there.",
+  "long": "<p>It is measured by ChIP-seq: DNA bound to histones that carry the mark is pulled down with an antibody and sequenced, giving peaks over active elements. Together with open chromatin from ATAC-seq, it is used to ask whether a fine-mapped GWAS variant lies in an element active in a cell type relevant to the trait, and to raise that variant’s prior probability in fine-mapping.</p>",
+  "l1": "Slide 54 (Session 9 covers functional genomics); page 9 (Fig. 3c of the reading, redrawn).",
+  "see": [
+   "histone",
+   "enhancer",
+   "promoter",
+   "atac-seq",
+   "chromatin-accessibility"
+  ],
+  "links": [
+   {
+    "t": "Creyghton et al. 2010, PNAS: H3K27ac separates active from poised enhancers",
+    "u": "https://doi.org/10.1073/pnas.1016071107"
+   }
+  ],
+  "match": [
+   "H3K27ac"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-analysis"
+ },
+ {
+  "id": "false-discovery-rate",
+  "term": "False discovery rate (FDR)",
+  "aka": [
+   "FDR",
+   "Benjamini–Hochberg procedure"
+  ],
+  "short": "The expected share of false positives among the results declared significant. Controlling it at 5% allows more discoveries than controlling the family-wise error rate, which limits the chance of even one false positive.",
+  "long": "<p>The Benjamini–Hochberg procedure sorts the \\(m\\) p-values, finds the largest \\(k\\) for which the \\(k\\)-th smallest p-value is at most \\(0.05\\,k/m\\), and declares the \\(k\\) smallest significant. With a million tests the smallest p-value must still be below 5 × 10⁻⁸, but the 100th smallest only needs to be below 5 × 10⁻⁶. GWAS use the family-wise threshold 5 × 10⁻⁸ for discovery; FDR control is common in gene-level, molecular QTL and gene-set analyses.</p>",
+  "l1": "Page 9 (the genome-wide threshold): the reading calls 5 × 10⁻⁸ a false discovery rate, but it controls the family-wise error rate.",
+  "see": [
+   "family-wise-error-rate",
+   "multiple-testing",
+   "bonferroni-correction",
+   "type-1-error",
+   "genome-wide-significance"
+  ],
+  "links": [
+   {
+    "t": "Benjamini & Hochberg 1995, J R Stat Soc B",
+    "u": "https://doi.org/10.1111/j.2517-6161.1995.tb02031.x"
+   }
+  ],
+  "match": [
+   "false discovery rate",
+   "FDR"
+  ],
+  "owner": "gwas-analysis"
+ }
+]

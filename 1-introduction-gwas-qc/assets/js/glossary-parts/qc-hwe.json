@@ -1,0 +1,32 @@
+[
+  {
+    "id": "founder",
+    "term": "founder (in a PLINK fileset)",
+    "aka": ["nonfounder", "founders only"],
+    "short": "In a PLINK fileset, a person whose father and mother IDs (columns 3 and 4 of the .fam file) are both 0, meaning unknown. PLINK computes allele frequencies, Hardy–Weinberg tests and LD from founders only.",
+    "long": "<p>A person with a father or mother ID filled in is a nonfounder, even if that parent is not in the fileset. <code>--make-founders</code> clears parent IDs that point to people who are absent, so those people count as founders, and <code>--nonfounders</code> makes <code>--freq</code>, <code>--maf</code>, <code>--hardy</code> and <code>--hwe</code> count everyone. Counting founders only keeps alleles that relatives share by descent from being counted more than once, which would bias allele frequencies and the Hardy–Weinberg test.</p><p>In a study of unrelated people every person is a founder: PennCATH's log reports 1,401 founders and 0 nonfounders.</p>",
+    "l1": "Page 16 (QC step 2): <code>--hardy</code> and <code>--hwe</code> count founders only. Page 17 (QC step 3): <code>--indep-pairwise</code> computes r² in founders.",
+    "see": ["plink-binary", "hwe", "ld-pruning"],
+    "links": [
+      {"t": "PLINK 1.9: --nonfounders and --make-founders", "u": "https://www.cog-genomics.org/plink/1.9/filter#nonfounders"}
+    ],
+    "match": ["founder", "nonfounder"],
+    "auto": false,
+    "owner": "qc-hwe"
+  },
+  {
+    "id": "mid-p-value",
+    "term": "mid-p value",
+    "aka": ["mid-p", "midp"],
+    "short": "For a test on counts: the probability of every outcome less likely than the one observed, plus half the probability of the outcomes exactly as likely. It is always a little smaller than the ordinary exact p-value.",
+    "long": "<p>An exact test on counts, such as the Hardy–Weinberg exact test, can produce only a limited set of p-values. The ordinary exact p-value counts the observed outcome in full, so under the null hypothesis it falls below a level such as 0.05 less often than 5% of the time: the test is conservative. Counting the outcomes tied with the observed one at half weight brings the rate closer to the nominal level (Graffelman and Moreno 2013).</p><p>PLINK 1.9 computes it with the <code>midp</code> modifier of <code>--hardy</code> and <code>--hwe</code>, and its documentation recommends it. A SNP with only one allele has a single possible outcome, so its exact p-value is 1 and its mid-p value 0.5.</p>",
+    "l1": "Page 16 (QC step 2): the widget shows both p-values, and the example filter is <code>--hwe 1e-6 midp</code>.",
+    "see": ["hwe"],
+    "links": [
+      {"t": "Graffelman & Moreno 2013, The mid p-value in exact tests for Hardy-Weinberg equilibrium", "u": "https://doi.org/10.1515/sagmb-2012-0039"},
+      {"t": "PLINK 1.9: --hwe", "u": "https://www.cog-genomics.org/plink/1.9/filter#hwe"}
+    ],
+    "match": ["mid-p value", "mid-p"],
+    "owner": "qc-hwe"
+  }
+]

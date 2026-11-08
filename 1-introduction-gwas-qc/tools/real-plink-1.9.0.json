@@ -1,0 +1,197 @@
+{
+ "about": "Real PLINK's results for the practical's commands on data/ (tools/real_plink_check.mjs --write): exit code, SHA-256 of each file written and of the normalized .log. test_lab.mjs section J checks the emulator against these.",
+ "program": "PLINK v1.9.0 64-bit (27 Sep 2026)",
+ "platform": "darwin arm64",
+ "recorded": "2026-11-08",
+ "data": {
+  "toy.bed": "13038a03579be3c946a09cb2740d4536330b2e0b9dd0ff3aef2b2c4f5284e36f",
+  "toy.bim": "ad739d53e0c5964b505dd2f601a4ada2dbf833978e69cfc5c0be631905f833dd",
+  "toy.fam": "c635b4ff0518c0405ec77450f5777fb7c1d06a77d906e38e2dbb57da2061140b",
+  "toy_1kg.bed": "62fa15491c577a2280fa5f064f40bd8d2c60f2f9cd395d3ffc147d1724b226d7",
+  "toy_1kg.bim": "3b8eba270841d1a47ccdb4d1bdf63a3e051810ffd83fbdad720349efaa3ddf3a",
+  "toy_1kg.fam": "240e380f3e48fc06839ad8c6f8f48b1063170a87fb52caab3571f5f03c36e434"
+ },
+ "steps": {
+  "missing_raw": {
+   "exit": 0,
+   "files": {
+    "toy.imiss": "f648b249c7a88d960de53630ba21c0b3b205a35cb3ba59745454e8f5042d2923",
+    "toy.lmiss": "a019686a5e00b7c0c1a9fe27e57f2ec6030549c3a1ee20b41c8f07c057a62538"
+   },
+   "log": "fbb8096ddc342733e465b715f7929dd1cdc31bafa0d65a04ccfa8795e2e72f0d"
+  },
+  "geno": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.bed": "c668928a8556b682adffc518b1f968dc70412cdac8cf7ac32d257b76c43f0953",
+    "toy.geno0.01.bim": "2f260aa14de7f67bf700e304f53a9ad2fbc1ec3a93603fd7d4f065b85df66f0e",
+    "toy.geno0.01.fam": "c635b4ff0518c0405ec77450f5777fb7c1d06a77d906e38e2dbb57da2061140b"
+   },
+   "log": "9326bc6cc65519d81a2dce731aae6dc51dfc5ec34d2a8a813d3e897a1e258ac4"
+  },
+  "missing_geno": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.imiss": "aa9c3f28eb971a6efaea66a332cf812d36ab11a287295e2b1e04d1a10bb41987",
+    "toy.geno0.01.lmiss": "3db0d07001e02a9eac7da9e774d2e830ce89dfb3fb0f87616b6082defff0644a"
+   },
+   "log": "4ba61f4612399fc60dcfbc22b7a1e8f4712a03a9aa1e24d3da26f94fcecf4ae4"
+  },
+  "mind": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.bed": "bdacaff2edaec3fe9e55d555db7abc9c436c15329d6d2cbb24d2896f83a702bd",
+    "toy.geno0.01.mind0.01.bim": "7f8af901c40df59709438db110378e5772b7594af61d643b332290110eead491",
+    "toy.geno0.01.mind0.01.fam": "b3b2453fcf51a0e358839d446eef69cf90bdd608ac016305b01329a78f96f0d8",
+    "toy.geno0.01.mind0.01.irem": "7935242e46e5e93d7a6f053db610424310b97fe5b6482955d14ff7ce18b2319b"
+   },
+   "log": "a355f287b2b4ce24021e27863b2e347e9ad4f48f6718f35db9c02c4a93923795"
+  },
+  "hardy": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.hwe": "c71b67d6a5b770c9f157f24cc91dbe8ebb367d3a60abdb12b537c202b3c6aa66"
+   },
+   "log": "70a72996af2583e6e52ac4a49da99f6a1aa5e6df670e00f99832adf8aec48432"
+  },
+  "prune": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.prune.in": "7d84c12168b3a45efaca5f3292acfecf0422e44a51d645e044761cc53ea5fd1b",
+    "toy.geno0.01.mind0.01.prune.out": "413c2fd2c98da7f3d0d7f3ec867f0414966434877462fd7e75e7715f57578916"
+   },
+   "log": "dbe49ce813ab2b68c592e17f01c26cf6cb743fcd6e36ec24a7734b3517f98a4f"
+  },
+  "genome": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.LD0.3.genome": "63d26581f37be5259547ebf8fc3674a42de64b8f35351e698fa879a072d5ca02"
+   },
+   "log": "d45afc67ebcb59cc8b808b577dda7697a2deddd6ac55994f7c23bf56916a2720"
+  },
+  "het": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.LD0.3.het": "5886740535df0d9c26e28e441eb420584e0af7b0faca297ea4aa85c1d651bfd7"
+   },
+   "log": "24b1bce95d9510f03593ea0f7804cc7458d80ac3bf12c8c8aeaf02a69791dd07"
+  },
+  "pca": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.LD0.3.eigenval": "97599ebaef73a7be3ed537f6f65e9e2936e0f4311fcece0c56e4e7ae52f522f5",
+    "toy.geno0.01.mind0.01.LD0.3.eigenvec": "26d10e0da28c511ef1c7d7d84e9d6b878af7ddcbad46a71013ed9cb6dc9a7214"
+   },
+   "log": "a80d37d68f97a13a57b05bfdd584c60244346b274c583be338f803765cfeecfb"
+  },
+  "merge1": {
+   "exit": 3,
+   "files": {
+    "toy.geno0.01.mind0.01.merge1kgenomes-merge.fam": "0fbcc39cfe71a2bb0890712baa7467999827511564e374107af9204fb3aac3b8",
+    "toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp": "94a624677ed7a60242594fc54b876eae722de009574468a93c5c8e350e4a636e"
+   },
+   "log": "09bcde33a5a57dce2a2b91a0f2b009dbcc558d42768d4effaf3932577d60e42f"
+  },
+  "flip": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01_flipSNPs.bed": "bdacaff2edaec3fe9e55d555db7abc9c436c15329d6d2cbb24d2896f83a702bd",
+    "toy.geno0.01.mind0.01_flipSNPs.bim": "b269839f904e01950e4b00256814be301be48af90ba30b1ddf7094ff6263789d",
+    "toy.geno0.01.mind0.01_flipSNPs.fam": "b3b2453fcf51a0e358839d446eef69cf90bdd608ac016305b01329a78f96f0d8"
+   },
+   "log": "de9003330a9a6b9240dbaa94b54287f08971b727a310d9c6c0b74616aac23229"
+  },
+  "merge2": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.merge1kgenomes.bed": "7485b7a99f6b8b4e621cdaf54f21cf9acab9ddfec6a806d1c23e659f5646e0ee",
+    "toy.geno0.01.mind0.01.merge1kgenomes.bim": "68c2eae797549d68c6a965c54f1ed4274c049c80c5045a469f30f10d6e012b7a",
+    "toy.geno0.01.mind0.01.merge1kgenomes.fam": "1dee406fd8ffc9b9c2f57bb26117426326b28eedfde41ea51c57b27d2a23670f"
+   },
+   "log": "eba456184e6b02b5d5a7043dbe27a3a0c529447edccd352ce4ef9e579e68cb00"
+  },
+  "merged_pca": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.merge1kgenomes.eigenval": "48793169356c7ca383f862f7c72d8fe3fa1ee8c45445af59796b5bb76e5a4946",
+    "toy.geno0.01.mind0.01.merge1kgenomes.eigenvec": "50f18489453b1c9cf87cd05b8bad4a287b1032be3828c0badbc578a6c85c428a"
+   },
+   "log": "ba3d53f3220f6d89e734e472f70f70646122f43ce13e78cead79362be4d8fe2b"
+  },
+  "awk_update_ids": {
+   "files": {
+    "toy.updateIDs.txt": "e18bc084f8cb9a08393056165c5939e7e0e1f40a49fd92cfac28957c31863adb"
+   }
+  },
+  "update_ids": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.uniqueIDs.bed": "bdacaff2edaec3fe9e55d555db7abc9c436c15329d6d2cbb24d2896f83a702bd",
+    "toy.geno0.01.mind0.01.uniqueIDs.bim": "7f8af901c40df59709438db110378e5772b7594af61d643b332290110eead491",
+    "toy.geno0.01.mind0.01.uniqueIDs.fam": "559ec8f38f165ae5a32892bd0d6f8ce77acd1bd291570196a21c711d89d0180a"
+   },
+   "log": "30f9062b558d0fc5e03cccf96bee059b46d90a31bb4e29066b776fdaf1efb6ab"
+  },
+  "prune_50_5_0_1": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.extra.prune_50_5_0.1.prune.in": "f596db95a50b0cb513eb2d20055f9cab41341e56fdf25e245fbc41bc58bd093d",
+    "toy.geno0.01.mind0.01.extra.prune_50_5_0.1.prune.out": "f49c9b4c9298b579098776ed114f6e34c898a5cc003f33a13527f3e04204c544"
+   },
+   "log": "99041dfb03a726412f9da7e85c4cf90ab8b62f1f248aebfbe7fc6075b43b43fe"
+  },
+  "prune_50_5_0_8": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.extra.prune_50_5_0.8.prune.in": "69128e50cc3fbc11a3a1852b7c23be93451cddf0e7c8eb35c49269de7e46a68e",
+    "toy.geno0.01.mind0.01.extra.prune_50_5_0.8.prune.out": "f835d6882e22b26b4c0796d27d1ec64602e5fa4987907feceeb72e738d74ce25"
+   },
+   "log": "fc1ce03301fddaf0b1516cc08d8b12704a28470802a07bae9d7a0a9e571bbd1f"
+  },
+  "prune_50_50_0_3": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.extra.prune_50_50_0.3.prune.in": "39c07e6c6854ffe3f034ce6e368bbfd241a1ef6228d998baa90c8e843fdbc39d",
+    "toy.geno0.01.mind0.01.extra.prune_50_50_0.3.prune.out": "e61e6301c1015ddd8cf2b914e50438ff69c0786d428712447c4901e257de6a4a"
+   },
+   "log": "e0ba4deeec9367ad10dca891d9fefbc6842abbc0a2d5b667f81c71de7d5eabac"
+  },
+  "prune_250kb_1_0_3": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.extra.prune_250kb_1_0.3.prune.in": "f027ad9cf9621dfbadae9e37043c5d4597b7ab36263d5de80ad3c9eeb4efcf1a",
+    "toy.geno0.01.mind0.01.extra.prune_250kb_1_0.3.prune.out": "da8c5f37bf6b36d88c20f9fa4a7361b45446d44895c5844ba924771f420a6bca"
+   },
+   "log": "7b102a5467121989ca2986b753bed5cb9bea5d44313f1295ecd7f67bf2cd74de"
+  },
+  "pca_unpruned": {
+   "exit": 0,
+   "files": {
+    "toy.geno0.01.mind0.01.extra.noprune.eigenval": "ded5eec47094df23565c716da0cdee3bc072618f8b67b0edb561c1b37eb3e954",
+    "toy.geno0.01.mind0.01.extra.noprune.eigenvec": "e803c62086d13b50361adcec12ddbbb35aed4248f9416dc546b8f2bdf83d9d0c"
+   },
+   "log": "34b26c534ec51726436a759c174def4929e75cd36d79b2405b54ada5821ae037"
+  },
+  "freq_raw": {
+   "exit": 0,
+   "files": {
+    "toy.extra.raw.frq": "c2620404d0e334b4481464b8a12e9e4dc54ff8b615f03bcc1077f9b2bc763063"
+   },
+   "log": "40a01eb57ff7f0591a09a4f5b403258500b25b108cfc468d5983ab91d6959cf7"
+  },
+  "exercise_lists": {
+   "files": {
+    "toy.extra.exercise_remove.txt": "653f27d0f30a8d44f773ebc0a94dc0e02b5f26e56c9a9025a9e4d854f1e59ae0"
+   }
+  },
+  "exercise_qc": {
+   "exit": 0,
+   "files": {
+    "toy.extra.exercise_qc.bed": "4f278b0cb7fe1fdb6f8d4867e9ef0c3159f47898daff3bbfd925386c27d4b0d4",
+    "toy.extra.exercise_qc.bim": "5bff83d109f3cf4d4f24a310f5aaa1585ae3eaf436f039acbc012cedfb5dd986",
+    "toy.extra.exercise_qc.fam": "dc03e10212f1d26d35eae062937b8066df25bb2055e17bdea34aa3f99c5f827c"
+   },
+   "log": "e24b3a5fe6bde1ff423cfee2412270a880c33dabeacd3cde2fccc357600c2919"
+  }
+ }
+}

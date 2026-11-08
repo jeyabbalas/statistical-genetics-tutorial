@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The field map: history, subfields and the course · Lecture 1</title>
+<meta name="description" content="The workshop and its website, the history of genetic epidemiology from Mendel to biobanks, the field map of slide 29 with the question, data and statistic of each box, and what each of the nine sessions covers, with an interactive map and a timeline.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/widgets/field-map-timeline.js"></script>
+<script defer src="assets/js/widgets/field-map-framework.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="field-map"]. */
+body[data-page="field-map"] .mental-model svg { display: block; width: 100%; height: auto; }
+body[data-page="field-map"] .fm-quote { border-left: 3px solid var(--border-strong); margin: 0.8em 0 1.1em; padding: 2px 0 2px 14px; font-style: italic; }
+/* Framework widget */
+body[data-page="field-map"] .fm-controls { display: block; }
+body[data-page="field-map"] .fm-pick { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 0.9rem; max-width: 100%; }
+body[data-page="field-map"] .fm-pick select { flex: 1 1 240px; min-width: 0; width: 100%; max-width: 34em; font: inherit; font-size: 0.88rem; padding: 4px 6px; }
+body[data-page="field-map"] .fm-snote { min-height: 2.6em; margin: 6px 0 4px; }
+body[data-page="field-map"] .fm-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 0.95fr); grid-template-areas: "lt lt lt lt ." "molecular mendelian familial popgen social" "lb lb lb lb social" "linkage gwas post rvas social"; column-gap: 20px; row-gap: 6px; margin: 8px 0 6px; }
+body[data-page="field-map"] .fm-label { font-size: 0.78rem; font-weight: 600; color: var(--fg-muted); align-self: end; }
+body[data-page="field-map"] .fm-label-top { grid-area: lt; }
+body[data-page="field-map"] .fm-label-bottom { grid-area: lb; margin-top: 4px; }
+body[data-page="field-map"] #fm-b-molecular { grid-area: molecular; }
+body[data-page="field-map"] #fm-b-mendelian { grid-area: mendelian; }
+body[data-page="field-map"] #fm-b-familial { grid-area: familial; }
+body[data-page="field-map"] #fm-b-popgen { grid-area: popgen; }
+body[data-page="field-map"] #fm-b-linkage { grid-area: linkage; }
+body[data-page="field-map"] #fm-b-gwas { grid-area: gwas; }
+body[data-page="field-map"] #fm-b-post { grid-area: post; }
+body[data-page="field-map"] #fm-b-rvas { grid-area: rvas; }
+body[data-page="field-map"] #fm-b-social { grid-area: social; }
+body[data-page="field-map"] .fm-box { position: relative; font: inherit; font-size: 0.84rem; line-height: 1.25; text-align: center; padding: 10px 6px; min-height: 60px; border-radius: 6px; border: 2px solid #3d6b9e; background: #4f81bd; color: #fff; cursor: pointer; }
+body[data-page="field-map"] .fm-box.fm-gray { background: #c5cbd2; border-color: #a7aeb7; color: #2f353c; }
+body[data-page="field-map"] .fm-box.fm-dim { background: #f1f3f6; border-color: #d9dee5; color: #5a6370; }
+body[data-page="field-map"] .fm-box.fm-on { box-shadow: 0 0 0 3px #cfe0f3; }
+body[data-page="field-map"] .fm-box.fm-sel { outline: 3px solid #f28e2b; outline-offset: 2px; }
+body[data-page="field-map"] .fm-box:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+body[data-page="field-map"] #fm-b-linkage::after, body[data-page="field-map"] #fm-b-gwas::after, body[data-page="field-map"] #fm-b-post::after { content: "→"; position: absolute; right: -17px; top: 50%; transform: translateY(-50%); color: #5b6470; font-weight: 700; }
+body[data-page="field-map"] .fm-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; }
+body[data-page="field-map"] .fm-li { display: inline-flex; align-items: center; gap: 6px; }
+body[data-page="field-map"] .fm-sw { display: inline-block; flex: none; width: 12px; height: 12px; border-radius: 3px; }
+body[data-page="field-map"] .fm-sw-on { background: #4f81bd; }
+body[data-page="field-map"] .fm-sw-gray { background: #c5cbd2; }
+body[data-page="field-map"] .fm-sw-sel { background: #fff; outline: 3px solid #f28e2b; outline-offset: -1px; }
+body[data-page="field-map"] .fm-detail { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 8px; font-size: 0.92rem; }
+body[data-page="field-map"] .fm-dtitle { margin: 0 0 2px; font-size: 1rem; }
+body[data-page="field-map"] .fm-dcap { margin: 0 0 6px; color: var(--fg-muted); font-style: italic; }
+body[data-page="field-map"] .fm-dl { margin: 0; }
+body[data-page="field-map"] .fm-dl dt { font-weight: 700; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--fg-muted); margin-top: 8px; }
+body[data-page="field-map"] .fm-dl dd { margin: 2px 0 0; }
+body[data-page="field-map"] #fm-table { font-size: 0.9rem; }
+body[data-page="field-map"] .fm-cap { display: block; font-weight: 400; font-style: italic; color: var(--fg-muted); font-size: 0.85rem; margin-top: 2px; }
+@media (max-width: 640px) {
+  body[data-page="field-map"] .fm-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "lt lt" "molecular mendelian" "familial popgen" "lb lb" "linkage gwas" "post rvas" "social social"; column-gap: 10px; }
+  body[data-page="field-map"] #fm-b-linkage::after, body[data-page="field-map"] #fm-b-gwas::after, body[data-page="field-map"] #fm-b-post::after { content: none; }
+  body[data-page="field-map"] .fm-box { min-height: 52px; font-size: 0.82rem; }
+  body[data-page="field-map"] #fm-b-social { min-height: 44px; }
+}
+/* Timeline widget */
+body[data-page="field-map"] .tl-controls { display: flex; flex-wrap: wrap; gap: 6px; }
+body[data-page="field-map"] .tl-controls .btn { font-size: 0.8rem; padding: 4px 9px; }
+body[data-page="field-map"] .tl-btn[aria-pressed="false"] { opacity: 0.55; text-decoration: line-through; }
+body[data-page="field-map"] .tl-sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+body[data-page="field-map"] #tl-svg { display: block; width: 100%; height: auto; margin: 10px 0 6px; }
+body[data-page="field-map"] .widget .tl-focus { font-family: var(--font); font-size: 0.88rem; line-height: 1.5; }
+body[data-page="field-map"] .tl-list { list-style: none; margin: 6px 0 0; padding: 0; max-height: 440px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+body[data-page="field-map"] .tl-list li { border-bottom: 1px solid var(--border); margin: 0; }
+body[data-page="field-map"] .tl-list li:last-child { border-bottom: 0; }
+body[data-page="field-map"] .tl-item { display: block; width: 100%; text-align: left; font: inherit; font-size: 0.86rem; line-height: 1.45; background: none; border: 0; padding: 8px 10px; cursor: pointer; color: var(--fg); }
+body[data-page="field-map"] .tl-item:hover { background: var(--bg-alt); }
+body[data-page="field-map"] .tl-item:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+body[data-page="field-map"] .tl-cur .tl-item { background: #fff7e8; }
+body[data-page="field-map"] .tl-year { font-weight: 700; font-variant-numeric: tabular-nums; }
+body[data-page="field-map"] .tl-tag { display: inline-block; font-size: 0.72rem; border: 1px solid; border-radius: 999px; padding: 0 6px; margin: 0 2px; white-space: nowrap; }
+body[data-page="field-map"] .tl-src { color: var(--fg-muted); font-size: 0.8rem; }
+</style>
+</head>
+<body data-page="field-map">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part A · Genetic epidemiology · Page 2 of 23</p>
+  <h1>The field map: history, subfields and the course</h1>
+  <p class="lede">Slides 1–9 introduce the workshop. Slides 26–29 place genetic epidemiology among the sciences it grew from and draw a map of its subfields, slides 30, 36, 38 and 39 return to the map and the history, and slides 44–54 use the map to show what each of the nine sessions covers. This page decodes those slides, adds the dates, data and statistics behind each part of the map, and ends where the lecture turns to hands-on work (slide 106).</p>
+  <div class="chips">
+    <span class="chip core">Slides 1–9, 26–30, 36, 38–39, 44–54, 106</span>
+    <span class="chip time">≈ 45 min</span>
+    <span class="chip data">Shows up in the data as: the design of a study, and so its data (pedigrees, genotypes of unrelated people, sequences or summary statistics), follows from the box of the map it belongs to</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Three traditions, one map, one course</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 300" role="img" aria-labelledby="fm-mmw-t fm-mmw-d"><title id="fm-mmw-t">Where genetic epidemiology comes from, what it studies, and what the course covers</title><desc id="fm-mmw-d">Left: four sources joined by a bracket: Mendelian and statistical genetics, clinical genetics, molecular genetics, and epidemiology. Middle: the field map of slide 29, a top row of foundations (molecular genetics, Mendelian genetics, familial aggregation and heritability, population genetics) and a bottom row of study designs joined by arrows (linkage studies, genome-wide association studies, post-GWAS studies, rare variant association studies). Boxes the course does not cover explicitly are gray. Right: social factors, which shape all the boxes. Bottom: slide 106 leads to the practical, quality control of GWAS genotypes.</desc>
+<defs><marker id="fm-aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker></defs>
+<text x="10" y="20" class="t-b">Where it comes from (slide 28)</text>
+<rect x="10" y="32" width="196" height="42" rx="6" fill="#fbe6e4" stroke="#c0392b"/>
+<text x="20" y="49" class="t-sm" font-weight="700">Mendelian &amp; statistical genetics</text>
+<text x="20" y="65" class="t-xs">pedigrees, correlation, variance</text>
+<rect x="10" y="82" width="196" height="42" rx="6" fill="#f4eedc" stroke="#9a7426"/>
+<text x="20" y="99" class="t-sm" font-weight="700">Clinical genetics</text>
+<text x="20" y="115" class="t-xs">patients, families, rare disease</text>
+<rect x="10" y="132" width="196" height="42" rx="6" fill="#e8efdf" stroke="#4f6b2a"/>
+<text x="20" y="149" class="t-sm" font-weight="700">Molecular genetics</text>
+<text x="20" y="165" class="t-xs">DNA, genes, markers, sequencing</text>
+<rect x="10" y="182" width="196" height="42" rx="6" fill="var(--g0)" stroke="var(--q1)"/>
+<text x="20" y="199" class="t-sm" font-weight="700">Epidemiology</text>
+<text x="20" y="215" class="t-xs">populations, designs, confounding</text>
+<path d="M212,53 h6 v150 h-6" fill="none" stroke="#5b6470" stroke-width="1.4"/>
+<line x1="218" y1="128" x2="242" y2="128" stroke="#5b6470" stroke-width="1.6" marker-end="url(#fm-aw)"/>
+<text x="250" y="20" class="t-b">What it studies (slide 29)</text>
+<text x="250" y="44" class="t-xs">Foundations: how variation is inherited and distributed</text>
+<g class="t-xs" text-anchor="middle">
+<rect x="250" y="52" width="77" height="48" rx="5" fill="#c5cbd2" stroke="#a7aeb7"/><text x="288.5" y="72">Molecular</text><text x="288.5" y="85">genetics</text>
+<rect x="341" y="52" width="77" height="48" rx="5" fill="#c5cbd2" stroke="#a7aeb7"/><text x="379.5" y="72">Mendelian</text><text x="379.5" y="85">genetics</text>
+<rect x="432" y="52" width="77" height="48" rx="5" fill="#c5cbd2" stroke="#a7aeb7"/><text x="470.5" y="67">Familial</text><text x="470.5" y="79">aggregation,</text><text x="470.5" y="91">heritability</text>
+<rect x="523" y="52" width="77" height="48" rx="5" fill="#4f81bd" stroke="#3d6b9e"/><text x="561.5" y="72" fill="#fff">Population</text><text x="561.5" y="85" fill="#fff">genetics</text>
+</g>
+<text x="250" y="120" class="t-xs">Designs that link genetic variation to disease</text>
+<g class="t-xs" text-anchor="middle">
+<rect x="250" y="128" width="77" height="48" rx="5" fill="#c5cbd2" stroke="#a7aeb7"/><text x="288.5" y="148">Linkage</text><text x="288.5" y="161">studies</text>
+<rect x="341" y="128" width="77" height="48" rx="5" fill="#4f81bd" stroke="#3d6b9e"/><text x="379.5" y="143" fill="#fff">Genome-wide</text><text x="379.5" y="155" fill="#fff">association</text><text x="379.5" y="167" fill="#fff">studies</text>
+<rect x="432" y="128" width="77" height="48" rx="5" fill="#4f81bd" stroke="#3d6b9e"/><text x="470.5" y="148" fill="#fff">Post-GWAS</text><text x="470.5" y="161" fill="#fff">studies</text>
+<rect x="523" y="128" width="77" height="48" rx="5" fill="#4f81bd" stroke="#3d6b9e"/><text x="561.5" y="143" fill="#fff">Rare variant</text><text x="561.5" y="155" fill="#fff">association</text><text x="561.5" y="167" fill="#fff">studies</text>
+</g>
+<line x1="327" y1="152" x2="339" y2="152" stroke="#5b6470" stroke-width="1.5" marker-end="url(#fm-aw)"/>
+<line x1="418" y1="152" x2="430" y2="152" stroke="#5b6470" stroke-width="1.5" marker-end="url(#fm-aw)"/>
+<line x1="509" y1="152" x2="521" y2="152" stroke="#5b6470" stroke-width="1.5" marker-end="url(#fm-aw)"/>
+<text x="250" y="194" class="t-xs">All nine sessions build on GWAS (slides 46–54).</text>
+<path d="M606,52 h5 v124 h-5" fill="none" stroke="#8e5ea2" stroke-width="1.4"/>
+<line x1="611" y1="114" x2="620" y2="114" stroke="#8e5ea2" stroke-width="1.4"/>
+<rect x="620" y="52" width="130" height="124" rx="6" fill="#f3eefa" stroke="#8e5ea2"/>
+<text x="632" y="74" class="t-sm" font-weight="700">Social factors</text>
+<text x="632" y="94" class="t-xs">shape what is studied,</text>
+<text x="632" y="108" class="t-xs">how, in whom, and how</text>
+<text x="632" y="122" class="t-xs">results are read</text>
+<text x="632" y="142" class="t-xs">(slides 30–43,</text>
+<text x="632" y="156" class="t-xs">page 3)</text>
+<rect x="250" y="214" width="500" height="38" rx="6" fill="#fff7e8" stroke="#a3620a"/>
+<text x="262" y="237" class="t-sm">Slide 106 → the practical: quality control of GWAS genotypes (pages 11–23)</text>
+<rect x="250" y="270" width="12" height="12" rx="2" fill="#4f81bd"/><text x="268" y="280" class="t-xs">covered by the course</text>
+<rect x="400" y="270" width="12" height="12" rx="2" fill="#c5cbd2"/><text x="418" y="280" class="t-xs">not covered explicitly (slide 45)</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 360 560" role="img" aria-labelledby="fm-mmn-t fm-mmn-d"><title id="fm-mmn-t">Where genetic epidemiology comes from, what it studies, and what the course covers</title><desc id="fm-mmn-d">Four sources: Mendelian and statistical genetics, clinical genetics, molecular genetics and epidemiology, leading to the field map of slide 29: four foundation boxes, four study-design boxes, and social factors that shape all of them. Boxes the course does not cover explicitly are gray. Slide 106 leads to the practical.</desc>
+<defs><marker id="fm-an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker></defs>
+<text x="10" y="18" class="t-b">Where it comes from (slide 28)</text>
+<g class="t-sm" font-weight="700" text-anchor="middle">
+<rect x="10" y="28" width="168" height="44" rx="6" fill="#fbe6e4" stroke="#c0392b"/><text x="94" y="46">Mendelian &amp;</text><text x="94" y="62">statistical genetics</text>
+<rect x="182" y="28" width="168" height="44" rx="6" fill="#f4eedc" stroke="#9a7426"/><text x="266" y="54">Clinical genetics</text>
+<rect x="10" y="78" width="168" height="44" rx="6" fill="#e8efdf" stroke="#4f6b2a"/><text x="94" y="104">Molecular genetics</text>
+<rect x="182" y="78" width="168" height="44" rx="6" fill="var(--g0)" stroke="var(--q1)"/><text x="266" y="104">Epidemiology</text>
+</g>
+<line x1="180" y1="126" x2="180" y2="146" stroke="#5b6470" stroke-width="1.6" marker-end="url(#fm-an)"/>
+<text x="10" y="166" class="t-b">What it studies (slide 29)</text>
+<text x="10" y="182" class="t-xs">Foundations: how variation is inherited and distributed</text>
+<g class="t-xs" text-anchor="middle">
+<rect x="10" y="188" width="168" height="34" rx="5" fill="#c5cbd2" stroke="#a7aeb7"/><text x="94" y="209">Molecular genetics</text>
+<rect x="182" y="188" width="168" height="34" rx="5" fill="#c5cbd2" stroke="#a7aeb7"/><text x="266" y="209">Mendelian genetics</text>
+<rect x="10" y="226" width="168" height="34" rx="5" fill="#c5cbd2" stroke="#a7aeb7"/><text x="94" y="240">Familial aggregation,</text><text x="94" y="253">heritability</text>
+<rect x="182" y="226" width="168" height="34" rx="5" fill="#4f81bd" stroke="#3d6b9e"/><text x="266" y="247" fill="#fff">Population genetics</text>
+</g>
+<text x="10" y="280" class="t-xs">Designs that link genetic variation to disease</text>
+<g class="t-xs" text-anchor="middle">
+<rect x="10" y="286" width="168" height="34" rx="5" fill="#c5cbd2" stroke="#a7aeb7"/><text x="94" y="307">1 Linkage studies</text>
+<rect x="182" y="286" width="168" height="34" rx="5" fill="#4f81bd" stroke="#3d6b9e"/><text x="266" y="300" fill="#fff">2 Genome-wide association</text><text x="266" y="313" fill="#fff">studies (GWAS)</text>
+<rect x="10" y="324" width="168" height="34" rx="5" fill="#4f81bd" stroke="#3d6b9e"/><text x="94" y="345" fill="#fff">3 Post-GWAS studies</text>
+<rect x="182" y="324" width="168" height="34" rx="5" fill="#4f81bd" stroke="#3d6b9e"/><text x="266" y="338" fill="#fff">4 Rare variant association</text><text x="266" y="351" fill="#fff">studies</text>
+</g>
+<rect x="10" y="368" width="340" height="62" rx="6" fill="#f3eefa" stroke="#8e5ea2"/>
+<text x="22" y="388" class="t-sm" font-weight="700">Social factors</text>
+<text x="22" y="404" class="t-xs">shape what is studied, how, in whom,</text>
+<text x="22" y="418" class="t-xs">and how results are read (slides 30–43, page 3)</text>
+<text x="10" y="448" class="t-xs">All nine sessions build on GWAS (slides 46–54).</text>
+<rect x="10" y="460" width="340" height="42" rx="6" fill="#fff7e8" stroke="#a3620a"/>
+<text x="22" y="477" class="t-sm">Slide 106 → the practical: quality control</text>
+<text x="22" y="494" class="t-sm">of GWAS genotypes (pages 11–23)</text>
+<rect x="10" y="518" width="12" height="12" rx="2" fill="#4f81bd"/><text x="28" y="528" class="t-xs">covered by the course</text>
+<rect x="10" y="538" width="12" height="12" rx="2" fill="#c5cbd2"/><text x="28" y="548" class="t-xs">not covered explicitly (slide 45)</text>
+</svg>
+  </figure>
+  <p class="mm-statement">Genetic epidemiology joined three traditions, Mendelian and statistical genetics, clinical genetics and molecular genetics, with the methods of epidemiology. Its map has a row of foundations (how variation is inherited and distributed), a row of study designs that link variation to disease, and social factors that shape both. This course follows the GWAS row, from the design of a study to the analyses that come after it, and starts with the quality of the data.</p>
+  <ul class="mm-hooks">
+    <li><strong>The workshop.</strong> Nine Wednesday sessions from September to December 2026, each a lecture and a practical, with the readings, slides and code on the workshop website.</li>
+    <li><strong>Where it comes from.</strong> Each tradition brought its own data and statistics; Neel (1984) tied the field to multifactorial causation, and slide 39 adds that the same history includes eugenics.</li>
+    <li><strong>The map.</strong> Every box has its own question, design, data and statistic: pedigrees and LOD scores for linkage, a genotype matrix and one regression per variant for GWAS, sequences and gene-level tests for rare variants.</li>
+    <li><strong>The course.</strong> Every session builds on GWAS; the family-based and molecular boxes are left out (slide 45), and each session highlights the boxes it uses (slides 46–54).</li>
+    <li><strong>From the map to data.</strong> Slide 106 turns to the practical: before any association test, the genotypes are checked and cleaned.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0</div>
+  <p><a href="../0-biological-foundations/lecture-1-bridge.html#field-map">The field map of slide 29, annotated</a> links every box to the Lecture 0 page that explains its biology, and <a href="../0-biological-foundations/lecture-1-bridge.html#course">Course format and the nine sessions</a> lists the biology each session relies on. Two statistics of the gray boxes are worked through there: the LOD score of <a href="../0-biological-foundations/inheritance.html#linkage-analysis">linkage analysis</a> and twin-based <a href="../0-biological-foundations/genotype-to-phenotype.html#heritability">heritability</a>.</p>
+</aside>
+
+<h2 id="workshop">The workshop and its website <span class="tag core">Core</span></h2>
+
+<p>The lecture is Session 1 of the DCEG Statistical Genetics Workshop, “Next Generation Statistical Methods for Genome-Wide Association Studies: A Hands-On Course”, run by the <span class="no-autolink">Division of Cancer Epidemiology and Genetics</span> of the U.S. National Cancer Institute.<sup class="cite"><a href="#src-1">1</a></sup> Its format, from slides 5 and 6:</p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>The workshop in numbers (slides 5–6 and the workshop website).</caption>
+  <thead><tr><th scope="col">Item</th><th scope="col">What the course does</th></tr></thead>
+  <tbody>
+    <tr><td>Sessions</td><td data-label="What the course does">Nine, on Wednesdays from 9 September to 2 December 2026, 9:30–12:00 Eastern time.<sup class="cite"><a href="#src-2">2</a></sup></td></tr>
+    <tr><td>Each session</td><td data-label="What the course does">A lecture of about 1.25 hours including questions, then a hands-on practical of about 1.5 hours.</td></tr>
+    <tr><td>Before and after</td><td data-label="What the course does">Background reading of less than 2 hours before; exercises of less than 2 hours after.</td></tr>
+    <tr><td>Where</td><td data-label="What the course does">Hybrid: lectures are recorded and archived; the practicals are held in person at the NCI Shady Grove campus.</td></tr>
+    <tr><td>Who it is for</td><td data-label="What the course does">Researchers and analysts with a strong quantitative background who analyze, or expect to analyze, large-scale genome-wide genotyping data. They are expected to know basic epidemiologic study designs, basic genetic terms, statistical methods such as hypothesis testing, estimation, regression and Bayesian probability, and R and the command line.</td></tr>
+    <tr><td>What participants take away</td><td data-label="What the course does">Advanced statistical methods and computational tools for GWAS data, and good practice in managing and sharing data, with reproducible pipelines that follow the FAIR principles (data and code that are findable, accessible, interoperable and reusable).</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The website has one page per session with four tabs, Overview, Lecture, Practical and Supplemental; questions go to the discussion board of the course’s GitHub repository.<sup class="cite"><a href="#src-3">3</a></sup> The Session 1 readings are the GWAS Primer by Uffelmann and colleagues (2021), the reading this site refers to throughout,<sup class="cite"><a href="#src-4">4</a></sup> and Sue Ingles’s chapter “Basic concepts of molecular genetics” in Duncan Thomas’s textbook <em>Statistical Methods in Genetic Epidemiology</em>.<sup class="cite"><a href="#src-5">5</a></sup> In the Session 1 practical, participants clean the genotypes of the PennCATH study (1,401 people, 861,473 markers) with PLINK 1.9 in RStudio, running on the NIH Biowulf computing cluster, and assign genetic ancestry with GrafAnc.<sup class="cite"><a href="#src-6">6</a></sup> Pages 11–23 of this site follow that practical, and <a href="setup.html">page 14</a> shows how to run it without Biowulf.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 1–9 · The course and its website</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-006.jpg" alt="Lecture 1, slide 6: a screenshot of the workshop website listing the fall 2026 schedule, nine sessions from Introduction on September 9 to Functional Genomics on December 2, with their instructors" loading="lazy"><figcaption>Lecture 1 · slide 6</figcaption></figure>
+    <div><p>Slide 1 is the title, “Next Generation Statistical Methods for Genome-Wide Association Studies: Course Overview and Intro”, dated 9 September 2026. Slides 2–3 give the agenda, which returns on slides 10, 44 and 64 to open each block: course format, an introduction to genetic epidemiology, course scope, and a few basic definitions. Slide 4 shows the website’s home page and the address of the frozen archive of the 2023 workshop;<sup class="cite"><a href="#src-7">7</a></sup> slide 5 the course format and intended audience; slide 6 the schedule as posted on 1 July 2026, with the instructors of each session. Slides 7 and 8 are screenshots of an earlier version of the Session 1 pages: the topics and readings (Uffelmann et al. 2021, with Penney et al. 2017 and Visscher et al. 2017 as overviews of GWAS findings), and a practical that ran in Google Colab and assigned ancestry with GrafPop. The 2026 pages list the readings named above, and the practical uses RStudio on Biowulf and GrafAnc. Slide 9 asks for questions.</p></div>
+  </div>
+</aside>
+
+<h2 id="history">Where genetic epidemiology comes from <span class="tag core">Core</span></h2>
+
+<p>Slide 26 states the theme, “Genetic epidemiology is transdisciplinary”, and slide 27 lists the fields: “The history of genetic epidemiology is a tapestry of observational science, statistical developments, animal and plant breeding experiments, molecular experiments, medicine, epidemiology, technology, and…”. The slide credits the review by Duggal and colleagues (2019), which traces the field from studies of familial aggregation to genomic sequencing.<sup class="cite"><a href="#src-8">8</a></sup> Slide 28 groups the people behind this history into three traditions that meet in genetic epidemiology. Each tradition asked a different question and brought its own data and methods:</p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>The three traditions of slide 28 and what each brought to genetic epidemiology.</caption>
+  <thead><tr><th scope="col">Tradition and people on the slide</th><th scope="col">Question</th><th scope="col">Data</th><th scope="col">Methods it contributed</th><th scope="col">Where they appear in this course</th></tr></thead>
+  <tbody>
+    <tr><td>Mendelian and statistical genetics: Mendel (discrete traits); Galton, Pearson (continuous traits); Bateson, Punnett (Mendel “rediscovered”); Fisher, Wright, Haldane (“the modern synthesis”, which joined Mendelian genetics to Darwin’s theory of evolution by natural selection through mathematical population genetics)</td><td data-label="Question">How are traits passed on, and how can the inheritance of many genes produce continuous variation such as height?</td><td data-label="Data">Crosses of plants and animals; pedigrees; measurements on parents, children and other relatives.</td><td data-label="Methods">Segregation ratios (Mendel 1866);<sup class="cite"><a href="#src-9">9</a></sup> correlation and regression toward the mean (Galton 1886);<sup class="cite"><a href="#src-10">10</a></sup> the chi-square test (Pearson 1900); Hardy–Weinberg equilibrium (1908);<sup class="cite"><a href="#src-11">11</a></sup> variance components linking Mendelian genes to correlations between relatives (Fisher 1918);<sup class="cite"><a href="#src-12">12</a></sup> path analysis (Wright 1921).</td><td data-label="Where in this course">Allele frequencies and Hardy–Weinberg tests (pages 5 and 16), regression in every GWAS (page 9), heritability (Session 5).</td></tr>
+    <tr><td>Clinical genetics: Garrod (“inborn errors of metabolism”, pharmacogenetics); Neel (hemoglobinopathies, radiation)</td><td data-label="Question">Which inherited differences cause disease in patients, and how do they act?</td><td data-label="Data">Patients and their families; biochemical measurements in blood and urine; follow-up of exposed groups.</td><td data-label="Methods">Family studies of rare disease. Garrod showed in 1902 that alkaptonuria, a rare disorder in which urine darkens on standing, is inherited as a recessive trait: the first human disease explained by Mendel’s laws.<sup class="cite"><a href="#src-13">13</a></sup> He called such diseases inborn errors of metabolism, and argued that the same chemical individuality explains why people react differently to drugs and foods, the idea later named pharmacogenetics. Neel studied hemoglobinopathies, inherited disorders of hemoglobin: in 1949 he showed that sickle cell anemia is the homozygous form of the sickle cell trait.<sup class="cite"><a href="#src-14">14</a></sup> He also led genetic studies of the children of atomic-bomb survivors in Hiroshima and Nagasaki (“radiation” on the slide).</td><td data-label="Where in this course">Newborn screening for inborn errors and the fetal-hemoglobin story of <a href="genetic-epidemiology.html#drugs">page 1</a>.</td></tr>
+    <tr><td>Molecular genetics: Morgan, Just, Franklin, Watson, Crick, Hershey, Chase, Daly, McClintock (structure and role of DNA); Collins, Lander (the Human Genome Project, the HapMap, high-throughput genotyping and sequencing technologies)</td><td data-label="Question">What is the physical basis of inheritance, and how can it be read?</td><td data-label="Data">Chromosomes, DNA sequence, genetic markers; today genotyping arrays and sequencing reads for hundreds of thousands of people.</td><td data-label="Methods">Genes on chromosomes and genetic maps (Morgan 1910); DNA as the genetic material (Hershey and Chase 1952) and its structure (Watson and Crick 1953, from X-ray data by Franklin and Gosling);<sup class="cite"><a href="#src-15">15</a></sup> the human genome sequence (2001)<sup class="cite"><a href="#src-16">16</a></sup> and the HapMap of common variants and their correlations (2005).<sup class="cite"><a href="#src-17">17</a></sup></td><td data-label="Where in this course">The genotype files of the practical (page 12); reference panels for imputation and ancestry (pages 8 and 21).</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Two quotations on slide 28 come from James Neel’s editorial in the first issue of the journal <em>Genetic Epidemiology</em> (1984).<sup class="cite"><a href="#src-18">18</a></sup> The first says why the three traditions needed epidemiology:</p>
+<p class="fm-quote">“Understanding the function of much that is being revealed will not yield to classical Mendelian genetics but will require the epidemiological approach.”</p>
+<p>The second says that genetic epidemiology is inseparable from “the concept of multifactorial causation”: most common diseases arise from many genetic variants and many environmental exposures, each changing risk a little. A single-gene disease can be found by following one trait through a pedigree; a multifactorial disease needs what epidemiology brings, large samples from defined populations, measured exposures and covariates, and attention to confounding. A GWAS is that combination: the regression of epidemiology, applied to each of millions of genetic variants in tens of thousands of people.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 26–28 · A transdisciplinary history</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-028.jpg" alt="Lecture 1, slide 28: three colored boxes, Mendelian and Statistical Genetics in red, Clinical Genetics in tan and Molecular Genetics in green, each with the names of scientists to its left, joined by a bracket to the words Genetic Epidemiology and two quotations from Neel 1984" loading="lazy"><figcaption>Lecture 1 · slide 28</figcaption></figure>
+    <div><p>Slide 26 is a title; slide 27 is the “tapestry” sentence, whose last word, “and…”, is completed on slide 39. On slide 28 the names to the left of each box are grouped by what they did: Mendel for discrete traits; Galton and Pearson for continuous traits; Bateson and Punnett, who championed and extended Mendel’s laws after their rediscovery in 1900; Fisher, Wright and Haldane for the “modern synthesis”. Garrod and Neel stand for clinical genetics. The molecular names run from Morgan’s fruit flies (1910) and Ernest Everett Just’s studies of fertilization and the cell surface, through the DNA work of Franklin, Watson, Crick, Hershey and Chase, Marie Maynard Daly’s studies of the proteins and nucleic acids of the cell nucleus, and McClintock’s transposable elements (DNA segments that move within the genome), to Francis Collins and Eric Lander, who led the public Human Genome Project. Neel’s quotations on the right are explained in the text.</p></div>
+  </div>
+</aside>
+
+<p>The widget places these milestones, and those of epidemiology and of the social context, on one time axis. The list under the strip is the full text; the buttons switch each tradition on or off.</p>
+
+<div class="widget" id="w-timeline">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">A timeline of genetic epidemiology, by tradition</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The table above lists the main milestones of the three traditions; the sources at the end of the page give their references.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The statistical tools came first: correlation, the chi-square test, variance components and path analysis were all in place by 1921, decades before anyone knew that genes are DNA. The molecular lane fills up in the 1940s and 1950s and again after 1990, and each burst changed what genetic epidemiology could measure: markers made linkage studies of human families possible (Huntington disease, 1983; <em>BRCA1</em>, 1990), and arrays and reference panels made GWAS possible (2005–2007). Turn on only the social context lane: eugenics starts in the same decades, and with some of the same people, as the statistics.</p>
+
+<h3 id="social-history">“And…”: the rest of the sentence on slide 39</h3>
+<p>Slide 39 repeats the “tapestry” sentence and completes it in red: the history of genetic epidemiology also includes “prevailing ideas explaining and justifying social hierarchy.” The statistical tradition of slide 28 is the clearest case. Galton coined the word eugenics in 1883 for improving a population by controlling who has children; Pearson and Fisher, whose correlation, chi-square test, variance and maximum likelihood every GWAS still uses, were also advocates of eugenics, and Fisher succeeded Pearson as the Galton Professor of Eugenics at University College London.<sup class="cite"><a href="#src-19">19</a></sup> The methods themselves are mathematics and can be checked on their own terms; what the history shaped is which questions were asked, which groups were compared, and how differences between groups were explained. <a href="social-context.html">Page 3</a> follows this thread through slides 40–43, from eugenics to the misuse of genetics research today.</p>
+
+<h2 id="map">The field map: eight boxes and a frame <span class="tag core">Core</span></h2>
+
+<p>Slide 29 draws genetic epidemiology as eight boxes in two rows, with a ninth box, social factors, joined to all of them by a bracket. The top row holds the foundations: what is known about how variation is inherited (molecular and Mendelian genetics), whether a trait is influenced by genes at all (familial aggregation and heritability), and how variation is distributed among human populations (population genetics). The bottom row holds the study designs that link genetic variation to disease, roughly in the order they became possible: linkage studies, GWAS, post-GWAS studies and rare variant association studies. Arrows join the boxes within each row and run between the rows in both directions: each design draws on the foundations, and its findings feed back into them.</p>
+<p>For a data scientist the boxes differ above all in their data and their test statistic. The table gives, for each box, the question it answers, the design and data it uses, its main statistic and an example; the slide’s own caption is under each name.</p>
+
+<div class="table-wrap">
+<table class="stack" id="fm-table">
+  <caption>The nine boxes of slide 29: question, design and data, statistic, example and sessions.</caption>
+  <thead><tr><th scope="col">Box</th><th scope="col">Question</th><th scope="col">Design and data</th><th scope="col">Statistic</th><th scope="col">Example</th><th scope="col">In the course</th></tr></thead>
+  <tbody>
+    <tr data-box="molecular"><td>Molecular genetics<span class="fm-cap">“The biological basis for inheritance &amp; the influence of genetic variation on disease”</span></td><td data-label="Question">How does a DNA sequence become a molecule and a trait?</td><td data-label="Design and data">Laboratory experiments and genomic assays: sequences, gene expression, protein levels, chromatin marks.</td><td data-label="Statistic">Tests of differences in expression or activity between alleles; regressions of a gene’s expression level on genotype, which find expression quantitative trait loci (eQTLs).</td><td data-label="Example">Editing the <em>BCL11A</em> enhancer raises fetal hemoglobin (<a href="genetic-epidemiology.html#drugs">page 1</a>).</td><td data-label="In the course">Background in Session 3; the subject of Session 9 (functional genomics).</td></tr>
+    <tr data-box="mendelian"><td>Mendelian genetics<span class="fm-cap">“The biological basis for inheritance &amp; the influence of genetic variation on disease”</span></td><td data-label="Question">How is a trait passed from parents to children?</td><td data-label="Design and data">Pedigrees with each member’s affection status; crosses in plants and animals.</td><td data-label="Statistic">Segregation ratios (1 : 1, 3 : 1) and chi-square goodness-of-fit tests of them; segregation analysis, which fits models of inheritance to pedigree data by maximum likelihood.</td><td data-label="Example">Alkaptonuria follows recessive inheritance (Garrod 1902).</td><td data-label="In the course">Not covered explicitly (slide 45); its laws underlie Hardy–Weinberg tests (<a href="frequencies-hwe.html">page 5</a>).</td></tr>
+    <tr data-box="familial"><td>Familial aggregation, heritability<span class="fm-cap">“Evidence that genetic variation influences disease”</span></td><td data-label="Question">Does the trait cluster in families, and how much of its variance is due to genetic differences?</td><td data-label="Design and data">Family, twin and adoption studies: trait values or disease status in pairs of relatives of known relationship.</td><td data-label="Statistic">Recurrence risk ratios such as \(\lambda_s\), the risk in siblings of cases divided by the population risk; heritability from twin correlations.</td><td data-label="Example">Across 17,804 traits in 50 years of twin studies, the average heritability was 49%.<sup class="cite"><a href="#src-20">20</a></sup></td><td data-label="In the course">Not covered explicitly (slide 45); heritability from GWAS data (SNP heritability) is part of Session 5.</td></tr>
+    <tr data-box="popgen"><td>Population genetics<span class="fm-cap">“The distribution of genetic variation among human populations”</span></td><td data-label="Question">How is genetic variation distributed among people and populations, and why?</td><td data-label="Design and data">Samples from many populations; reference panels such as 1000 Genomes; genotypes and allele frequencies.</td><td data-label="Statistic">Allele frequencies, Hardy–Weinberg tests, linkage disequilibrium (\(r^2\)), \(F_{ST}\) (the share of genetic variance that lies between populations), principal components.</td><td data-label="Example">1000 Genomes: 88 million variants in 2,504 people from 26 populations.<sup class="cite"><a href="#src-21">21</a></sup></td><td data-label="In the course">Session 1 (pages 5–7 and the QC steps) and Session 7.</td></tr>
+    <tr data-box="linkage"><td>Linkage studies<span class="fm-cap">“Agnostic scans of the genome leveraging shared inheritance of disease and marker alleles (suited for rare, high-penetrant variants)”</span></td><td data-label="Question">Which region of the genome is passed on together with the disease in families?</td><td data-label="Design and data">Families with several affected members, genotyped at a few hundred markers spread over the genome.</td><td data-label="Statistic">The LOD score: \(\log_{10}\) of the likelihood ratio of linkage against no linkage; 3 or more is evidence for linkage.</td><td data-label="Example"><em>BRCA1</em> was linked to chromosome 17q21 with a LOD score of 5.98.<sup class="cite"><a href="#src-22">22</a></sup></td><td data-label="In the course">Not covered explicitly (slide 45); shown as the predecessor of rare variant studies in Session 7.</td></tr>
+    <tr data-box="gwas"><td>Genome-wide association studies<span class="fm-cap">“Agnostic association studies assessing common genetic variation”</span></td><td data-label="Question">Which common variants are associated with a trait in a population?</td><td data-label="Design and data">Cohort or case–control samples of unrelated people; a genotype matrix of people × variants from arrays and imputation, with the trait and covariates.</td><td data-label="Statistic">One linear or logistic regression per variant, adjusted for ancestry; significance at a p-value below 5 × 10<sup>−8</sup>.</td><td data-label="Example">The first large GWAS studied 14,000 cases of seven diseases and 3,000 shared controls and found 24 independent signals.<sup class="cite"><a href="#src-23">23</a></sup></td><td data-label="In the course">Every session; Sessions 1–2 in detail (<a href="gwas-design.html">pages 8–10</a>).</td></tr>
+    <tr data-box="post"><td>Post-GWAS studies<span class="fm-cap">“Understanding biologic mechanisms behind genetic associations”</span></td><td data-label="Question">Which variant and gene explain an association, through which mechanism, and what does it predict?</td><td data-label="Design and data">GWAS summary statistics combined with linkage disequilibrium reference panels, expression and functional data, and other GWAS.</td><td data-label="Statistic">Posterior inclusion probabilities (fine-mapping), colocalization probabilities, TWAS z-scores, heritability and enrichment estimates, polygenic scores, Mendelian randomization estimates.</td><td data-label="Example">Mendelian randomization of HDL cholesterol and the FUSION TWAS (<a href="genetic-epidemiology.html#mendelian-randomization">page 1</a>).</td><td data-label="In the course">Sessions 3–9.</td></tr>
+    <tr data-box="rvas"><td>Rare variant association studies<span class="fm-cap">“Hypothesis-driven and agnostic association studies”</span></td><td data-label="Question">Do rare variants in a gene, taken together, change the risk of disease?</td><td data-label="Design and data">Exome or genome sequencing of cases and controls or of cohorts; variants with frequencies below about 1%, annotated by predicted effect on the protein.</td><td data-label="Statistic">Gene-level tests: a burden test counts each person’s rare alleles in the gene and regresses the trait on that count; variance-component tests such as SKAT allow effects in both directions.</td><td data-label="Example">Carriers of loss-of-function variants in <em>ANGPTL3</em> had lower lipids and less coronary disease (<a href="genetic-epidemiology.html#drugs">page 1</a>).</td><td data-label="In the course">Sessions 7–9.</td></tr>
+    <tr data-box="social"><td>Social factors<span class="fm-cap">“Social and environmental contexts influence genetic associations, including what gets studied, how, in which population, and how those results are interpreted.”</span></td><td data-label="Question">How do social and environmental contexts shape which questions are asked, who is studied, how, and how results are read?</td><td data-label="Design and data">All of the designs above, plus the descriptors of who took part (ancestry, region, socioeconomic position) and records of the environment.</td><td data-label="Statistic">Stratified analyses and tests of gene–environment interaction; counts of who is represented in studies.</td><td data-label="Example">A GWAS “hit” for margarine use in UK Biobank, and the share of GWAS participants of European ancestry (<a href="social-context.html">page 3</a>).</td><td data-label="In the course">Session 3 (population descriptors and gene–environment interaction).</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>The widget shows the same map. Choose a box to read its row of the table, or highlight what a session uses, as slides 45–54 do.</p>
+
+<div class="widget" id="w-framework">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The field map, box by box and session by session</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The table above holds the same information for every box, and the table in the next section lists which boxes each session uses.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> GWAS is highlighted in every session, and Post-GWAS in every session from 3 on. The boxes that slide 45 grays out are the ones whose data come from families (Mendelian genetics, familial aggregation, linkage studies) or from the laboratory (molecular genetics); the course works with data on unrelated people, and with summary statistics derived from them. The statistic changes with the box: a LOD score from pedigrees, one regression per variant for GWAS, gene-level tests for rare variants. Social factors are not a step in the sequence but a frame around all of it, and only Session 3 makes them its subject.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 29–30, 36 and 38 · The field map and its frame</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-029.jpg" alt="Lecture 1, slide 29: eight blue boxes in two rows, molecular genetics, Mendelian genetics, familial aggregation and heritability and population genetics on top, linkage studies, genome-wide association studies, post-GWAS studies and rare variant association studies below, joined by arrows, with captions, and a ninth box, social factors, on the right" loading="lazy"><figcaption>Lecture 1 · slide 29</figcaption></figure>
+    <div><p>The captions above the top row group its boxes: “The biological basis for inheritance &amp; the influence of genetic variation on disease” (molecular and Mendelian genetics), “Evidence that genetic variation influences disease” (familial aggregation and heritability) and “The distribution of genetic variation among human populations” (population genetics). The captions below the bottom row are quoted in the table. Slides 30, 36 and 38 repeat the map and color one part of the social-factors sentence red at a time: “Social and environmental contexts influence genetic associations” (slide 30, before the margarine example of slides 31–35); “including what gets studied, how, in which population” (slide 36, before the diversity data of slide 37); and “and how those results are interpreted” (slide 38, before the history of slides 39–43). <a href="social-context.html">Page 3</a> covers all three.</p></div>
+  </div>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021, Box 1</div>
+  <p>The reading draws the line between the GWAS box and the rare-variant box the same way the slide does, by the kind of variant and the technology: GWAS genotype preselected variants with arrays, while whole-exome and whole-genome sequencing aim to capture all variation. “Strictly speaking, both WES and WGS studies are also GWAS, although in the literature ‘GWAS’ mostly refers to genome-wide studies of common variants and is sometimes considered separate from WGS and WES studies.”<sup class="cite"><a href="#src-4">4</a></sup></p>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> “Agnostic” does not mean free of assumptions</div>
+  <p>Linkage studies and GWAS are called agnostic because they test the whole genome instead of a candidate gene chosen in advance. Every GWAS still rests on choices: who is in the sample, how the trait is defined and measured, which covariates are adjusted for, which genetic model is fitted (usually additive) and which variants are on the array or in the imputation panel. These choices are where the social-factors box acts on the others, and where many of the later QC and analysis steps of this lecture come from.</p>
+</aside>
+
+<h2 id="course">What the course covers <span class="tag core">Core</span></h2>
+
+<p>Slide 45 grays out four boxes, molecular genetics, Mendelian genetics, familial aggregation and heritability, and linkage studies, with the note: “We will not explicitly cover the greyed out topics.” Slides 46–54 then show one session per slide with only the boxes it uses. Together with the workshop website they give this plan:<sup class="cite"><a href="#src-2">2</a>,<a href="#src-24">24</a></sup></p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>The nine sessions: date, topic, boxes of the map (slides 46–54), practical, and where this site prepares you.</caption>
+  <thead><tr><th scope="col">Session</th><th scope="col">Topic</th><th scope="col">Boxes on the slide</th><th scope="col">Practical (workshop website)</th><th scope="col">Prepare here</th></tr></thead>
+  <tbody>
+    <tr><td>1 · 9 September (slide 46)</td><td data-label="Topic">Introduction: basic concepts of population genetics; GWAS data management, quality control and quality assessment</td><td data-label="Boxes">Population genetics; GWAS</td><td data-label="Practical">QC of the PennCATH genotypes with PLINK; ancestry with GrafAnc</td><td data-label="Prepare here">This lecture: pages 1–23</td></tr>
+    <tr><td>2 · 16 September (slide 47)</td><td data-label="Topic">Basic GWAS testing, meta-analysis, visualization, annotation of results</td><td data-label="Boxes">GWAS</td><td data-label="Practical">Association tests with REGENIE in the PennCATH data; meta-analysis with METASOFT of breast cancer GWAS from three ancestry groups</td><td data-label="Prepare here"><a href="gwas-analysis.html">Page 9</a></td></tr>
+    <tr><td>3 · 30 September (slide 48)</td><td data-label="Topic">Population descriptors and gene–environment interactions</td><td data-label="Boxes">GWAS; Post-GWAS; Social factors; molecular genetics in gray</td><td data-label="Practical">Two simulated datasets with multiplicative and additive interaction</td><td data-label="Prepare here"><a href="social-context.html">Page 3</a>; <a href="population-structure.html">page 7</a></td></tr>
+    <tr><td>4 · 7 October (slide 49)</td><td data-label="Topic">Fine-mapping: methods to prioritize likely causal variants; statistical fine-mapping and colocalization</td><td data-label="Boxes">GWAS; Post-GWAS</td><td data-label="Practical">SuSiE fine-mapping of the <em>FGFR2</em> region; colocalization of GWAS and expression signals</td><td data-label="Prepare here"><a href="linkage-disequilibrium.html">Page 6</a></td></tr>
+    <tr><td>5 · 14 October (slide 50)</td><td data-label="Topic">Post-GWAS analysis: heritability, functional enrichment, integrative analyses such as TWAS</td><td data-label="Boxes">GWAS; Post-GWAS</td><td data-label="Practical">Not described on the session’s overview page, whose topics are TWAS and SNP heritability with GCTA and LD score regression</td><td data-label="Prepare here"><a href="genetic-epidemiology.html#twas">Page 1, TWAS</a>; <a href="gwas-applications.html">page 10</a></td></tr>
+    <tr><td>6 · 28 October (slide 51)</td><td data-label="Topic">Polygenic risk scores: predicting future or latent trait values</td><td data-label="Boxes">GWAS; Post-GWAS</td><td data-label="Practical">Clumping and thresholding against LDpred2 on chromosome 22</td><td data-label="Prepare here"><a href="genetic-epidemiology.html#risk-stratified">Page 1, screening</a>; <a href="gwas-applications.html">page 10</a></td></tr>
+    <tr><td>7 · 4 November (slide 52)</td><td data-label="Topic">Rare variants: hypothesis-driven and agnostic association studies</td><td data-label="Boxes">Population genetics; GWAS; Post-GWAS; Rare variant association studies; linkage studies in gray</td><td data-label="Practical">Burden tests and SKAT on simulated sequence data</td><td data-label="Prepare here"><a href="frequencies-hwe.html">Page 5</a> (rare allele frequencies)</td></tr>
+    <tr><td>8 · 18 November (slide 53)</td><td data-label="Topic">Genetic mosaicism and clonal hematopoiesis</td><td data-label="Boxes">GWAS; Post-GWAS; Rare variant association studies</td><td data-label="Practical">Not posted on 8 November 2026</td><td data-label="Prepare here"><a href="../0-biological-foundations/lecture-1-bridge.html#session-table">Lecture 0 session table</a></td></tr>
+    <tr><td>9 · 2 December (slide 54)</td><td data-label="Topic">Functional genomics</td><td data-label="Boxes">Molecular genetics; GWAS; Post-GWAS; Rare variant association studies</td><td data-label="Practical">Not posted on 8 November 2026</td><td data-label="Prepare here"><a href="../0-biological-foundations/genes-expression.html#measuring-expression">Lecture 0, measuring expression</a></td></tr>
+  </tbody>
+</table>
+</div>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 44–54 · The course on the map</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-045.jpg" alt="Lecture 1, slide 45: the field map with molecular genetics, Mendelian genetics, familial aggregation and heritability, and linkage studies grayed out, and a box saying the greyed-out topics will not be covered explicitly and recommending a chapter on basic concepts of molecular genetics" loading="lazy"><figcaption>Lecture 1 · slide 45</figcaption></figure>
+    <div><p>Slide 44 is the agenda again, now at “Course scope”. On slide 45 the note under the map recommends, as “one of my favorite short introductions”, Sue Ingles’s chapter on basic concepts of molecular genetics in Duncan Thomas’s textbook (its title is <em>Statistical Methods in Genetic Epidemiology</em>; the slide says “for”), and invites other recommendations in the chat or on the discussion page.<sup class="cite"><a href="#src-5">5</a></sup> Slides 46–54 name the instructors of each session. On slide 54 arrows run from the molecular genetics box to the post-GWAS and rare-variant boxes and back, and a cartoon by Sidney Harris sits between a red “G” (genotype) and a red “Y” (trait): two scientists at a blackboard whose derivation contains the step “Then a miracle occurs”, and one says, “I think you should be more explicit here in step two.” Functional genomics, the topic of Session 9, is the work of making that step from genotype to trait explicit.</p></div>
+  </div>
+</aside>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> What each box hands to the next</div>
+  <p>The sessions pass data along the bottom row. Session 1 produces a cleaned genotype matrix; Session 2 turns it into GWAS summary statistics, one row per variant with an effect estimate, its standard error and a p-value; Sessions 4–6 take summary statistics as their input, with a linkage disequilibrium reference panel such as 1000 Genomes; Session 7 turns to exome and genome sequence data, because most rare variants are not on arrays and are imputed poorly. Lecture 0 shows these files in <a href="../0-biological-foundations/the-data.html#gwas-output">GWAS output: summary statistics, Manhattan and QQ plots</a>.</p>
+</aside>
+
+<h2 id="next">From the map to the data <span class="tag core">Core</span></h2>
+<p>After a last call for questions (slide 55, “Fragen?”), slides 56–105 give the basic definitions that Part B of this site explains: SNP data, allele frequencies and Hardy–Weinberg equilibrium, linkage disequilibrium and population structure (<a href="snp-data.html">pages 4–7</a>). The lecture then ends with slide 106: “Enough talk… on to hands-on practice!”, and below, “After a break…”. The photograph shows two men under a banner that reads “THE TRUTH IS CONCRETE”. For this course the concrete starting point is the genotype data: before any association can be tested, every sample and every variant is checked for missing calls, deviations from Hardy–Weinberg equilibrium, unexpected relatives, outlying heterozygosity and genetic ancestry. <a href="practical-overview.html">Page 11</a> introduces that practical, and pages 15–23 take its steps one at a time.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 106 · On to the practical</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-106.jpg" alt="Lecture 1, slide 106: the heading Enough talk, on to hands-on practice, a black-and-white photograph of two men standing under a banner reading The truth is concrete, and the words After a break" loading="lazy"><figcaption>Lecture 1 · slide 106</figcaption></figure>
+    <div><p>The last slide of the lecture marks the switch from concepts to the practical, which in the workshop follows a break. On this site the practical starts at <a href="practical-overview.html">page 11</a>; <a href="plink-data.html">page 12</a> opens the PLINK files it uses.</p></div>
+  </div>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>The workshop has nine Wednesday sessions (9 September – 2 December 2026), each a lecture and a practical; Session 1 is this lecture and a practical on quality control of GWAS genotypes.</li>
+    <li>Genetic epidemiology joined Mendelian and statistical genetics, clinical genetics and molecular genetics with the methods of epidemiology; Neel (1984) tied it to multifactorial causation, which needs population samples, measured exposures and attention to confounding.</li>
+    <li>The statistics the field uses (correlation, chi-square, variance components) were built in part by advocates of eugenics; slide 39 makes this history part of the field’s own, and it matters most when results about groups are interpreted.</li>
+    <li>On the field map each box has its own design, data and statistic: pedigrees and LOD scores for linkage, a genotype matrix and one regression per variant for GWAS, summary statistics and reference data after GWAS, sequences and gene-level tests for rare variants.</li>
+    <li>The course covers the GWAS row and what follows it; family-based and laboratory boxes are left out (slide 45), and social factors frame everything (Session 3, page 3).</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A study recruits 300 families in which at least two siblings have early-onset colorectal cancer and genotypes about 400 markers spread over the genome. Another genotypes 600,000 variants in 20,000 unrelated cases and 20,000 controls. Which box of the map does each belong to, and which statistic does each report?</summary><div class="a"><p>The first is a linkage study: affected relatives share stretches of the genome around a disease variant more often than chance predicts, and the statistic is the LOD score, the base-10 logarithm of the likelihood ratio of linkage against no linkage, with 3 or more as evidence. It works best for rare variants with large effects, such as those in Lynch syndrome genes.</p><p>The second is a GWAS: one logistic regression per variant on case status, adjusted for ancestry, with genome-wide significance at a p-value below 5 × 10<sup>−8</sup>. It works best for common variants with small effects.</p></div></details>
+  <details class="q"><summary>Slide 28 joins three traditions. For each, name one kind of data it contributed and one place where that data or method appears in the Session 1 practical.</summary><div class="a"><p>Mendelian and statistical genetics contributed pedigrees, segregation ratios and population genetics; the practical tests each variant for Hardy–Weinberg equilibrium (page 16) and checks relatedness between samples (page 18).</p><p>Clinical genetics contributed the study of patients with defined diagnoses; PennCATH is a hospital-based study of coronary artery disease in people who had coronary angiography (<a href="practical-overview.html#penncath">page 11</a>). Molecular genetics contributed DNA markers and genotyping technology; the practical starts from array genotypes in PLINK files (page 12) and uses the 1000 Genomes reference panel (page 21).</p></div></details>
+  <details class="q"><summary>What does Neel mean by “multifactorial causation”, and why does it call for “the epidemiological approach” rather than the methods of classical Mendelian genetics?</summary><div class="a"><p>Multifactorial causation means that a disease arises from many genetic variants and environmental exposures, each changing risk by a small amount, rather than from one variant that nearly determines the disease. Following one trait through a pedigree, the classical Mendelian method, cannot detect effects that small.</p><p>Small effects need large samples from defined populations, measurement of exposures and covariates, and control of confounding: the tools of epidemiology. A GWAS applies them variant by variant, and studies of gene–environment interaction (Session 3) apply them to genes and exposures together.</p></div></details>
+  <details class="q"><summary>Slide 45 grays out “Familial aggregation, heritability”, yet Session 5 covers heritability. How can both be true?</summary><div class="a"><p>The gray box refers to family-based estimates: twin and family studies compare the similarity of relatives of different kinds, for example identical and fraternal twins, to estimate heritability.</p><p>Session 5 estimates SNP heritability from GWAS data on unrelated people, the share of trait variance explained by the measured variants together, with methods such as GCTA and LD score regression. It belongs to the Post-GWAS box, which the course covers. SNP heritability is usually lower than twin heritability, because arrays do not capture all genetic variation; the gap is part of the “missing heritability” question.</p></div></details>
+  <details class="q"><summary>Which box is highlighted in all nine sessions, which boxes are never highlighted, and which session is the only one to highlight social factors?</summary><div class="a"><p>GWAS is highlighted in every session (slides 46–54). Mendelian genetics and familial aggregation and heritability never appear. Linkage studies appear only once, in gray, as the predecessor of rare variant studies (Session 7); molecular genetics appears in gray in Session 3 and is highlighted in Session 9, functional genomics.</p><p>Social factors are highlighted only in Session 3 (population descriptors and gene–environment interaction), although slides 30–43 argue that they shape every box.</p></div></details>
+  <details class="q"><summary>A blog post cites GWAS results to argue that differences in an outcome between two countries are genetic. Which part of the social-factors sentence on slides 29–38 applies, and what does slide 39 add?</summary><div class="a"><p>The last clause applies: social contexts influence “how those results are interpreted”. A GWAS finds variants associated with a trait within the populations studied; differences between countries also reflect environments, history and who was sampled, and allele frequencies differ between populations for reasons unrelated to the trait. The earlier clauses apply too: which populations were studied, and how the trait was measured.</p><p>Slide 39 adds that using genetics to explain and justify social hierarchy is part of the field’s own history, from Galton’s eugenics onward, so arguments of this kind are an old misuse rather than a new finding. <a href="social-context.html">Page 3</a> discusses this.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://dceg-workshops.github.io/statistical_genetics_workshop/" target="_blank" rel="noopener">DCEG Statistical Genetics Workshop</a> <span class="src">· National Cancer Institute</span> <span class="level intro">intro</span> — the session pages, readings, lecture slides and practicals of the course.</li>
+    <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7036654/" target="_blank" rel="noopener">The evolving field of genetic epidemiology: from familial aggregation to genomic sequencing</a> <span class="src">· Duggal et al., American Journal of Epidemiology 2019</span> <span class="level intro">intro</span> — the history behind slides 26–29, with the designs of each era.</li>
+    <li><a href="https://doi.org/10.1093/oso/9780195159394.003.0002" target="_blank" rel="noopener">Basic concepts of molecular genetics</a> <span class="src">· Ingles, in Thomas, Statistical Methods in Genetic Epidemiology, 2004</span> <span class="level intro">intro</span> — the chapter slide 45 recommends for the gray molecular box.</li>
+    <li><a href="https://doi.org/10.1016/j.ajhg.2017.06.005" target="_blank" rel="noopener">10 years of GWAS discovery: biology, function, and translation</a> <span class="src">· Visscher et al., American Journal of Human Genetics 2017</span> <span class="level intermediate">intermediate</span> — what the GWAS and post-GWAS boxes produced in their first decade.</li>
+    <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8115641/" target="_blank" rel="noopener">The outstanding scientist, R.A. Fisher: his views on eugenics and race</a> <span class="src">· Bodmer et al., Heredity 2021</span> <span class="level intermediate">intermediate</span> — Fisher’s statistics and his eugenics, discussed by statisticians and geneticists.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">DCEG Statistical Genetics Workshop. Home page: background, course description, course format, intended audience. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/" target="_blank" rel="noopener">dceg-workshops.github.io/statistical_genetics_workshop</a></li>
+    <li id="src-2">DCEG Statistical Genetics Workshop. Statistical Genetics Workshop schedule for fall 2026 (posted 1 July 2026). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/2026/07/01/save-the-dates.html" target="_blank" rel="noopener">dceg-workshops.github.io</a></li>
+    <li id="src-3">DCEG Statistical Genetics Workshop. Sessions; discussion board. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions" target="_blank" rel="noopener">dceg-workshops.github.io</a>; <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/discussions" target="_blank" rel="noopener">github.com/DCEG-workshops</a></li>
+    <li id="src-4">Uffelmann E, Huang QQ, Munung NS, et al. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-5">Ingles S. Basic concepts of molecular genetics. In: Thomas DC. <em>Statistical Methods in Genetic Epidemiology</em>. Oxford University Press; 2004. <a href="https://doi.org/10.1093/oso/9780195159394.003.0002" target="_blank" rel="noopener">doi:10.1093/oso/9780195159394.003.0002</a></li>
+    <li id="src-6">DCEG Statistical Genetics Workshop. Session 1: Practical. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">dceg-workshops.github.io</a></li>
+    <li id="src-7">DCEG Statistical Genetics Workshop, 2023 edition (archive). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/2023/" target="_blank" rel="noopener">dceg-workshops.github.io</a></li>
+    <li id="src-8">Duggal P, Ladd-Acosta C, Ray D, Beaty TH. The evolving field of genetic epidemiology: from familial aggregation to genomic sequencing. <em>Am J Epidemiol</em>. 2019;188:2069–2077. <a href="https://doi.org/10.1093/aje/kwz193" target="_blank" rel="noopener">doi:10.1093/aje/kwz193</a></li>
+    <li id="src-9">Mendel G. Versuche über Pflanzen-Hybriden. <em>Verhandlungen des naturforschenden Vereines in Brünn</em>. 1866;4:3–47.</li>
+    <li id="src-10">Galton F. Regression towards mediocrity in hereditary stature. <em>Journal of the Anthropological Institute of Great Britain and Ireland</em>. 1886;15:246–263.</li>
+    <li id="src-11">Hardy GH. Mendelian proportions in a mixed population. <em>Science</em>. 1908;28:49–50. <a href="https://doi.org/10.1126/science.28.706.49" target="_blank" rel="noopener">doi:10.1126/science.28.706.49</a></li>
+    <li id="src-12">Fisher RA. The correlation between relatives on the supposition of Mendelian inheritance. <em>Transactions of the Royal Society of Edinburgh</em>. 1918;52:399–433.</li>
+    <li id="src-13">Garrod AE. The incidence of alkaptonuria: a study in chemical individuality. <em>Lancet</em>. 1902;160:1616–1620.</li>
+    <li id="src-14">Neel JV. The inheritance of sickle cell anemia. <em>Science</em>. 1949;110:64–66. <a href="https://doi.org/10.1126/science.110.2846.64" target="_blank" rel="noopener">doi:10.1126/science.110.2846.64</a></li>
+    <li id="src-15">Watson JD, Crick FH. Molecular structure of nucleic acids; a structure for deoxyribose nucleic acid. <em>Nature</em>. 1953;171:737–738. <a href="https://doi.org/10.1038/171737a0" target="_blank" rel="noopener">doi:10.1038/171737a0</a></li>
+    <li id="src-16">Lander ES, Linton LM, Birren B, et al. Initial sequencing and analysis of the human genome. <em>Nature</em>. 2001;409:860–921. <a href="https://doi.org/10.1038/35057062" target="_blank" rel="noopener">doi:10.1038/35057062</a></li>
+    <li id="src-17">International HapMap Consortium. A haplotype map of the human genome. <em>Nature</em>. 2005;437:1299–1320. <a href="https://doi.org/10.1038/nature04226" target="_blank" rel="noopener">doi:10.1038/nature04226</a></li>
+    <li id="src-18">Neel JV. Editorial. <em>Genet Epidemiol</em>. 1984;1(1):5–6. <a href="https://doi.org/10.1002/gepi.1370010103" target="_blank" rel="noopener">doi:10.1002/gepi.1370010103</a> (quotations as given on slide 28).</li>
+    <li id="src-19">Bodmer W, Bailey RA, Charlesworth B, et al. The outstanding scientist, R.A. Fisher: his views on eugenics and race. <em>Heredity</em>. 2021;126:565–576. <a href="https://doi.org/10.1038/s41437-020-00394-6" target="_blank" rel="noopener">doi:10.1038/s41437-020-00394-6</a></li>
+    <li id="src-20">Polderman TJC, Benyamin B, de Leeuw CA, et al. Meta-analysis of the heritability of human traits based on fifty years of twin studies. <em>Nat Genet</em>. 2015;47:702–709. <a href="https://doi.org/10.1038/ng.3285" target="_blank" rel="noopener">doi:10.1038/ng.3285</a></li>
+    <li id="src-21">1000 Genomes Project Consortium. A global reference for human genetic variation. <em>Nature</em>. 2015;526:68–74. <a href="https://doi.org/10.1038/nature15393" target="_blank" rel="noopener">doi:10.1038/nature15393</a></li>
+    <li id="src-22">Hall JM, Lee MK, Newman B, et al. Linkage of early-onset familial breast cancer to chromosome 17q21. <em>Science</em>. 1990;250:1684–1689. <a href="https://doi.org/10.1126/science.2270482" target="_blank" rel="noopener">doi:10.1126/science.2270482</a></li>
+    <li id="src-23">Wellcome Trust Case Control Consortium. Genome-wide association study of 14,000 cases of seven common diseases and 3,000 shared controls. <em>Nature</em>. 2007;447:661–678. <a href="https://doi.org/10.1038/nature05911" target="_blank" rel="noopener">doi:10.1038/nature05911</a></li>
+    <li id="src-24">DCEG Statistical Genetics Workshop. Session pages 1–9 (overview, lecture and practical tabs), read 8 November 2026. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions" target="_blank" rel="noopener">dceg-workshops.github.io</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

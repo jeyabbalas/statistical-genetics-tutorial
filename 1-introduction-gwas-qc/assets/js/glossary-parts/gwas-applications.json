@@ -1,0 +1,920 @@
+[
+ {
+  "id": "genetic-correlation",
+  "term": "Genetic correlation",
+  "aka": [
+   "rg",
+   "SNP-based genetic correlation"
+  ],
+  "short": "The correlation, from −1 to 1, between the effects of genetic variants on two traits: how far the alleles that raise one trait also raise (or lower) the other. It can be estimated from the GWAS summary statistics of the two traits.",
+  "long": "<p>Cross-trait LD score regression regresses the product of the two traits’ z-scores at each SNP on the SNP’s LD score; the slope gives the genetic covariance, which divided by the square root of the product of the two SNP-heritabilities gives \\(r_g\\). People included in both GWAS shift only the intercept, so overlapping samples do not bias it. Genetic correlations are high among psychiatric disorders and among metabolic traits, but a genetic correlation does not show that one trait causes the other: horizontal or LD-induced pleiotropy, cross-trait assortative mating and residual stratification can also produce it.</p>",
+  "l1": "Slide 50 (Session 5 covers heritability and other post-GWAS analyses); page 10 (genetic architecture), with the cross-trait LD score regression equation.",
+  "see": [
+   "ld-score-regression",
+   "snp-heritability",
+   "pleiotropy",
+   "vertical-pleiotropy",
+   "local-genetic-correlation",
+   "assortative-mating",
+   "mendelian-randomization"
+  ],
+  "links": [
+   {
+    "t": "Bulik-Sullivan et al. 2015, Nat Genet: an atlas of genetic correlations",
+    "u": "https://doi.org/10.1038/ng.3406"
+   }
+  ],
+  "match": [
+   "genetic correlation"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "auc",
+  "term": "AUC (area under the ROC curve)",
+  "aka": [
+   "area under the curve",
+   "C statistic",
+   "concordance statistic"
+  ],
+  "short": "A measure of how well a score separates people who have or will get a disease from those who do not: the probability that a randomly chosen case has a higher score than a randomly chosen non-case. 0.5 is no better than chance; 1 is perfect separation.",
+  "long": "<p>The AUC is the area under the ROC curve, which plots the true-positive rate against the false-positive rate as the cut-off moves. It does not depend on how common the disease is, which makes it easy to compare across studies but says nothing about absolute risk: when a disease is rare, even a score with a high AUC gives most people who test positive a low risk. Wray and colleagues showed how the AUC of a polygenic score follows from the variance it explains on the liability scale and the prevalence, so the SNP-heritability sets a ceiling on the AUC of any polygenic score.</p>",
+  "l1": "Slide 51 (Session 6 covers polygenic risk scores); page 10 (the accuracy of polygenic scores) and its widget.",
+  "see": [
+   "roc-curve",
+   "sensitivity-specificity",
+   "polygenic-score",
+   "absolute-risk",
+   "liability-scale",
+   "net-reclassification-index"
+  ],
+  "links": [
+   {
+    "t": "Wray et al. 2010, PLoS Genet: the genetic interpretation of area under the ROC curve",
+    "u": "https://doi.org/10.1371/journal.pgen.1000864"
+   }
+  ],
+  "match": [
+   "AUC",
+   "area under the ROC curve",
+   "area under the receiver operating characteristic curve",
+   "area under the curve"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "roc-curve",
+  "term": "ROC curve (receiver operating characteristic curve)",
+  "aka": [
+   "receiver operating characteristic curve"
+  ],
+  "short": "A plot of a score’s true-positive rate (the share of cases above a cut-off) against its false-positive rate (the share of non-cases above it), for every possible cut-off. The closer the curve comes to the top-left corner, the better the score separates cases from non-cases.",
+  "long": "<p>Each point is one cut-off. Calling everyone high-risk gives the point (1, 1), calling no one gives (0, 0), and a useless score follows the diagonal between them. For a published coronary artery disease score, a cut-off with a false-positive rate of 5% detects only about 15% of future cases, although the people with the highest scores have several times the average risk. The area under the curve (AUC) summarizes the whole curve in one number.</p>",
+  "l1": "Slide 51 (Session 6 covers polygenic risk scores); page 10 (the accuracy of polygenic scores; from relative to absolute risk).",
+  "see": [
+   "auc",
+   "sensitivity-specificity",
+   "absolute-risk",
+   "polygenic-score",
+   "net-reclassification-index"
+  ],
+  "links": [
+   {
+    "t": "Wald & Old 2019, Genet Med: the illusion of polygenic disease risk prediction",
+    "u": "https://doi.org/10.1038/s41436-018-0418-5"
+   }
+  ],
+  "match": [
+   "ROC curve",
+   "receiver operating characteristic curve",
+   "receiver operating characteristic"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "sensitivity-specificity",
+  "term": "Sensitivity and specificity",
+  "aka": [
+   "true-positive rate",
+   "detection rate",
+   "false-positive rate"
+  ],
+  "short": "Two measures of a test, or of a score with a cut-off. Sensitivity (the true-positive or detection rate) is the share of people with the condition who test positive; specificity is the share of people without it who test negative, and one minus specificity is the false-positive rate.",
+  "long": "<p>Moving the cut-off trades one for the other: a lower cut-off detects more cases but flags more people without the condition. The ROC curve plots sensitivity against the false-positive rate for every cut-off. Neither measure depends on how common the condition is, but the share of positives who truly have it (the positive predictive value) does: in newborn screening for a condition with 1 case in 25,000 births, a false-positive rate of 0.05% gives about 12 false positives for every true one.</p>",
+  "l1": "Page 10 (the accuracy of polygenic scores); page 1 (newborn screening).",
+  "see": [
+   "roc-curve",
+   "auc",
+   "positive-predictive-value",
+   "absolute-risk",
+   "newborn-screening"
+  ],
+  "links": [
+   {
+    "t": "Altman & Bland 1994, BMJ: diagnostic tests 1, sensitivity and specificity",
+    "u": "https://doi.org/10.1136/bmj.308.6943.1552"
+   }
+  ],
+  "match": [
+   "sensitivity and specificity",
+   "true-positive rate",
+   "false-positive rate",
+   "detection rate"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "winners-curse",
+  "term": "Winner’s curse",
+  "aka": [
+   "winner's curse",
+   "Beavis effect"
+  ],
+  "short": "The overestimation of the effects of variants that were selected because they passed a significance threshold. Among SNPs with the same true effect, those whose estimates happened to come out too large are the ones that pass, so significant estimates are biased upward, most strongly when power is low.",
+  "long": "<p>For a SNP whose expected z-score is \\(\\mu\\), the significant z-scores average \\(\\mu + \\phi(c-\\mu)/Q(c-\\mu)\\), where \\(c\\) is the critical value, \\(\\phi\\) the standard normal density and \\(Q(x)\\) the probability that a standard normal value exceeds \\(x\\). With \\(\\mu = 4.5\\) and \\(c = 5.45\\), only 17% of such SNPs pass, and their estimates average 1.33 times the truth; with \\(\\mu = 7\\), almost all pass and the excess is 2%. The bias carries into everything built on discovery estimates: replication studies planned on them are underpowered, and polygenic scores and Mendelian randomization estimates that use one sample for both selection and estimation are distorted. Estimates from an independent replication sample are unbiased.</p>",
+  "l1": "Page 10 (what a GWAS cannot tell us) derives it and simulates it.",
+  "see": [
+   "replication",
+   "statistical-power",
+   "effect-size",
+   "genome-wide-significance",
+   "polygenic-score"
+  ],
+  "links": [
+   {
+    "t": "Göring, Terwilliger & Blangero 2001, Am J Hum Genet",
+    "u": "https://doi.org/10.1086/324471"
+   },
+   {
+    "t": "Kraft 2008, Epidemiology: curses, winner’s and otherwise, in genetic epidemiology",
+    "u": "https://doi.org/10.1097/EDE.0b013e318181b865"
+   }
+  ],
+  "match": [
+   "winner’s curse",
+   "winner's curse"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "absolute-risk",
+  "term": "Absolute risk",
+  "aka": [
+   "cumulative risk"
+  ],
+  "short": "The probability that a person develops a disease over a stated period, such as 10 years or a lifetime. Unlike a relative risk or an odds ratio, it depends on how common the disease is, and it is what a person needs in order to make a decision.",
+  "long": "<p>A relative risk of 3 means 3% instead of 1% for a rare disease but 30% instead of 10% for a common one. The absolute risk of people with a high polygenic score therefore depends both on the score’s relative risk and on the incidence of the disease at their age, sex and ancestry. Risk models such as BOADICEA combine a polygenic score with family history and other risk factors and turn the result into an absolute risk for one person.</p>",
+  "l1": "Slide 51 (Session 6 covers polygenic risk scores); page 10 (from relative to absolute risk); page 1 (risk-stratified screening).",
+  "see": [
+   "relative-risk",
+   "odds-ratio",
+   "prevalence",
+   "incidence",
+   "polygenic-score",
+   "risk-stratified-screening",
+   "boadicea"
+  ],
+  "links": [
+   {
+    "t": "Lewis & Vassos 2020, Genome Med: polygenic risk scores, from research tools to clinical instruments",
+    "u": "https://doi.org/10.1186/s13073-020-00742-5"
+   }
+  ],
+  "match": [
+   "absolute risk"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "mr-egger",
+  "term": "MR-Egger regression",
+  "aka": [
+   "MR-Egger",
+   "Egger regression"
+  ],
+  "short": "A Mendelian randomization method that regresses the SNPs’ effects on the outcome on their effects on the exposure without forcing the line through zero. The slope estimates the causal effect even when SNPs have direct effects on the outcome, provided those effects are independent of the SNPs’ strength; an intercept away from zero signals directional pleiotropy.",
+  "long": "<p>The SNPs are first oriented so that every effect on the exposure is positive. The independence condition is called InSIDE (instrument strength independent of direct effect). The price of the free intercept is precision: the standard error of the MR-Egger slope is usually much larger than that of the inverse-variance-weighted estimate, and the method needs SNPs whose effects on the exposure differ in size. It borrows its idea from Egger’s test for small-study bias in meta-analysis.</p>",
+  "l1": "Page 10 (Mendelian randomization) and its widget; page 1 introduces Mendelian randomization.",
+  "see": [
+   "mendelian-randomization",
+   "inverse-variance-weighting",
+   "horizontal-pleiotropy",
+   "weighted-median-estimator",
+   "instrumental-variable"
+  ],
+  "links": [
+   {
+    "t": "Bowden, Davey Smith & Burgess 2015, Int J Epidemiol",
+    "u": "https://doi.org/10.1093/ije/dyv080"
+   }
+  ],
+  "match": [
+   "MR-Egger",
+   "MR-Egger regression",
+   "Egger regression"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "weighted-median-estimator",
+  "term": "Weighted median estimator",
+  "aka": [
+   "weighted median"
+  ],
+  "short": "A Mendelian randomization estimate: the median of the per-SNP causal estimates (Wald ratios), each weighted by its precision. It stays close to the true effect if at least half of the total weight comes from SNPs that are valid instruments.",
+  "long": "<p>The ratios are sorted, their weights accumulated, and the estimate is the ratio at which the cumulative weight reaches 50% (interpolating between neighbors). A few strongly pleiotropic SNPs therefore move it little, whatever the direction of their effects. It is more precise than MR-Egger but less precise than the inverse-variance-weighted estimate when all SNPs are valid, and its standard error is obtained by bootstrapping.</p>",
+  "l1": "Page 10 (Mendelian randomization).",
+  "see": [
+   "mendelian-randomization",
+   "wald-ratio",
+   "mr-egger",
+   "inverse-variance-weighting",
+   "horizontal-pleiotropy"
+  ],
+  "links": [
+   {
+    "t": "Bowden et al. 2016, Genet Epidemiol",
+    "u": "https://doi.org/10.1002/gepi.21965"
+   }
+  ],
+  "match": [
+   "weighted median estimator",
+   "weighted median",
+   "weighted-median"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "net-reclassification-index",
+  "term": "Net reclassification index (NRI)",
+  "aka": [
+   "NRI",
+   "net reclassification improvement"
+  ],
+  "short": "A measure of how much adding a new predictor, such as a polygenic score, to a risk model moves people into more appropriate risk categories: the share of future cases moved up minus the share moved down, plus the share of non-cases moved down minus the share moved up.",
+  "long": "<p>If adding a score moves 10% of future cases up and 4% down, and 6% of non-cases down and 5% up, the NRI is \\((0.10 - 0.04) + (0.06 - 0.05) = 0.07\\). It depends on the chosen risk categories, and its two parts should be reported separately, because the same total can come from very different effects on cases and on non-cases.</p>",
+  "l1": "Page 10 (from relative to absolute risk).",
+  "see": [
+   "absolute-risk",
+   "auc",
+   "polygenic-score"
+  ],
+  "links": [
+   {
+    "t": "Pencina et al. 2008, Stat Med",
+    "u": "https://doi.org/10.1002/sim.2929"
+   }
+  ],
+  "match": [
+   "net reclassification index",
+   "net reclassification improvement",
+   "NRI"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "within-family-gwas",
+  "term": "Within-family GWAS (within-sibship GWAS)",
+  "aka": [
+   "within-sibship GWAS",
+   "sibling GWAS"
+  ],
+  "short": "A GWAS that compares relatives, usually siblings, instead of unrelated people: differences in a trait between siblings are regressed on differences in their genotypes. Siblings share their parents, their ancestry and much of their environment, so the estimate is free of confounding by these and measures the direct genetic effect.",
+  "long": "<p>Which allele of each parent a sibling inherits is random, so the difference in genotype between siblings works like a randomized experiment. The cost is precision: \\(n\\) sibling pairs carry as much genotype variation as \\(n\\) unrelated people, not the \\(2n\\) people genotyped. In 178,086 siblings from 19 cohorts, within-sibship estimates were smaller than population estimates for height, educational attainment, age at first birth, number of children, cognitive ability, depressive symptoms and smoking, while molecular traits such as LDL cholesterol gave consistent estimates.</p>",
+  "l1": "Page 10 (direct effects, indirect effects and assortative mating), with the within-sibship model; page 8 (families as a study design).",
+  "see": [
+   "direct-genetic-effect",
+   "indirect-genetic-effect",
+   "assortative-mating",
+   "population-stratification",
+   "transmission-disequilibrium-test"
+  ],
+  "links": [
+   {
+    "t": "Howe et al. 2022, Nat Genet: within-sibship GWAS",
+    "u": "https://doi.org/10.1038/s41588-022-01062-7"
+   },
+   {
+    "t": "Brumpton et al. 2020, Nat Commun: within-family Mendelian randomization",
+    "u": "https://doi.org/10.1038/s41467-020-17117-4"
+   }
+  ],
+  "match": [
+   "within-family GWAS",
+   "within-sibship GWAS",
+   "within-family analysis",
+   "within-family analyses",
+   "within-family design",
+   "within-family MR",
+   "within-sibship"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "direct-genetic-effect",
+  "term": "Direct genetic effect",
+  "aka": [],
+  "short": "The effect of an allele in a person’s own genome on that person’s own trait, as opposed to the effects of relatives’ alleles acting through the environment they provide (indirect genetic effects).",
+  "long": "<p>A GWAS of unrelated people estimates the direct effect plus indirect genetic effects, confounding by ancestry and the correlations between alleles created by assortative mating. Comparing siblings, or adjusting for the parents’ genotypes in trios, isolates the direct effect. For molecular traits the two kinds of estimate agree; for behavioral and social traits such as educational attainment, the direct effect is a much smaller part of the population estimate.</p>",
+  "l1": "Page 10 (direct effects, indirect effects and assortative mating); page 8 (families as a study design).",
+  "see": [
+   "indirect-genetic-effect",
+   "within-family-gwas",
+   "assortative-mating",
+   "population-stratification"
+  ],
+  "links": [
+   {
+    "t": "Howe et al. 2022, Nat Genet: within-sibship GWAS",
+    "u": "https://doi.org/10.1038/s41588-022-01062-7"
+   }
+  ],
+  "match": [
+   "direct genetic effect"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "indirect-genetic-effect",
+  "term": "Indirect genetic effect (genetic nurture)",
+  "aka": [
+   "genetic nurture",
+   "dynastic effect"
+  ],
+  "short": "An effect of a relative’s genotype, usually a parent’s, on a person’s trait through the environment the relative provides. Parents’ alleles that were not transmitted to a child can still affect the child this way.",
+  "long": "<p>In 21,637 Icelanders with at least one genotyped parent, a polygenic score for educational attainment built from the alleles the parents did not transmit still predicted the child’s education, with an effect 29.9% as large as that of the transmitted alleles. Children inherit half of each parent’s alleles, so in a GWAS of unrelated people the indirect effects of the parents’ copies are added to the direct effect estimated for each allele.</p>",
+  "l1": "Page 10 (direct effects, indirect effects and assortative mating); page 8 (families as a study design).",
+  "see": [
+   "direct-genetic-effect",
+   "within-family-gwas",
+   "polygenic-score",
+   "assortative-mating"
+  ],
+  "links": [
+   {
+    "t": "Kong et al. 2018, Science: the nature of nurture",
+    "u": "https://doi.org/10.1126/science.aan6877"
+   }
+  ],
+  "match": [
+   "indirect genetic effect",
+   "indirect effect",
+   "genetic nurture",
+   "dynastic effect"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "assortative-mating",
+  "term": "Assortative mating",
+  "aka": [
+   "cross-trait assortative mating"
+  ],
+  "short": "The tendency of people to choose partners who resemble them in a trait, such as height or education, more than random pairs do. It correlates alleles that affect the trait within the children’s genomes and so changes GWAS estimates, heritabilities and genetic correlations.",
+  "long": "<p>If tall people tend to have tall partners, their children inherit height-raising alleles from both parents together, so such alleles at different loci become correlated. A GWAS of unrelated people then picks up part of the effects of other loci at each SNP, and estimates of heritability from unrelated people are biased. In cross-trait assortative mating, one trait of a person correlates with a different trait of the partner; the children then carry alleles for both traits together, which creates a genetic correlation between the traits without any shared biology. Within-family designs remove these effects.</p>",
+  "l1": "Page 10 (genetic correlation, and direct effects, indirect effects and assortative mating).",
+  "see": [
+   "genetic-correlation",
+   "within-family-gwas",
+   "direct-genetic-effect",
+   "snp-heritability",
+   "ld"
+  ],
+  "links": [
+   {
+    "t": "Border et al. 2022, Science: cross-trait assortative mating inflates genetic correlation estimates",
+    "u": "https://doi.org/10.1126/science.abo2059"
+   },
+   {
+    "t": "Border et al. 2022, Nat Commun: assortative mating biases marker-based heritability estimators",
+    "u": "https://doi.org/10.1038/s41467-022-28294-9"
+   }
+  ],
+  "match": [
+   "assortative mating",
+   "cross-trait assortative mating"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "pgs-catalog",
+  "term": "PGS Catalog",
+  "aka": [
+   "Polygenic Score Catalog"
+  ],
+  "short": "An open database of published polygenic scores, run by EMBL-EBI and partners. For each score it gives the scoring file (variants, effect alleles and weights), how the score was developed and each published evaluation of its accuracy, with the ancestry of the samples.",
+  "long": "<p>Its release of 23 October 2026 held 7,029 scores for 820 traits from 850 publications. Scoring files can be applied to new genotype data with PLINK’s <code>--score</code> or the catalog’s own pipeline, pgsc_calc. A score’s reported accuracy holds for the population in which it was evaluated; the catalog’s ancestry information shows how far that population is from the one in which the score will be used.</p>",
+  "l1": "Slide 51 (Session 6 covers polygenic risk scores); page 10 (polygenic scores).",
+  "see": [
+   "polygenic-score",
+   "gwas-catalog",
+   "summary-statistics"
+  ],
+  "links": [
+   {
+    "t": "PGS Catalog",
+    "u": "https://www.pgscatalog.org/"
+   },
+   {
+    "t": "Lambert et al. 2021, Nat Genet",
+    "u": "https://doi.org/10.1038/s41588-021-00783-5"
+   },
+   {
+    "t": "Lambert et al. 2024, Nat Genet: pgsc_calc",
+    "u": "https://doi.org/10.1038/s41588-024-01937-x"
+   }
+  ],
+  "match": [
+   "PGS Catalog",
+   "Polygenic Score Catalog"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "preregistration",
+  "term": "Preregistration (and registered reports)",
+  "aka": [
+   "pre-registration",
+   "registered report",
+   "HARKing"
+  ],
+  "short": "Publicly recording a study’s hypotheses, data and analysis plan, with a date, before analyzing the data. It separates planned from exploratory analyses and prevents choosing the analysis after seeing the results.",
+  "long": "<p>Plans can be deposited at the Open Science Framework, under an embargo if needed. In a registered report, a journal reviews the introduction and methods before the results exist and commits to publishing the paper if the plan is followed, whatever the results. Both protect against hypothesizing after the results are known (HARKing) and against trying many analyses and reporting the one that worked, practices that inflate the type 1 error rate. A GWAS already tests every variant in a predefined way, so preregistration matters most for follow-up analyses with many choices, such as polygenic score, Mendelian randomization and gene-set analyses.</p>",
+  "l1": "Page 10 (sharing results).",
+  "see": [
+   "type-1-error",
+   "multiple-testing",
+   "fair-principles"
+  ],
+  "links": [
+   {
+    "t": "Nosek et al. 2018, PNAS: the preregistration revolution",
+    "u": "https://doi.org/10.1073/pnas.1708274114"
+   },
+   {
+    "t": "Open Science Framework registries",
+    "u": "https://osf.io/registries"
+   }
+  ],
+  "match": [
+   "preregistration",
+   "pre-registration",
+   "preregistered",
+   "registered report",
+   "HARKing"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "controlled-access",
+  "term": "Controlled access",
+  "aka": [
+   "managed access",
+   "data access committee"
+  ],
+  "short": "A way of sharing data that could identify people: researchers apply, a data access committee checks that the proposed use matches the participants’ consent and the data’s restrictions, and approved users sign an agreement on security and use.",
+  "long": "<p>Individual-level genotypes are always shared this way, because a person’s genotypes at a modest number of independent SNPs identify them uniquely. Summary statistics were moved behind controlled access by the NIH in 2008 and opened again for most studies in 2018; summary results of sensitive studies, such as those of stigmatizing traits or of small or isolated communities, stay controlled. Repositories with controlled access include dbGaP, the European Genome-phenome Archive and UK Biobank’s access system.</p>",
+  "l1": "Page 10 (privacy and controlled access).",
+  "see": [
+   "dbgap",
+   "data-use-limitation",
+   "informed-consent",
+   "summary-statistics",
+   "fair-principles"
+  ],
+  "links": [
+   {
+    "t": "Homer et al. 2008, PLoS Genet",
+    "u": "https://doi.org/10.1371/journal.pgen.1000167"
+   },
+   {
+    "t": "Lin, Owen & Altman 2004, Science: genomic research and human subject privacy",
+    "u": "https://doi.org/10.1126/science.1095019"
+   }
+  ],
+  "match": [
+   "controlled access",
+   "controlled-access",
+   "managed access",
+   "data access committee"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "clumping-and-thresholding",
+  "term": "Clumping and thresholding (C+T)",
+  "aka": [
+   "C+T",
+   "P+T",
+   "pruning and thresholding"
+  ],
+  "short": "The simplest way to build a polygenic score: keep the most significant SNP in each LD block (clumping), keep only those with p-values below a threshold (thresholding), and weight each by its GWAS effect estimate.",
+  "long": "<p>Several thresholds are usually tried (for example 5 × 10⁻⁸, 10⁻⁵, 0.001, 0.05, 0.5 and 1), and the one whose score predicts best in a validation sample is chosen; accuracy must then be measured in a separate test sample, or the choice inflates it. C+T discards SNPs in LD with a stronger one and uses estimates that are not shrunk, so methods that model LD and shrink effects jointly, such as LDpred2 and PRS-CS, usually predict better, especially for highly polygenic traits.</p>",
+  "l1": "Slide 51 (Session 6 covers polygenic risk scores; its practical compares C+T with LDpred2); page 10 (methods for polygenic scores).",
+  "see": [
+   "polygenic-score",
+   "ld-clumping",
+   "ldpred",
+   "prs-cs",
+   "winners-curse"
+  ],
+  "links": [
+   {
+    "t": "Choi, Mak & O’Reilly 2020, Nat Protoc: a guide to performing polygenic risk score analyses",
+    "u": "https://doi.org/10.1038/s41596-020-0353-1"
+   },
+   {
+    "t": "Choi & O’Reilly 2019, GigaScience: PRSice-2",
+    "u": "https://doi.org/10.1093/gigascience/giz082"
+   }
+  ],
+  "match": [
+   "clumping and thresholding",
+   "C+T",
+   "P+T",
+   "pruning and thresholding"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "ldpred",
+  "term": "LDpred (LDpred2)",
+  "aka": [
+   "LDpred2"
+  ],
+  "short": "A Bayesian method for polygenic scores that re-estimates the effects of all SNPs jointly from GWAS summary statistics and LD from a reference panel, shrinking them according to a prior on how many SNPs are causal and how much heritability they explain.",
+  "long": "<p>Where C+T keeps one SNP per LD block, LDpred spreads the signal of a block over its correlated SNPs in proportion to the evidence, and shrinks noisy estimates toward zero. LDpred2 (2020) either estimates the prior’s parameters from the data (LDpred2-auto) or chooses them in a validation sample (LDpred2-grid); it is implemented in the R package bigsnpr.</p>",
+  "l1": "Slide 51 (Session 6 covers polygenic risk scores; its practical compares LDpred2 with C+T); page 10 (methods for polygenic scores).",
+  "see": [
+   "polygenic-score",
+   "clumping-and-thresholding",
+   "prs-cs",
+   "ld-reference-panel",
+   "snp-heritability"
+  ],
+  "links": [
+   {
+    "t": "Vilhjálmsson et al. 2015, Am J Hum Genet: LDpred",
+    "u": "https://doi.org/10.1016/j.ajhg.2015.09.001"
+   },
+   {
+    "t": "Privé, Arbel & Vilhjálmsson 2020, Bioinformatics: LDpred2",
+    "u": "https://doi.org/10.1093/bioinformatics/btaa1029"
+   }
+  ],
+  "match": [
+   "LDpred",
+   "LDpred2"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "prs-cs",
+  "term": "PRS-CS",
+  "aka": [
+   "PRS-CSx"
+  ],
+  "short": "A Bayesian method for polygenic scores that, like LDpred, re-estimates all SNP effects jointly from summary statistics and an LD reference, using a continuous shrinkage prior that shrinks small effects strongly and large effects little.",
+  "long": "<p>The continuous prior adapts to different genetic architectures without a grid of assumed causal fractions. PRS-CSx extends it to several GWAS of different ancestries at once, sharing information across them, which improves scores for populations with smaller GWAS.</p>",
+  "l1": "Slide 51 (Session 6 covers polygenic risk scores); page 10 (methods for polygenic scores).",
+  "see": [
+   "polygenic-score",
+   "ldpred",
+   "clumping-and-thresholding",
+   "ld-reference-panel"
+  ],
+  "links": [
+   {
+    "t": "Ge et al. 2019, Nat Commun: PRS-CS",
+    "u": "https://doi.org/10.1038/s41467-019-09718-5"
+   },
+   {
+    "t": "Ruan et al. 2022, Nat Genet: PRS-CSx",
+    "u": "https://doi.org/10.1038/s41588-022-01054-7"
+   }
+  ],
+  "match": [
+   "PRS-CS",
+   "PRS-CSx"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "greml",
+  "term": "GREML (genomic-relatedness-based restricted maximum likelihood)",
+  "aka": [
+   "GCTA-GREML",
+   "GREML-LDMS"
+  ],
+  "short": "A method that estimates SNP-heritability from the genotypes of unrelated people: it measures how much more similar in a trait pairs of people are when they share slightly more alleles across all SNPs, with a linear mixed model fitted by restricted maximum likelihood.",
+  "long": "<p>The model is \\(\\mathrm{Var}(\\mathbf{y}) = \\sigma^2_{\\mathrm{A}}\\boldsymbol{\\psi} + \\sigma^2_{\\mathrm{e}}\\mathbf{I}\\), where \\(\\mathbf{y}\\) holds the trait values, \\(\\boldsymbol{\\psi}\\) is the genetic relationship matrix, \\(\\mathbf{I}\\) the identity matrix, \\(\\sigma^2_{\\mathrm{A}}\\) the variance explained by the SNPs and \\(\\sigma^2_{\\mathrm{e}}\\) the residual variance, and \\(h^2_{\\mathrm{SNP}} = \\sigma^2_{\\mathrm{A}}/(\\sigma^2_{\\mathrm{A}} + \\sigma^2_{\\mathrm{e}})\\). In 2010 it gave 0.45 for height from 294,831 SNPs in 3,925 people, when the significant SNPs known then explained about 5%: much of the missing heritability lay in many SNPs with effects too small to pass the threshold. GREML-LDMS fits SNPs in groups by frequency and LD; with whole-genome sequences of 25,465 unrelated people it estimated heritabilities of 0.68 for height and 0.30 for body mass index.</p>",
+  "l1": "Slide 50 (Session 5 covers heritability); page 10 (SNP-heritability).",
+  "see": [
+   "snp-heritability",
+   "genetic-relationship-matrix",
+   "mixed-model",
+   "missing-heritability",
+   "ld-score-regression",
+   "heritability"
+  ],
+  "links": [
+   {
+    "t": "Yang et al. 2010, Nat Genet: common SNPs explain a large proportion of the heritability for height",
+    "u": "https://doi.org/10.1038/ng.608"
+   },
+   {
+    "t": "Yang et al. 2011, Am J Hum Genet: GCTA",
+    "u": "https://doi.org/10.1016/j.ajhg.2010.11.011"
+   },
+   {
+    "t": "Wainschtein et al. 2022, Nat Genet: heritability from whole-genome sequences",
+    "u": "https://doi.org/10.1038/s41588-021-00997-7"
+   }
+  ],
+  "match": [
+   "GREML",
+   "GCTA-GREML",
+   "GREML-LDMS"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "local-genetic-correlation",
+  "term": "Local genetic correlation",
+  "aka": [
+   "regional genetic correlation"
+  ],
+  "short": "A genetic correlation estimated within one region of the genome instead of across the whole genome. Two traits can share effects in the same direction in some regions and in opposite directions in others, which a genome-wide value averages away.",
+  "long": "<p>Methods such as ρ-HESS, SUPERGNOVA and LAVA estimate it from summary statistics and LD, in blocks of roughly one to two megabases chosen so that LD between blocks is weak. A region with a strong local correlation points to shared biology there; a genome-wide correlation near zero can hide strong local correlations of opposite signs.</p>",
+  "l1": "Slide 50 (Session 5 covers post-GWAS analyses); page 10 (genetic correlation).",
+  "see": [
+   "genetic-correlation",
+   "ld-score-regression",
+   "pleiotropy"
+  ],
+  "links": [
+   {
+    "t": "Werme et al. 2022, Nat Genet: LAVA",
+    "u": "https://doi.org/10.1038/s41588-022-01017-y"
+   },
+   {
+    "t": "Zhang et al. 2021, Genome Biol: SUPERGNOVA",
+    "u": "https://doi.org/10.1186/s13059-021-02478-w"
+   }
+  ],
+  "match": [
+   "local genetic correlation"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "vertical-pleiotropy",
+  "term": "Vertical pleiotropy",
+  "aka": [
+   "mediated pleiotropy"
+  ],
+  "short": "Association of a variant with two traits because the variant affects one trait, which in turn causes the other. It is the pattern Mendelian randomization relies on, unlike horizontal pleiotropy, in which the variant affects the two traits through separate paths.",
+  "long": "<p>A variant that raises LDL cholesterol is also associated with coronary artery disease because LDL cholesterol causes the disease: the variant’s effect on the disease runs through LDL. If all variants act this way, the ratio of each variant’s effects on the two traits is the same for every variant and equals the causal effect, which is what Mendelian randomization estimates.</p>",
+  "l1": "Page 10 (four kinds of pleiotropy, figure); page 1 (Mendelian randomization).",
+  "see": [
+   "horizontal-pleiotropy",
+   "pleiotropy",
+   "mendelian-randomization",
+   "wald-ratio",
+   "genetic-correlation"
+  ],
+  "links": [
+   {
+    "t": "Hemani, Bowden & Davey Smith 2018, Hum Mol Genet: the role of pleiotropy in Mendelian randomization",
+    "u": "https://doi.org/10.1093/hmg/ddy163"
+   }
+  ],
+  "match": [
+   "vertical pleiotropy"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "liability-scale",
+  "term": "Liability scale",
+  "aka": [],
+  "short": "Expressing the heritability of a disease, or the variance a polygenic score explains, on the scale of the unobserved, normally distributed liability of the threshold model rather than on the observed 0/1 scale. Unlike the observed-scale value, it does not depend on the share of cases in the sample.",
+  "long": "<p>A case–control sample with 50% cases gives a much larger observed-scale value than a population sample with 1% cases, for the same genetic effects. For heritability, Lee and colleagues gave the conversion: multiply the observed-scale value by \\(K^2(1-K)^2/\\big(z^2 P(1-P)\\big)\\), where \\(K\\) is the population prevalence, \\(P\\) the share of cases in the sample and \\(z\\) the height of the standard normal density at the liability threshold. A similar conversion applies to the \\(R^2\\) of a polygenic score.</p>",
+  "l1": "Page 10 (the accuracy of polygenic scores).",
+  "see": [
+   "liability-threshold-model",
+   "prevalence",
+   "snp-heritability",
+   "auc",
+   "variance-explained"
+  ],
+  "links": [
+   {
+    "t": "Lee et al. 2011, Am J Hum Genet: estimating missing heritability for disease from GWAS",
+    "u": "https://doi.org/10.1016/j.ajhg.2011.02.002"
+   },
+   {
+    "t": "Lee et al. 2012, Genet Epidemiol: a better coefficient of determination for genetic profile analysis",
+    "u": "https://doi.org/10.1002/gepi.21614"
+   }
+  ],
+  "match": [
+   "liability scale"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "drug-repurposing",
+  "term": "Drug repurposing",
+  "aka": [
+   "drug repositioning"
+  ],
+  "short": "Using a drug already approved for one disease to treat another. Because its safety in people is known, it can reach patients faster than a new compound; GWAS can suggest candidates when a disease’s associated genes encode the targets of existing drugs.",
+  "long": "<p>A rheumatoid arthritis GWAS pointed to CDK4 and CDK6, whose proteins are targets of drugs approved for cancer. Resources such as Open Targets and GREP link GWAS genes to drug targets, compounds and indications, so that such matches can be searched systematically.</p>",
+  "l1": "Page 10 (outlook: drugs).",
+  "see": [
+   "drug-target",
+   "open-targets"
+  ],
+  "links": [
+   {
+    "t": "Okada et al. 2014, Nature: genetics of rheumatoid arthritis contributes to biology and drug discovery",
+    "u": "https://doi.org/10.1038/nature12873"
+   },
+   {
+    "t": "Pushpakom et al. 2019, Nat Rev Drug Discov: drug repurposing",
+    "u": "https://doi.org/10.1038/nrd.2018.168"
+   }
+  ],
+  "match": [
+   "drug repurposing",
+   "drug repositioning",
+   "repurposing"
+  ],
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "open-targets",
+  "term": "Open Targets",
+  "aka": [
+   "Open Targets Platform",
+   "Open Targets Genetics"
+  ],
+  "short": "A public–private partnership and free online platform that collects evidence linking genes and their proteins to diseases, including GWAS associations, to help choose drug targets.",
+  "long": "<p>The Platform scores each target–disease pair from genetic associations, somatic mutations, known drugs, expression, animal models and the literature. Its genetics component assigns each GWAS locus to its likely causal genes with a locus-to-gene model that combines fine-mapping, molecular QTLs, chromatin interactions and distance.</p>",
+  "l1": "Page 10 (outlook: drugs); page 1 (drug targets).",
+  "see": [
+   "drug-target",
+   "drug-repurposing",
+   "fine-mapping",
+   "molecular-qtl",
+   "post-gwas-studies"
+  ],
+  "links": [
+   {
+    "t": "Open Targets Platform",
+    "u": "https://platform.opentargets.org/"
+   },
+   {
+    "t": "Ochoa et al. 2021, Nucleic Acids Res",
+    "u": "https://doi.org/10.1093/nar/gkaa1027"
+   },
+   {
+    "t": "Mountjoy et al. 2021, Nat Genet: locus-to-gene",
+    "u": "https://doi.org/10.1038/s41588-021-00945-5"
+   }
+  ],
+  "match": [
+   "Open Targets",
+   "Open Targets Platform",
+   "Open Targets Genetics"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "bermuda-principles",
+  "term": "Bermuda Principles",
+  "aka": [
+   "Bermuda Accord"
+  ],
+  "short": "Rules agreed in Bermuda in February 1996 by the publicly funded centers of the Human Genome Project: DNA sequence should be released into public databases within 24 hours of assembly, free of restrictions. They set the norm of rapid, open release of genomic data.",
+  "long": "<p>The Fort Lauderdale Agreement of 2003 extended rapid release to other large community resource projects, while asking users to respect the data producers’ right to publish the first analyses. Consortia and the open release of GWAS summary statistics build on these agreements. The reading dates the principles to 1997, the year of a second Bermuda meeting that reaffirmed them.</p>",
+  "l1": "Page 10 (data sharing).",
+  "see": [
+   "fair-principles",
+   "summary-statistics",
+   "ga4gh"
+  ],
+  "links": [
+   {
+    "t": "Maxson Jones, Ankeny & Cook-Deegan 2018, J Hist Biol: the Bermuda Triangle",
+    "u": "https://doi.org/10.1007/s10739-018-9538-7"
+   }
+  ],
+  "match": [
+   "Bermuda Principles",
+   "Bermuda Accord"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "ga4gh",
+  "term": "GA4GH (Global Alliance for Genomics and Health)",
+  "aka": [
+   "Global Alliance for Genomics and Health"
+  ],
+  "short": "An international standards organization, founded in 2013, that writes technical standards and policy frameworks so that genomic and health data can be shared responsibly across institutions and countries.",
+  "long": "<p>Its products include file formats and interfaces maintained with the community (such as VCF and htsget), the Beacon protocol for asking whether a database holds a given variant, the Data Use Ontology for recording consent restrictions, and the Framework for Responsible Sharing of Genomic and Health-Related Data.</p>",
+  "l1": "Page 10 (data sharing).",
+  "see": [
+   "bermuda-principles",
+   "fair-principles",
+   "vcf",
+   "controlled-access"
+  ],
+  "links": [
+   {
+    "t": "GA4GH",
+    "u": "https://www.ga4gh.org/"
+   },
+   {
+    "t": "Rehm et al. 2021, Cell Genomics: GA4GH policies and standards",
+    "u": "https://doi.org/10.1016/j.xgen.2021.100029"
+   }
+  ],
+  "match": [
+   "GA4GH",
+   "Global Alliance for Genomics and Health"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "gdpr",
+  "term": "GDPR (General Data Protection Regulation)",
+  "aka": [
+   "General Data Protection Regulation"
+  ],
+  "short": "The European Union’s data protection law, applied since May 2018. It treats genetic data as a special category of personal data, requires a legal basis such as consent to process it, and restricts transfers to countries without equivalent protection.",
+  "long": "<p>Pseudonymized genotypes still count as personal data under the GDPR, because a person can be re-identified from them. This complicates sharing individual-level data between European and other studies, and has led consortia to share summary statistics, to run analyses where the data are held (federated analysis) or to use controlled-access repositories inside the EU.</p>",
+  "l1": "Page 10 (privacy).",
+  "see": [
+   "controlled-access",
+   "informed-consent",
+   "summary-statistics"
+  ],
+  "links": [
+   {
+    "t": "Regulation (EU) 2016/679, EUR-Lex",
+    "u": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+   },
+   {
+    "t": "Peloquin et al. 2020, Eur J Hum Genet: GDPR challenges to secondary research uses of data",
+    "u": "https://doi.org/10.1038/s41431-020-0596-x"
+   }
+  ],
+  "match": [
+   "GDPR",
+   "General Data Protection Regulation"
+  ],
+  "noPlural": true,
+  "owner": "gwas-applications"
+ },
+ {
+  "id": "genetic-determinism",
+  "term": "Genetic determinism",
+  "aka": [],
+  "short": "The belief that a person’s genes fix their traits, so that environment, behavior or treatment cannot change them. For complex traits it is wrong: heritability is below 1, polygenic scores predict individuals poorly, and genetic effects depend on the environment.",
+  "long": "<p>Polygenic scores invite determinism because they attach a single number to a person. A heritability of 0.8 for height describes variation in one population and environment, not how much of one person’s height is genetic, and average adult height rose by up to 20 cm in some countries between people born in 1896 and in 1996 without any change in genes. Communicating a score as a probability, with its uncertainty and what can be done about the risk, counters the misreading.</p>",
+  "l1": "Slide 48 (Session 3 adds social factors to the map); page 10 (ethical questions).",
+  "see": [
+   "heritability",
+   "polygenic-score",
+   "gene-environment-interaction",
+   "absolute-risk"
+  ],
+  "links": [
+   {
+    "t": "NCD Risk Factor Collaboration 2016, eLife: a century of trends in adult human height",
+    "u": "https://doi.org/10.7554/eLife.13410"
+   }
+  ],
+  "match": [
+   "genetic determinism"
+  ],
+  "owner": "gwas-applications"
+ }
+]

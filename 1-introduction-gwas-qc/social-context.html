@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Social context: what is studied, in whom, and how results are read · Lecture 1</title>
+<meta name="description" content="How social context enters genetic epidemiology: the margarine-versus-butter GWAS in UK Biobank decoded, confounding by region with a stratification simulator, who takes part in GWAS with data from the GWAS Catalog, the history of eugenics, and, as optional reading, population descriptors and consent.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/widgets/social-context-stratification.js"></script>
+<script defer src="assets/js/widgets/social-context-representation.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="social-context"]. */
+body[data-page="social-context"] .mental-model svg { display: block; width: 100%; height: auto; }
+body[data-page="social-context"] .sc-quote { border-left: 3px solid var(--border-strong); margin: 0.8em 0 1.1em; padding: 2px 0 2px 14px; font-style: italic; }
+/* Stratification widget */
+body[data-page="social-context"] .widget .st-slider { display: flex; flex-direction: column; align-items: stretch; gap: 2px; margin: 0 0 10px; font-size: 0.88rem; }
+body[data-page="social-context"] .widget .st-slider input[type="range"] { width: 100%; }
+body[data-page="social-context"] #st-svg { display: block; width: 100%; max-width: 520px; height: auto; margin: 10px auto 4px; }
+body[data-page="social-context"] .st-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: center; }
+body[data-page="social-context"] .st-li { display: inline-flex; align-items: center; gap: 6px; }
+body[data-page="social-context"] .st-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
+body[data-page="social-context"] .st-u { background: #d9822b; }
+body[data-page="social-context"] .st-a { background: #2f6aa3; }
+body[data-page="social-context"] .st-line { display: inline-block; width: 18px; height: 0; border-top: 1.5px solid #5a6370; }
+body[data-page="social-context"] .widget .st-readout { font-size: 0.9rem; line-height: 1.55; }
+body[data-page="social-context"] .widget .st-readout .note { margin: 4px 0 0; }
+/* Representation widget */
+body[data-page="social-context"] .rp-controls { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+body[data-page="social-context"] .rp-controls .btn[aria-pressed="true"] { border-color: var(--accent); font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); }
+body[data-page="social-context"] .rp-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+body[data-page="social-context"] .rp-li { display: inline-flex; align-items: center; gap: 5px; }
+body[data-page="social-context"] .rp-sw { display: inline-block; flex: none; width: 11px; height: 11px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+body[data-page="social-context"] .rp-bars { list-style: none; margin: 8px 0 0; padding: 0; }
+body[data-page="social-context"] .rp-bars li { margin: 0; }
+body[data-page="social-context"] .rp-row { display: grid; grid-template-columns: 3.2em minmax(0, 1fr) 5.6em; align-items: center; gap: 8px; width: 100%; padding: 2px 4px; border: 0; background: none; font: inherit; font-size: 0.8rem; cursor: pointer; text-align: left; color: var(--fg); border-radius: 4px; }
+body[data-page="social-context"] .rp-row:hover { background: var(--bg-alt); }
+body[data-page="social-context"] .rp-row:focus-visible { outline: 3px solid var(--accent); outline-offset: -2px; }
+body[data-page="social-context"] .rp-cur .rp-row { background: #fff7e8; }
+body[data-page="social-context"] .rp-year { font-variant-numeric: tabular-nums; font-weight: 600; }
+body[data-page="social-context"] .rp-bar { display: flex; height: 14px; border-radius: 2px; overflow: hidden; background: #eef1f4; }
+body[data-page="social-context"] .rp-seg { display: block; height: 100%; }
+body[data-page="social-context"] .rp-eu { font-variant-numeric: tabular-nums; color: var(--fg-muted); text-align: right; }
+body[data-page="social-context"] .widget .rp-readout { font-size: 0.88rem; }
+body[data-page="social-context"] .rp-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 6px; }
+body[data-page="social-context"] .rp-table th, body[data-page="social-context"] .rp-table td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--border); }
+body[data-page="social-context"] .rp-table td:nth-child(2), body[data-page="social-context"] .rp-table td:nth-child(3), body[data-page="social-context"] .rp-table th:nth-child(2), body[data-page="social-context"] .rp-table th:nth-child(3) { text-align: right; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body data-page="social-context">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part A · Genetic epidemiology · Page 3 of 23</p>
+  <h1>Social context: what is studied, in whom, and how results are read</h1>
+  <p class="lede">On the field map of slide 29, the box for social factors carries one sentence: “Social and environmental contexts influence genetic associations, including what gets studied, how, in which population, and how those results are interpreted.” Slides 30, 36 and 38 highlight its three parts in turn, and an example follows each: a GWAS of margarine use in UK Biobank, the ancestry of GWAS participants, and the history of eugenics. This page decodes those slides and works through the data and the statistics behind them.</p>
+  <div class="chips">
+    <span class="chip core">Slides 31–35, 37, 40–43</span>
+    <span class="chip time">≈ 50 min</span>
+    <span class="chip data">Shows up in the data as: questionnaire answers that record behavior; allele frequencies and trait means that both differ between regions; the ancestry categories of the people in a sample</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Four places where social context enters a GWAS</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 252" role="img" aria-labelledby="sc-mmw-t sc-mmw-d"><title id="sc-mmw-t">Four places where social context enters a GWAS</title><desc id="sc-mmw-d">Four boxes joined by arrows. 1, who is studied: recruitment and consent decide the sample; in the GWAS Catalog from 2005 to 2026, 86% of participants with a reported category are in the European category. 2, what is measured: a touchscreen question, what type of spread do you mainly use, whose answer is a choice shaped by advice, prices and habits. 3, how associations arise: through biology, through behavior such as advice after a diagnosis, or through confounding when region shifts both allele frequency and trait. 4, how results are read: within a sample or as claims about groups, with a history of misuse in eugenics. A band underneath says that social and environmental contexts act at every step.</desc>
+<defs><marker id="sc-aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker></defs>
+<rect x="2" y="10" width="170" height="186" rx="8" fill="var(--g0)" stroke="var(--q1)"/>
+<text x="12" y="31" class="t-sm" font-weight="700">1 Who is studied</text>
+<text x="12" y="53" class="t-xs">Recruitment and consent</text>
+<text x="12" y="67" class="t-xs">decide the sample.</text>
+<text x="12" y="93" class="t-xs">GWAS Catalog, 2005–2026:</text>
+<text x="12" y="107" class="t-xs">86% of participants with a</text>
+<text x="12" y="121" class="t-xs">reported category are in</text>
+<text x="12" y="135" class="t-xs">the European category.</text>
+<text x="12" y="183" class="t-xs" fill="var(--q1)">§ Who is in GWAS</text>
+<line x1="174" y1="103" x2="195" y2="103" stroke="#5b6470" stroke-width="1.5" marker-end="url(#sc-aw)"/>
+<rect x="197" y="10" width="170" height="186" rx="8" fill="#fff7e8" stroke="#a3620a"/>
+<text x="207" y="31" class="t-sm" font-weight="700">2 What is measured</text>
+<text x="207" y="53" class="t-xs">A touchscreen question:</text>
+<text x="207" y="67" class="t-xs">“What type of spread do</text>
+<text x="207" y="81" class="t-xs">you mainly use?”</text>
+<text x="207" y="107" class="t-xs">The answer is a choice,</text>
+<text x="207" y="121" class="t-xs">shaped by advice, prices</text>
+<text x="207" y="135" class="t-xs">and habits.</text>
+<text x="207" y="183" class="t-xs" fill="#a3620a">§ Margarine versus butter</text>
+<line x1="369" y1="103" x2="390" y2="103" stroke="#5b6470" stroke-width="1.5" marker-end="url(#sc-aw)"/>
+<rect x="392" y="10" width="170" height="186" rx="8" fill="#eef7ee" stroke="#4f6b2a"/>
+<text x="402" y="31" class="t-sm" font-weight="700">3 How associations arise</text>
+<text x="402" y="53" class="t-xs">Biology: allele → LDL →</text>
+<text x="402" y="67" class="t-xs">heart disease.</text>
+<text x="402" y="89" class="t-xs">Behavior: allele → LDL →</text>
+<text x="402" y="103" class="t-xs">diagnosis → advice →</text>
+<text x="402" y="117" class="t-xs">margarine.</text>
+<text x="402" y="139" class="t-xs">Confounding: region shifts</text>
+<text x="402" y="153" class="t-xs">both allele and trait.</text>
+<text x="402" y="173" class="t-xs" fill="#4f6b2a">§ Regions and false</text>
+<text x="402" y="186" class="t-xs" fill="#4f6b2a">associations</text>
+<line x1="564" y1="103" x2="585" y2="103" stroke="#5b6470" stroke-width="1.5" marker-end="url(#sc-aw)"/>
+<rect x="587" y="10" width="170" height="186" rx="8" fill="#f3eefa" stroke="#8e5ea2"/>
+<text x="597" y="31" class="t-sm" font-weight="700">4 How results are read</text>
+<text x="597" y="53" class="t-xs">Within a sample, or as</text>
+<text x="597" y="67" class="t-xs">claims about groups?</text>
+<text x="597" y="93" class="t-xs">Misuse has a history:</text>
+<text x="597" y="107" class="t-xs">eugenics and its revival.</text>
+<text x="597" y="183" class="t-xs" fill="#8e5ea2">§ Eugenics and misuse</text>
+<rect x="2" y="208" width="755" height="40" rx="8" fill="#fbfbfc" stroke="#b9c1cc"/>
+<text x="380" y="225" class="t-sm" text-anchor="middle">Social and environmental contexts act at every step (slides 29–30, 36 and 38).</text>
+<text x="380" y="240" class="t-xs" text-anchor="middle">A GWAS result is a statement about a sample, a measurement and a model, not about a gene alone.</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 360 600" role="img" aria-labelledby="sc-mmn-t sc-mmn-d"><title id="sc-mmn-t">Four places where social context enters a GWAS</title><desc id="sc-mmn-d">Four stacked boxes joined by arrows: who is studied, what is measured, how associations arise, and how results are read. Social and environmental contexts act at every step.</desc>
+<defs><marker id="sc-an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker></defs>
+<rect x="10" y="8" width="340" height="106" rx="8" fill="var(--g0)" stroke="var(--q1)"/>
+<text x="22" y="30" class="t-sm" font-weight="700">1 Who is studied</text>
+<text x="22" y="50" class="t-xs">Recruitment and consent decide the sample.</text>
+<text x="22" y="66" class="t-xs">GWAS Catalog, 2005–2026: 86% of participants</text>
+<text x="22" y="80" class="t-xs">with a reported category are in the European one.</text>
+<text x="22" y="102" class="t-xs" fill="var(--q1)">§ Who is in GWAS</text>
+<line x1="180" y1="116" x2="180" y2="130" stroke="#5b6470" stroke-width="1.5" marker-end="url(#sc-an)"/>
+<rect x="10" y="132" width="340" height="106" rx="8" fill="#fff7e8" stroke="#a3620a"/>
+<text x="22" y="154" class="t-sm" font-weight="700">2 What is measured</text>
+<text x="22" y="174" class="t-xs">A touchscreen question: “What type of spread</text>
+<text x="22" y="188" class="t-xs">do you mainly use?” The answer is a choice,</text>
+<text x="22" y="202" class="t-xs">shaped by advice, prices and habits.</text>
+<text x="22" y="226" class="t-xs" fill="#a3620a">§ Margarine versus butter</text>
+<line x1="180" y1="240" x2="180" y2="254" stroke="#5b6470" stroke-width="1.5" marker-end="url(#sc-an)"/>
+<rect x="10" y="256" width="340" height="124" rx="8" fill="#eef7ee" stroke="#4f6b2a"/>
+<text x="22" y="278" class="t-sm" font-weight="700">3 How associations arise</text>
+<text x="22" y="298" class="t-xs">Biology: allele → LDL → heart disease.</text>
+<text x="22" y="314" class="t-xs">Behavior: allele → LDL → diagnosis → advice</text>
+<text x="22" y="328" class="t-xs">→ margarine.</text>
+<text x="22" y="344" class="t-xs">Confounding: region shifts both allele and trait.</text>
+<text x="22" y="368" class="t-xs" fill="#4f6b2a">§ Regions and false associations</text>
+<line x1="180" y1="382" x2="180" y2="396" stroke="#5b6470" stroke-width="1.5" marker-end="url(#sc-an)"/>
+<rect x="10" y="398" width="340" height="98" rx="8" fill="#f3eefa" stroke="#8e5ea2"/>
+<text x="22" y="420" class="t-sm" font-weight="700">4 How results are read</text>
+<text x="22" y="440" class="t-xs">Within a sample, or as claims about groups?</text>
+<text x="22" y="456" class="t-xs">Misuse has a history: eugenics and its revival.</text>
+<text x="22" y="482" class="t-xs" fill="#8e5ea2">§ Eugenics and misuse</text>
+<rect x="10" y="512" width="340" height="80" rx="8" fill="#fbfbfc" stroke="#b9c1cc"/>
+<text x="180" y="533" class="t-xs" text-anchor="middle">Social and environmental contexts act at</text>
+<text x="180" y="548" class="t-xs" text-anchor="middle">every step (slides 29–30, 36 and 38). A GWAS</text>
+<text x="180" y="563" class="t-xs" text-anchor="middle">result is a statement about a sample, a</text>
+<text x="180" y="578" class="t-xs" text-anchor="middle">measurement and a model, not a gene alone.</text>
+</svg>
+  </figure>
+  <p class="mm-statement">A GWAS result is a statement about a sample, a measurement and a model. Social context decides who is in the sample and what the questionnaire records, it can create associations through behavior or through differences between places, and it shapes how a result is read and used.</p>
+  <ul class="mm-hooks">
+    <li><strong>A GWAS of a choice.</strong> Alleles at <em>APOE</em> and <em>LPA</em> are associated with using margarine instead of butter, most likely because they raise cholesterol or heart disease risk and people at risk are advised to change their diet.</li>
+    <li><strong>Places differ.</strong> When allele frequencies and a trait both differ between regions, SNPs with no effect become associated with the trait, and the excess grows with sample size.</li>
+    <li><strong>Who is in GWAS.</strong> Most GWAS participants have been in the European category of the GWAS Catalog, which limits both discovery and the accuracy of predictions in other groups.</li>
+    <li><strong>How results are read.</strong> The statistics of genetic epidemiology grew up alongside eugenics, and genetics papers are still misused to argue for social hierarchy.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0</div>
+  <p>Lecture 0 introduces each topic of this page: the margarine example as a case of <a href="../0-biological-foundations/genotype-to-phenotype.html#causation">association that is not causation</a>, <a href="../0-biological-foundations/ancestry.html#stratification">population stratification and confounding</a> with the regression model of a GWAS, <a href="../0-biological-foundations/ancestry.html#diversity">diversity in genetic studies</a> and its consequences, <a href="../0-biological-foundations/ancestry.html#descriptors">population descriptors</a> with the history behind them, and <a href="../0-biological-foundations/uk-biobank.html#consent">what UK Biobank participants agreed to</a>. This page adds the data and the statistics behind the slides.</p>
+</aside>
+
+<h2 id="margarine" data-toc="Margarine versus butter">Margarine versus butter: a GWAS of a choice <span class="tag core">Core</span></h2>
+
+<p>At the assessment center, UK Biobank asked its participants on a touchscreen, “What type of spread do you mainly use?”, with the hint “If you use more than one type of spread, please select the one that you use the most.”<sup class="cite"><a href="#src-1">1</a></sup> The answers are stored as Data-Field 1428, “Spread type”, for 498,506 participants, under Touchscreen › Lifestyle and environment › Diet.<sup class="cite"><a href="#src-2">2</a></sup></p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>Data-Field 1428: the answers to the touchscreen question, and the second question asked of margarine users.</caption>
+  <thead><tr><th scope="col">Code</th><th scope="col">Answer on the touchscreen</th><th scope="col">What happens next</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td data-label="Answer">Butter/spreadable butter</td><td data-label="What happens next">Next question</td></tr>
+    <tr><td>3</td><td data-label="Answer">Other type of spread/margarine</td><td data-label="What happens next">Second question: which type? Soft (tub) margarine; hard (block) margarine; olive oil based spread; polyunsaturated or sunflower oil based spread; Flora Pro-Active or Benecol; other low or reduced fat spread; other type of spread or margarine</td></tr>
+    <tr><td>0</td><td data-label="Answer">Never/rarely use spread</td><td data-label="What happens next">Next question</td></tr>
+    <tr><td>−1</td><td data-label="Answer">Do not know</td><td data-label="What happens next">The same second question</td></tr>
+    <tr><td>−3</td><td data-label="Answer">Prefer not to answer</td><td data-label="What happens next">Next question</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>A GWAS needs a numeric trait, so an analysis of this field first turns the answers into one: for example, 1 for margarine (code 3), 0 for butter (code 1) or for never or rarely using spread (code 0), and missing for “Do not know” and “Prefer not to answer”. Each SNP is then tested with a logistic or linear regression of that 0/1 trait on the genotype, adjusted for age, sex and genetic principal components. The coding is already a choice: whether people who rarely use spread count as 0 changes who is compared with whom. One answer to the second question, “Flora Pro-Active or Benecol”, names spreads sold to lower cholesterol, a first hint of why a cholesterol gene could matter.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 31–35 · Example: margarine vs butter use in the UK Biobank</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-031.jpg" alt="Lecture 1, slide 31: a Manhattan plot of margarine versus butter use in UK Biobank, its middle covered by a cartoon turkey holding a knife and fork and saying mmm margarine, with a tall peak labeled APOE on chromosome 19 above a dashed red significance line" loading="lazy"><figcaption>Lecture 1 · slide 31</figcaption></figure>
+    <div><p>Slide 31 is a Manhattan plot: one point per SNP, chromosomes along the horizontal axis and \(-\log_{10}\) of each SNP’s p-value on the vertical axis, which starts at 2. The dashed red line marks genome-wide significance, a p-value of 5&nbsp;×&nbsp;10<sup>−8</sup> (7.3 on this axis). Chromosomes 1–3 and 16–23 are visible (23 is the X chromosome in PLINK’s numbering). A cartoon turkey saying “mmm… margarine….” covers chromosomes 4–15, including chromosome 6, where the slide’s label <em>LPA</em> sits hidden behind it. The tallest peak, labeled <em>APOE</em>, is on chromosome 19 and reaches about 14; a smaller peak on chromosome 23 just touches the line. The slide credits Eric Fauman (“HT @Eric_Fauman”) and links to his post on Twitter of 2 March 2019.<sup class="cite"><a href="#src-3">3</a></sup> Slides 32 and 33 list what the alleles at the two peaks do and why; slides 34 and 35 give the take-home messages.</p></div>
+  </div>
+</aside>
+
+<p>Slide 32 sets the two peaks side by side, and slide 33 adds the explanation:</p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>What the alleles at the two peaks do (slide 32), and the chain of causes that slide 33 implies.</caption>
+  <thead><tr><th scope="col">Peak</th><th scope="col">The allele that raises margarine use also</th><th scope="col">Effect on spread</th><th scope="col">Implied chain</th></tr></thead>
+  <tbody>
+    <tr><td><em>APOE</em> (chromosome 19), which encodes apolipoprotein E, a protein that carries cholesterol in the blood</td><td data-label="The allele also">raises LDL cholesterol and statin use</td><td data-label="Effect on spread">more margarine, less butter</td><td data-label="Implied chain">allele → high LDL cholesterol → diagnosis and statins → advice to eat less saturated fat → margarine</td></tr>
+    <tr><td><em>LPA</em> (chromosome 6), which encodes apolipoprotein(a), part of the lipoprotein(a) particle</td><td data-label="The allele also">raises the risk of myocardial infarction (MI, heart attack)</td><td data-label="Effect on spread">more margarine, less butter</td><td data-label="Implied chain">allele → high lipoprotein(a) → heart attack in the person or the family → advice → margarine</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p class="sc-quote">“Individuals who learn they have high cholesterol or have a family history of heart disease are more likely to switch to margarine instead of butter.” (slide 33)</p>
+<p>The associations are real: the alleles do change the probability of answering “margarine”. But neither gene is known to act on taste or food preference. The path from genotype to answer runs through biology (cholesterol, heart disease) and then through social steps: a blood test, a diagnosis, a doctor’s advice, a decision about what to buy. Lecture 0 gives the biology of the two genes in <a href="../0-biological-foundations/genotype-to-phenotype.html#causation">Association is not causation</a>.</p>
+
+<p>Slide 35 asks that such mechanisms be “concrete &amp; testable”. Writing the proposed chain as a path model makes it testable. If an allele changes margarine use only through LDL cholesterol, its effect on margarine use is a product of two effects:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \beta_{\mathrm{GY}} = \beta_{\mathrm{GL}}\, \beta_{\mathrm{LY}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\beta_{\mathrm{GY}}\)</dt><dd>Effect of the variant on the trait: the difference in the probability of answering “margarine”, per copy of the allele. This is what the GWAS estimates.</dd>
+    <dt>\(\beta_{\mathrm{GL}}\)</dt><dd>Effect of the variant on LDL cholesterol, in mmol/L per copy of the allele, estimated in a GWAS of LDL cholesterol.</dd>
+    <dt>\(\beta_{\mathrm{LY}}\)</dt><dd>Effect of LDL cholesterol on the probability of answering “margarine”, per mmol/L, through diagnosis, treatment and advice. If the chain is right, it is the same for every variant.</dd>
+  </dl>
+  <p class="eq-intuition">Along a chain of causes, effects multiply: one more copy of the allele shifts LDL by \(\beta_{\mathrm{GL}}\), and each unit of LDL shifts the trait by \(\beta_{\mathrm{LY}}\). This is Sewall Wright’s path analysis, and the ratio \(\beta_{\mathrm{GY}} / \beta_{\mathrm{GL}}\) is the Wald ratio of <a href="genetic-epidemiology.html#mr-model">Mendelian randomization</a>. The model makes predictions that can fail. Every variant that changes LDL cholesterol, at <em>APOE</em> or at other genes such as <em>LDLR</em> or <em>PCSK9</em>, should change margarine use in proportion to its effect on LDL. With hypothetical numbers: if a variant raises LDL by 0.1 mmol/L per allele and each mmol/L raises the probability of choosing margarine by 5 percentage points, the variant raises it by 0.5 points per allele, and a variant with twice the LDL effect should show twice the margarine effect. And the association should be concentrated in people who have had a cholesterol test or a diagnosis, and absent in people who have never been told their cholesterol.</p>
+</div>
+
+<p>Slide 34 draws the first lesson, “Social context matters”: the same allele would probably show little or no association with spread type where cholesterol is rarely measured or dietary advice is different. Slide 35 adds the second, “Hypothesized biological mechanisms should be concrete &amp; testable”, with a cartoon by Sidney Harris that returns on slide 54 (<a href="field-map.html#course">page 2</a>): between a red G (genotype) and a red Y (trait), two scientists stand at a blackboard whose derivation includes the step “Then a miracle occurs”, and one says, “I think you should be more explicit here in step two.” A claimed mechanism that cannot be written as a chain of measurable steps, with predictions like those above, contains such a step.</p>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> GWAS of what people eat</div>
+  <p>A GWAS of 85 single foods and 85 dietary patterns from the UK Biobank food-frequency questionnaires found 814 associated loci. Mendelian randomization suggested that the top healthy dietary pattern, driven by eating wholemeal rather than white bread, is causally influenced by factors correlated with education, but is not strongly causal for coronary artery disease or type 2 diabetes.<sup class="cite"><a href="#src-4">4</a></sup> Like spread type, a diet trait mixes biology with income, education, health advice and habit, and its genetic associations can run through any of them.</p>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> “A gene for margarine”</div>
+  <p>A genome-wide significant association with a behavior is not evidence of a gene that controls the behavior. It says only that the allele changes the probability of the answer, by some path. Before naming a mechanism, ask which steps lie between genotype and answer, which of them are social, and what measurable prediction would show the proposed chain is wrong.</p>
+</aside>
+
+<h2 id="stratification" data-toc="Regions and false associations">Regions, allele frequencies and false associations <span class="tag core">Core</span></h2>
+
+<p>Social context can also create associations with no causal path at all. Within one country, allele frequencies differ slightly between regions, because people have tended to have children with partners from nearby, and diet, income, health care and many traits differ between regions too. If the regions of a sample differ in both, every SNP whose frequency differs between them becomes associated with the trait. This is population stratification, a form of confounding introduced in <a href="../0-biological-foundations/ancestry.html#stratification">Lecture 0</a> and treated on <a href="gwas-analysis.html#confounding">page 9</a> for populations from different continents. Here it acts within one country, where the frequency differences are tiny and the samples are huge.</p>
+
+<p>UK Biobank shows both halves of the problem. Single SNPs and polygenic scores are associated with where participants were born, and the routine adjustment for assessment center and genetic principal components does not account for all of this geographic structure; major health outcomes are geographically structured too, and the coincidence can bias associations.<sup class="cite"><a href="#src-5">5</a></sup> In about 450,000 people from Great Britain, 21 of 33 traits showed geographic clustering of their associated alleles after controlling for ancestry. Alleles associated with educational attainment clustered most, with the alleles associated with less education more common in areas of lower socioeconomic status such as coal-mining areas, probably reflecting migration driven by socioeconomic status.<sup class="cite"><a href="#src-6">6</a></sup></p>
+
+<p>How much does such structure inflate the test statistics? Take two regions of equal size, a trait whose mean differs between them by \(\delta\) standard deviations for reasons that have nothing to do with the SNPs, and SNPs whose frequencies have drifted apart by \(F_{\mathrm{ST}}\). For a SNP with no effect on the trait, the association test statistic then has mean approximately</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \E[\chi^2] \approx 1 + \frac{n\, F_{\mathrm{ST}}\, \delta^2}{4 + \delta^2} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\chi^2\)</dt><dd>The association test statistic of one SNP with no effect on the trait: the squared z- or t-statistic of the regression slope, with 1 degree of freedom. Its mean is 1 when there is no confounding.</dd>
+    <dt>\(n\)</dt><dd>Number of people, half in each region.</dd>
+    <dt>\(F_{\mathrm{ST}}\)</dt><dd>How far allele frequencies differ between the two regions: for a SNP of average frequency \(p\), the expected squared difference in frequency is \(2 F_{\mathrm{ST}}\, p(1-p)\). It is about 0.004 between two European samples (<a href="population-structure.html#frequencies">page 7</a>); the widget below starts at half that.</dd>
+    <dt>\(\delta\)</dt><dd>Difference in the mean of the trait between the regions, in units of its standard deviation within a region, caused by anything except the SNPs: diet, income, health care, how the trait was measured.</dd>
+  </dl>
+  <p class="eq-intuition">The genotype and the trait are correlated only through region, so their squared correlation is the product of how strongly each tracks region: about \(F_{\mathrm{ST}}\) for the genotype and \(\delta^2 / (4 + \delta^2)\) for the trait. The test statistic is about \(n\) times the squared correlation, plus the 1 that chance contributes. Either factor at 0 removes the excess. With \(F_{\mathrm{ST}}\) and \(\delta\) fixed, the excess grows in proportion to \(n\), so a structure too weak to matter in 5,000 people matters in a biobank. With hypothetical values \(n = 400{,}000\), \(F_{\mathrm{ST}} = 0.0005\) and \(\delta = 0.1\): \(1 + 400{,}000 \times 0.0005 \times 0.01 / 4.01 \approx 1.50\), so the statistics of SNPs with no effect are inflated by half on average, and SNPs whose frequencies differ more than average can cross genome-wide significance. The formula also reproduces the numbers of page 9’s simulator: \(n = 1{,}000\), \(F_{\mathrm{ST}} = 0.02\) and \(\delta = 0.5\) give \(1 + 1{,}000 \times 0.02 \times 0.25 / 4.25 \approx 2.2\).</p>
+</div>
+
+<p>The genomic inflation factor \(\lambda_{\mathrm{GC}}\) summarizes this inflation from the data: the median of the observed \(\chi^2\) statistics divided by 0.455, the median of a \(\chi^2\) distribution with 1 degree of freedom.<sup class="cite"><a href="#src-7">7</a></sup> The widget simulates the two-region model, drawing each region’s allele frequencies from the Balding–Nichols model,<sup class="cite"><a href="#src-8">8</a></sup> and tests 1,000 SNPs that have no effect on the trait, with and without region as a covariate.</p>
+
+<div class="widget" id="w-strat">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Two regions, one trait, a thousand SNPs with no effect</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It shows that with 6,000 people, an F<sub>ST</sub> of 0.002 between two regions and a difference of 0.3 standard deviations in the trait, the median test statistic of SNPs with no effect is inflated by about a quarter, and that adjusting for region removes the inflation.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> At the default settings the orange points (not adjusted) rise above the diagonal along their whole length, and \(\lambda_{\mathrm{GC}}\) is about 1.27: every SNP looks a little more “significant” than it should, though none of them affects the trait. Set either \(F_{\mathrm{ST}}\) or \(\delta\) to 0 and the orange points return to the diagonal. Raise \(n\) to 20,000 and the inflation grows to about 1.7 without any change in biology; with \(F_{\mathrm{ST}} = 0.01\) and \(\delta = 0.5\) as well, more than a hundred of the thousand SNPs pass p &lt; 5&nbsp;×&nbsp;10<sup>−8</sup>. The blue points, adjusted for region, stay on the diagonal in every setting, because here the confounder is known and measured exactly. In real data it rarely is: genetic principal components stand in for it, and in UK Biobank they do not capture all the geographic structure.</p>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> Where this shows up in the practical and later sessions</div>
+  <p>The practical computes principal components of the PennCATH genotypes (<a href="qc-pca.html#covariates">page 20</a>) and places the participants on the axes of the 1000 Genomes reference samples (<a href="qc-reference-pca.html">page 21</a>). In Session 2 the leading components enter each SNP’s regression as covariates, and the QQ plot and \(\lambda_{\mathrm{GC}}\) check what is left (<a href="gwas-analysis.html#multiple-testing">page 9</a>). LD score regression, in Session 5, separates inflation caused by confounding from inflation caused by many true small effects, which also raises \(\lambda_{\mathrm{GC}}\) in large samples.</p>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Adjusting for principal components is not a guarantee</div>
+  <p>Principal components capture the main axes of genetic variation in a sample. A confounder that follows a finer or a different pattern, such as birthplace within a region or the migration by socioeconomic status described above, can remain (Lecture 0 gives more examples in <a href="../0-biological-foundations/ancestry.html#residual">When PCs are not enough</a>). A QQ plot that follows the diagonal is reassuring for the genome-wide average; it does not show that a particular association is free of confounding, which is one reason GWAS findings are replicated in other samples and checked within families.</p>
+</aside>
+
+<h2 id="representation" data-toc="Who is in GWAS">Who is in GWAS <span class="tag core">Core</span></h2>
+
+<p>The second highlighted part of the sentence, “including what gets studied, how, in which population” (slide 36), leads to slide 37: who the participants of GWAS have been.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 37 · Ancestry of GWAS participants over time</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-037.jpg" alt="Lecture 1, slide 37: a stacked area chart of the cumulative number of GWAS participants by ancestry category from 2005 to 2018, rising to about 130 million and mostly European, beside a bar of the world population by the same categories, with two sentences about representation below" loading="lazy"><figcaption>Lecture 1 · slide 37</figcaption></figure>
+    <div><p>The figure is Figure 1 of Martin et al. (2019).<sup class="cite"><a href="#src-9">9</a></sup> The upper panel is a stacked area chart of the cumulative number of GWAS participants, in millions, as recorded by the GWAS Catalog from 2005 to 2018, colored by ancestry category: European, East Asian, South Asian/other Asian, African, Hispanic/Latino, Greater Middle Eastern, Oceanic, other and multiple. It reaches about 130 million, most of it in the European category. Beside it, a bar labeled “Present” divides the world’s population, about 7 billion, into the same categories; the European category is a small part of it. The lower panel shows the same data as fractions, and the European share is a nearly full band throughout. People whose ancestry was not reported are left out. Under the figure the slide reads “This lack of representation limits equity and scientific opportunity”, and, in red, that studies of a broader range of ancestries are “identifying hitherto unobserved disease-related variants; greater fine-mapping resolution; and generalizable polygenic risk models.”</p></div>
+  </div>
+</aside>
+
+<p>Several counts tell the same story. In 2009, 96% of the participants in published GWAS were of European ancestry; by 2016 the share had fallen to 81%, with about 14% of Asian ancestry, 3% of African ancestry and less than 1% from all other groups together.<sup class="cite"><a href="#src-10">10</a></sup> A review of 3,639 GWAS published from 2005 to 2018 found 88% European ancestry in 2017, and that 72% of discoveries came from participants recruited in three countries: the United States, the United Kingdom and Iceland.<sup class="cite"><a href="#src-11">11</a></sup> Martin and colleagues counted 79% of all GWAS participants as of European descent, against 16% of the world’s population.<sup class="cite"><a href="#src-9">9</a></sup> The widget recomputes such shares from the GWAS Catalog’s ancestry file of 2 November 2026.<sup class="cite"><a href="#src-12">12</a></sup></p>
+
+<div class="widget" id="w-represent">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Who is in GWAS, year by year</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It shows, for each year from 2005 to 2026, how GWAS participants in the GWAS Catalog divide among its broad ancestral categories. Counted per publication, the European category held 86% of the discovery-stage participants with a reported category from 2005 to 2 November 2026, and 78% of those published in 2026.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Counted per publication, the European category holds between 77% and 97% of the participants of every year since 2008, and 86% of all participants with a reported category from 2005 to 2026. The lowest yearly shares, 77–78% in 2012, 2022 and 2026, come with more East Asian participants (2012, 2026) or more studies that pooled several ancestry groups (2022, the “Multiple” group). Switch to “Per study”: the 2018 total jumps to about 700 million, four-fifths of it from one paper that entered 1,403 traits analyzed in the same UK Biobank participants as 1,403 studies; 2021 reaches 3.9 billion, mostly from two UK Biobank papers entered as almost 8,000 and 3,000 studies; and in 2024 a single Million Veteran Program paper, entered as 7,537 studies, lifts the African share to 13%. The counting rule changes the totals and the shares, none of the rules counts distinct people, and every rule shows a large European majority.</p>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> How the GWAS Catalog records ancestry</div>
+  <p>For every study the Catalog’s curators record each sample, initial (discovery) or replication, with the ancestry description that the authors used and a category from a fixed list: the category the authors named or, if they named none, the one that best matches their description. They rely on what the paper states, giving precedence to ancestry inferred with genomic methods such as PCA, and where possible they also record the country of recruitment. “Not reported” marks samples with neither ancestry nor recruitment information.<sup class="cite"><a href="#src-13">13</a></sup> A category therefore mixes self-identification, authors’ labels and genetic similarity: “European”, for example, includes people who self-report or are described as European, Caucasian or white, and people who cluster genetically with the 1000 Genomes samples from Europe. The categories describe samples, not distinct human groups. The widget merges them into nine groups close to those of slide 37; its code lists the merges.</p>
+</aside>
+
+<p>The imbalance has measurable costs, set out in Lecture 0’s <a href="../0-biological-foundations/ancestry.html#diversity">Diversity in genetic studies</a>. Variants that are common in some populations and rare in others are found mainly where they are common: the <em>PCSK9</em> nonsense variants that pointed to a new class of cholesterol drugs were found in African Americans (<a href="genetic-epidemiology.html#drugs">page 1</a>). Fine-mapping depends on linkage disequilibrium, which differs between populations, so samples from several populations can separate variants that one population cannot (<a href="linkage-disequilibrium.html#populations">page 6</a>). And polygenic scores built from GWAS of samples labeled European predicted 17 traits in UK Biobank on average 1.6-fold less accurately in the groups labeled Hispanic/Latino American and South Asian, 2.0-fold less accurately in the group labeled East Asian and 4.5-fold less accurately in the group labeled African.<sup class="cite"><a href="#src-9">9</a></sup></p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021, on the ethics of GWAS</div>
+  <p>“Arguably, the primary ethical challenge facing GWAS today relates to issues of diversity and inclusion, ensuring that GWAS result in fair opportunities to promote health and well-being for all humans regardless of race, gender or geographical location.”<sup class="cite"><a href="#src-14">14</a></sup> The primer adds that this means making the samples and data of GWAS representative of the global human population and the genomics workforce diverse, and it points to the real-time tracking of diversity in GWAS by the GWAS Diversity Monitor.<sup class="cite"><a href="#src-15">15</a></sup></p>
+</aside>
+
+<h2 id="eugenics" data-toc="Eugenics and misuse">Eugenics and the misuse of genetics <span class="tag core">Core</span></h2>
+
+<p>The third highlighted part, “and how those results are interpreted” (slide 38), leads to the history that slide 39 adds to the field’s own (<a href="field-map.html#social-history">page 2</a>): “prevailing ideas explaining and justifying social hierarchy.” Slide 40, “Broader Scientific &amp; Social Context”, lays these ideas out on a time axis:</p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>Slide 40 read along its time axis. Lines on the slide join three of the practices to the 21st-century box.</caption>
+  <thead><tr><th scope="col">Century</th><th scope="col">Above the axis: ideas and their proponents</th><th scope="col">Below the axis: practices and policies</th></tr></thead>
+  <tbody>
+    <tr><td>18th</td><td data-label="Ideas">Essentialist theories of “race”: Blumenbach, <em>On the Natural Variety of Mankind</em></td><td data-label="Practices">Imperialism (line to the 21st-century box); chattel slavery (line into the 19th century)</td></tr>
+    <tr><td>19th</td><td data-label="Ideas">Essentialist theories of “race”: Georges Cuvier, Louis Agassiz, “many others”</td><td data-label="Practices">Immigration restrictions (line to the 21st-century box)</td></tr>
+    <tr><td>20th</td><td data-label="Ideas">Eugenics: Galton, Pearson, Fisher, “many others”. Late in the century the three traditions of slide 28 (Mendelian and statistical, clinical and molecular genetics) join as genetic epidemiology, with Neel’s two quotations</td><td data-label="Practices">Forced sterilization; Jim Crow and segregation (line to the 21st-century box)</td></tr>
+    <tr><td>21st</td><td data-label="Ideas">Genetic epidemiology</td><td data-label="Practices">Revival of debunked eugenic theories: “Race Realism,” “Human Biodiversity”</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Essentialist theories of “race” treated humans as falling into a few distinct, internally uniform, ranked and unchanging groups, each with a fixed nature. The 2023 National Academies report on population descriptors calls this assumption typological thinking and recommends that genetics research avoid it;<sup class="cite"><a href="#src-16">16</a></sup> Lecture 0 tells how Blumenbach came to name Europeans “Caucasian” (<a href="../0-biological-foundations/ancestry.html#descriptors">Population descriptors</a>). Francis Galton coined the word eugenics in 1883 and defined it as the study of “agencies under social control that may improve or impair the racial qualities of future generations”.<sup class="cite"><a href="#src-17">17</a></sup></p>
+
+<p>The policies were real and large. In the United States, eugenicists were crucial to the passage of discriminatory immigration legislation, the Johnson–Reed Act of 1924, which completely excluded immigrants from Asia. Compulsory sterilization laws in 30 states led to the involuntary sterilization of at least 60,000 people by the 1970s.<sup class="cite"><a href="#src-17">17</a></sup> In 1927 the U.S. Supreme Court upheld Virginia’s sterilization law in <em>Buck v. Bell</em>, by 8 votes to 1.<sup class="cite"><a href="#src-18">18</a></sup> Nazi Germany’s campaign of forced sterilization had at least 400,000 victims, and in Germany, Austria and occupied territories the Nazis killed at least 70,000 adults and 5,200 children under the name of euthanasia.<sup class="cite"><a href="#src-17">17</a></sup> The statisticians whose methods every GWAS uses belong to this history: Fisher succeeded Karl Pearson as Galton Professor of Eugenics at University College London, and his promotion of eugenics has led several organizations to remove his name from awards and buildings.<sup class="cite"><a href="#src-19">19</a></sup></p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 40–43 · Broader scientific and social context</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-040.jpg" alt="Lecture 1, slide 40: a time axis from the 18th to the 21st century, with essentialist theories of race and eugenics and their proponents above it, the three traditions of genetic epidemiology at the right, and practices below it: imperialism, chattel slavery, immigration restrictions, forced sterilization, Jim Crow and segregation, with lines to a box on the revival of debunked eugenic theories" loading="lazy"><figcaption>Lecture 1 · slide 40</figcaption></figure>
+    <div><p>Slide 40 is the time axis of the table above; the colored boxes of slide 28 sit at its right end, so the traditions of genetic epidemiology appear on the same axis as the ideas and policies. Slide 41, “Why Talk about Eugenics?” (“Slide courtesy of Robbee Wedow”), gives three reasons: eugenics was a “shaky, pseudoscientific belief that empirical biological evidence exists to justify some individuals as inferior”, and “the ‘backdoor to eugenics’ is slippery”; “eugenic thinking is still very much alive”; and “rather than assuming our data speaks for itself, we have a duty to consider the language, context, and framing of our work, so that it helps, not harms”. In red: “Although founded on shaky arguments and weak empirical support, eugenics was firmly within the Western scientific establishment”, and “The call is coming from inside the house!” Slide 42 shows a 2022 comment in <em>Nature</em> beside the cover of the 2023 National Academies report on population descriptors. Slide 43 asks for questions (“Preguntas?”).</p></div>
+  </div>
+</aside>
+
+<p>The misuse is current. The comment on slide 42 opens with a photograph of the memorial to the ten Black people killed by a shooter at a supermarket in Buffalo, New York, in May 2022. Its authors, Carlson and colleagues, describe being “appalled to see a figure from a paper co-authored by one of us (S.R.) displayed in a 180-page screed” that the shooter, an avowed white supremacist, used to justify the massacre, and they note that their own work on global genetic diversity was increasingly being invoked in online discussions of this kind. The pull quote on the slide gives their conclusion: “Geneticists must rethink how they conduct their research and how they communicate results.”<sup class="cite"><a href="#src-20">20</a></sup></p>
+
+<p>For an analyst, the history turns into habits that can be checked in every paper and every analysis:</p>
+<ul>
+  <li><strong>Say what the data show.</strong> A GWAS estimates associations within the sample studied. Differences in allele frequencies or in average polygenic scores between groups are not, by themselves, evidence that differences in a trait between those groups are genetic: environments differ too, and scores transfer poorly between populations.</li>
+  <li><strong>Name groups by how they were defined.</strong> Self-identified race or ethnicity, country of recruitment and genetic similarity to a reference panel are different things (optional section below, and <a href="../0-biological-foundations/ancestry.html#descriptors">Lecture 0</a>).</li>
+  <li><strong>Avoid language that suggests fixed, ranked types.</strong> The reading adds that researchers “must not sensationalize or link their findings to pejorative stereotypes”.<sup class="cite"><a href="#src-14">14</a></sup></li>
+</ul>
+
+<h2 id="descriptors" data-toc="Population descriptors">Population descriptors in this lecture <span class="tag optional">Optional</span></h2>
+
+<p>Slide 42 pairs the comment with the 2023 report of the U.S. National Academies, <em class="no-autolink">Using Population Descriptors in Genetics and Genomics Research</em>, whose definitions and recommendations Lecture 0 summarizes in <a href="../0-biological-foundations/ancestry.html#descriptors">Words matter: population descriptors</a>. Two of them matter most for the analyses of this lecture: do not use race as a proxy for human genetic variation, and for genetic results refer explicitly to genetic similarity, for example to a named panel of reference samples.<sup class="cite"><a href="#src-16">16</a></sup> Session 3 asks for two pages of the report’s highlights as required reading.<sup class="cite"><a href="#src-21">21</a></sup></p>
+
+<p>The descriptors that appear in Lecture 1 are of four kinds:</p>
+<div class="table-wrap">
+<table class="stack">
+  <caption>Population descriptors in Lecture 1, and what each one is.</caption>
+  <thead><tr><th scope="col">Where</th><th scope="col">Label</th><th scope="col">What it is</th></tr></thead>
+  <tbody>
+    <tr><td>GWAS Catalog (this page)</td><td data-label="Label">“European”, “East Asian”, “Hispanic or Latin American”, …</td><td data-label="What it is">Broad ancestral categories chosen by curators from each paper’s own description: a mix of self-identification, authors’ labels and genetic similarity.</td></tr>
+    <tr><td>1000 Genomes (pages 7 and 21)</td><td data-label="Label">AFR, AMR, EAS, EUR, SAS, and 26 population codes such as GBR or YRI</td><td data-label="What it is">Labels of reference samples, defined by where and how the samples were collected. A study participant who falls near the EUR samples on the principal components is “genetically similar to the 1000 Genomes EUR samples”, not “European”.</td></tr>
+    <tr><td>GrafAnc (page 22)</td><td data-label="Label">Ancestry groups and subgroups assigned by the software</td><td data-label="What it is">Groups assigned by fixed rules from each person’s genetic distances to the software’s reference populations: a statement of genetic similarity.</td></tr>
+    <tr><td>UK Biobank (Lecture 0)</td><td data-label="Label">Data-Field 21000, “Ethnic background”</td><td data-label="What it is">Self-reported ethnicity, an answer on the touchscreen.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The Catalog’s European category still takes in papers that describe their participants as “Caucasian”,<sup class="cite"><a href="#src-13">13</a></sup> a term the National Academies report advises against because it was coined to convey white supremacy (Lecture 0).</p>
+
+<h2 id="consent" data-toc="Consent and data sharing">Consent and data sharing <span class="tag optional">Optional</span></h2>
+
+<p>Social context also decides what may be done with the data. What participants agreed to sets the limits of every later analysis, and the workshop’s own description calls for sharing data, individual-level and summary results, “consistent with participants’ consent and privacy”.<sup class="cite"><a href="#src-22">22</a></sup> Two arrangements recur in GWAS:</p>
+<ul>
+  <li><strong>Broad consent.</strong> UK Biobank participants agreed to the use of their data and samples for health-related research in general, not for one named study (<a href="../0-biological-foundations/uk-biobank.html#consent">Lecture 0</a>).</li>
+  <li><strong>Controlled access with data use limitations.</strong> Under the NIH Genomic Data Sharing Policy, which applies to NIH-funded research submitted from 25 January 2015, investigators deposit genomic data in a repository such as dbGaP, and other researchers apply for access to the controlled-access data.<sup class="cite"><a href="#src-23">23</a></sup> Each dataset, or each consent group within it, carries a data use limitation based on its participants’ informed consent: general research use; health/medical/biomedical research, which excludes the study of population origins or ancestry; research on one disease, for example diabetes and related conditions; or other, customized limits.<sup class="cite"><a href="#src-24">24</a></sup></li>
+</ul>
+<p>A consent form does not settle every question. Between 1990 and 1992 more than 200 members of the Havasupai Tribe in Arizona gave blood for a study of genetic factors in diabetes. The written consent form described the purpose as studying “the causes of behavioral/medical disorders”, and the samples were later used in studies of schizophrenia, inbreeding and evolutionary genetics, to which tribal members objected. The tribe sued, and in April 2010 the university agreed to pay $700,000 to 41 tribal members and to return the samples.<sup class="cite"><a href="#src-25">25</a></sup> What the participants understood they had agreed to mattered as much as the wording of the form.</p>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>A GWAS of a questionnaire answer finds every path from genotype to answer: alleles at <em>APOE</em> and <em>LPA</em> raise margarine use, most likely because they raise cholesterol or heart disease risk and people at risk are advised to change their diet.</li>
+    <li>A proposed mechanism becomes testable when written as a chain of measurable effects: if margarine use follows LDL cholesterol, every LDL variant should affect it in proportion to its effect on LDL.</li>
+    <li>When allele frequencies and a trait both differ between regions, SNPs with no effect become associated with the trait. The mean test statistic is about \(1 + n F_{\mathrm{ST}} \delta^2 / (4 + \delta^2)\), so biobanks are sensitive to tiny differences, and principal components do not remove all of them.</li>
+    <li>Most GWAS participants have been in the European category of the GWAS Catalog (86% of those with a reported category from 2005 to 2026, counted per publication), which limits discovery, fine-mapping and the accuracy of polygenic scores elsewhere.</li>
+    <li>The statistics of the field grew up alongside eugenics, which led to forced sterilization and discriminatory immigration laws. Genetics papers are still misused, and careful descriptors and plain statements of what the data show are part of the analysis.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A colleague reports a genome-wide significant SNP near <em>APOE</em> for “uses margarine” in UK Biobank and proposes that the variant changes taste perception. Give two testable predictions of the explanation on slides 32–33, and say what result would refute it.</summary><div class="a"><p>If the association runs through LDL cholesterol and the advice that follows a diagnosis, then (1) other variants that change LDL cholesterol, at genes such as <em>LDLR</em> or <em>PCSK9</em>, should also be associated with margarine use, in proportion to their effects on LDL: the ratio of the margarine effect to the LDL effect should be about the same for all of them; and (2) the association should be stronger in people who have had a cholesterol test, a diagnosis or a statin prescription, and weak or absent in people who have never been told their cholesterol.</p><p>If LDL variants elsewhere in the genome showed no association with spread type, or the <em>APOE</em> association were just as strong in people never tested or treated, the chain would be refuted, and the taste hypothesis would deserve a direct test.</p></div></details>
+  <details class="q"><summary>Why would the same <em>APOE</em> allele probably show no association with spread type in a population where cholesterol is rarely measured?</summary><div class="a"><p>The allele raises LDL cholesterol everywhere, but the step from high LDL to margarine needs a measurement, a diagnosis and advice. Without them, people with high LDL have no reason to change spread, so \(\beta_{\mathrm{LY}}\) in the chain \(\beta_{\mathrm{GY}} = \beta_{\mathrm{GL}}\, \beta_{\mathrm{LY}}\) is near 0, and so is the association. The genetic effect on the trait depends on the social context: the first take-home message of slide 34.</p></div></details>
+  <details class="q"><summary>A study of 100,000 people from two regions finds \(\lambda_{\mathrm{GC}} = 1.20\). The regions differ in mean trait by 0.2 standard deviations. Roughly what \(F_{\mathrm{ST}}\) between them would explain this, and what would you do next?</summary><div class="a"><p>Setting \(1 + n F_{\mathrm{ST}} \delta^2 / (4 + \delta^2) = 1.20\) with \(n = 100{,}000\) and \(\delta = 0.2\) gives \(F_{\mathrm{ST}} = 0.20 \times 4.04 / (100{,}000 \times 0.04) \approx 0.0002\), treating \(\lambda_{\mathrm{GC}}\) as close to the mean statistic. A twentieth of the \(F_{\mathrm{ST}}\) between two European samples is enough at this sample size.</p><p>Next: add region, or genetic principal components that capture it, as covariates and check whether \(\lambda_{\mathrm{GC}}\) falls; use LD score regression to separate confounding from many true small effects, which also inflate \(\lambda_{\mathrm{GC}}\) in large samples; and replicate the top findings in another sample or within families.</p></div></details>
+  <details class="q"><summary>In the widget, why do the blue points (adjusted for region) stay on the diagonal however large \(F_{\mathrm{ST}}\), \(\delta\) and \(n\) become, and why is this more optimistic than real data?</summary><div class="a"><p>In the simulation the only link between genotype and trait is region, and region is known exactly and included in the model. Within each region the SNPs have no association with the trait, so the adjusted statistics follow their null distribution.</p><p>In real data the confounder is not measured directly. Principal components or assessment center stand in for it, and they capture only the main patterns; finer structure, such as birthplace within a region or migration by socioeconomic status, can remain, as found in UK Biobank.</p></div></details>
+  <details class="q"><summary>The widget gives very different totals and European shares for 2018 per study and per publication. Why, and which rule would you use to describe who takes part in GWAS?</summary><div class="a"><p>Per study counts the participants of every study accession. In 2018 one paper entered 1,403 traits analyzed in the same UK Biobank participants as 1,403 studies; it alone accounts for four-fifths of that year’s per-study total of about 700 million, almost all in the European category. Per publication counts the largest sample in each category once per paper, which removes that repetition, though the same cohorts still appear in many papers.</p><p>Neither rule counts distinct people. To describe participation, the per-publication rule is closer to the question, and every rule shows a large European majority.</p></div></details>
+  <details class="q"><summary>A news story says that a polygenic score for educational attainment is higher on average in one country than in another, “proving” a genetic difference in education. Using this page, give three reasons why the conclusion does not follow.</summary><div class="a"><p>First, polygenic scores are built from GWAS of particular samples, mostly in the European category, and transfer poorly: accuracy drops several-fold in other ancestry groups, and average scores can differ between populations for reasons unrelated to the trait, because allele frequencies and linkage disequilibrium differ.</p><p>Second, GWAS of social outcomes pick up geographic structure and migration by socioeconomic status, which principal components do not fully remove (the UK Biobank studies above). Third, education depends on schools, income and history, which differ between countries; a GWAS estimates associations within a sample and says nothing directly about why groups differ. Slides 40–42 show that claims of this kind have a long history of being used to justify social hierarchy.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://nap.nationalacademies.org/resource/26902/Population_Descriptors_Highlights.pdf" target="_blank" rel="noopener">Using Population Descriptors in Genetics and Genomics Research: report highlights</a> <span class="src">· National Academies, 2023</span> <span class="level intro">intro</span> — four pages on the report of slide 42; Session 3 assigns two of them.</li>
+    <li><a href="https://doi.org/10.1038/d41586-022-03252-z" target="_blank" rel="noopener">Counter the weaponization of genetics research by extremists</a> <span class="src">· Carlson et al., Nature 2022</span> <span class="level intro">intro</span> — the comment on slide 42.</li>
+    <li><a href="https://www.genome.gov/about-genomics/fact-sheets/Eugenics-and-Scientific-Racism" target="_blank" rel="noopener">Eugenics and scientific racism</a> <span class="src">· NHGRI fact sheet</span> <span class="level intro">intro</span> — a short history with dates and numbers.</li>
+    <li><a href="https://gwasdiversitymonitor.com/" target="_blank" rel="noopener">GWAS Diversity Monitor</a> <span class="src">· Mills and Rahal</span> <span class="level intro">intro</span> — the ancestry of GWAS participants, tracked from the GWAS Catalog.</li>
+    <li><a href="https://doi.org/10.1038/s41588-019-0379-x" target="_blank" rel="noopener">Clinical use of current polygenic risk scores may exacerbate health disparities</a> <span class="src">· Martin et al., Nature Genetics 2019</span> <span class="level intermediate">intermediate</span> — the source of slide 37, with the accuracy of polygenic scores across ancestry groups.</li>
+    <li><a href="https://doi.org/10.1038/s41467-018-08219-1" target="_blank" rel="noopener">Apparent latent structure within the UK Biobank sample has implications for epidemiological analysis</a> <span class="src">· Haworth et al., Nature Communications 2019</span> <span class="level advanced">advanced</span> — geographic structure that survives adjustment for principal components.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">UK Biobank. Touch-screen questionnaire: final version (questions DT10A and DT10AA, “What type of spread do you mainly use?”). <a href="https://biobank.ndph.ox.ac.uk/showcase/ukb/docs/TouchscreenQuestionsMainFinal.pdf" target="_blank" rel="noopener">biobank.ndph.ox.ac.uk</a></li>
+    <li id="src-2">UK Biobank Data Showcase. Data-Field 1428: Spread type (498,506 participants; read 8 November 2026). <a href="https://biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1428" target="_blank" rel="noopener">biobank.ndph.ox.ac.uk/showcase/field.cgi?id=1428</a></li>
+    <li id="src-3">Fauman E. Post on Twitter, 2 March 2019, linked on slide 31 (“HT @Eric_Fauman”); the date is decoded from the post’s identifier, and the post itself was not read for this page. <a href="https://twitter.com/Eric_Fauman/status/1101822314163957760" target="_blank" rel="noopener">twitter.com/Eric_Fauman</a></li>
+    <li id="src-4">Cole JB, Florez JC, Hirschhorn JN. Comprehensive genomic analysis of dietary habits in UK Biobank identifies hundreds of genetic associations. <em>Nat Commun</em>. 2020;11:1467. <a href="https://doi.org/10.1038/s41467-020-15193-0" target="_blank" rel="noopener">doi:10.1038/s41467-020-15193-0</a></li>
+    <li id="src-5">Haworth S, Mitchell R, Corbin L, et al. Apparent latent structure within the UK Biobank sample has implications for epidemiological analysis. <em>Nat Commun</em>. 2019;10:333. <a href="https://doi.org/10.1038/s41467-018-08219-1" target="_blank" rel="noopener">doi:10.1038/s41467-018-08219-1</a></li>
+    <li id="src-6">Abdellaoui A, Hugh-Jones D, Yengo L, et al. Genetic correlates of social stratification in Great Britain. <em>Nat Hum Behav</em>. 2019;3:1332–1342. <a href="https://doi.org/10.1038/s41562-019-0757-5" target="_blank" rel="noopener">doi:10.1038/s41562-019-0757-5</a></li>
+    <li id="src-7">Devlin B, Roeder K. Genomic control for association studies. <em>Biometrics</em>. 1999;55:997–1004. <a href="https://doi.org/10.1111/j.0006-341x.1999.00997.x" target="_blank" rel="noopener">doi:10.1111/j.0006-341x.1999.00997.x</a></li>
+    <li id="src-8">Balding DJ, Nichols RA. A method for quantifying differentiation between populations at multi-allelic loci and its implications for investigating identity and paternity. <em>Genetica</em>. 1995;96:3–12. <a href="https://doi.org/10.1007/BF01441146" target="_blank" rel="noopener">doi:10.1007/BF01441146</a></li>
+    <li id="src-9">Martin AR, Kanai M, Kamatani Y, Okada Y, Neale BM, Daly MJ. Clinical use of current polygenic risk scores may exacerbate health disparities. <em>Nat Genet</em>. 2019;51:584–591. <a href="https://doi.org/10.1038/s41588-019-0379-x" target="_blank" rel="noopener">doi:10.1038/s41588-019-0379-x</a>. Figure 1 is the figure of slide 37. Fold values as in the published article, as in Lecture 0; the earlier author manuscript gives 1.6, 1.7, 2.5 and 4.9.</li>
+    <li id="src-10">Popejoy AB, Fullerton SM. Genomics is failing on diversity. <em>Nature</em>. 2016;538:161–164. <a href="https://doi.org/10.1038/538161a" target="_blank" rel="noopener">doi:10.1038/538161a</a></li>
+    <li id="src-11">Mills MC, Rahal C. A scientometric review of genome-wide association studies. <em>Commun Biol</em>. 2019;2:9. <a href="https://doi.org/10.1038/s42003-018-0261-x" target="_blank" rel="noopener">doi:10.1038/s42003-018-0261-x</a></li>
+    <li id="src-12">NHGRI-EBI GWAS Catalog. Ancestry file (gwas-catalog-ancestry.tsv), release of 2 November 2026, downloaded 8 November 2026; discovery-stage rows summarized for this page (the counting rules are in the widget’s code). <a href="https://www.ebi.ac.uk/gwas/docs/file-downloads" target="_blank" rel="noopener">ebi.ac.uk/gwas/docs/file-downloads</a></li>
+    <li id="src-13">Morales J, Welter D, Bowler EH, et al. A standardized framework for representation of ancestry data in genomics studies, with application to the NHGRI-EBI GWAS Catalog. <em>Genome Biol</em>. 2018;19:21. <a href="https://doi.org/10.1186/s13059-018-1396-2" target="_blank" rel="noopener">doi:10.1186/s13059-018-1396-2</a></li>
+    <li id="src-14">Uffelmann E, Huang QQ, Munung NS, et al. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-15">Mills MC, Rahal C. The GWAS Diversity Monitor tracks diversity by disease in real time. <em>Nat Genet</em>. 2020;52:242–243. <a href="https://doi.org/10.1038/s41588-020-0580-y" target="_blank" rel="noopener">doi:10.1038/s41588-020-0580-y</a></li>
+    <li id="src-16">National Academies of Sciences, Engineering, and Medicine. <em>Using Population Descriptors in Genetics and Genomics Research: A New Framework for an Evolving Field</em>. The National Academies Press; 2023. <a href="https://doi.org/10.17226/26902" target="_blank" rel="noopener">doi:10.17226/26902</a>. Recommendations as summarized in Lecture 0.</li>
+    <li id="src-17">National Human Genome Research Institute. Eugenics and scientific racism (fact sheet, updated 18 May 2022). <a href="https://www.genome.gov/about-genomics/fact-sheets/Eugenics-and-Scientific-Racism" target="_blank" rel="noopener">genome.gov</a></li>
+    <li id="src-18"><em>Buck v. Bell</em>, 274 U.S. 200 (1927), decided 2 May 1927; opinion by Justice Holmes, Justice Butler dissenting. Legal Information Institute, Cornell Law School. <a href="https://www.law.cornell.edu/supremecourt/text/274/200" target="_blank" rel="noopener">law.cornell.edu</a></li>
+    <li id="src-19">Bodmer W, Bailey RA, Charlesworth B, et al. The outstanding scientist, R.A. Fisher: his views on eugenics and race. <em>Heredity</em>. 2021;126:565–576. <a href="https://doi.org/10.1038/s41437-020-00394-6" target="_blank" rel="noopener">doi:10.1038/s41437-020-00394-6</a></li>
+    <li id="src-20">Carlson J, Henn BM, Al-Hindi DR, Ramachandran S. Counter the weaponization of genetics research by extremists. <em>Nature</em>. 2022;610:444–447. <a href="https://doi.org/10.1038/d41586-022-03252-z" target="_blank" rel="noopener">doi:10.1038/d41586-022-03252-z</a>. The month of the shooting is from the photograph’s caption on slide 42.</li>
+    <li id="src-21">DCEG Statistical Genetics Workshop. Session 3: Gene-Environment Interaction (required and optional reading). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_3" target="_blank" rel="noopener">dceg-workshops.github.io</a></li>
+    <li id="src-22">DCEG Statistical Genetics Workshop. Home page: background. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/" target="_blank" rel="noopener">dceg-workshops.github.io/statistical_genetics_workshop</a></li>
+    <li id="src-23">National Institutes of Health. Genomic Data Sharing (GDS) Policy: overview. <a href="https://grants.nih.gov/policy-and-compliance/policy-topics/sharing-policies/gds/overview" target="_blank" rel="noopener">grants.nih.gov</a></li>
+    <li id="src-24">National Institutes of Health. Points to consider in developing effective data use limitation statements. June 2015. <a href="https://www.grants.nih.gov/sites/default/files/flmngr/NIH_PTC_in_Developing_DUL_Statements.pdf" target="_blank" rel="noopener">grants.nih.gov</a></li>
+    <li id="src-25">Zawilak T. Havasupai Tribe v. the Arizona Board of Regents (2008). <em>Embryo Project Encyclopedia</em>, Arizona State University; 10 August 2025. <a href="https://embryo.asu.edu/pages/havasupai-tribe-v-arizona-board-regents-2008" target="_blank" rel="noopener">embryo.asu.edu</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

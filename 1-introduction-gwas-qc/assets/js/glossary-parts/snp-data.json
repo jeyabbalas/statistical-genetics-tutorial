@@ -1,0 +1,86 @@
+[
+ {
+  "id": "allele-coding",
+  "term": "Allele coding",
+  "aka": [
+   "genotype coding",
+   "counted-allele convention"
+  ],
+  "short": "The rule that turns genotypes into numbers: usually the count, 0, 1 or 2, of one chosen allele (the counted allele). Which allele is counted differs between files and programs, so the rule must travel with the numbers.",
+  "long": "<p>At a SNP with alleles C and T, counting C codes the genotypes TT, CT and CC as 0, 1 and 2; counting T codes them as 2, 1 and 0. PLINK 1.9 counts its A1 allele (made the minor allele when it writes a fileset), a VCF's dosage counts ALT, and PLINK 2's <code>--export A</code> counts REF by default.</p><p>Switching the counted allele replaces each count g by 2 − g, the allele frequency p by 1 − p, a regression slope β by −β (the intercept α by α + 2β), and an odds ratio by its reciprocal; fit statistics and p-values do not change. Other codings exist for other models: dominant coding (1 if at least one copy, else 0) and recessive coding (1 only for two copies).</p>",
+  "l1": "Page 4 shows which allele each file format counts and lets you switch the counted allele in a small dataset.",
+  "see": [
+   "allele-dosage",
+   "allele-swap",
+   "plink-a1",
+   "effect-allele",
+   "minor-allele",
+   "reference-allele"
+  ],
+  "links": [
+   {
+    "t": "PLINK 1.9: --recode A and --keep-allele-order",
+    "u": "https://www.cog-genomics.org/plink/1.9/data#recode"
+   },
+   {
+    "t": "PLINK 2.0: --export A counts REF by default",
+    "u": "https://www.cog-genomics.org/plink/2.0/data#export"
+   }
+  ],
+  "match": [
+   "allele coding",
+   "genotype coding",
+   "counted allele",
+   "counted alleles"
+  ],
+  "owner": "snp-data"
+ },
+ {
+  "id": "transition",
+  "term": "Transition (base change)",
+  "aka": [
+   "transition mutation"
+  ],
+  "short": "A single-base change between the two purines, A and G, or between the two pyrimidines, C and T. Transitions arise more often than other base changes, so most SNPs are A/G or C/T.",
+  "long": "<p>The other base changes, a purine replaced by a pyrimidine or the reverse, are transversions. In the PennCATH array data, 575,207 of the 835,319 SNPs with two alleles (69%) are transitions.</p><p>A transition can always be strand-aligned from its letters: the complement of A/G is T/C, a different pair.</p>",
+  "l1": "Page 4 counts the allele pairs of all PennCATH SNPs.",
+  "see": [
+   "transversion",
+   "purine",
+   "pyrimidine",
+   "snv"
+  ],
+  "links": [],
+  "match": [
+   "transition",
+   "transitions"
+  ],
+  "auto": false,
+  "noPlural": true,
+  "owner": "snp-data"
+ },
+ {
+  "id": "transversion",
+  "term": "Transversion (base change)",
+  "aka": [
+   "transversion mutation"
+  ],
+  "short": "A single-base change from a purine (A or G) to a pyrimidine (C or T) or back: A/C, A/T, G/C or G/T. The A/T and C/G transversions are the SNPs whose letters read the same on both strands.",
+  "long": "<p>Transversions are less frequent than transitions. In the PennCATH array data, 260,112 of the 835,319 SNPs with two alleles are transversions, and 128,999 of them are A/T or C/G: strand-ambiguous SNPs that can be aligned between files only by their allele frequencies.</p>",
+  "l1": "Page 4 counts the allele pairs of all PennCATH SNPs.",
+  "see": [
+   "transition",
+   "strand-ambiguous-snp",
+   "purine",
+   "pyrimidine"
+  ],
+  "links": [],
+  "match": [
+   "transversion",
+   "transversions"
+  ],
+  "auto": false,
+  "noPlural": true,
+  "owner": "snp-data"
+ }
+]

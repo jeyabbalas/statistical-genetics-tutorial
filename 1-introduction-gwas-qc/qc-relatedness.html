@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QC step 4: relatedness and identity by descent · Lecture 1</title>
+<meta name="description" content="How PLINK's --genome estimates, for every pair of people, the fractions of the genome shared identical by descent (Z0, Z1, Z2 and PI_HAT) from identity-by-state counts at LD-pruned SNPs; what duplicates, relatives, contamination and genetic ancestry look like in its output; and how to choose a threshold and whom to remove.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<script defer src="assets/js/widgets/qc-relatedness-ibd-sim.js"></script>
+<script defer src="assets/js/widgets/qc-relatedness-z0z1.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="qc-relatedness"]. */
+body[data-page="qc-relatedness"] .mm-fig { display: block; width: 100%; height: auto; }
+body[data-page="qc-relatedness"] table.ibs-grid { width: auto; margin: 0 auto; }
+body[data-page="qc-relatedness"] table.ibs-grid th, body[data-page="qc-relatedness"] table.ibs-grid td { text-align: center; padding: 6px 14px; }
+body[data-page="qc-relatedness"] table.ibs-grid td.s0 { background: #fde7e4; font-weight: 700; }
+body[data-page="qc-relatedness"] table.ibs-grid td.s1 { background: #fff6dc; }
+body[data-page="qc-relatedness"] table.ibs-grid td.s2 { background: #e5f2ea; }
+body[data-page="qc-relatedness"] .table-wrap.narrow { max-width: 520px; }
+body[data-page="qc-relatedness"] .fig-panels svg { max-width: 420px; margin: 0 auto; }
+/* widget: From shared segments to Z0, Z1, Z2 and PI_HAT */
+body[data-page="qc-relatedness"] .ibd-grid { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: 10px 22px; align-items: start; }
+@media (max-width: 820px) { body[data-page="qc-relatedness"] .ibd-grid { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="qc-relatedness"] .ibd-cap { font-size: 0.86rem; margin: 0.3em 0 0.35em; }
+body[data-page="qc-relatedness"] .ibd-genome, body[data-page="qc-relatedness"] .ibd-zplot { display: block; width: 100%; height: auto; }
+body[data-page="qc-relatedness"] .ibd-zplot { max-width: 400px; margin: 0 auto; }
+body[data-page="qc-relatedness"] .ibd-tabwrap { overflow-x: auto; margin: 0.2em 0 0.6em; border: 1px solid var(--border); border-radius: 6px; }
+body[data-page="qc-relatedness"] .ibd-tab { font-size: 0.8rem; }
+body[data-page="qc-relatedness"] .ibd-tab th, body[data-page="qc-relatedness"] .ibd-tab td { padding: 4px 8px; text-align: right; white-space: nowrap; }
+body[data-page="qc-relatedness"] .ibd-tab th[scope="row"], body[data-page="qc-relatedness"] .ibd-tab thead th:first-child { text-align: left; }
+body[data-page="qc-relatedness"] .ibd-tab caption { caption-side: top; text-align: left; font-size: 0.78rem; color: var(--fg-muted); padding: 5px 8px 2px; }
+body[data-page="qc-relatedness"] .ibd-tab tr.ibd-exp th, body[data-page="qc-relatedness"] .ibd-tab tr.ibd-exp td { color: var(--fg-muted); background: var(--bg-alt); }
+body[data-page="qc-relatedness"] .ibd-calc { font-size: 0.8rem; line-height: 1.6; overflow-wrap: anywhere; }
+body[data-page="qc-relatedness"] svg .ibd-lab { font-weight: 700; fill: var(--fg); paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+body[data-page="qc-relatedness"] .ibd-legend .ibd-sw { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; white-space: nowrap; }
+body[data-page="qc-relatedness"] .ibd-sw i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+body[data-page="qc-relatedness"] .ibd-summary { min-height: 2.6em; }
+/* widget: the toy data's pairs (lab) */
+body[data-page="qc-relatedness"] .zz-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 22px; align-items: start; }
+@media (max-width: 820px) { body[data-page="qc-relatedness"] .zz-grid { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="qc-relatedness"] .zz-cap { font-size: 0.86rem; margin: 0.3em 0 0.35em; }
+body[data-page="qc-relatedness"] .zz-plane { display: block; width: 100%; max-width: 400px; height: auto; margin: 0 auto; touch-action: manipulation; }
+body[data-page="qc-relatedness"] svg .zz-lab { font-weight: 700; fill: var(--fg); paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+body[data-page="qc-relatedness"] .zz-pointed { min-height: 2.8em; font-size: 0.82rem; overflow-wrap: anywhere; }
+body[data-page="qc-relatedness"] .zz-presets { margin-top: 0.4em; }
+body[data-page="qc-relatedness"] .zz-summary { margin-top: 0.8em; overflow-wrap: anywhere; }
+body[data-page="qc-relatedness"] .zz-pairs td.num, body[data-page="qc-relatedness"] .zz-pairs th.num, body[data-page="qc-relatedness"] .zz-pairs .zz-ids { white-space: nowrap; }
+body[data-page="qc-relatedness"] .zz-pairs { font-size: 0.8rem; }
+body[data-page="qc-relatedness"] .zz-pairs th, body[data-page="qc-relatedness"] .zz-pairs td { padding: 5px 6px; }
+@media (max-width: 520px) { body[data-page="qc-relatedness"] .zz-pairs .zz-z2 { display: none; } }
+body[data-page="qc-relatedness"] .zz-remove { max-height: 14em; overflow: auto; }
+body[data-page="qc-relatedness"] .zz-sim { font-style: italic; color: var(--note); }
+</style>
+</head>
+<body data-page="qc-relatedness">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Step 4 of 8 · Page 18 of 23</p>
+  <h1>QC step 4: relatedness and identity by descent</h1>
+  <p class="lede">Is anyone in the study twice, and are any two people close relatives? Two people share a stretch of DNA <dfn>identical by descent</dfn> (IBD) when both inherited it from the same recent ancestor. PLINK's <code>--genome</code> compares every pair of people at the LD-pruned SNPs from step 3, counts the SNPs at which their alleles match, and turns those counts into estimates of how much of their genomes the two share IBD: <code>Z0</code>, <code>Z1</code>, <code>Z2</code> and their summary <code>PI_HAT</code>. This page explains that estimate, what duplicates, relatives, contaminated DNA and genetic ancestry do to it, and how to decide whom to remove.</p>
+  <div class="chips">
+    <span class="chip core">Command: <code>plink --genome</code></span>
+    <span class="chip data">Writes: <code>.genome</code>, one row per pair of people</span>
+    <span class="chip time">≈ 50 min</span>
+  </div>
+</header>
+
+<nav class="step-nav" data-step="4" aria-label="QC steps"></nav>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Relatedness is a statistic per pair: count shared alleles, estimate shared descent, flag the pairs that are too close</h2>
+  <figure>
+<svg viewBox="0 0 860 268" role="img" aria-labelledby="mm-t mm-d" class="mm-fig only-wide">
+<title id="mm-t">QC step 4 as one box of the pipeline: relatedness</title><desc id="mm-d">The eight QC steps with step 4, relatedness, highlighted, expanded into five stages. Statistic: Z0, Z1, Z2 and PI_HAT for every pair of people, estimated from identity-by-state counts at pruned SNPs. Distribution: a Z0 against Z1 plot in which unrelated pairs cluster at Z0 = 1, Z1 = 0 and relatives sit at their expected points. Threshold: PI_HAT above about 0.19 marks second-degree or closer relatives and near 1 marks duplicates. Action: remove one member of each pair or keep everyone and model relatedness. Record: the removed IDs, the pair and the reason.</desc>
+<defs><marker id="mm-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker></defs>
+<line x1="158.8" y1="15" x2="701.2" y2="15" stroke="#d9dee5" stroke-width="2"/>
+<circle cx="158.8" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="158.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">1</text>
+<text x="158.8" y="40" class="t-xs" text-anchor="middle">Missingness</text>
+<circle cx="236.2" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="236.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">2</text>
+<text x="236.2" y="40" class="t-xs" text-anchor="middle">Hardy–Weinberg</text>
+<circle cx="313.8" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="313.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">3</text>
+<text x="313.8" y="40" class="t-xs" text-anchor="middle">LD pruning</text>
+<circle cx="391.2" cy="15" r="11" fill="var(--lab)" stroke="var(--lab)" stroke-width="1"/>
+<text x="391.2" y="19" class="t-xs" text-anchor="middle" style="fill:#fff;font-weight:700">4</text>
+<text x="391.2" y="40" class="t-xs" text-anchor="middle" style="font-weight:700;fill:var(--fg)">Relatedness</text>
+<circle cx="468.8" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="468.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">5</text>
+<text x="468.8" y="40" class="t-xs" text-anchor="middle">Heterozygosity</text>
+<circle cx="546.2" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="546.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">6</text>
+<text x="546.2" y="40" class="t-xs" text-anchor="middle">PCA</text>
+<circle cx="623.8" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="623.8" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">7</text>
+<text x="623.8" y="40" class="t-xs" text-anchor="middle">Reference PCA</text>
+<circle cx="701.2" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="701.2" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">8</text>
+<text x="701.2" y="40" class="t-xs" text-anchor="middle">GrafAnc</text>
+<path d="M391.2,44 L391.2,54 M10,58 L383.2,58 L391.2,50 L399.2,58 L850,58" fill="none" stroke="var(--lab)" stroke-width="1.4"/>
+<rect x="17" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="17" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="27" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">STATISTIC PER PAIR</text>
+<text x="27" y="108" class="t-b" text-anchor="start">Z0, Z1, Z2,</text>
+<text x="27" y="123" class="t-b" text-anchor="start">PI_HAT</text>
+<text x="27" y="146" class="t-xs" text-anchor="start" style="fill:#1d2127">for every pair of people,</text>
+<text x="27" y="159" class="t-xs" text-anchor="start" style="fill:#1d2127">from counts of SNPs sharing</text>
+<text x="27" y="172" class="t-xs" text-anchor="start" style="fill:#1d2127">0, 1 or 2 alleles by state</text>
+<text x="27" y="185" class="t-xs" text-anchor="start" style="fill:#1d2127">(IBS) at pruned SNPs:</text>
+<text x="27" y="198" class="t-xs" text-anchor="start" style="fill:#1d2127">method of moments</text>
+<line x1="172" y1="164.0" x2="183" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="185" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="185" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="195" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">DISTRIBUTION</text>
+<text x="195" y="108" class="t-b" text-anchor="start">Z0 against Z1</text>
+<line x1="221" y1="199" x2="323" y2="199" stroke="#8a93a0" stroke-width="1"/>
+<line x1="221" y1="199" x2="221" y2="129" stroke="#8a93a0" stroke-width="1"/>
+<line x1="221" y1="129" x2="323" y2="199" stroke="#b9c1cc" stroke-width="1" stroke-dasharray="3 2"/>
+<circle cx="322.9" cy="198.6" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="321.8" cy="197.9" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="320.6" cy="197.1" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="319.0" cy="196.9" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="322.8" cy="199.0" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="321.0" cy="197.8" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="322.4" cy="198.3" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="321.7" cy="196.5" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="320.8" cy="198.6" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="322.5" cy="199.0" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="321.7" cy="197.2" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="322.4" cy="199.0" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="322.2" cy="198.7" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="320.0" cy="197.6" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="321.4" cy="197.9" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="321.9" cy="198.2" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="318.3" cy="196.3" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="320.9" cy="197.8" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="320.2" cy="197.6" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="319.3" cy="197.4" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="320.4" cy="197.2" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="320.8" cy="197.9" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="321.8" cy="197.7" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="322.7" cy="199.0" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="319.6" cy="196.4" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="322.4" cy="197.7" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="246.5" cy="164.0" r="3.2" fill="var(--q1)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="248.5" cy="166.1" r="3.2" fill="var(--q1)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="221.0" cy="129.0" r="3.2" fill="var(--q2)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="272.0" cy="164.0" r="3.2" fill="var(--q3)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="221.0" cy="199.0" r="3.2" fill="var(--q4)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="296.5" cy="180.8" r="3.2" fill="var(--q7)" stroke="#1d2127" stroke-width="0.8"/>
+<text x="272.0" y="211" class="t-xs" text-anchor="middle">Z0</text>
+<text x="216" y="167.0" class="t-xs" text-anchor="end">Z1</text>
+<text x="195" y="229" class="t-xs" text-anchor="start" style="fill:#1d2127">unrelated pairs pile up</text>
+<text x="195" y="242" class="t-xs" text-anchor="start" style="fill:#1d2127">at Z0 = 1; relatives sit</text>
+<text x="195" y="255" class="t-xs" text-anchor="start" style="fill:#1d2127">near their expected points</text>
+<line x1="340" y1="164.0" x2="351" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="353" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="353" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="363" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">THRESHOLD</text>
+<text x="363" y="108" class="t-b" text-anchor="start">PI_HAT cut-off</text>
+<text x="363" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">≈ 1: duplicate or twin</text>
+<text x="363" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">≈ 0.5: first degree</text>
+<text x="363" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">≈ 0.25: second degree</text>
+<text x="363" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">&gt; 0.1875 (halfway to</text>
+<text x="363" y="183" class="t-xs" text-anchor="start" style="fill:#1d2127">third degree): a common</text>
+<text x="363" y="196" class="t-xs" text-anchor="start" style="fill:#1d2127">rule for removal</text>
+<line x1="508" y1="164.0" x2="519" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="521" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="521" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="531" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">REMOVE OR FLAG</text>
+<text x="531" y="108" class="t-b" text-anchor="start">One per pair, or</text>
+<text x="531" y="123" class="t-b" text-anchor="start">model it</text>
+<text x="531" y="146" class="t-xs" text-anchor="start" style="fill:#1d2127">remove the member with</text>
+<text x="531" y="159" class="t-xs" text-anchor="start" style="fill:#1d2127">more missing calls, or</text>
+<text x="531" y="172" class="t-xs" text-anchor="start" style="fill:#1d2127">keep all and use a</text>
+<text x="531" y="185" class="t-xs" text-anchor="start" style="fill:#1d2127">method that models</text>
+<text x="531" y="198" class="t-xs" text-anchor="start" style="fill:#1d2127">relatedness (mixed model)</text>
+<line x1="676" y1="164.0" x2="687" y2="164.0" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mm-arr)"/>
+<rect x="689" y="68" width="154" height="192" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="689" y="68" width="154" height="5" rx="2" fill="var(--lab)"/>
+<text x="699" y="90" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">RECORD</text>
+<text x="699" y="108" class="t-b" text-anchor="start">IDs and reasons</text>
+<text x="699" y="131" class="t-xs" text-anchor="start" style="fill:#1d2127">pair, PI_HAT, Z0, who</text>
+<text x="699" y="144" class="t-xs" text-anchor="start" style="fill:#1d2127">was removed and why;</text>
+<text x="699" y="157" class="t-xs" text-anchor="start" style="fill:#1d2127">the exercise's QC report</text>
+<text x="699" y="170" class="t-xs" text-anchor="start" style="fill:#1d2127">collects it</text>
+</svg>
+<svg viewBox="0 0 360 635" role="img" aria-labelledby="mmn-t mmn-d" class="mm-fig only-narrow">
+<title id="mmn-t">QC step 4 as one box of the pipeline: relatedness</title><desc id="mmn-d">The eight QC steps with step 4, relatedness, highlighted, expanded into five stages. Statistic: Z0, Z1, Z2 and PI_HAT for every pair of people, estimated from identity-by-state counts at pruned SNPs. Distribution: a Z0 against Z1 plot in which unrelated pairs cluster at Z0 = 1, Z1 = 0 and relatives sit at their expected points. Threshold: PI_HAT above about 0.19 marks second-degree or closer relatives and near 1 marks duplicates. Action: remove one member of each pair or keep everyone and model relatedness. Record: the removed IDs, the pair and the reason.</desc>
+<defs><marker id="mmn-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker></defs>
+<line x1="26.0" y1="15" x2="334.0" y2="15" stroke="#d9dee5" stroke-width="2"/>
+<circle cx="26.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="26.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">1</text>
+<circle cx="70.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="70.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">2</text>
+<circle cx="114.0" cy="15" r="9" fill="var(--key-soft)" stroke="#d9dee5" stroke-width="1"/>
+<text x="114.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--key);font-weight:700">3</text>
+<circle cx="158.0" cy="15" r="11" fill="var(--lab)" stroke="var(--lab)" stroke-width="1"/>
+<text x="158.0" y="19" class="t-xs" text-anchor="middle" style="fill:#fff;font-weight:700">4</text>
+<text x="158.0" y="40" class="t-xs" text-anchor="middle" style="font-weight:700;fill:var(--fg)">Relatedness</text>
+<circle cx="202.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="202.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">5</text>
+<circle cx="246.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="246.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">6</text>
+<circle cx="290.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="290.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">7</text>
+<circle cx="334.0" cy="15" r="9" fill="#eef1f4" stroke="#d9dee5" stroke-width="1"/>
+<text x="334.0" y="19" class="t-xs" text-anchor="middle" style="fill:var(--fg-muted);font-weight:700">8</text>
+<rect x="8" y="54" width="344" height="99" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="54" width="5" height="99" rx="2" fill="var(--lab)"/>
+<text x="22" y="72" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">STATISTIC PER PAIR</text>
+<text x="22" y="89" class="t-b" text-anchor="start">Z0, Z1, Z2,</text>
+<text x="22" y="104" class="t-b" text-anchor="start">PI_HAT</text>
+<text x="22" y="121" class="t-xs" text-anchor="start" style="fill:#1d2127">for every pair of people, from counts of SNPs sharing</text>
+<text x="22" y="134" class="t-xs" text-anchor="start" style="fill:#1d2127">0, 1 or 2 alleles by state (IBS) at pruned SNPs:</text>
+<text x="22" y="147" class="t-xs" text-anchor="start" style="fill:#1d2127">method of moments</text>
+<line x1="180.0" y1="154" x2="180.0" y2="167" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="169" width="344" height="167" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="169" width="5" height="167" rx="2" fill="var(--lab)"/>
+<text x="22" y="187" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">DISTRIBUTION</text>
+<text x="22" y="204" class="t-b" text-anchor="start">Z0 against Z1</text>
+<line x1="98" y1="293" x2="258" y2="293" stroke="#8a93a0" stroke-width="1"/>
+<line x1="98" y1="293" x2="98" y2="223" stroke="#8a93a0" stroke-width="1"/>
+<line x1="98" y1="223" x2="258" y2="293" stroke="#b9c1cc" stroke-width="1" stroke-dasharray="3 2"/>
+<circle cx="257.8" cy="292.6" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="256.2" cy="291.9" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="254.3" cy="291.1" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="251.8" cy="290.9" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="257.7" cy="293.0" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="254.9" cy="291.8" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="257.1" cy="292.3" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="256.0" cy="290.5" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="254.5" cy="292.6" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="257.2" cy="293.0" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="255.9" cy="291.2" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="257.1" cy="293.0" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="256.8" cy="292.7" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="253.3" cy="291.6" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="255.5" cy="291.9" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="256.3" cy="292.2" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="250.7" cy="290.3" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="254.8" cy="291.8" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="253.6" cy="291.6" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="252.3" cy="291.4" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="253.9" cy="291.2" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="254.5" cy="291.9" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="256.2" cy="291.7" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="257.5" cy="293.0" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="252.6" cy="290.4" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="257.1" cy="291.7" r="2" fill="#8a93a0" fill-opacity="0.7"/>
+<circle cx="138.0" cy="258.0" r="3.2" fill="var(--q1)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="141.2" cy="260.1" r="3.2" fill="var(--q1)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="98.0" cy="223.0" r="3.2" fill="var(--q2)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="178.0" cy="258.0" r="3.2" fill="var(--q3)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="98.0" cy="293.0" r="3.2" fill="var(--q4)" stroke="#1d2127" stroke-width="0.8"/>
+<circle cx="216.4" cy="274.8" r="3.2" fill="var(--q7)" stroke="#1d2127" stroke-width="0.8"/>
+<text x="178.0" y="305" class="t-xs" text-anchor="middle">Z0</text>
+<text x="93" y="261.0" class="t-xs" text-anchor="end">Z1</text>
+<text x="22" y="317" class="t-xs" text-anchor="start" style="fill:#1d2127">unrelated pairs pile up at Z0 = 1; relatives sit near</text>
+<text x="22" y="330" class="t-xs" text-anchor="start" style="fill:#1d2127">their expected points</text>
+<line x1="180.0" y1="337" x2="180.0" y2="350" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="352" width="344" height="84" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="352" width="5" height="84" rx="2" fill="var(--lab)"/>
+<text x="22" y="370" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">THRESHOLD</text>
+<text x="22" y="387" class="t-b" text-anchor="start">PI_HAT cut-off</text>
+<text x="22" y="404" class="t-xs" text-anchor="start" style="fill:#1d2127">≈ 1: duplicate or twin ≈ 0.5: first degree ≈ 0.25:</text>
+<text x="22" y="417" class="t-xs" text-anchor="start" style="fill:#1d2127">second degree &gt; 0.1875 (halfway to third degree): a</text>
+<text x="22" y="430" class="t-xs" text-anchor="start" style="fill:#1d2127">common rule for removal</text>
+<line x1="180.0" y1="437" x2="180.0" y2="450" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="452" width="344" height="86" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="452" width="5" height="86" rx="2" fill="var(--lab)"/>
+<text x="22" y="470" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">REMOVE OR FLAG</text>
+<text x="22" y="487" class="t-b" text-anchor="start">One per pair, or</text>
+<text x="22" y="502" class="t-b" text-anchor="start">model it</text>
+<text x="22" y="519" class="t-xs" text-anchor="start" style="fill:#1d2127">remove the member with more missing calls, or keep all</text>
+<text x="22" y="532" class="t-xs" text-anchor="start" style="fill:#1d2127">and use a method that models relatedness (mixed model)</text>
+<line x1="180.0" y1="539" x2="180.0" y2="552" stroke="#8a93a0" stroke-width="1.4" marker-end="url(#mmn-arr)"/>
+<rect x="8" y="554" width="344" height="71" rx="8" fill="#fff" stroke="#d9dee5" stroke-width="1.3"/>
+<rect x="8" y="554" width="5" height="71" rx="2" fill="var(--lab)"/>
+<text x="22" y="572" class="t-xs" style="font-weight:700;letter-spacing:.04em;fill:var(--fg-muted)">RECORD</text>
+<text x="22" y="589" class="t-b" text-anchor="start">IDs and reasons</text>
+<text x="22" y="606" class="t-xs" text-anchor="start" style="fill:#1d2127">pair, PI_HAT, Z0, who was removed and why; the</text>
+<text x="22" y="619" class="t-xs" text-anchor="start" style="fill:#1d2127">exercise's QC report collects it</text>
+</svg>
+  </figure>
+  <p class="mm-statement">For every pair of people, PLINK counts the SNPs at which the two share 0, 1 or 2 alleles, compares those counts with what the allele frequencies predict for each level of sharing by descent, and estimates the fractions of the genome they share IBD (Z0, Z1, Z2) and their summary PI_HAT. Pairs far from the cloud of unrelated pairs are duplicates or relatives: one member of each is removed, or the relatedness is modeled later.</p>
+  <ul class="mm-hooks">
+    <li><strong>Pairs, not people.</strong> Duplicates, relatives and contaminated DNA make rows of the genotype matrix depend on each other; this is the one QC step that compares people two at a time (<a href="#what-it-finds">what the step finds</a>).</li>
+    <li><strong>Sharing by state is counted; sharing by descent is estimated.</strong> PLINK sees only matching alleles. The method of moments converts the counts into <code>Z0</code>, <code>Z1</code>, <code>Z2</code> and <code>PI_HAT</code> (<a href="#statistic">the statistic</a>).</li>
+    <li><strong>Every relationship has an address.</strong> In the plane of <code>Z0</code> against <code>Z1</code>, duplicates, parent–child pairs, siblings and second- and third-degree relatives sit at known points, and unrelated pairs pile up at <code>Z0</code> = 1 (<a href="#expected">expected values</a>, <a href="#look">the plot</a>).</li>
+    <li><strong>Ancestry and contamination imitate relatedness.</strong> Both raise <code>PI_HAT</code> for pairs that are not family (<a href="#biases">when PI_HAT misleads</a>).</li>
+    <li><strong>A threshold picks pairs; you pick people.</strong> A cut-off such as <code>PI_HAT</code> &gt; 0.1875 flags pairs, and a rule (more missing calls, missing phenotype) chooses which member of each pair goes (<a href="#threshold">threshold and action</a>).</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and step 3</div>
+  <p>Identity by descent, identity by state, the IBD fractions \(k_0, k_1, k_2\), the proportion IBD and the kinship coefficient are defined in <a href="../0-biological-foundations/inheritance.html#ibd">Lecture 0 · Relatedness and identity by descent</a>, which also has a meiosis simulator; how relatives appear in PLINK, KING and UK Biobank data is in <a href="../0-biological-foundations/inheritance.html#relatedness-data">Lecture 0 · Relatives in genotype data</a>. Allele frequencies are counted as in <a href="../0-biological-foundations/allele-frequencies.html#counting">Lecture 0 · Counting genotypes and alleles</a>. This step uses the list of LD-pruned SNPs (<code>.prune.in</code>) made in <a href="qc-ld-pruning.html">step 3</a>.</p>
+</aside>
+
+<h2 id="what-it-finds">What the step finds <span class="tag core">Core</span></h2>
+<p>Every other QC step computes one number per person or per SNP. This one computes a number for every <em>pair</em> of people: with \(n\) people there are \(n(n-1)/2\) pairs, so the 1,380 PennCATH people who remain after the missingness filters of step 1 form 951,510 pairs.<sup><a href="#src-1">1</a></sup> Four kinds of finding stand out among them.</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>What a pair with unusually high sharing can mean</caption>
+  <thead><tr><th>Finding</th><th>How it arises</th><th>What it looks like</th><th>Why it matters</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Finding">Duplicate sample</td><td data-label="How it arises">The same person's DNA genotyped twice: on purpose, as a laboratory control, or by mistake (a participant enrolled twice, a tube split or relabeled). Identical (monozygotic) twins are genetically duplicates.</td><td data-label="Looks like"><code>PI_HAT</code> near 1: the two rows of the genotype matrix agree except for genotyping errors.</td><td data-label="Why it matters">One person is counted twice. If the two copies carry different IDs or phenotypes, a sample label is wrong somewhere.</td></tr>
+    <tr><td data-label="Finding">Close relatives</td><td data-label="How it arises">Parents, children, siblings or cousins enrolled separately, with or without the investigators knowing; unknown relatedness is called cryptic relatedness.</td><td data-label="Looks like"><code>PI_HAT</code> near 0.5, 0.25 or 0.125, with <code>Z0</code> and <code>Z1</code> near the relationship's expected point.</td><td data-label="Why it matters">Relatives share genotypes and often environments, so they are not independent observations.</td></tr>
+    <tr><td data-label="Finding">Contaminated sample</td><td data-label="How it arises">DNA from two people mixed in one tube or well.</td><td data-label="Looks like">The mixture is called heterozygous wherever the two people differ, so it shares at least one allele with everyone at those SNPs and appears related to many people at once.</td><td data-label="Why it matters">Its genotypes are wrong; its many false "relatives" can lead to removing good samples.</td></tr>
+    <tr><td data-label="Finding">Shared genetic ancestry</td><td data-label="How it arises">People whose genetic ancestry differs from most of the sample, so that their allele frequencies differ from the sample's.</td><td data-label="Looks like">Many pairs within the group with small positive <code>PI_HAT</code>; pairs across groups get 0.</td><td data-label="Why it matters">This is not family relatedness. It is handled by principal components (step 6) and ancestry checks (steps 7–8), not by removing people.</td></tr>
+  </tbody>
+</table>
+</div>
+<p><strong>Why relatives matter for the association tests later.</strong> A GWAS regression treats each person as an independent observation. Relatives share alleles IBD and often share households; if a trait runs in families, a SNP that relatives happen to share can look associated with it, so test statistics are inflated and false positives increase. In well-designed studies of outbred populations the effect of a few unknown relatives is small, but it becomes serious when the sampling favors relatives or in founder populations that grew from a small number of people.<sup><a href="#src-2">2</a></sup> Duplicates count one person twice, which makes estimates look more precise than they are.</p>
+<p><strong>Why it matters for quality control itself.</strong> A pair of samples with nearly identical genotypes but different study IDs is evidence of a sample mix-up unless the records show one person sampled twice or identical twins. In a lung cancer GWAS whose subjects were all expected to be unrelated, the relatedness analysis found 14 pairs of full siblings, 5 of half siblings, one parent–offspring pair and 36 duplicate pairs, including a pair of identical twins; two duplicate pairs could not be documented as coming from the same person and were removed.<sup><a href="#src-3">3</a></sup> Relatives also affect later steps: a large family can form its own principal component in step 6, so principal components are often computed on unrelated people only. And a replication cohort, or the target sample of a polygenic score, must not contain the same people or their relatives as the discovery GWAS.<sup><a href="#src-4">4</a></sup></p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021 on relatedness</div>
+  <p>Table 1 lists "relatedness checks" among the quality-control jobs PLINK does for individuals, next to sex check, call rate and heterozygosity. In the Experimentation section, the "Data processing" part states that "Ancestry and relatedness must be carefully considered and accounted for in GWAS", and the "Testing for associations" part gives the alternative to removing relatives: a mixed model with a random effect \(g\) whose covariance is proportional to the genetic relationship matrix (its Eqs. 1–3). Fig. 1g adds that a replication cohort must not share individuals or family members with the discovery cohort.<sup><a href="#src-4">4</a></sup></p>
+</aside>
+
+<h2 id="statistic">The statistic: from shared alleles to Z0, Z1, Z2 and PI_HAT <span class="tag core">Core</span></h2>
+<p>PLINK cannot see which stretches of DNA two people inherited from a common ancestor. It sees their genotypes, and it reasons in four steps, which the subsections below follow: (1) count the SNPs at which the pair shares 0, 1 or 2 alleles by state; (2) work out, from each SNP's allele frequency, how often each count should occur if the pair shares 0, 1 or 2 copies IBD there; (3) choose the IBD fractions that make the expected counts equal the observed ones (the method of moments); (4) summarize the fractions in one number, <a class="term" href="glossary.html#pi-hat">PI_HAT</a>. Only autosomal SNPs are used, and for each pair only the SNPs where both people have a genotype call.<sup><a href="#src-5">5</a>,<a href="#src-6">6</a></sup></p>
+
+<h3 id="ibs-counts">1 · Count the SNPs at which the pair shares 0, 1 or 2 alleles</h3>
+<p>Two alleles are identical by state (IBS) when they are the same base, whatever their origin. At a SNP each person carries two alleles, so a pair can share 0, 1 or 2 of them by state. With genotypes coded as the number of copies of allele 1 (0, 1 or 2), the count has a one-line formula:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ s_j = 2 - \lvert g_{\mathrm{A}j} - g_{\mathrm{B}j} \rvert \]</div>
+  <dl class="eq-terms">
+    <dt>\(j\)</dt><dd>A SNP, \(1, \ldots, m\), counting only the autosomal SNPs at which both people have a genotype call.</dd>
+    <dt>\(g_{\mathrm{A}j}, g_{\mathrm{B}j}\)</dt><dd>Genotypes of person A and person B at SNP \(j\): the number of copies of allele 1, 0, 1 or 2.</dd>
+    <dt>\(s_j\)</dt><dd>Number of alleles the pair shares IBS at SNP \(j\): 0, 1 or 2.</dd>
+  </dl>
+  <p class="eq-intuition">Equal genotypes share both alleles (\(s_j = 2\)), including two heterozygotes, who both carry one copy of each allele. Genotypes that differ by one copy share one allele. Opposite homozygotes, 0 and 2, share none: \(s_j = 0\) is the only case in which the two people have no allele in common. Counting over SNPs gives \(m_0\), \(m_1\) and \(m_2\), the numbers of SNPs with \(s_j = 0\), 1 and 2, with \(m_0 + m_1 + m_2 = m\). PLINK writes them as <code>IBS0</code>, <code>IBS1</code> and <code>IBS2</code> when you ask for <code>--genome full</code>.</p>
+</div>
+<div class="table-wrap narrow">
+<table class="compact ibs-grid">
+  <caption>Alleles shared by state for each combination of genotypes (allele 1 = A, allele 2 = G)</caption>
+  <thead><tr><th scope="col">Person A \ Person B</th><th scope="col">0 (GG)</th><th scope="col">1 (AG)</th><th scope="col">2 (AA)</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">0 (GG)</th><td class="s2">2</td><td class="s1">1</td><td class="s0">0</td></tr>
+    <tr><th scope="row">1 (AG)</th><td class="s1">1</td><td class="s2">2</td><td class="s1">1</td></tr>
+    <tr><th scope="row">2 (AA)</th><td class="s0">0</td><td class="s1">1</td><td class="s2">2</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="ibs-given-ibd">2 · What each level of sharing by descent predicts</h3>
+<p>Take one SNP at which the pair shares \(k\) copies IBD, where \(k\) is 0, 1 or 2. A copy shared IBD carries the same allele in both people. Every copy that is not shared is an independent draw from the population, carrying allele 1 with probability \(p\), the SNP's allele frequency. That is enough to compute the chance of each IBS count:</p>
+<ul>
+  <li><strong>2 copies IBD:</strong> both people have the same two copies, so the genotypes are equal and \(s_j = 2\) with probability 1 (apart from genotyping errors).</li>
+  <li><strong>1 copy IBD:</strong> each person's other copy is an independent draw. If the two draws are the same allele (probability \(p^2 + q^2\)) the genotypes are equal and \(s_j = 2\); otherwise (probability \(2pq\)) they differ by one copy and \(s_j = 1\). Sharing nothing by state is impossible.</li>
+  <li><strong>0 copies IBD:</strong> all four copies are independent draws, as for two unrelated people.</li>
+</ul>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} e_{00} &amp;= 2p^2q^2 \\ e_{01} &amp;= 4pq\,(p^2 + q^2) \\ e_{02} &amp;= p^4 + q^4 + 4p^2q^2 \\ e_{11} &amp;= 2pq \\ e_{12} &amp;= p^2 + q^2 \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(e_{ki}\)</dt><dd>Probability that a pair sharing \(k\) copies IBD at a SNP shares \(i\) alleles IBS there. The first index is the IBD count (0, 1 or 2), the second the IBS count (0, 1 or 2).</dd>
+    <dt>\(p, q\)</dt><dd>Frequencies of allele 1 and allele 2 at the SNP, \(q = 1 - p\). PLINK estimates them from all the people in the file.</dd>
+    <dt>\(e_{10}, e_{20}, e_{21}\)</dt><dd>Not listed because they are 0: sharing a copy by descent rules out sharing fewer alleles by state. Similarly \(e_{22} = 1\).</dd>
+  </dl>
+  <p class="eq-intuition">Each line adds up the probabilities of the genotype pairs that give that outcome. \(e_{00}\): genotypes 2 and 0 (probability \(p^2 q^2\)) or 0 and 2 (\(q^2 p^2\)). \(e_{02}\): both 2 (\(p^4\)), both 0 (\(q^4\)) or both 1 (\((2pq)^2 = 4p^2q^2\)). \(e_{01}\) is what is left, \(1 - e_{00} - e_{02}\). With \(p = 0.5\): \(e_{00} = 0.125\), \(e_{01} = 0.5\), \(e_{02} = 0.375\), so unrelated people are opposite homozygotes at one such SNP in eight. With \(p = 0.1\): \(e_{00} = 0.016\) and \(e_{02} = 0.689\). At a SNP with a rare allele, unrelated people usually match by state, so a match says little, while an opposite homozygote is rare and very informative. PLINK computes each \(e_{ki}\) at every SNP and averages it over the SNPs; it also corrects for having estimated \(p\) from a finite number of people (it treats the alleles as drawn without replacement from the sample), which matters only in small samples.<sup><a href="#src-6">6</a>,<a href="#src-7">7</a></sup></p>
+</div>
+<div class="table-wrap narrow">
+<table class="compact">
+  <caption>Expected fraction of SNPs with each IBS count, given the IBD count, when \(p = 0.5\) at every SNP</caption>
+  <thead><tr><th scope="col">Copies shared IBD</th><th class="num" scope="col">IBS 0</th><th class="num" scope="col">IBS 1</th><th class="num" scope="col">IBS 2</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">0</th><td class="num">0.125</td><td class="num">0.5</td><td class="num">0.375</td></tr>
+    <tr><th scope="row">1</th><td class="num">0</td><td class="num">0.5</td><td class="num">0.5</td></tr>
+    <tr><th scope="row">2</th><td class="num">0</td><td class="num">0</td><td class="num">1</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="method-of-moments">3 · Solve for the IBD fractions: the method of moments</h3>
+<p><strong>Refresher: the method of moments.</strong> To estimate unknown parameters by the method of moments, write the expected values of statistics you can observe as functions of the parameters, set each expected value equal to its observed value, and solve. The allele frequency estimate of Lecture 0 is an example: among the \(2n\) allele copies of \(n\) people, the expected number of allele-1 copies is \(2np\); setting this equal to the observed count \(2n_{11} + n_{12}\) and solving gives \(\hat{p} = (2n_{11} + n_{12})/(2n)\).</p>
+<p>Here the unknown parameters are the pair's IBD fractions \(k_0, k_1, k_2\), and the observed statistics are the fractions of SNPs with each IBS count. A SNP lies in a stretch shared 0 copies IBD with probability \(k_0\), and then shows IBS 0 with probability \(e_{00}\); adding over the three IBD states gives the expected fractions:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} \mathrm{E}\!\left[\frac{m_0}{m}\right] &amp;= k_0\, e_{00} \\ \mathrm{E}\!\left[\frac{m_1}{m}\right] &amp;= k_0\, e_{01} + k_1\, e_{11} \\ \mathrm{E}\!\left[\frac{m_2}{m}\right] &amp;= k_0\, e_{02} + k_1\, e_{12} + k_2 \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(m\)</dt><dd>Number of autosomal SNPs at which both people have a genotype call.</dd>
+    <dt>\(m_0, m_1, m_2\)</dt><dd>Numbers of those SNPs at which the pair shares 0, 1 or 2 alleles IBS (PLINK's <code>IBS0</code>, <code>IBS1</code>, <code>IBS2</code>).</dd>
+    <dt>\(\mathrm{E}[\,\cdot\,]\)</dt><dd>Expected value: the average over the random draws of the copies that are not shared IBD.</dd>
+    <dt>\(k_0, k_1, k_2\)</dt><dd>Fractions of the genome at which the pair shares 0, 1 or 2 copies IBD; unknown, each between 0 and 1, with \(k_0 + k_1 + k_2 = 1\).</dd>
+    <dt>\(e_{ki}\)</dt><dd>Expected IBS fractions given IBD, from the previous block, averaged over SNPs.</dd>
+  </dl>
+  <p class="eq-intuition">IBS 0 can arise only where nothing is shared IBD, IBS 1 where 0 or 1 copy is shared, and IBS 2 anywhere, so the three lines contain one, two and three unknowns. Each line is a mixture: the share of the genome in each IBD state times the IBS rate of that state. For an unrelated pair (\(k_0 = 1\)) the lines reduce to \(e_{00}\), \(e_{01}\) and \(e_{02}\); for a duplicate (\(k_2 = 1\)) to 0, 0 and 1.</p>
+</div>
+<p>Setting the observed fractions equal to these expected values and solving from the top line down gives PLINK's estimates:<sup><a href="#src-6">6</a>,<a href="#src-7">7</a></sup></p>
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} \hat{k}_0 &amp;= \frac{m_0}{m\, e_{00}} \\[6pt] \hat{k}_1 &amp;= \frac{m_1 - m\, \hat{k}_0\, e_{01}}{m\, e_{11}} \\[6pt] \hat{k}_2 &amp;= 1 - \hat{k}_0 - \hat{k}_1 \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{k}_0, \hat{k}_1, \hat{k}_2\)</dt><dd>Estimates of the IBD fractions. PLINK writes them as <code>Z0</code>, <code>Z1</code> and <code>Z2</code>.</dd>
+    <dt>\(m_0, m_1, m\)</dt><dd>Observed counts of IBS-0 SNPs, IBS-1 SNPs and all SNPs used for the pair.</dd>
+    <dt>\(e_{00}, e_{01}, e_{11}\)</dt><dd>Expected IBS fractions given IBD, averaged over SNPs.</dd>
+  </dl>
+  <p class="eq-intuition">The first line has a single unknown because opposite homozygotes cannot occur where a copy is shared: \(\hat{k}_0\) is the observed number of opposite homozygotes divided by the number expected if the pair shared nothing anywhere. The second line subtracts the IBS-1 SNPs that the IBD-0 part of the genome produces, and divides what is left by the rate at which IBD-1 stretches produce IBS 1. The third uses the fact that the fractions add to 1 (PLINK computes \(\hat{k}_2\) from the IBS-2 line, which gives the same number). A worked example, simplified so that \(p = 0.5\) at every SNP (\(e_{00} = 0.125\), \(e_{01} = e_{11} = 0.5\)): a pair with \(m = 10{,}000\) SNPs, \(m_0 = 330\), \(m_1 = 3{,}700\) and \(m_2 = 5{,}970\) gets \(\hat{k}_0 = 330 / 1{,}250 = 0.264\), \(\hat{k}_1 = (3{,}700 - 1{,}320) / 5{,}000 = 0.476\) and \(\hat{k}_2 = 1 - 0.264 - 0.476 = 0.260\), close to the full-sibling values ¼, ½ and ¼.</p>
+</div>
+<p><strong>In the toy data.</strong> The simulation planted a pair of full siblings, FIDs <span data-card="ibd_full_sibs_fids">?</span>. Step 4's run below uses <span data-card="genome_snps">?</span> pruned SNPs and gives them <code>Z0</code> = <span data-card="ibd_full_sibs_z0">?</span>, <code>Z1</code> = <span data-card="ibd_full_sibs_z1">?</span> and <code>Z2</code> = <span data-card="ibd_full_sibs_z2">?</span>. The expected values are ¼, ½ and ¼. The estimates differ from them by several hundredths, because two siblings' actual sharing varies around the expectation and because a few thousand SNPs give a noisy estimate. The counts \(m_0\), \(m_1\) and \(m_2\) behind the estimates are in three extra columns, <code>IBS0</code>, <code>IBS1</code> and <code>IBS2</code>, which the modifier <code>full</code> adds to the <code>.genome</code> file (with <code>HOMHOM</code> and <code>HETHET</code>, which a different test uses). The last question in <a href="#check">Check your understanding</a> prints them in the lab.</p>
+
+<h3 id="clipping">When an estimate falls outside 0 to 1</h3>
+<p>Nothing in the three equations keeps the estimates between 0 and 1. For an unrelated pair, \(\hat{k}_0\) scatters around 1 and is above 1 about half the time, and \(\hat{k}_2\) scatters around 0. By default PLINK 1.9 clips the estimates, checking in this order:<sup><a href="#src-5">5</a>,<a href="#src-7">7</a></sup></p>
+<ol>
+  <li>If <code>Z0</code> &gt; 1, set <code>Z0</code> = 1 and <code>Z1</code> = <code>Z2</code> = 0. Otherwise, if <code>Z1</code> &gt; 1 or <code>Z2</code> &gt; 1, set that one to 1 and the other two to 0.</li>
+  <li>Otherwise, if <code>Z0</code> &lt; 0, set it to 0 and rescale <code>Z1</code> and <code>Z2</code> so that they add to 1.</li>
+  <li>Then, if <code>Z1</code> &lt; 0, set it to 0 and rescale <code>Z0</code> and <code>Z2</code>; then the same for <code>Z2</code>.</li>
+</ol>
+<p>Two consequences show up in every real <code>.genome</code> file. Many unrelated pairs get exactly <code>Z0</code> = 1 and <code>PI_HAT</code> = 0, so the distribution of <code>PI_HAT</code> has a spike at 0; the others get small positive values, and because negative values are cut off, the average <code>PI_HAT</code> of unrelated pairs is slightly above 0. And <code>PI_HAT</code> = 0 does not mean "certainly unrelated"; it means the pair shared no more alleles than unrelated people are expected to. The modifier <code>--genome unbounded</code> turns clipping off, which shows the raw spread of the estimates.</p>
+
+<h3 id="pi-hat">4 · Summarize: PI_HAT</h3>
+<div class="eq-block">
+  <div class="eq-display">\[ \hat{\pi} = \frac{\hat{k}_1}{2} + \hat{k}_2 \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{\pi}\)</dt><dd>Estimated proportion of the genome the pair shares IBD, from 0 to 1: PLINK's <code>PI_HAT</code>. Here \(\pi\) is a proportion, not the circle constant.</dd>
+    <dt>\(\hat{k}_1, \hat{k}_2\)</dt><dd><code>Z1</code> and <code>Z2</code> after clipping.</dd>
+  </dl>
+  <p class="eq-intuition">Where the pair shares 2 copies IBD, each of their copies has a partner in the other person; where it shares 1, half of them do; where it shares 0, none do. Averaging over the genome gives \(\tfrac{1}{2}\hat{k}_1 + 1 \cdot \hat{k}_2\) (Lecture 0 derives this, together with the kinship coefficient \(\varphi = \pi/2\)). In the worked example, \(\hat{\pi} = 0.476/2 + 0.260 = 0.498\). Different relationships can have the same \(\pi\): a parent and child (\(k_1 = 1\)) and full siblings (\(k_0 = \tfrac{1}{4}\), \(k_1 = \tfrac{1}{2}\), \(k_2 = \tfrac{1}{4}\)) both have \(\pi = \tfrac{1}{2}\). <code>Z0</code> tells them apart, which is why the practical plots <code>Z0</code> against <code>Z1</code> rather than looking at <code>PI_HAT</code> alone.</p>
+</div>
+
+<h3 id="try-ibd">Try it: simulate a pair and estimate its sharing</h3>
+<p>The widget simulates one pair of relatives at a time: crossovers in each parent's sperm or egg (the model of Lecture 0's meiosis simulator), the resulting stretches shared 0, 1 or 2 copies IBD along chromosomes 1–22, genotypes at evenly spread independent SNPs, the IBS counts PLINK would see, and PLINK's estimates computed from them with the formulas above.</p>
+<div class="widget" id="w-ibd-sim">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">From shared segments to Z0, Z1, Z2 and PI_HAT</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The text above describes what it shows.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Panel 1 is the truth that PLINK never sees; panel 2 is all it sees. Choose <em>Unrelated</em> and press <em>New pair</em> a few times: the raw <code>Z0</code> is often a little above 1 and is clipped, so many unrelated pairs land exactly on the point (1, 0) with <code>PI_HAT</code> = 0. Choose <em>Parent and child</em>: <code>IBS0</code> is 0, because a parent and child share one copy everywhere and so are never opposite homozygotes, and <code>Z1</code> is close to 1. Choose <em>Full siblings</em> and press <em>Add 100 pairs</em>: the cloud around (0.25, 0.5) is wide even with 50,000 SNPs, because the true sharing varies from one sibling pair to the next (compare the true <code>k</code> values under the table); with 1,000 SNPs the estimation noise widens it further. Add 100 pairs each of half siblings and of first cousins, and compare the <code>PI_HAT</code> ranges printed under the plot for each: they approach 0.1875 from both sides and now and then cross it, so no single threshold separates second- from third-degree relatives perfectly.</p>
+
+<h3 id="genome-file">The .genome file, column by column</h3>
+<p><code>--genome</code> writes one line per pair of people, each pair once, with a header line.<sup><a href="#src-5">5</a>,<a href="#src-8">8</a></sup> Each line has 14 columns, and 5 more with <code>--genome full</code>:</p>
+<dl class="cols-doc">
+  <dt>FID1, IID1</dt><dd>Family ID and within-family ID of the first person of the pair, as in the <a href="plink-data.html">.fam file</a>.</dd>
+  <dt>FID2, IID2</dt><dd>The same for the second person.</dd>
+  <dt>RT</dt><dd>Relationship type according to the <code>.fam</code> file, for two people with the same family ID: <code>FS</code> (full siblings: same father and mother), <code>HS</code> (half siblings), <code>PO</code> (parent and offspring) or <code>OT</code> (other). Pairs with different family IDs get <code>UN</code>.<sup><a href="#src-7">7</a></sup></dd>
+  <dt>EZ</dt><dd>The <code>PI_HAT</code> expected from the <code>.fam</code> pedigree, for same-family pairs; <code>NA</code> for pairs with different family IDs.</dd>
+  <dt>Z0</dt><dd>\(\hat{k}_0\): estimated probability that the pair shares 0 copies IBD at a position.</dd>
+  <dt>Z1</dt><dd>\(\hat{k}_1\): estimated probability of sharing 1 copy IBD.</dd>
+  <dt>Z2</dt><dd>\(\hat{k}_2\): estimated probability of sharing 2 copies IBD.</dd>
+  <dt>PI_HAT</dt><dd>\(\hat{\pi} = \) <code>Z1</code>/2 + <code>Z2</code>: estimated proportion of the genome shared IBD.</dd>
+  <dt>PHE</dt><dd>Phenotype code of the pair: 1 if both are cases, 0 if exactly one is a case, −1 if neither is; PLINK 1.9 counts a person with a missing phenotype as not a case.<sup><a href="#src-7">7</a></sup></dd>
+  <dt>DST</dt><dd>IBS distance: (<code>IBS2</code> + 0.5 × <code>IBS1</code>) / (<code>IBS0</code> + <code>IBS1</code> + <code>IBS2</code>), the average fraction of alleles the pair shares by state; 1 for identical genotypes.</dd>
+  <dt>PPC</dt><dd>The p-value of a binomial test that asks whether the pair could come from the same population. It compares <code>HETHET</code> (SNPs where both are heterozygous) with <code>HOMHOM</code> (opposite homozygotes), counted at SNPs at least 500 kb apart (<code>--ppc-gap</code> changes the distance).</dd>
+  <dt>RATIO</dt><dd><code>HETHET</code> : <code>HOMHOM</code>. For two unrelated people from one population both are heterozygous at a SNP with probability \(4p^2q^2\) and opposite homozygotes with probability \(2p^2q^2\), so the ratio is about 2. Relatives have fewer opposite homozygotes and a larger ratio; people from different populations have a smaller one.</dd>
+  <dt>IBS0, IBS1, IBS2</dt><dd>With <code>full</code>: \(m_0\), \(m_1\), \(m_2\), the counts of SNPs with 0, 1 and 2 alleles shared by state.</dd>
+  <dt>HOMHOM, HETHET</dt><dd>With <code>full</code>: the counts used by the <code>PPC</code> test.</dd>
+</dl>
+<p>Other options change which lines are written: <code>--min 0.05</code> and <code>--max</code> keep only pairs with <code>PI_HAT</code> in a range, <code>rel-check</code> keeps only pairs with the same family ID, and <code>gz</code> compresses the file.<sup><a href="#src-5">5</a></sup></p>
+
+<h2 id="expected">Expected values for each relationship <span class="tag core">Core</span></h2>
+<p>For relatives whose parents are not themselves related, the IBD fractions follow from the pedigree (Lecture 0 derives them). Second-degree relationships of different kinds have the same fractions, and so do the third-degree ones, which is why <code>--genome</code> reports degrees of relationship, not named relationships.<sup><a href="#src-9">9</a>,<a href="#src-10">10</a></sup></p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Expected Z0, Z1, Z2, PI_HAT and kinship coefficient for common relationships (no inbreeding)</caption>
+  <thead><tr><th>Relationship</th><th>Degree</th><th class="num">Z0</th><th class="num">Z1</th><th class="num">Z2</th><th class="num">PI_HAT</th><th class="num">Kinship</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Relationship">Duplicate sample; identical twins</td><td data-label="Degree">–</td><td class="num" data-label="Z0">0</td><td class="num" data-label="Z1">0</td><td class="num" data-label="Z2">1</td><td class="num" data-label="PI_HAT">1</td><td class="num" data-label="Kinship">0.5</td></tr>
+    <tr><td data-label="Relationship">Parent and child</td><td data-label="Degree">1st</td><td class="num" data-label="Z0">0</td><td class="num" data-label="Z1">1</td><td class="num" data-label="Z2">0</td><td class="num" data-label="PI_HAT">0.5</td><td class="num" data-label="Kinship">0.25</td></tr>
+    <tr><td data-label="Relationship">Full siblings</td><td data-label="Degree">1st</td><td class="num" data-label="Z0">0.25</td><td class="num" data-label="Z1">0.5</td><td class="num" data-label="Z2">0.25</td><td class="num" data-label="PI_HAT">0.5</td><td class="num" data-label="Kinship">0.25</td></tr>
+    <tr><td data-label="Relationship">Half siblings; grandparent and grandchild; aunt or uncle and niece or nephew</td><td data-label="Degree">2nd</td><td class="num" data-label="Z0">0.5</td><td class="num" data-label="Z1">0.5</td><td class="num" data-label="Z2">0</td><td class="num" data-label="PI_HAT">0.25</td><td class="num" data-label="Kinship">0.125</td></tr>
+    <tr><td data-label="Relationship">First cousins</td><td data-label="Degree">3rd</td><td class="num" data-label="Z0">0.75</td><td class="num" data-label="Z1">0.25</td><td class="num" data-label="Z2">0</td><td class="num" data-label="PI_HAT">0.125</td><td class="num" data-label="Kinship">0.0625</td></tr>
+    <tr><td data-label="Relationship">Unrelated</td><td data-label="Degree">–</td><td class="num" data-label="Z0">1</td><td class="num" data-label="Z1">0</td><td class="num" data-label="Z2">0</td><td class="num" data-label="PI_HAT">0</td><td class="num" data-label="Kinship">0</td></tr>
+  </tbody>
+</table>
+</div>
+<figure class="fig">
+  <div class="fig-body"><div class="fig-panels">
+<svg viewBox="0 0 324 326" role="img" aria-labelledby="zA-t zA-d">
+<title id="zA-t">Expected Z0 and Z1 for each relationship</title>
+<desc id="zA-d">The Z0 against Z1 plane. Duplicates and identical twins at Z0 0, Z1 0; parent and child at Z0 0, Z1 1; full siblings at 0.25, 0.5; second-degree relatives at 0.5, 0.5; third-degree relatives at 0.75, 0.25; unrelated pairs at 1, 0. All points lie in the triangle below the dashed line where Z2 is 0. A shaded region between a curve from (0,0) through the full-sibling point to (1,0) and the Z0 axis cannot be reached by relatives whose parents are unrelated.</desc>
+<line x1="50.0" y1="286.0" x2="50.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="286.0" x2="306.0" y2="286.0" stroke="#eef1f4"/>
+<text x="50.0" y="303.0" class="t-xs" text-anchor="middle">0</text>
+<text x="40.0" y="289.5" class="t-xs" text-anchor="end">0</text>
+<line x1="114.0" y1="286.0" x2="114.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="222.0" x2="306.0" y2="222.0" stroke="#eef1f4"/>
+<text x="114.0" y="303.0" class="t-xs" text-anchor="middle">0.25</text>
+<text x="40.0" y="225.5" class="t-xs" text-anchor="end">0.25</text>
+<line x1="178.0" y1="286.0" x2="178.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="158.0" x2="306.0" y2="158.0" stroke="#eef1f4"/>
+<text x="178.0" y="303.0" class="t-xs" text-anchor="middle">0.5</text>
+<text x="40.0" y="161.5" class="t-xs" text-anchor="end">0.5</text>
+<line x1="242.0" y1="286.0" x2="242.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="94.0" x2="306.0" y2="94.0" stroke="#eef1f4"/>
+<text x="242.0" y="303.0" class="t-xs" text-anchor="middle">0.75</text>
+<text x="40.0" y="97.5" class="t-xs" text-anchor="end">0.75</text>
+<line x1="306.0" y1="286.0" x2="306.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="30.0" x2="306.0" y2="30.0" stroke="#eef1f4"/>
+<text x="306.0" y="303.0" class="t-xs" text-anchor="middle">1</text>
+<text x="40.0" y="33.5" class="t-xs" text-anchor="end">1</text>
+<line x1="50.0" y1="286.0" x2="306.0" y2="286.0" stroke="#8a93a0"/>
+<line x1="50.0" y1="286.0" x2="50.0" y2="30.0" stroke="#8a93a0"/>
+<text x="178.0" y="318.0" class="t-sm" text-anchor="middle">Z0, estimated P(IBD = 0)</text>
+<text x="12" y="158.0" class="t-sm" text-anchor="middle" transform="rotate(-90 12 158.0)">Z1, estimated P(IBD = 1)</text>
+<text x="50.0" y="16" class="t-sm t-b">A · where each relationship sits</text>
+<polygon points="306.0,286.0 300.9,280.9 295.9,276.0 290.9,271.1 285.9,266.3 281.0,261.7 276.2,257.1 271.4,252.7 266.7,248.3 262.0,244.1 257.4,239.9 252.8,235.9 248.2,231.9 243.8,228.1 239.3,224.4 235.0,220.7 230.6,217.2 226.4,213.8 222.1,210.4 218.0,207.2 213.8,204.1 209.8,201.1 205.8,198.1 201.8,195.3 197.9,192.6 194.0,190.0 190.2,187.5 186.4,185.1 182.7,182.8 179.0,180.6 175.4,178.5 171.9,176.5 168.4,174.6 164.9,172.8 161.5,171.1 158.2,169.5 154.9,168.0 151.6,166.7 148.4,165.4 145.3,164.2 142.2,163.1 139.1,162.1 136.1,161.3 133.2,160.5 130.3,159.8 127.4,159.3 124.6,158.8 121.9,158.5 119.2,158.2 116.6,158.1 114.0,158.0 111.5,158.1 109.0,158.2 106.6,158.5 104.2,158.8 101.8,159.3 99.6,159.8 97.3,160.5 95.2,161.3 93.0,162.1 91.0,163.1 88.9,164.2 87.0,165.4 85.0,166.7 83.2,168.0 81.4,169.5 79.6,171.1 77.9,172.8 76.2,174.6 74.6,176.5 73.0,178.5 71.5,180.6 70.1,182.8 68.7,185.1 67.3,187.5 66.0,190.0 64.7,192.6 63.5,195.3 62.4,198.1 61.3,201.1 60.2,204.1 59.2,207.2 58.3,210.4 57.4,213.8 56.6,217.2 55.8,220.7 55.0,224.4 54.3,228.1 53.7,231.9 53.1,235.9 52.6,239.9 52.1,244.1 51.6,248.3 51.3,252.7 50.9,257.1 50.6,261.7 50.4,266.3 50.2,271.1 50.1,276.0 50.0,280.9 50.0,286.0" fill="#eef1f4" stroke="none"/>
+<polyline points="306.0,286.0 300.9,280.9 295.9,276.0 290.9,271.1 285.9,266.3 281.0,261.7 276.2,257.1 271.4,252.7 266.7,248.3 262.0,244.1 257.4,239.9 252.8,235.9 248.2,231.9 243.8,228.1 239.3,224.4 235.0,220.7 230.6,217.2 226.4,213.8 222.1,210.4 218.0,207.2 213.8,204.1 209.8,201.1 205.8,198.1 201.8,195.3 197.9,192.6 194.0,190.0 190.2,187.5 186.4,185.1 182.7,182.8 179.0,180.6 175.4,178.5 171.9,176.5 168.4,174.6 164.9,172.8 161.5,171.1 158.2,169.5 154.9,168.0 151.6,166.7 148.4,165.4 145.3,164.2 142.2,163.1 139.1,162.1 136.1,161.3 133.2,160.5 130.3,159.8 127.4,159.3 124.6,158.8 121.9,158.5 119.2,158.2 116.6,158.1 114.0,158.0 111.5,158.1 109.0,158.2 106.6,158.5 104.2,158.8 101.8,159.3 99.6,159.8 97.3,160.5 95.2,161.3 93.0,162.1 91.0,163.1 88.9,164.2 87.0,165.4 85.0,166.7 83.2,168.0 81.4,169.5 79.6,171.1 77.9,172.8 76.2,174.6 74.6,176.5 73.0,178.5 71.5,180.6 70.1,182.8 68.7,185.1 67.3,187.5 66.0,190.0 64.7,192.6 63.5,195.3 62.4,198.1 61.3,201.1 60.2,204.1 59.2,207.2 58.3,210.4 57.4,213.8 56.6,217.2 55.8,220.7 55.0,224.4 54.3,228.1 53.7,231.9 53.1,235.9 52.6,239.9 52.1,244.1 51.6,248.3 51.3,252.7 50.9,257.1 50.6,261.7 50.4,266.3 50.2,271.1 50.1,276.0 50.0,280.9 50.0,286.0" fill="none" stroke="#8a93a0" stroke-width="1" stroke-dasharray="2 2"/>
+<text x="178.0" y="245.0" class="t-xs" text-anchor="middle" style="fill:#5b6573">not reachable without</text>
+<text x="178.0" y="257.0" class="t-xs" text-anchor="middle" style="fill:#5b6573">inbreeding</text>
+<line x1="50.0" y1="30.0" x2="306.0" y2="286.0" stroke="#5b6573" stroke-width="1.2" stroke-dasharray="5 3"/>
+<text x="92.3" y="54.3" class="t-xs" transform="rotate(45 92.3 54.3)">Z2 = 0</text>
+<rect x="45.0" y="281.0" width="10" height="10" fill="var(--q1)" stroke="#1d2127" stroke-width="1.2" transform="rotate(45 50.0 286.0)"/>
+<text x="58.0" y="278.0" class="t-xs t-b" text-anchor="start" style="paint-order:stroke;stroke:#fff;stroke-width:3px">identical twins</text>
+<rect x="45.0" y="25.0" width="10" height="10" fill="var(--q1)" stroke="#1d2127" stroke-width="1.2" transform="rotate(45 50.0 30.0)"/>
+<text x="59.0" y="34.0" class="t-xs t-b" text-anchor="start" style="paint-order:stroke;stroke:#fff;stroke-width:3px">parent–child</text>
+<rect x="109.0" y="153.0" width="10" height="10" fill="var(--q1)" stroke="#1d2127" stroke-width="1.2" transform="rotate(45 114.0 158.0)"/>
+<text x="105.0" y="150.0" class="t-xs t-b" text-anchor="end" style="paint-order:stroke;stroke:#fff;stroke-width:3px">full siblings</text>
+<rect x="173.0" y="153.0" width="10" height="10" fill="var(--q1)" stroke="#1d2127" stroke-width="1.2" transform="rotate(45 178.0 158.0)"/>
+<text x="186.0" y="150.0" class="t-xs t-b" text-anchor="start" style="paint-order:stroke;stroke:#fff;stroke-width:3px">2nd degree</text>
+<rect x="237.0" y="217.0" width="10" height="10" fill="var(--q1)" stroke="#1d2127" stroke-width="1.2" transform="rotate(45 242.0 222.0)"/>
+<text x="250.0" y="214.0" class="t-xs t-b" text-anchor="start" style="paint-order:stroke;stroke:#fff;stroke-width:3px">3rd degree</text>
+<rect x="301.0" y="281.0" width="10" height="10" fill="var(--q1)" stroke="#1d2127" stroke-width="1.2" transform="rotate(45 306.0 286.0)"/>
+<text x="304.0" y="274.0" class="t-xs t-b" text-anchor="end" style="paint-order:stroke;stroke:#fff;stroke-width:3px">unrelated</text>
+<text x="58.0" y="264.0" class="t-xs t-b" style="paint-order:stroke;stroke:#fff;stroke-width:3px">duplicate or</text>
+</svg>
+<svg viewBox="0 0 324 326" role="img" aria-labelledby="zB-t zB-d">
+<title id="zB-t">Lines of equal PI_HAT in the Z0 against Z1 plane</title>
+<desc id="zB-d">PI_HAT equals 1 minus Z0 minus half of Z1, so it is constant along parallel lines with slope minus 2. Lines for PI_HAT 0.75, 0.5, 0.25 and 0.125 are drawn in gray and the common threshold 0.1875 in red. Pairs to the left of the red line have PI_HAT above 0.1875.</desc>
+<line x1="50.0" y1="286.0" x2="50.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="286.0" x2="306.0" y2="286.0" stroke="#eef1f4"/>
+<text x="50.0" y="303.0" class="t-xs" text-anchor="middle">0</text>
+<text x="40.0" y="289.5" class="t-xs" text-anchor="end">0</text>
+<line x1="114.0" y1="286.0" x2="114.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="222.0" x2="306.0" y2="222.0" stroke="#eef1f4"/>
+<text x="114.0" y="303.0" class="t-xs" text-anchor="middle">0.25</text>
+<text x="40.0" y="225.5" class="t-xs" text-anchor="end">0.25</text>
+<line x1="178.0" y1="286.0" x2="178.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="158.0" x2="306.0" y2="158.0" stroke="#eef1f4"/>
+<text x="178.0" y="303.0" class="t-xs" text-anchor="middle">0.5</text>
+<text x="40.0" y="161.5" class="t-xs" text-anchor="end">0.5</text>
+<line x1="242.0" y1="286.0" x2="242.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="94.0" x2="306.0" y2="94.0" stroke="#eef1f4"/>
+<text x="242.0" y="303.0" class="t-xs" text-anchor="middle">0.75</text>
+<text x="40.0" y="97.5" class="t-xs" text-anchor="end">0.75</text>
+<line x1="306.0" y1="286.0" x2="306.0" y2="30.0" stroke="#eef1f4"/>
+<line x1="50.0" y1="30.0" x2="306.0" y2="30.0" stroke="#eef1f4"/>
+<text x="306.0" y="303.0" class="t-xs" text-anchor="middle">1</text>
+<text x="40.0" y="33.5" class="t-xs" text-anchor="end">1</text>
+<line x1="50.0" y1="286.0" x2="306.0" y2="286.0" stroke="#8a93a0"/>
+<line x1="50.0" y1="286.0" x2="50.0" y2="30.0" stroke="#8a93a0"/>
+<text x="178.0" y="318.0" class="t-sm" text-anchor="middle">Z0, estimated P(IBD = 0)</text>
+<text x="12" y="158.0" class="t-sm" text-anchor="middle" transform="rotate(-90 12 158.0)">Z1, estimated P(IBD = 1)</text>
+<text x="50.0" y="16" class="t-sm t-b">B · lines of equal PI_HAT</text>
+<polygon points="50.0,286.0 258.0,286.0 210.0,190.0 50.0,30.0" fill="var(--pitfall-soft)" stroke="none"/>
+<line x1="50.0" y1="30.0" x2="306.0" y2="286.0" stroke="#5b6573" stroke-width="1.2" stroke-dasharray="5 3"/>
+<line x1="114.0" y1="286.0" x2="50.0" y2="158.0" stroke="#8a93a0" stroke-width="1.2"/>
+<line x1="178.0" y1="286.0" x2="50.0" y2="30.0" stroke="#8a93a0" stroke-width="1.2"/>
+<line x1="242.0" y1="286.0" x2="178.0" y2="158.0" stroke="#8a93a0" stroke-width="1.2"/>
+<line x1="274.0" y1="286.0" x2="242.0" y2="222.0" stroke="#8a93a0" stroke-width="1.2"/>
+<line x1="258.0" y1="286.0" x2="210.0" y2="190.0" stroke="var(--pitfall)" stroke-width="2"/>
+<text x="88.6" y="226.0" class="t-xs t-b" style="fill:#5b6573;paint-order:stroke;stroke:#fff;stroke-width:3px">0.75</text>
+<text x="120.6" y="162.0" class="t-xs t-b" style="fill:#5b6573;paint-order:stroke;stroke:#fff;stroke-width:3px">0.5</text>
+<text x="183.1" y="50.5" class="t-xs" style="fill:#5b6573">Each number is the PI_HAT</text>
+<text x="183.1" y="62.5" class="t-xs" style="fill:#5b6573">of every point on its line</text>
+<text x="185.0" y="153.0" class="t-xs t-b" style="fill:#5b6573">0.25</text>
+<text x="217.0" y="185.0" class="t-xs t-b" style="fill:var(--pitfall)">0.1875</text>
+<text x="249.0" y="217.0" class="t-xs t-b" style="fill:#5b6573">0.125</text>
+<text x="223.0" y="199.0" class="t-xs t-b" style="fill:var(--pitfall)">threshold</text>
+<text x="65.4" y="270.6" class="t-xs" style="fill:var(--pitfall);paint-order:stroke;stroke:#fff;stroke-width:3px">flagged: PI_HAT &gt; 0.1875</text>
+</svg>
+  </div></div>
+  <figcaption><span class="fig-title">The plane of Z0 against Z1.</span> A: each relationship's expected point. Every possible point lies on or below the dashed line, where <code>Z2</code> = 1 − <code>Z0</code> − <code>Z1</code> = 0. Relatives whose parents are not related to each other cannot fall in the shaded region below the dotted curve, because their IBD fractions satisfy \(k_1^2 \ge 4k_0k_2\); full siblings, duplicates and unrelated pairs lie exactly on the curve.<sup><a href="#src-11">11</a></sup> B: <code>PI_HAT</code> = 1 − <code>Z0</code> − <code>Z1</code>/2 is constant along parallel lines with slope −2, so a threshold on <code>PI_HAT</code> is a line in this plane; pairs to its left are flagged. <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+<p>Real pairs scatter around these points for two reasons. First, the true sharing varies: two full siblings share about half their genomes on average, but the exact fraction depends on where the crossovers fell in the sperm and eggs that made them (Lecture 0's simulator shows this). One quality-control review drew its bands for full siblings at \(\pm 2\) standard deviations as 0.25 ± 0.08 for <code>Z0</code> and 0.50 ± 0.10 for <code>Z1</code>.<sup><a href="#src-3">3</a></sup> Second, the estimate has sampling error, which shrinks as the number of SNPs grows. The two together make the clouds of half siblings and first cousins touch: <code>PI_HAT</code> separates duplicates and first-degree relatives cleanly from everyone else, second-degree from third-degree relatives only roughly, and third-degree relatives from unrelated pairs least reliably, especially when genetic ancestry varies within the sample (<a href="#ancestry-bias">below</a>).</p>
+<p>Two practical readings of the plane follow. A pair with <code>Z0</code> near 0 shares at least one copy everywhere: a parent and child if <code>Z1</code> is near 1, a duplicate if <code>Z2</code> is near 1. A pair with <code>PI_HAT</code> near 0.5 but <code>Z0</code> near 0.25 is a pair of full siblings. PLINK's <code>nudge</code> modifier moves estimates that fall below the dotted curve onto it.<sup><a href="#src-5">5</a></sup></p>
+
+<h2 id="run-it">Run it in the browser <span class="tag core">Core</span></h2>
+<p>The practical runs <code>--genome</code> on the fileset left after step 1's filters, restricted to the SNPs that step 3 kept. Here is the command for the toy data, part by part (the same command with <code>penncath</code> in place of <code>toy</code> is the practical's):<sup><a href="#src-1">1</a></sup></p>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile ${analysis_dir}/toy.geno0.01.mind0.01</span> <span class="part" data-n="3">--extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in</span> <span class="part" data-n="4">--genome</span> <span class="part" data-n="5">--out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code>: PLINK 1.9 (in the lab, its emulator).</li>
+    <li><code>--bfile PREFIX</code>: the input fileset, here the one written by step 1 after removing SNPs and then people with more than 1% missing calls (<a href="qc-missingness.html">step 1</a>).</li>
+    <li><code>--extract FILE</code>: keep only the SNPs listed in <code>FILE</code>, one ID per line; all others are ignored in this run. The list is <code>.prune.in</code> from <a href="qc-ld-pruning.html">step 3</a>, SNPs with pairwise \(r^2\) of at most 0.3 within windows of 50 SNPs. The estimator treats SNPs as independent; the PLINK documentation warns that these calculations "are not LD-aware" and recommends LD pruning first.<sup><a href="#src-5">5</a></sup></li>
+    <li><code>--genome</code>: compare every pair of people and write <code>PREFIX.genome</code>. It uses the autosomes only. Modifiers: <code>full</code> (add the IBS counts), <code>gz</code> (compress), <code>rel-check</code> (same-family pairs only), <code>unbounded</code> (no clipping), <code>nudge</code>; related flags <code>--min</code> and <code>--max</code> (keep pairs with <code>PI_HAT</code> in a range) and <code>--read-freq</code> (use allele frequencies from a file instead of from this sample).</li>
+    <li><code>--out PREFIX</code>: the prefix of the files written, <code>PREFIX.genome</code> and <code>PREFIX.log</code>. <code>LD0.3</code> in the name records the \(r^2\) threshold of the pruning; steps 5 and 6 use the same prefix.</li>
+  </ol>
+</div>
+<p>Like every report, <code>--genome</code> changes nothing in the fileset (<a href="tools.html#plink-order">the order of operations</a> explains why <code>--extract</code> acts before it). The work grows with the number of pairs, roughly with the square of the number of people: PennCATH's 1,380 people after step 1 make 951,510 pairs, and a study of hundreds of thousands of people needs the <code>--parallel</code> flag, which splits the pairs over several runs, or KING (<a href="#king">below</a>).</p>
+<div class="lab" id="lab-genome" data-title="Step 4 · relatedness on the toy data">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/toy.geno0.01.mind0.01</pre>
+<pre class="lab-script">plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --genome --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+head -5 ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome
+wc -l ${analysis_dir}/toy.geno0.01.mind0.01.fam ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome
+tail -n +2 ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome | sort -k10,10gr | head -5
+awk 'NR == 1 || $10 &gt; 0.1875' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome
+awk 'NR &gt; 1 &amp;&amp; $10 &gt; 0.1875 {n[$1" "$2]++; n[$3" "$4]++} END {for (k in n) print n[k], k}' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome | sort -k1,1nr</pre>
+</div>
+<p>The terminal starts where step 3 left off: its setup recreated the filesets of step 1 (<code>toy.geno0.01</code>, its <code>.imiss</code>, and <code>toy.geno0.01.mind0.01</code>) and step 3's <code>toy.geno0.01.mind0.01.prune.in</code>. Press <strong>Run next</strong> to run the suggested commands in order. PLINK's console output reports how many variants <code>--extract</code> kept and how many people and variants passed, then "IBD calculations complete." and the name of the <code>.genome</code> file it wrote.</p>
+<p>For the toy data the console reports that <code>--extract</code> kept <span data-card="prune_in">?</span> variants and that <span data-card="genome_snps">?</span> variants and <span data-card="qc_people">?</span> people pass filters and QC. The <code>.genome</code> file then has one line per pair: <span data-card="genome_pairs">?</span> lines after the header, which is \(n(n-1)/2\) for \(n\) = <span data-card="qc_people">?</span>.</p>
+<p>The other suggested commands inspect the output the way an analyst would; they work the same on your own computer:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>head -3 ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome      <span class="cm"># header and the first two pairs</span>
+<span class="prompt">$ </span>wc -l ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome        <span class="cm"># number of pairs + 1 header line</span>
+<span class="prompt">$ </span>tail -n +2 ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome | sort -k10,10gr | head -5   <span class="cm"># closest pairs first</span>
+<span class="prompt">$ </span>awk 'NR == 1 || $10 &gt; 0.1875' ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome         <span class="cm"># header + flagged pairs</span></pre>
+<ul>
+  <li><code>wc -l</code> counts lines; subtract 1 for the header and compare with \(n(n-1)/2\) for the number of people \(n\) in the <code>.fam</code> file.</li>
+  <li><code>tail -n +2</code> drops the header, <code>sort -k10,10gr</code> sorts on column 10 (<code>PI_HAT</code>) as a general number (<code>g</code>) in reverse order (<code>r</code>), and <code>head -5</code> keeps the top five.</li>
+  <li><code>awk 'NR == 1 || $10 &gt; 0.1875'</code> prints line 1 (the header) and every line whose tenth field exceeds 0.1875.</li>
+  <li>The last command (in the terminal) counts, for each person, the flagged pairs they belong to: <code>n[$1" "$2]++</code> adds one to the count of the first person (family ID and individual ID) and <code>n[$3" "$4]++</code> to the second, <code>END</code> prints the counts, and <code>sort -k1,1nr</code> puts the largest first. A person at the top with many pairs is a contamination suspect (<a href="#contamination-bias">below</a>).</li>
+</ul>
+
+<h2 id="look">Look at the distribution <span class="tag core">Core</span></h2>
+<p>The practical looks at the output in two ways: <code>summary(ibd$PI_HAT)</code>, which prints the minimum, quartiles, mean and maximum of <code>PI_HAT</code> over all pairs, and a scatter plot of <code>Z0</code> against <code>Z1</code>, one point per pair.<sup><a href="#src-1">1</a></sup> In a sample of mostly unrelated people, the summary has a minimum and first quartile of 0 (the clipped pairs), a mean slightly above 0, and a maximum that is the one number worth reading: it tells you at once whether any pair comes close to a relationship. On the scatter plot almost all pairs pile up near (1, 0), and anything else stands out: points near (0, 0) are duplicates, near (0, 1) parent–child pairs, near (0.25, 0.5) siblings.</p>
+<div class="widget" id="w-ibd-z0z1">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The toy data's pairs: Z0 against Z1, and a PI_HAT threshold</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. It plots the toy data's .genome file written in the lab above.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The widget reads the <code>.genome</code> file the terminal wrote (press <em>Run plink --genome</em> if you skipped the terminal) and redraws whenever it is written again. The histogram's tall bar at 0 is the clipped unrelated pairs; the summary line under the plots is what R's <code>summary(ibd$PI_HAT)</code> prints. Each red dot is a pair above the threshold, and the table names the expected point nearest to it, so you can read off which pairs look like duplicates, parent–child pairs or siblings. Drag the threshold from 0.1875 down toward 0.1 and watch how many more pairs, and people, it flags; then set 0.98 to keep only duplicates. The removal list at the bottom applies the rule of the next sections: a person in several flagged pairs goes first, and otherwise the member of a pair with more missing calls (from step 1's <code>toy.geno0.01.imiss</code>).</p>
+<p><strong>What the simulation planted.</strong> R's summary gives a maximum <code>PI_HAT</code> of <span data-card="pihat_max">?</span>, and <span data-card="pairs_pihat_gt_0_1875">?</span> pairs are above 0.1875. The toy data contain <span data-card="sim_related_pairs">?</span> planted pairs of relatives (<a href="practical-overview.html#toy-data">the toy dataset</a>), and each lands near its expected point. Tick <em>Show what the simulation planted</em> in the widget to label them in the table.</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>The planted relatives in the toy data's <code>.genome</code> file</caption>
+  <thead><tr><th scope="col">Planted relationship</th><th scope="col">FIDs</th><th class="num" scope="col">Z0</th><th class="num" scope="col">Z1</th><th class="num" scope="col">Z2</th><th class="num" scope="col">PI_HAT</th><th class="num" scope="col">Expected PI_HAT</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Relationship">Duplicate (the same person sampled twice)</td><td data-label="FIDs"><span data-card="ibd_duplicate_fids">?</span></td><td class="num" data-label="Z0"><span data-card="ibd_duplicate_z0">?</span></td><td class="num" data-label="Z1"><span data-card="ibd_duplicate_z1">?</span></td><td class="num" data-label="Z2"><span data-card="ibd_duplicate_z2">?</span></td><td class="num" data-label="PI_HAT"><span data-card="ibd_duplicate_pihat">?</span></td><td class="num" data-label="Expected PI_HAT">1</td></tr>
+    <tr><td data-label="Relationship">Parent and offspring</td><td data-label="FIDs"><span data-card="ibd_parent_offspring_fids">?</span></td><td class="num" data-label="Z0"><span data-card="ibd_parent_offspring_z0">?</span></td><td class="num" data-label="Z1"><span data-card="ibd_parent_offspring_z1">?</span></td><td class="num" data-label="Z2"><span data-card="ibd_parent_offspring_z2">?</span></td><td class="num" data-label="PI_HAT"><span data-card="ibd_parent_offspring_pihat">?</span></td><td class="num" data-label="Expected PI_HAT">0.5</td></tr>
+    <tr><td data-label="Relationship">Full siblings</td><td data-label="FIDs"><span data-card="ibd_full_sibs_fids">?</span></td><td class="num" data-label="Z0"><span data-card="ibd_full_sibs_z0">?</span></td><td class="num" data-label="Z1"><span data-card="ibd_full_sibs_z1">?</span></td><td class="num" data-label="Z2"><span data-card="ibd_full_sibs_z2">?</span></td><td class="num" data-label="PI_HAT"><span data-card="ibd_full_sibs_pihat">?</span></td><td class="num" data-label="Expected PI_HAT">0.5</td></tr>
+    <tr><td data-label="Relationship">Half siblings (second degree)</td><td data-label="FIDs"><span data-card="ibd_half_sibs_fids">?</span></td><td class="num" data-label="Z0"><span data-card="ibd_half_sibs_z0">?</span></td><td class="num" data-label="Z1"><span data-card="ibd_half_sibs_z1">?</span></td><td class="num" data-label="Z2"><span data-card="ibd_half_sibs_z2">?</span></td><td class="num" data-label="PI_HAT"><span data-card="ibd_half_sibs_pihat">?</span></td><td class="num" data-label="Expected PI_HAT">0.25</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The duplicate's <code>Z2</code> is slightly below 1 because the two samples were genotyped separately: their genotyping errors differ. The parent and offspring have a small positive <code>Z0</code> for the same reason, since an error can make them opposite homozygotes. Every other flagged pair includes one sample, <span data-card="het_contaminated_fid">?</span>, which the last terminal command puts at the top of its count, in far more flagged pairs than anyone else. In the terminal's list sorted by <code>PI_HAT</code>, its pairs come right after the three closest relative pairs, ahead of the half siblings. The simulation gave this sample no relatives: it is the contaminated sample, and the <a href="#contamination-bias">next section</a> explains the pattern. Leave it out and no unrelated pair reaches 0.1875. Drag the threshold down to 0.1 and <span data-card="pairs_pihat_gt_0_1">?</span> pairs pass. Apart from the planted relatives, all of them are unrelated pairs: many include the contaminated sample, and the rest are mostly pushed up by estimation noise. A threshold that low would flag mostly unrelated pairs with this many SNPs.</p>
+
+<h2 id="biases">When PI_HAT misleads: ancestry, contamination and genotype quality <span class="tag core">Core</span></h2>
+<p>The estimator assumes three things: that every pair's unshared alleles are drawn with the same allele frequencies, the sample's; that genotypes are correct; and that SNPs are independent. Each failure produces a recognizable pattern.</p>
+
+<h3 id="ancestry-bias">Genetic ancestry: everyone in a group looks slightly related</h3>
+<p>PLINK computes \(p\) from the whole file. When the sample contains a group of people whose genetic ancestry, and therefore whose allele frequencies, differ from those of the rest, two unrelated people from that group are more alike than the sample's frequencies predict: they are opposite homozygotes less often than \(e_{00}\) says, so <code>Z0</code> comes out below 1 and <code>PI_HAT</code> above 0. Two people from different groups are opposite homozygotes more often, so their <code>Z0</code> exceeds 1 and is clipped to <code>PI_HAT</code> = 0. A calculation with made-up frequencies shows the size of the effect:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Expected estimates for unrelated pairs at one SNP with frequency 0.4 in group 1 and 0.6 in group 2, in a sample that pools equal numbers from both (PLINK uses \(p = 0.5\))</caption>
+  <thead><tr><th>Pair</th><th class="num">IBS 0 expected</th><th class="num">PLINK's \(e_{00}\)</th><th class="num">Z0</th><th class="num">Z1</th><th class="num">PI_HAT</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Pair">Both from group 1 (or both from group 2)</td><td class="num" data-label="IBS 0 expected">0.115</td><td class="num" data-label="PLINK's e00">0.125</td><td class="num" data-label="Z0">0.92</td><td class="num" data-label="Z1">0.08</td><td class="num" data-label="PI_HAT">0.04</td></tr>
+    <tr><td data-label="Pair">One from each group</td><td class="num" data-label="IBS 0 expected">0.155</td><td class="num" data-label="PLINK's e00">0.125</td><td class="num" data-label="Z0">1.24 → 1</td><td class="num" data-label="Z1">−0.24 → 0</td><td class="num" data-label="PI_HAT">0</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Applied to every SNP of the genome (frequencies 0.1 apart from the pooled value in each direction, a large difference, of the size seen between continental groups), the same calculation gives unrelated pairs within a group an expected <code>PI_HAT</code> of about 0.06, and pairs across groups 0. That is well below 0.1875, but it moves the whole within-group cloud away from (1, 0), and with estimation noise on top some pairs can cross a threshold. Three remedies exist: estimate relatedness within groups of genetically similar people, give PLINK allele frequencies that fit the group with <code>--read-freq</code>, or use an estimator built to be robust to ancestry differences, such as KING (<a href="#king">below</a>) or PC-Relate.<sup><a href="#src-5">5</a>,<a href="#src-10">10</a>,<a href="#src-12">12</a></sup> Do not remove people for this pattern: it is ancestry, which step 6 and steps 7–8 describe and the association analysis adjusts for.</p>
+
+<h3 id="contamination-bias">Contamination: one sample related to everyone</h3>
+<p>A sample that mixes DNA from two people is called heterozygous at many SNPs where its true owner is homozygous (<a href="qc-heterozygosity.html#contamination">step 5</a> shows how). A heterozygous call can never be an opposite homozygote, so the mixed sample has too few IBS-0 SNPs with <em>every</em> other person: its <code>Z0</code> falls below 1 and its <code>PI_HAT</code> rises with everyone at once. In one GWAS, two samples appeared related to nearly every other sample in the study, with kinship between the expected values of half siblings and first cousins; both had high heterozygosity, and their intensity data showed mixtures of two people's DNA.<sup><a href="#src-3">3</a></sup> The signature is easy to find: count how many flagged pairs each person belongs to. One person in dozens of pairs is a contamination suspect, not a person with dozens of relatives; check their heterozygosity and missingness, remove them, and then look at relatedness again.</p>
+
+<h3 id="quality-bias">Genotyping errors and LD</h3>
+<p>A genotyping error at a SNP where a pair truly matches turns IBS 2 into IBS 1, or IBS 1 into IBS 0, which pulls duplicates and parent–child pairs slightly away from their expected points (duplicates with <code>PI_HAT</code> of 0.98 rather than 1). Low-quality samples with many errors can show weak relatedness to many people, like contaminated ones.<sup><a href="#src-3">3</a></sup> SNPs in LD carry overlapping information, so without pruning a few long LD blocks count many times and the estimates become noisier; that is why the command uses <code>--extract</code> with the pruned list.</p>
+
+<h2 id="threshold">Choose a threshold and act <span class="tag core">Core</span></h2>
+<p><strong>What the practical does.</strong> It sets no fixed threshold in step 4. It asks whether, based on the maximum <code>PI_HAT</code> observed, there are duplicates or close relatives that need handling: removing one member of a related pair for an analysis that assumes unrelated people, or keeping both for a method that models relatedness. The exercise then asks you to choose and justify a threshold, and notes that a well-justified analysis may conclude that no samples need to be excluded.<sup><a href="#src-1">1</a></sup> Published pipelines use these rules:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Common relatedness thresholds</caption>
+  <thead><tr><th>Source</th><th>Rule</th><th>What it removes</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Source">Anderson et al. 2010, <em>Nature Protocols</em><sup><a href="#src-13">13</a></sup></td><td data-label="Rule"><code>PI_HAT</code> &gt; 0.1875 (written 0.185 in the protocol step); &gt; 0.98 for duplicates</td><td data-label="What it removes">One member of each second-degree or closer pair: the one with the lower call rate. 0.1875 lies halfway between the second-degree (0.25) and third-degree (0.125) expectations.</td></tr>
+    <tr><td data-label="Source">Marees et al. 2018, GWAS tutorial<sup><a href="#src-14">14</a></sup></td><td data-label="Rule"><code>PI_HAT</code> &gt; 0.2</td><td data-label="What it removes">Second-degree or closer relatives in population-based studies. Family-based studies keep relatives and model the family structure.</td></tr>
+    <tr><td data-label="Source">KING and PLINK 2<sup><a href="#src-10">10</a>,<a href="#src-15">15</a></sup></td><td data-label="Rule">Kinship &gt; 0.354, 0.177, 0.0884 or 0.0442</td><td data-label="What it removes">Duplicates, first-, second- or third-degree relatives and closer. Kinship is half of <code>PI_HAT</code>, so 0.0884 corresponds to <code>PI_HAT</code> 0.177.</td></tr>
+  </tbody>
+</table>
+</div>
+<p><strong>Why not lower.</strong> Third-degree relatives (expected <code>PI_HAT</code> 0.125) overlap with unrelated pairs once ancestry and estimation noise are added (<a href="#expected">above</a>), and a single first-cousin pair adds little dependence to a study of thousands. Thresholds near 0.1875 or 0.2 remove the pairs that matter while keeping false alarms rare.</p>
+<p><strong>Duplicates.</strong> A pair with <code>PI_HAT</code> near 1 needs a decision of its own. If it is a planned laboratory replicate, keep the copy with the higher call rate and use the pair to estimate the genotyping error rate (the share of SNPs at which the two copies disagree). If it is not planned, compare the two records: same sex, same age, same phenotype? If the two copies carry different phenotypes, at least one label is wrong and it is not possible to know which, so the usual choice is to remove both.</p>
+<p><strong>Which member of a related pair to remove.</strong> The common rule keeps the person with fewer missing calls.<sup><a href="#src-13">13</a></sup> Others are reasonable when argued in advance: keep the person whose phenotype is recorded, or, in a case–control study with few cases, keep the case. Check what the phenotype codes mean before basing a rule on them: in this copy of PennCATH they do not mean what the practical's description of column 6 suggests (<a href="plink-data.html#phenotype-column">The data · What column 6 holds</a>), so read that section before using "keep the one with a recorded phenotype" or "keep the case". When one person is related to several others, removing that one person can resolve several pairs at once. Choosing the smallest set of people to remove is a hard combinatorial problem; PLINK 2's <code>--king-cutoff</code> uses a greedy algorithm for it.<sup><a href="#src-15">15</a></sup></p>
+<p><strong>Remove or model.</strong> Removing one member per pair suits analyses that assume independent people, such as PLINK's logistic regression. The alternative is to keep everyone and use a method that models relatedness, a linear mixed model or a whole-genome regression such as REGENIE, which Session 2 uses (see <a href="gwas-analysis.html">GWAS analysis</a>).<sup><a href="#src-4">4</a></sup> Duplicates are removed either way.</p>
+<p><strong>Order of operations.</strong> Run this step after the missingness filters, because missing calls add noise; look at heterozygosity (step 5) before deciding, because a contaminated sample creates many false pairs; and settle relatedness before computing principal components (step 6), because a family can form its own component. The decision itself is applied once, at the end, when the cleaned fileset is made (<a href="qc-exercise.html">the exercise</a>).</p>
+<p><strong>Record.</strong> Write the removed people to a text file with two columns, family ID and within-family ID, which <code>plink --remove FILE</code> reads; keep a note of the threshold, the pairs, each person's <code>PI_HAT</code> and the reason for choosing that member. The QC report of the exercise has a row for this step.</p>
+<p><strong>In the toy data.</strong> At 0.1875 the widget's removal list starts with the contaminated sample, <span data-card="het_contaminated_fid">?</span>, which resolves all of its pairs at once (step 5 flags it as well). It then takes one member of each of the <span data-card="sim_related_pairs">?</span> planted pairs, the one with more missing calls in step 1's <code>toy.geno0.01.imiss</code>. Check each choice against the records rather than accepting it. The duplicate's two records agree, with the same sex and phenotype code in <code>toy.fam</code>, so keeping the copy with fewer missing calls is enough. For the half siblings the rules disagree: the member with fewer missing calls has phenotype code −9 (missing), so a rule that keeps the person with a recorded phenotype would remove the other one. Whichever rule you choose, choose it before looking at the results and apply it to every pair.</p>
+
+<h2 id="in-r">In R <span class="tag core">Core</span></h2>
+<p>The practical reads the <code>.genome</code> file into R, prints <code>summary(ibd$PI_HAT)</code> and plots <code>Z0</code> against <code>Z1</code>.<sup><a href="#src-1">1</a></sup> The code below does the same and goes three steps further: it lists the flagged pairs, counts how many flagged pairs each person is in, and writes a removal list that keeps the member of each pair with fewer missing calls. It assumes <code>analysis_dir</code> is set as on <a href="setup.html">Set up your computer</a>.</p>
+<span class="code-label r">R</span>
+<pre class="code">library(tidyverse)
+library(data.table)
+
+analysis_dir &lt;- Sys.getenv(<span class="str">"analysis_dir"</span>)
+<span class="cm"># quote = "" keeps IDs exactly as written, including PennCATH's quote characters</span>
+ibd &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.mind0.01.LD0.3.genome"</span>), quote = <span class="str">""</span>)
+
+nrow(ibd)              <span class="cm"># number of pairs, n(n - 1)/2</span>
+summary(ibd$PI_HAT)    <span class="cm"># the practical's summary</span>
+
+<span class="cm"># Pairs above the usual threshold, closest first</span>
+related &lt;- ibd %&gt;%
+  filter(PI_HAT &gt; <span class="kw">0.1875</span>) %&gt;%
+  arrange(desc(PI_HAT)) %&gt;%
+  select(FID1, IID1, FID2, IID2, Z0, Z1, Z2, PI_HAT)
+related
+
+<span class="cm"># Z0 against Z1, with the expected point of each relationship</span>
+expected &lt;- tibble(
+  relationship = c(<span class="str">"duplicate"</span>, <span class="str">"parent-child"</span>, <span class="str">"full siblings"</span>,
+                   <span class="str">"2nd degree"</span>, <span class="str">"3rd degree"</span>, <span class="str">"unrelated"</span>),
+  Z0 = c(<span class="kw">0</span>, <span class="kw">0</span>, <span class="kw">0.25</span>, <span class="kw">0.5</span>, <span class="kw">0.75</span>, <span class="kw">1</span>),
+  Z1 = c(<span class="kw">0</span>, <span class="kw">1</span>, <span class="kw">0.5</span>, <span class="kw">0.5</span>, <span class="kw">0.25</span>, <span class="kw">0</span>))
+
+ggplot(ibd, aes(x = Z0, y = Z1)) +
+  geom_point(alpha = <span class="kw">0.3</span>) +
+  geom_point(data = expected, shape = <span class="kw">23</span>, size = <span class="kw">3</span>, fill = <span class="str">"orange"</span>) +
+  geom_text(data = expected, aes(label = relationship), vjust = <span class="kw">-1.2</span>, size = <span class="kw">3</span>) +
+  coord_equal(xlim = c(<span class="kw">0</span>, <span class="kw">1</span>), ylim = c(<span class="kw">0</span>, <span class="kw">1</span>)) +
+  labs(title = <span class="str">"Z0 vs. Z1"</span>, x = <span class="str">"Z0 = P(IBD = 0)"</span>, y = <span class="str">"Z1 = P(IBD = 1)"</span>) +
+  theme_classic()
+
+<span class="cm"># How many flagged pairs is each person in? (contamination check)</span>
+bind_rows(select(related, FID = FID1, IID = IID1),
+          select(related, FID = FID2, IID = IID2)) %&gt;%
+  count(FID, IID, sort = <span class="kw">TRUE</span>)
+
+<span class="cm"># Remove the member of each pair with more missing calls (step 1's .imiss)</span>
+imiss &lt;- fread(file.path(analysis_dir, <span class="str">"penncath.geno0.01.imiss"</span>), quote = <span class="str">""</span>) %&gt;%
+  select(FID, IID, F_MISS)
+to_remove &lt;- related %&gt;%
+  left_join(rename(imiss, F_MISS1 = F_MISS), by = c(<span class="str">"FID1"</span> = <span class="str">"FID"</span>, <span class="str">"IID1"</span> = <span class="str">"IID"</span>)) %&gt;%
+  left_join(rename(imiss, F_MISS2 = F_MISS), by = c(<span class="str">"FID2"</span> = <span class="str">"FID"</span>, <span class="str">"IID2"</span> = <span class="str">"IID"</span>)) %&gt;%
+  mutate(FID = if_else(F_MISS1 &gt;= F_MISS2, FID1, FID2),
+         IID = if_else(F_MISS1 &gt;= F_MISS2, IID1, IID2)) %&gt;%
+  distinct(FID, IID)
+fwrite(to_remove, file.path(analysis_dir, <span class="str">"penncath.related.remove.txt"</span>),
+       sep = <span class="str">" "</span>, quote = <span class="kw">FALSE</span>, col.names = <span class="kw">FALSE</span>)</pre>
+<p>Each function, with its pandas counterpart (<a href="tools.html#r">The tools · R</a> has more):</p>
+<ul>
+  <li><code>fread(path, quote = "")</code> reads a whitespace-separated table into a data frame, like <code>pd.read_csv(path, sep=r"\s+")</code>. <code>quote = ""</code> tells it not to treat double quotes as quoting, so an ID written <code>"10002"</code> stays exactly that.</li>
+  <li><code>summary(x)</code> prints the minimum, quartiles, mean and maximum of a numeric vector, like <code>Series.describe()</code>.</li>
+  <li><code>%&gt;%</code> passes the table on its left as the first argument of the function on its right, so a chain of steps reads top to bottom, like pandas method chaining.</li>
+  <li><code>filter(cond)</code> keeps rows where the condition holds (<code>df[df.PI_HAT &gt; 0.1875]</code>); <code>arrange(desc(col))</code> sorts in decreasing order (<code>sort_values(ascending=False)</code>); <code>select()</code> keeps columns and can rename them (<code>select(FID = FID1)</code>); <code>rename(new = old)</code> renames.</li>
+  <li><code>tibble()</code> builds a small table from vectors, like <code>pd.DataFrame({...})</code>; <code>c()</code> makes a vector.</li>
+  <li><code>ggplot(data, aes(x, y))</code> starts a plot and maps columns to axes; each <code>geom_*</code> layer draws the data given to it, so the second and third layers draw the expected points from <code>expected</code> over the pairs; <code>coord_equal()</code> keeps one unit the same length on both axes.</li>
+  <li><code>bind_rows()</code> stacks tables (<code>pd.concat</code>); <code>count(..., sort = TRUE)</code> counts rows per value (<code>value_counts()</code>).</li>
+  <li><code>left_join(x, y, by = c("FID1" = "FID"))</code> adds columns of <code>y</code> to matching rows of <code>x</code> (<code>merge(how="left", left_on=..., right_on=...)</code>); <code>mutate()</code> adds columns; <code>if_else(cond, a, b)</code> picks element by element (<code>np.where</code>); <code>distinct()</code> drops duplicate rows (<code>drop_duplicates()</code>).</li>
+  <li><code>fwrite(..., quote = FALSE, col.names = FALSE)</code> writes the table without quoting and without a header, the format <code>--remove</code> reads.</li>
+</ul>
+<p>The pair-by-pair rule in <code>to_remove</code> can remove more people than necessary when one person is in several pairs; look at the <code>count()</code> output first, and remove a person who is in many pairs before applying the rule to the rest.</p>
+<p>The same analysis runs on the toy data in the R console below (it uses <code>dplyr</code> and <code>ggplot2</code> instead of the whole tidyverse, which is a large download in the browser). The first run downloads R into the page, which takes a few seconds; the code reads the <code>.genome</code> file from the lab, and the console runs <code>--genome</code> first if you have not.</p>
+<div class="rlab" id="r-genome" data-title="Step 4 in R · the toy data's .genome file" data-packages="data.table,dplyr,ggplot2">
+<pre class="lab-setup">[ -f ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3.genome ] || plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in --genome --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3</pre>
+<pre class="rlab-code">library(data.table)
+library(dplyr)
+library(ggplot2)
+
+ibd &lt;- fread(file.path(analysis_dir, "toy.geno0.01.mind0.01.LD0.3.genome"), quote = "")
+nrow(ibd)
+summary(ibd$PI_HAT)
+
+related &lt;- ibd %&gt;%
+  filter(PI_HAT &gt; 0.1875) %&gt;%
+  arrange(desc(PI_HAT)) %&gt;%
+  select(FID1, IID1, FID2, IID2, Z0, Z1, Z2, PI_HAT)
+related
+
+bind_rows(select(related, FID = FID1, IID = IID1),
+          select(related, FID = FID2, IID = IID2)) %&gt;%
+  count(FID, IID, sort = TRUE)
+
+expected &lt;- data.frame(
+  relationship = c("duplicate", "parent-child", "full siblings",
+                   "2nd degree", "3rd degree", "unrelated"),
+  Z0 = c(0, 0, 0.25, 0.5, 0.75, 1),
+  Z1 = c(0, 1, 0.5, 0.5, 0.25, 0))
+
+ggplot(ibd, aes(x = Z0, y = Z1)) +
+  geom_point(alpha = 0.3) +
+  geom_point(data = expected, shape = 23, size = 3, fill = "orange") +
+  geom_text(data = expected, aes(label = relationship), vjust = -1.2, size = 3) +
+  coord_equal(xlim = c(0, 1), ylim = c(0, 1)) +
+  labs(title = "Z0 vs. Z1 (toy data)", x = "Z0 = P(IBD = 0)", y = "Z1 = P(IBD = 1)") +
+  theme_classic()</pre>
+</div>
+
+<h2 id="real-data">On your own computer: the real data <span class="tag core">Core</span></h2>
+<p>With PLINK 1.9 installed and the three directory variables set as on <a href="setup.html">Set up your computer</a>, the practical's command runs unchanged on the PennCATH files written by steps 1 and 3:<sup><a href="#src-1">1</a></sup></p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/penncath.geno0.01.mind0.01.prune.in \
+      --genome --out ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3
+<span class="prompt">$ </span>wc -l ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.genome
+<span class="prompt">$ </span>awk 'NR == 1 || $10 &gt; 0.1875' ${analysis_dir}/penncath.geno0.01.mind0.01.LD0.3.genome</pre>
+<p><strong>What to look at.</strong></p>
+<ul>
+  <li><strong>Size.</strong> With the 1,380 people left after step 1, the file should have 951,510 lines of pairs plus the header. A different count means a different number of people went into the run; check the log.</li>
+  <li><strong>The log.</strong> It reports how many variants <code>--extract</code> kept (the length of <code>.prune.in</code>) and how many people and variants passed; the IBD calculation then runs over all pairs.</li>
+  <li><strong>The maximum <code>PI_HAT</code></strong> from <code>summary()</code>, and the flagged pairs from <code>awk</code>: their <code>Z0</code> and <code>Z1</code> say which relationship each pair resembles.</li>
+  <li><strong>Repeated IDs</strong> among the flagged pairs (the <code>count()</code> in R): a person in many pairs is a contamination suspect for step 5.</li>
+  <li><strong><code>RT</code> and <code>EZ</code>.</strong> Every PennCATH person has a different family ID and the within-family ID 1 (the practical's step 8 builds unique IDs for that reason), so every line has <code>RT</code> = <code>UN</code> and <code>EZ</code> = <code>NA</code>: the <code>.fam</code> file records no family relationships, and any relatives the step finds were not recorded.</li>
+  <li><strong><code>PHE</code>.</strong> PLINK reads 463 people coded case, 470 coded control and 468 coded missing,<sup><a href="#src-16">16</a></sup> and counts a missing phenotype as not a case, so most pairs have <code>PHE</code> = 0 or −1. What the codes mean in this copy of PennCATH is discussed on <a href="plink-data.html#phenotype-column">The data · What column 6 holds</a>.</li>
+</ul>
+<p><strong>How the real data differ from the toy data.</strong> PennCATH has 1,380 people after step 1 instead of the toy's few hundred, so about 950,000 pairs instead of tens of thousands, and its <code>.prune.in</code> holds far more SNPs, which makes each estimate more precise. Its input fileset holds 861,473 variants.<sup><a href="#src-16">16</a></sup> In the practical's later steps, almost all PennCATH people fall in or near the cluster of 1000 Genomes samples labeled European (EUR), and GrafAnc assigns more than 99% of them to its EUR group, with a small number in its Middle East and North Africa group.<sup><a href="#src-1">1</a></sup> These are reference-based measures of genetic similarity, not identities. They do mean that the sample is genetically fairly homogeneous, so the ancestry pattern described <a href="#ancestry-bias">above</a> should be weak, apart from possibly slightly raised <code>PI_HAT</code> among the few people who differ from the rest. The family IDs in the PennCATH <code>.fam</code> file include double-quote characters (<code>"10002"</code>), and PLINK copies them into the <code>.genome</code> file; R's <code>fread()</code> would strip them by default, so the R code above reads and writes them unchanged (<code>quote = ""</code>, <code>quote = FALSE</code>) so that <code>--remove</code> finds the IDs.</p>
+<aside class="callout lab">
+  <div class="callout-title"><span class="badge">Run it</span> Keep the file small, or see everything</div>
+  <p><code>--genome gz</code> writes a compressed <code>.genome.gz</code> (R's <code>fread()</code> reads it directly). <code>--min 0.05</code> writes only pairs with <code>PI_HAT</code> of at least 0.05, a far smaller file for finding relatives, but then <code>summary(PI_HAT)</code> no longer describes all pairs. <code>--genome full unbounded</code> adds the IBS counts and turns clipping off, to see the raw estimates.<sup><a href="#src-5">5</a></sup></p>
+</aside>
+
+<h2 id="king">KING kinship with PLINK 2 <span class="tag optional">Optional</span></h2>
+<p>KING is a program, and an estimator of the kinship coefficient, designed to work without allele frequencies, so that population structure barely affects it.<sup><a href="#src-10">10</a></sup> PLINK 2 implements its "robust" estimator as <code>--make-king-table</code>; PLINK 2 has no <code>--genome</code>.<sup><a href="#src-15">15</a></sup> For a pair of people from the same population the estimator is:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ \hat{\varphi} = \frac{N_{\mathrm{het,het}} - 2N_{\mathrm{opp}}}{N_{\mathrm{het}}^{(\mathrm{A})} + N_{\mathrm{het}}^{(\mathrm{B})}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{\varphi}\)</dt><dd>Estimated kinship coefficient of persons A and B: 0.5 for duplicates, 0.25 for first-degree relatives, 0.125 for second-degree and 0.0625 for third-degree; half of <code>PI_HAT</code>.</dd>
+    <dt>\(N_{\mathrm{het,het}}\)</dt><dd>Number of SNPs at which both are heterozygous. The <code>.kin0</code> file reports it as a proportion of the SNPs used, in the column <code>HETHET</code>.</dd>
+    <dt>\(N_{\mathrm{opp}}\)</dt><dd>Number of SNPs at which they are opposite homozygotes, IBS 0; reported as a proportion in the column <code>IBS0</code>.</dd>
+    <dt>\(N_{\mathrm{het}}^{(\mathrm{A})}, N_{\mathrm{het}}^{(\mathrm{B})}\)</dt><dd>Numbers of SNPs at which A, and B, are heterozygous. All counts are over SNPs genotyped in both.</dd>
+  </dl>
+  <p class="eq-intuition">For two unrelated people drawn from one population, at a SNP with allele frequency \(p\), both are heterozygous with probability \((2pq)^2 = 4p^2q^2\) and they are opposite homozygotes with probability \(2p^2q^2\), so the numerator has expected value \(4p^2q^2 - 2 \cdot 2p^2q^2 = 0\) at every SNP, whatever \(p\) is. No allele frequency is needed, and ancestry differences between pairs do not shift the estimate away from 0. For a duplicate, \(N_{\mathrm{opp}} = 0\) and \(N_{\mathrm{het,het}} = N_{\mathrm{het}}^{(\mathrm{A})} = N_{\mathrm{het}}^{(\mathrm{B})}\), so \(\hat{\varphi} = \tfrac{1}{2}\). For unrelated people from two populations with frequencies \(p_1\) and \(p_2\), the expected numerator is \(-2(p_1 - p_2)^2\) per SNP, so their estimate is negative. PLINK 2 uses KING's between-family version for every pair. It divides by twice the smaller of the two heterozygote counts and subtracts a term that grows with the difference between them; for two people with equal heterozygote counts it gives the same value as the formula above. It is meant for pairs whose heterozygosity differs, as it does between people from different populations.<sup><a href="#src-10">10</a>,<a href="#src-15">15</a></sup></p>
+</div>
+<span class="code-label bash">bash · PLINK 2 (not part of the practical)</span>
+<pre class="code"><span class="prompt">$ </span>plink2 --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+       --make-king-table --king-table-filter 0.0442 \
+       --out ${analysis_dir}/penncath.geno0.01.mind0.01.king
+<span class="prompt">$ </span>plink2 --bfile ${analysis_dir}/penncath.geno0.01.mind0.01 \
+       --king-cutoff 0.0884 --out ${analysis_dir}/penncath.geno0.01.mind0.01.unrel</pre>
+<p>The first command writes <code>.kin0</code>, one line per pair with kinship at least 0.0442 (third-degree relatives and closer), with the columns <code>#FID1 IID1 FID2 IID2 NSNP HETHET IBS0 KINSHIP</code>; plotting <code>KINSHIP</code> against <code>IBS0</code> separates parent–child pairs (<code>IBS0</code> near 0) from siblings, as <code>Z0</code> does in PLINK 1.9. The second writes the IDs to keep (<code>.king.cutoff.in.id</code>) and to remove (<code>.king.cutoff.out.id</code>) so that no pair of second-degree or closer relatives remains. The cut-offs 0.354, 0.177, 0.0884 and 0.0442 lie halfway, on a logarithmic scale, between the expected kinship of successive degrees. PLINK 2's documentation notes one weakness: the estimator underestimates kinship for relatives whose parents come from very different populations.<sup><a href="#src-15">15</a></sup> <a href="tools.html#plink2">The tools · PLINK 2.0</a> explains how to install it.</p>
+
+<h2 id="pitfalls">Pitfalls <span class="tag core">Core</span></h2>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> PI_HAT is twice the kinship coefficient</div>
+  <p>A threshold copied from KING, PLINK 2 or UK Biobank (kinship 0.0884 for second degree) applied to <code>PI_HAT</code> removes third-degree relatives too; one copied the other way (<code>PI_HAT</code> 0.1875 applied to kinship) keeps first-degree relatives. Check which quantity a threshold refers to.</p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Reading PI_HAT alone</div>
+  <p>A parent–child pair and a pair of full siblings both have <code>PI_HAT</code> near 0.5; a contaminated sample and a half sibling can both have <code>PI_HAT</code> near 0.2. Look at <code>Z0</code> and <code>Z1</code>, and count how many pairs each person is in.</p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Removing an ancestry group as "relatives"</div>
+  <p>Many pairs with small positive <code>PI_HAT</code> among people of one genetic ancestry group are an artifact of using the whole sample's allele frequencies. Removing them shrinks the diversity of the study and does not fix anything; use a robust estimator or estimate within groups, and handle ancestry with principal components.</p>
+</aside>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Summarizing a filtered file</div>
+  <p>After <code>--min 0.05</code>, the <code>.genome</code> file holds only the closest pairs, so <code>summary(PI_HAT)</code> and the scatter plot describe them, not the sample. Also do not run <code>--genome</code> on all SNPs instead of the pruned set: SNPs in LD are not independent and the estimates become noisier.</p>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>Relatedness is a statistic per pair: \(n\) people give \(n(n-1)/2\) pairs, 951,510 for the 1,380 PennCATH people.</li>
+    <li>PLINK counts the SNPs at which a pair shares 0, 1 or 2 alleles by state and uses the method of moments, with the expected IBS fractions for each IBD state, to estimate <code>Z0</code>, <code>Z1</code>, <code>Z2</code>; <code>PI_HAT</code> = <code>Z1</code>/2 + <code>Z2</code>.</li>
+    <li>Estimates outside 0–1 are clipped, so many unrelated pairs have <code>PI_HAT</code> exactly 0 and the rest small positive values.</li>
+    <li>Duplicates sit at <code>Z0</code> = 0, <code>Z1</code> = 0; parent–child at (0, 1); full siblings at (0.25, 0.5); second-degree relatives at (0.5, 0.5); third-degree at (0.75, 0.25); unrelated at (1, 0). <code>Z0</code> separates parent–child pairs from siblings.</li>
+    <li>Ancestry differences raise <code>PI_HAT</code> within groups; contamination raises it with everyone; neither is family relatedness.</li>
+    <li>Common rules flag <code>PI_HAT</code> &gt; 0.1875 (or 0.2) and remove the member with more missing calls, or keep everyone and use a mixed model; duplicates are always resolved.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A pair has \(m = 10{,}000\) SNPs, all with \(p = 0.5\), and \(m_0 = 0\), \(m_1 = 5{,}020\), \(m_2 = 4{,}980\). Compute Z0, Z1, Z2 and PI_HAT as PLINK would. What is the relationship?</summary><div class="a"><p>\(\hat{k}_0 = 0 / (10{,}000 \times 0.125) = 0\). \(\hat{k}_1 = (5{,}020 - 0) / (10{,}000 \times 0.5) = 1.004\), which is above 1, so PLINK sets <code>Z1</code> = 1 and <code>Z0</code> = <code>Z2</code> = 0, and <code>PI_HAT</code> = 0.5. No opposite homozygotes and one allele shared by state at about half the SNPs: a parent and child, who share exactly one copy IBD everywhere. Full siblings would also have <code>PI_HAT</code> near 0.5 but <code>Z0</code> near 0.25, because they share nothing IBD on about a quarter of the genome, where opposite homozygotes occur.</p></div></details>
+  <details class="q"><summary>Why is a SNP at which two people are opposite homozygotes (IBS 0) more informative about relatedness than a SNP at which they match (IBS 2), especially when the allele is rare?</summary><div class="a"><p>IBS 0 is impossible wherever the pair shares a copy IBD, so every IBS-0 SNP is direct evidence of a stretch shared 0 copies; that is why <code>Z0</code> is simply the observed IBS-0 count over the count expected for unrelated people. A match (IBS 2) happens for unrelated people too, and for a rare allele almost always: with \(p = 0.1\), \(e_{02} = 0.689\), so two unrelated people match at about 69% of such SNPs. A match therefore carries little information, while an opposite homozygote at such a SNP is rare (\(e_{00} = 0.016\)) and, when seen, says a lot.</p></div></details>
+  <details class="q"><summary>A study reports kinship coefficients from KING and removes pairs above 0.0884. Which PI_HAT threshold is that, and how does it compare with Anderson et al.'s 0.1875?</summary><div class="a"><p>Kinship is half the proportion IBD (\(\varphi = \pi/2\)), so 0.0884 corresponds to <code>PI_HAT</code> = 0.177. Both cut-offs lie between the second-degree expectation (<code>PI_HAT</code> 0.25, kinship 0.125) and the third-degree expectation (0.125, kinship 0.0625): KING's is the midpoint on a logarithmic scale (\(\sqrt{0.125 \times 0.0625} \approx 0.0884\)), Anderson's the arithmetic midpoint, (0.25 + 0.125)/2 = 0.1875. Both remove second-degree and closer relatives.</p></div></details>
+  <details class="q"><summary>After running --genome you find one person in 40 of the 45 pairs with PI_HAT above 0.1875, all with PI_HAT between 0.15 and 0.25. What is the most likely explanation, and what do you check next?</summary><div class="a"><p>One person cannot have 40 second-degree relatives in an ordinary study. A sample that appears related to many people at once is the signature of DNA contamination (or of a very low-quality sample): the mixture is called heterozygous at many SNPs, so it is rarely an opposite homozygote with anyone, and its <code>Z0</code> falls below 1 with everyone. Check that person's heterozygosity (step 5: a contaminated sample has a high heterozygosity rate) and missingness (step 1). Remove the sample, then re-examine the remaining five pairs.</p></div></details>
+  <details class="q"><summary>Two samples have PI_HAT = 0.99, but one is recorded as a case and the other as a control, with different study IDs. What do you do?</summary><div class="a"><p>The genotypes say the two samples come from one person (or identical twins), but the records disagree, so at least one sample was mislabeled, mixed up or enrolled twice. Without a way to tell which record is right, the usual decision is to remove both, and to report the mix-up to the laboratory, since other samples from the same plate may also be affected. If the records can be checked (same sex, age and recruitment site?) and one is clearly wrong, the other may be kept.</p></div></details>
+  <details class="q"><summary>A sample mixes two groups whose allele frequencies differ. Why do unrelated people within a group get PI_HAT above 0, while pairs across groups get exactly 0?</summary><div class="a"><p>PLINK computes \(e_{00}\) and the other expectations from the allele frequencies of the whole file. Two people from the same group carry alleles drawn from their group's frequencies, so they are opposite homozygotes less often than the pooled frequencies predict: <code>Z0</code> = \(m_0/(m e_{00})\) comes out below 1 and <code>PI_HAT</code> above 0 (about 0.04 in the one-SNP example on this page with frequencies 0.4 and 0.6). Two people from different groups are opposite homozygotes more often than predicted, so <code>Z0</code> exceeds 1, and clipping sets <code>Z0</code> = 1 and <code>PI_HAT</code> = 0.</p></div></details>
+  <details class="q"><summary>Lab: run the commands in the terminal above. How many pairs does the toy data's <code>.genome</code> file have, and what are the pairs above 0.1875?</summary><div class="a"><p><span data-card="genome_pairs">?</span> pairs: one for every pair of the <span data-card="qc_people">?</span> people, \(n(n-1)/2\). <span data-card="pairs_pihat_gt_0_1875">?</span> pairs are above 0.1875. Of these, <span data-card="sim_related_pairs">?</span> are the planted relatives, recognizable by their <code>Z0</code> and <code>Z1</code>: the duplicate (<span data-card="ibd_duplicate_fids">?</span>), the parent and offspring (<span data-card="ibd_parent_offspring_fids">?</span>), the full siblings (<span data-card="ibd_full_sibs_fids">?</span>) and the half siblings (<span data-card="ibd_half_sibs_fids">?</span>). All the others include <span data-card="het_contaminated_fid">?</span>, which the last command counts in far more flagged pairs than anyone else: the signature of contamination, which step 5 confirms.</p></div></details>
+  <details class="q"><summary>Lab: run <code>--genome full</code> and compare the IBS0 counts of the two pairs with PI_HAT near 0.5. Which pair is the parent and offspring, and which the full siblings?</summary><div class="a"><p>In the terminal, write the output under a new prefix so that step 4's file stays as it is, then print the pairs above 0.4:</p>
+<pre class="code"><span class="prompt">$ </span>plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --genome full --out ${analysis_dir}/toy.full
+<span class="prompt">$ </span>awk 'NR == 1 || $10 &gt; 0.4' ${analysis_dir}/toy.full.genome</pre>
+<p><code>IBS0</code> is the 15th column. The pair with almost no IBS0 SNPs is the parent and offspring (<span data-card="ibd_parent_offspring_fids">?</span>, <code>Z0</code> = <span data-card="ibd_parent_offspring_z0">?</span>). A parent and child share one copy IBD everywhere, so they can never be opposite homozygotes, and the few IBS0 SNPs they have are genotyping errors. The full siblings (<span data-card="ibd_full_sibs_fids">?</span>, <code>Z0</code> = <span data-card="ibd_full_sibs_z0">?</span>) have many more, because on about a quarter of the genome they share nothing IBD. Their <code>PI_HAT</code> values are similar; only <code>Z0</code> (and <code>Z1</code>) tells the two relationships apart.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/ibd" target="_blank" rel="noopener">PLINK 1.9: Identity-by-descent</a> <span class="src">· PLINK documentation</span> <span class="level intro">intro</span> — every modifier of <code>--genome</code> in one page, with the <code>.genome</code> format linked.</li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Data quality control in genetic case-control association studies</a> <span class="src">· Anderson et al. 2010, Nature Protocols</span> <span class="level intro">intro</span> — the classic step-by-step protocol, with the 0.1875 rule and scripts for the IBD plot.</li>
+    <li><a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">A tutorial on conducting genome-wide association studies</a> <span class="src">· Marees et al. 2018</span> <span class="level intro">intro</span> — a second QC tutorial with PLINK code on open data, for comparison of thresholds.</li>
+    <li><a href="https://doi.org/10.1086/519795" target="_blank" rel="noopener">PLINK: a tool set for whole-genome association and population-based linkage analyses</a> <span class="src">· Purcell et al. 2007</span> <span class="level intermediate">intermediate</span> — the original description of the IBD estimator, including how its variance was checked against known relatives.</li>
+    <li><a href="https://doi.org/10.1038/nrg1960" target="_blank" rel="noopener">Genetic relatedness analysis: modern data and new challenges</a> <span class="src">· Weir, Anderson and Hepler 2006, Nature Reviews Genetics</span> <span class="level intermediate">intermediate</span> — kinship, IBD and IBS in one review, with the variation of realized sharing.</li>
+    <li><a href="https://doi.org/10.1093/bioinformatics/btq559" target="_blank" rel="noopener">Robust relationship inference in genome-wide association studies</a> <span class="src">· Manichaikul et al. 2010 (KING)</span> <span class="level advanced">advanced</span> — derives the robust kinship estimator and the degree cut-offs used by PLINK 2 and UK Biobank.</li>
+    <li><a href="https://doi.org/10.1016/j.ajhg.2015.11.022" target="_blank" rel="noopener">Model-free estimation of recent genetic relatedness</a> <span class="src">· Conomos et al. 2016 (PC-Relate)</span> <span class="level advanced">advanced</span> — relatedness in samples with admixture and population structure, by removing ancestry with principal components.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">DCEG Statistical Genetics Workshop, Session 1 practical, “Introduction to GWAS Quality Control”: web page and R Markdown source <code>01_qc.Rmd</code> (PennCATH data; PLINK 1.9 commands, file names and thresholds for steps 1–8; 1,380 people after the missingness filters; questions and exercise). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">practical page</a> · <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/blob/main/src/01_qc.Rmd" target="_blank" rel="noopener">01_qc.Rmd</a></li>
+    <li id="src-2">Voight BF, Pritchard JK (2005). Confounding from cryptic relatedness in case-control association studies. <em>PLoS Genetics</em> 1:e32. <a href="https://doi.org/10.1371/journal.pgen.0010032" target="_blank" rel="noopener">doi:10.1371/journal.pgen.0010032</a></li>
+    <li id="src-3">Laurie CC, Doheny KF, Mirel DB, et al. (2010). Quality control and quality assurance in genotypic data for genome-wide association studies. <em>Genetic Epidemiology</em> 34:591–602 (relatedness: 36 duplicate pairs, two not documented as one person; two mixed samples related to nearly every other sample; ±2 SD bounds for full siblings in Fig. 3; principal components driven by the 8p23 inversion; mixed and low-quality samples; plate effects in genotype calling). <a href="https://doi.org/10.1002/gepi.20516" target="_blank" rel="noopener">doi:10.1002/gepi.20516</a></li>
+    <li id="src-4">Uffelmann E, Huang QQ, Munung NS, et al. (2021). Genome-wide association studies. <em>Nature Reviews Methods Primers</em> 1:59 (Experimentation: “Data processing” and “Testing for associations”, Eqs. 1–3; Fig. 1; Table 1). <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-5">Chang CC, Purcell S. PLINK 1.9 documentation: “Identity-by-descent” (<code>--genome</code> and its modifiers <code>full</code>, <code>rel-check</code>, <code>unbounded</code>, <code>nudge</code>; <code>--min</code>, <code>--max</code>, <code>--ppc-gap</code>, <code>--read-freq</code>). <a href="https://www.cog-genomics.org/plink/1.9/ibd" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/ibd</a></li>
+    <li id="src-6">Purcell S, Neale B, Todd-Brown K, et al. (2007). PLINK: a tool set for whole-genome association and population-based linkage analyses. <em>American Journal of Human Genetics</em> 81:559–575 (section on estimating pairwise IBD by the method of moments). <a href="https://doi.org/10.1086/519795" target="_blank" rel="noopener">doi:10.1086/519795</a></li>
+    <li id="src-7">Chang CC. PLINK 1.9 source code, <code>plink_calc.c</code>, function <code>calc_genome</code> and its writer: expected IBS fractions given IBD averaged over SNPs with a correction for finite allele counts, the estimates of Z0, Z1 and Z2, the order of the clipping rules, and the RT, EZ and PHE codes. <a href="https://github.com/chrchang/plink-ng/blob/master/1.9/plink_calc.c" target="_blank" rel="noopener">github.com/chrchang/plink-ng</a></li>
+    <li id="src-8">Chang CC, Purcell S. PLINK 1.9 documentation: “File formats” (<code>.genome</code> identity-by-descent report and <code>.het</code> method-of-moments F coefficient estimates). <a href="https://www.cog-genomics.org/plink/1.9/formats#genome" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/formats</a></li>
+    <li id="src-9">Lecture 0 of this course, “Inheritance: from parents to children”, sections “Relatedness and identity by descent” (expected IBD fractions by relationship, from Table 1 of Manichaikul et al. 2010) and “Relatives in genotype data”. <a href="../0-biological-foundations/inheritance.html#ibd">inheritance.html#ibd</a></li>
+    <li id="src-10">Manichaikul A, Mychaleckyj JC, Rich SS, Daly K, Sale M, Chen WM (2010). Robust relationship inference in genome-wide association studies. <em>Bioinformatics</em> 26:2867–2873 (KING-robust kinship estimator; expected kinship and IBD0 by degree, Table 1). <a href="https://doi.org/10.1093/bioinformatics/btq559" target="_blank" rel="noopener">doi:10.1093/bioinformatics/btq559</a></li>
+    <li id="src-11">Thompson EA (1976). A restriction on the space of genetic relationships. <em>Annals of Human Genetics</em> 40:201–204 (relatives without inbreeding satisfy \(k_1^2 \ge 4k_0k_2\)). <a href="https://doi.org/10.1111/j.1469-1809.1976.tb00181.x" target="_blank" rel="noopener">doi:10.1111/j.1469-1809.1976.tb00181.x</a></li>
+    <li id="src-12">Conomos MP, Reiner AP, Weir BS, Thornton TA (2016). Model-free estimation of recent genetic relatedness. <em>American Journal of Human Genetics</em> 98:127–148 (PC-Relate). <a href="https://doi.org/10.1016/j.ajhg.2015.11.022" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2015.11.022</a></li>
+    <li id="src-13">Anderson CA, Pettersson FH, Clarke GM, Cardon LR, Morris AP, Zondervan KT (2010). Data quality control in genetic case-control association studies. <em>Nature Protocols</em> 5:1564–1573 (IBD on pruned SNPs with high-LD regions removed; remove one of each pair with IBD &gt; 0.1875, 0.185 in the protocol step, keeping the one with the higher call rate; IBD &gt; 0.98 for duplicates; heterozygosity rate (N(NM) − O(HOM))/N(NM) with a ±3 SD rule). <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-14">Marees AT, de Kluiver H, Stringer S, et al. (2018). A tutorial on conducting genome-wide association studies: quality control and statistical analysis. <em>International Journal of Methods in Psychiatric Research</em> 27:e1608 (pi-hat threshold 0.2 in population-based studies; heterozygosity ±3 SD from the mean; outliers on MDS removed; up to 10 components as covariates). <a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">doi:10.1002/mpr.1608</a></li>
+    <li id="src-15">Chang CC. PLINK 2.0 documentation: “Relationship/distance”, sections “KING-robust kinship estimator”, <code>--make-king-table</code> and <code>--king-cutoff</code> (cut-offs 0.354 and 0.177; between-family estimator for all pairs; greedy removal). <a href="https://www.cog-genomics.org/plink/2.0/distance" target="_blank" rel="noopener">cog-genomics.org/plink/2.0/distance</a></li>
+    <li id="src-16">DCEG Statistical Genetics Workshop, <code>penncath.log</code>: the PLINK v1.90b7 log distributed with the practical's PennCATH input fileset (1,401 people: 937 males, 464 females; 861,473 variants; 463 cases, 470 controls and 468 missing phenotypes; all 1,401 people are founders; total genotyping rate 0.977517).</li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The practical: quality control of GWAS data with PLINK · Lecture 1</title>
+<meta name="description" content="Why genotype data need quality control before association testing, the PennCATH data and the lab's simulated toy data with its planted problems, the practical's eight QC steps with their commands, statistics and thresholds, the files each step reads and writes, and how to work through them on this site.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/widgets/practical-overview-funnel.js"></script>
+<style>
+/* Page-specific styles only; every rule is scoped with body[data-page="practical-overview"]. */
+/* QC funnel (practical-overview-funnel.js) */
+body[data-page="practical-overview"] .fn-status { margin: 0 0 10px; }
+body[data-page="practical-overview"] .fn-grid { display: grid; gap: 5px; }
+body[data-page="practical-overview"] .fn-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; width: 100%; text-align: left; font: inherit; font-size: 0.86rem; color: var(--fg); background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+body[data-page="practical-overview"] button.fn-row:hover { border-color: var(--accent); }
+body[data-page="practical-overview"] .fn-row.sel { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+body[data-page="practical-overview"] .fn-row.fn-head { border: 0; background: transparent; cursor: default; padding: 0 10px; font-size: 0.72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--fg-muted); }
+body[data-page="practical-overview"] .fn-lab { font-weight: 600; line-height: 1.35; }
+body[data-page="practical-overview"] .fn-step { display: inline-flex; align-items: center; justify-content: center; width: 1.55em; height: 1.55em; margin-right: 7px; border-radius: 50%; background: var(--mm); color: #fff; font-size: 0.72rem; font-weight: 700; vertical-align: 1px; }
+body[data-page="practical-overview"] .fn-col { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+body[data-page="practical-overview"] .fn-txt { font-family: var(--mono); font-size: 0.74rem; line-height: 1.35; overflow-wrap: anywhere; }
+body[data-page="practical-overview"] .fn-txt.muted { color: var(--fg-faint); }
+body[data-page="practical-overview"] .fn-bar { position: relative; display: block; height: 9px; border-radius: 5px; background: var(--bg-sunk); overflow: hidden; }
+body[data-page="practical-overview"] .fn-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; background: var(--q1); }
+body[data-page="practical-overview"] .fn-people .fn-fill { background: var(--q3); }
+body[data-page="practical-overview"] .fn-fill.unknown { background: repeating-linear-gradient(45deg, #dfe4ea, #dfe4ea 4px, #f3f5f8 4px, #f3f5f8 8px); }
+body[data-page="practical-overview"] .fn-flag { position: absolute; left: 0; top: 0; bottom: 0; background: repeating-linear-gradient(45deg, var(--q2), var(--q2) 3px, rgba(242, 142, 43, .35) 3px, rgba(242, 142, 43, .35) 6px); }
+body[data-page="practical-overview"] .fn-col.idle .fn-fill { opacity: 0.35; }
+body[data-page="practical-overview"] .fn-detail { margin-top: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; background: var(--bg-alt); font-size: 0.9rem; }
+body[data-page="practical-overview"] .fn-detail p { margin: 0.45em 0; }
+body[data-page="practical-overview"] .fn-detail code { overflow-wrap: anywhere; }
+body[data-page="practical-overview"] .fn-dtitle { font-weight: 700; }
+@media (max-width: 560px) {
+  body[data-page="practical-overview"] .fn-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px 10px; }
+  body[data-page="practical-overview"] .fn-lab { grid-column: 1 / -1; }
+  body[data-page="practical-overview"] .fn-row.fn-head .fn-lab { display: none; }
+}
+/* Step table */
+body[data-page="practical-overview"] table.steps td { font-size: 0.9rem; }
+body[data-page="practical-overview"] table.steps td:first-child { min-width: 9em; }
+body[data-page="practical-overview"] table.steps .q { display: block; font-weight: 400; color: var(--fg-muted); font-size: 0.86rem; margin-top: 2px; }
+/* Inline code: keep short options such as --remove on one line (the browser would otherwise break after "--");
+   a code longer than the line wraps inside its own box. */
+body[data-page="practical-overview"] article :is(p, li, td, dd) > code { display: inline-block; max-width: 100%; overflow-wrap: anywhere; }
+body[data-page="practical-overview"] table.steps code { white-space: nowrap; }
+/* Worked numbers */
+body[data-page="practical-overview"] table.nums td:not(:first-child), body[data-page="practical-overview"] table.nums th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Toy data: comparison table, emulator note, spoiler */
+body[data-page="practical-overview"] table.po-compare td:first-child { font-weight: 600; min-width: 7.5em; }
+body[data-page="practical-overview"] .po-mark { color: var(--accent-hover); font-weight: 700; text-decoration: none; }
+body[data-page="practical-overview"] .po-emu { font-size: 0.88rem; color: var(--fg-muted); }
+body[data-page="practical-overview"] details.po-spoiler { border: 1px solid var(--border); border-left: 4px solid var(--q2); border-radius: var(--radius-sm); background: var(--bg-alt); padding: 0 16px; margin: 14px 0 22px; }
+body[data-page="practical-overview"] details.po-spoiler > summary { cursor: pointer; padding: 11px 0; font-weight: 700; }
+body[data-page="practical-overview"] details.po-spoiler > summary .po-hint { font-weight: 400; color: var(--fg-muted); }
+body[data-page="practical-overview"] details.po-spoiler[open] > summary { border-bottom: 1px dashed var(--border); margin-bottom: 6px; }
+body[data-page="practical-overview"] details.po-spoiler h4 { margin: 16px 0 4px; font-size: 0.97rem; }
+body[data-page="practical-overview"] details.po-spoiler ul { margin-top: 4px; }
+body[data-page="practical-overview"] table.po-ibd td:nth-child(n+3), body[data-page="practical-overview"] table.po-ibd th:nth-child(n+3) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 640px) {
+  body[data-page="practical-overview"] table.po-ibd td:nth-child(n+3) { text-align: left; }
+}
+</style>
+</head>
+<body data-page="practical-overview">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Page 11 of 23</p>
+  <h1>The practical: quality control of GWAS data with PLINK</h1>
+  <p class="lede">A genome-wide association study (GWAS) tests hundreds of thousands of SNPs, positions where people's DNA differs by one letter, for a link with a disease. Before any test, the analyst checks that the genotype calls and the people are what the files claim; this is quality control (QC). Session 1's practical runs eight QC steps on 1,401 people from the PennCATH study of coronary artery disease, with PLINK, R and GrafAnc. This page explains why QC comes first, describes the real data and the lab's toy data, maps the eight steps and the files they pass along, and shows how to work through them on this site.</p>
+  <div class="chips">
+    <span class="chip core">Slides 8, 106</span>
+    <span class="chip time">≈ 45 min</span>
+    <span class="chip data">Shows up in the data as: every file in analysis/</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">Quality control is eight checks, each the same five-stage loop</h2>
+  <figure>
+<svg viewBox="0 0 800 418" role="img" aria-labelledby="pom-t pom-d" class="only-wide">
+<title id="pom-t">The practical as a pipeline: one five-stage loop applied in eight QC steps</title>
+<desc id="pom-d">Top: the loop every QC step follows: compute a statistic for each SNP or person, look at its distribution, choose a threshold, remove or flag what lies beyond it, and record the decision; then the next step starts. Bottom: the eight steps of the practical. 1 Missingness: F_MISS per SNP then per person, threshold 0.01, remove. 2 Hardy-Weinberg: exact-test p-value in controls, below 1e-8 counted. 3 LD pruning: r squared above 0.3 in 50-SNP windows, list of SNPs to use. 4 Relatedness: PI_HAT per pair, threshold your choice, flag. 5 Heterozygosity: het rate and F, plus or minus 3 SD or |F| above 0.1, flag. 6 PCA: inspect plots, flag. 7 Reference PCA with 1000 Genomes, compare with labels, interpret. 8 GrafAnc: GD scores and Pe, Pf, Pa, continental group, interpret.</desc>
+<defs><marker id="pom-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4c3fb0"/></marker><pattern id="pom-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cfd5dd" stroke-width="3"/></pattern></defs>
+<text x="12" y="18" class="t-b">Every step is the same loop</text>
+<rect x="12" y="30" width="140" height="62" rx="9" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="29" cy="48" r="9.5" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="29" y="52" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">1</text>
+<text x="45" y="50" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">Compute a</text>
+<text x="45" y="65" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">statistic</text>
+<text x="23" y="82" class="t-sm" style="font-size:11px">one per SNP or person</text>
+<line x1="155" y1="61" x2="171" y2="61" stroke="var(--mm)" stroke-width="1.4" marker-end="url(#pom-arr)"/>
+<rect x="174" y="30" width="140" height="62" rx="9" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="191" cy="48" r="9.5" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="191" y="52" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">2</text>
+<text x="207" y="50" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">Look at the</text>
+<text x="207" y="65" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">distribution</text>
+<text x="185" y="82" class="t-sm" style="font-size:11px">histogram or plot</text>
+<line x1="317" y1="61" x2="333" y2="61" stroke="var(--mm)" stroke-width="1.4" marker-end="url(#pom-arr)"/>
+<rect x="336" y="30" width="140" height="62" rx="9" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="353" cy="48" r="9.5" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="353" y="52" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">3</text>
+<text x="369" y="50" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">Choose a</text>
+<text x="369" y="65" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">threshold</text>
+<text x="347" y="82" class="t-sm" style="font-size:11px">the practical's or yours</text>
+<line x1="479" y1="61" x2="495" y2="61" stroke="var(--mm)" stroke-width="1.4" marker-end="url(#pom-arr)"/>
+<rect x="498" y="30" width="140" height="62" rx="9" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="515" cy="48" r="9.5" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="515" y="52" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">4</text>
+<text x="531" y="50" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">Remove or</text>
+<text x="531" y="65" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">flag</text>
+<text x="509" y="82" class="t-sm" style="font-size:11px">filter now, or list</text>
+<line x1="641" y1="61" x2="657" y2="61" stroke="var(--mm)" stroke-width="1.4" marker-end="url(#pom-arr)"/>
+<rect x="660" y="30" width="140" height="62" rx="9" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="677" cy="48" r="9.5" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="677" y="52" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">5</text>
+<text x="693" y="50" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">Record the</text>
+<text x="693" y="65" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12px">decision</text>
+<text x="671" y="82" class="t-sm" style="font-size:11px">what, why, how many</text>
+<path d="M730.0,94 L730.0,106 L82.0,106 L82.0,96" stroke="var(--mm)" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#pom-arr)"/>
+<rect x="344" y="98" width="124" height="16" rx="0" fill="#fff" stroke="none" stroke-width="1"/>
+<text x="406" y="110" class="t-xs" text-anchor="middle" style="fill:var(--mm);font-size:11px;font-weight:600">then the next step</text>
+<text x="12" y="142" class="t-b">The practical's eight steps</text>
+<rect x="230" y="132" width="10" height="12" rx="2" fill="var(--q1)" stroke="none" stroke-width="1"/>
+<text x="245" y="142" class="t-sm" style="font-size:11px">SNPs (and people)</text>
+<rect x="379" y="132" width="10" height="12" rx="2" fill="var(--q6)" stroke="none" stroke-width="1"/>
+<text x="394" y="142" class="t-sm" style="font-size:11px">SNP subset</text>
+<rect x="479" y="132" width="10" height="12" rx="2" fill="var(--q3)" stroke="none" stroke-width="1"/>
+<text x="494" y="142" class="t-sm" style="font-size:11px">people</text>
+<rect x="551" y="132" width="10" height="12" rx="2" fill="var(--q7)" stroke="none" stroke-width="1"/>
+<text x="566" y="142" class="t-sm" style="font-size:11px">ancestry</text>
+<rect x="12" y="154" width="188" height="106" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="12" y="154" width="6" height="106" rx="2" fill="var(--q1)" stroke="none" stroke-width="1"/>
+<text x="26" y="174" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">1 · Missingness</text>
+<text x="26" y="194" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">statistic</text>
+<text x="26" y="214" class="t-sm" style="font-size:11px;fill:var(--fg)">F_MISS: SNPs, then people</text>
+<text x="26" y="233" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">threshold</text>
+<text x="26" y="248" class="t-sm" style="font-size:11px;fill:var(--fg)">&gt; 0.01 (1% of calls missing)</text>
+<rect x="122" y="183" width="70" height="17" rx="8.5" fill="#fef3f2" stroke="#b42318" stroke-width="1"/>
+<text x="157" y="195.5" class="t-sm" text-anchor="middle" style="fill:#b42318;font-weight:700;font-size:10.5px">remove</text>
+<rect x="209.33" y="154" width="188" height="106" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="209.33" y="154" width="6" height="106" rx="2" fill="var(--q1)" stroke="none" stroke-width="1"/>
+<text x="223.33" y="174" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">2 · Hardy–Weinberg</text>
+<text x="223.33" y="194" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">statistic</text>
+<text x="223.33" y="214" class="t-sm" style="font-size:11px;fill:var(--fg)">exact-test p-value, controls</text>
+<text x="223.33" y="233" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">threshold</text>
+<text x="223.33" y="248" class="t-sm" style="font-size:11px;fill:var(--fg)">p &lt; 1e-8 counted</text>
+<rect x="319.33" y="183" width="70" height="17" rx="8.5" fill="#eaf8fa" stroke="#0b6d7e" stroke-width="1"/>
+<text x="354.33" y="195.5" class="t-sm" text-anchor="middle" style="fill:#0b6d7e;font-weight:700;font-size:10.5px">count</text>
+<rect x="406.66" y="154" width="188" height="106" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="406.66" y="154" width="6" height="106" rx="2" fill="var(--q6)" stroke="none" stroke-width="1"/>
+<text x="420.66" y="174" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">3 · LD pruning</text>
+<text x="420.66" y="194" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">statistic</text>
+<text x="420.66" y="214" class="t-sm" style="font-size:11px;fill:var(--fg)">r² within 50-SNP windows</text>
+<text x="420.66" y="233" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">threshold</text>
+<text x="420.66" y="248" class="t-sm" style="font-size:11px;fill:var(--fg)">r² &gt; 0.3</text>
+<rect x="516.66" y="183" width="70" height="17" rx="8.5" fill="#eaf8fa" stroke="#0b6d7e" stroke-width="1"/>
+<text x="551.66" y="195.5" class="t-sm" text-anchor="middle" style="fill:#0b6d7e;font-weight:700;font-size:10.5px">list SNPs</text>
+<rect x="603.99" y="154" width="188" height="106" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="603.99" y="154" width="6" height="106" rx="2" fill="var(--q3)" stroke="none" stroke-width="1"/>
+<text x="617.99" y="174" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">4 · Relatedness</text>
+<text x="617.99" y="194" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">statistic</text>
+<text x="617.99" y="214" class="t-sm" style="font-size:11px;fill:var(--fg)">PI_HAT for each pair</text>
+<text x="617.99" y="233" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">threshold</text>
+<text x="617.99" y="248" class="t-sm" style="font-size:11px;fill:var(--fg)">your choice</text>
+<rect x="713.99" y="183" width="70" height="17" rx="8.5" fill="#edf9f2" stroke="#1d7a4c" stroke-width="1"/>
+<text x="748.99" y="195.5" class="t-sm" text-anchor="middle" style="fill:#1d7a4c;font-weight:700;font-size:10.5px">flag</text>
+<rect x="12" y="272" width="188" height="106" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="12" y="272" width="6" height="106" rx="2" fill="var(--q3)" stroke="none" stroke-width="1"/>
+<text x="26" y="292" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">5 · Heterozygosity</text>
+<text x="26" y="312" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">statistic</text>
+<text x="26" y="332" class="t-sm" style="font-size:11px;fill:var(--fg)">het rate and F per person</text>
+<text x="26" y="351" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">threshold</text>
+<text x="26" y="366" class="t-sm" style="font-size:11px;fill:var(--fg)">±3 SD, or |F| &gt; 0.1</text>
+<rect x="122" y="301" width="70" height="17" rx="8.5" fill="#edf9f2" stroke="#1d7a4c" stroke-width="1"/>
+<text x="157" y="313.5" class="t-sm" text-anchor="middle" style="fill:#1d7a4c;font-weight:700;font-size:10.5px">flag</text>
+<rect x="209.33" y="272" width="188" height="106" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="209.33" y="272" width="6" height="106" rx="2" fill="var(--q3)" stroke="none" stroke-width="1"/>
+<text x="223.33" y="292" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">6 · PCA</text>
+<text x="223.33" y="312" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">statistic</text>
+<text x="223.33" y="332" class="t-sm" style="font-size:11px;fill:var(--fg)">principal component scores</text>
+<text x="223.33" y="351" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">threshold</text>
+<text x="223.33" y="366" class="t-sm" style="font-size:11px;fill:var(--fg)">inspect the plots</text>
+<rect x="319.33" y="301" width="70" height="17" rx="8.5" fill="#edf9f2" stroke="#1d7a4c" stroke-width="1"/>
+<text x="354.33" y="313.5" class="t-sm" text-anchor="middle" style="fill:#1d7a4c;font-weight:700;font-size:10.5px">flag</text>
+<rect x="406.66" y="272" width="188" height="106" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="406.66" y="272" width="6" height="106" rx="2" fill="var(--q7)" stroke="none" stroke-width="1"/>
+<text x="420.66" y="292" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">7 · Reference PCA</text>
+<text x="420.66" y="312" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">statistic</text>
+<text x="420.66" y="332" class="t-sm" style="font-size:11px;fill:var(--fg)">PCs with 1000 Genomes</text>
+<text x="420.66" y="351" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">threshold</text>
+<text x="420.66" y="366" class="t-sm" style="font-size:11px;fill:var(--fg)">compare with labels</text>
+<rect x="516.66" y="301" width="70" height="17" rx="8.5" fill="#f6f7f9" stroke="#5a6370" stroke-width="1"/>
+<text x="551.66" y="313.5" class="t-sm" text-anchor="middle" style="fill:#5a6370;font-weight:700;font-size:10.5px">interpret</text>
+<rect x="603.99" y="272" width="188" height="106" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="603.99" y="272" width="6" height="106" rx="2" fill="var(--q7)" stroke="none" stroke-width="1"/>
+<text x="617.99" y="292" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">8 · GrafAnc</text>
+<text x="617.99" y="312" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">statistic</text>
+<text x="617.99" y="332" class="t-sm" style="font-size:11px;fill:var(--fg)">GD scores and Pe, Pf, Pa</text>
+<text x="617.99" y="351" class="t-xs" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">threshold</text>
+<text x="617.99" y="366" class="t-sm" style="font-size:11px;fill:var(--fg)">continental group</text>
+<rect x="713.99" y="301" width="70" height="17" rx="8.5" fill="#f6f7f9" stroke="#5a6370" stroke-width="1"/>
+<text x="748.99" y="313.5" class="t-sm" text-anchor="middle" style="fill:#5a6370;font-weight:700;font-size:10.5px">interpret</text>
+<text x="12" y="410" class="t-sm" style="font-size:11px">Step 1 writes the filtered fileset that steps 2–8 read; steps 4–6 use only the SNPs that step 3 lists.</text>
+</svg>
+<svg viewBox="0 0 300 1000" role="img" aria-labelledby="pon-t pon-d" class="only-narrow">
+<title id="pon-t">The practical as a pipeline: one five-stage loop applied in eight QC steps</title>
+<desc id="pon-d">First, the loop every QC step follows: compute a statistic, look at its distribution, choose a threshold, remove or flag, record the decision. Then the eight steps, each with its statistic, threshold and action: missingness (remove), Hardy-Weinberg (count), LD pruning (list SNPs), relatedness (flag), heterozygosity (flag), PCA (flag), reference PCA (interpret), GrafAnc (interpret).</desc>
+<defs><marker id="pon-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4c3fb0"/></marker><pattern id="pon-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cfd5dd" stroke-width="3"/></pattern></defs>
+<text x="8" y="20" class="t-b">Every step is the same loop</text>
+<rect x="8" y="32" width="284" height="40" rx="8" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="26" cy="52" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="26" y="56" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">1</text>
+<text x="44" y="50" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">Compute a statistic</text>
+<text x="44" y="65" class="t-sm" style="font-size:11.5px">one per SNP or person</text>
+<line x1="150" y1="73" x2="150" y2="81" stroke="var(--mm)" stroke-width="1.4" marker-end="url(#pon-arr)"/>
+<rect x="8" y="82" width="284" height="40" rx="8" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="26" cy="102" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="26" y="106" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">2</text>
+<text x="44" y="100" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">Look at the distribution</text>
+<text x="44" y="115" class="t-sm" style="font-size:11.5px">histogram or plot</text>
+<line x1="150" y1="123" x2="150" y2="131" stroke="var(--mm)" stroke-width="1.4" marker-end="url(#pon-arr)"/>
+<rect x="8" y="132" width="284" height="40" rx="8" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="26" cy="152" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="26" y="156" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">3</text>
+<text x="44" y="150" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">Choose a threshold</text>
+<text x="44" y="165" class="t-sm" style="font-size:11.5px">the practical's or yours</text>
+<line x1="150" y1="173" x2="150" y2="181" stroke="var(--mm)" stroke-width="1.4" marker-end="url(#pon-arr)"/>
+<rect x="8" y="182" width="284" height="40" rx="8" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="26" cy="202" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="26" y="206" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">4</text>
+<text x="44" y="200" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">Remove or flag</text>
+<text x="44" y="215" class="t-sm" style="font-size:11.5px">filter now, or list</text>
+<line x1="150" y1="223" x2="150" y2="231" stroke="var(--mm)" stroke-width="1.4" marker-end="url(#pon-arr)"/>
+<rect x="8" y="232" width="284" height="40" rx="8" fill="var(--mm-soft)" stroke="var(--mm)" stroke-width="1.3"/>
+<circle cx="26" cy="252" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="26" y="256" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">5</text>
+<text x="44" y="250" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">Record the decision</text>
+<text x="44" y="265" class="t-sm" style="font-size:11.5px">what, why, how many</text>
+<text x="150" y="288" class="t-xs" text-anchor="middle" style="fill:var(--mm);font-size:11px;font-weight:600">then the next step</text>
+<text x="8" y="314" class="t-b">The practical's eight steps</text>
+<rect x="8" y="328" width="10" height="11" rx="2" fill="var(--q1)" stroke="none" stroke-width="1"/>
+<text x="22" y="338" class="t-sm" style="font-size:11px">SNPs</text>
+<rect x="58.4" y="328" width="10" height="11" rx="2" fill="var(--q6)" stroke="none" stroke-width="1"/>
+<text x="72.4" y="338" class="t-sm" style="font-size:11px">SNP subset</text>
+<rect x="148.4" y="328" width="10" height="11" rx="2" fill="var(--q3)" stroke="none" stroke-width="1"/>
+<text x="162.4" y="338" class="t-sm" style="font-size:11px">people</text>
+<rect x="212" y="328" width="10" height="11" rx="2" fill="var(--q7)" stroke="none" stroke-width="1"/>
+<text x="226" y="338" class="t-sm" style="font-size:11px">ancestry</text>
+<rect x="8" y="348" width="284" height="68" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="8" y="348" width="6" height="68" rx="2" fill="var(--q1)" stroke="none" stroke-width="1"/>
+<text x="22" y="367" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">1 · Missingness</text>
+<rect x="210" y="355" width="74" height="18" rx="9" fill="#fef3f2" stroke="#b42318" stroke-width="1"/>
+<text x="247" y="368" class="t-sm" text-anchor="middle" style="fill:#b42318;font-weight:700;font-size:11px">remove</text>
+<text x="22" y="387" class="t-sm" style="font-size:11.5px;fill:var(--fg)">F_MISS: SNPs, then people</text>
+<text x="22" y="405" class="t-sm" style="font-size:11.5px">threshold: &gt; 0.01 (1% of calls missing)</text>
+<rect x="8" y="424" width="284" height="68" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="8" y="424" width="6" height="68" rx="2" fill="var(--q1)" stroke="none" stroke-width="1"/>
+<text x="22" y="443" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">2 · Hardy–Weinberg</text>
+<rect x="210" y="431" width="74" height="18" rx="9" fill="#eaf8fa" stroke="#0b6d7e" stroke-width="1"/>
+<text x="247" y="444" class="t-sm" text-anchor="middle" style="fill:#0b6d7e;font-weight:700;font-size:11px">count</text>
+<text x="22" y="463" class="t-sm" style="font-size:11.5px;fill:var(--fg)">exact-test p-value, controls</text>
+<text x="22" y="481" class="t-sm" style="font-size:11.5px">threshold: p &lt; 1e-8 counted</text>
+<rect x="8" y="500" width="284" height="68" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="8" y="500" width="6" height="68" rx="2" fill="var(--q6)" stroke="none" stroke-width="1"/>
+<text x="22" y="519" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">3 · LD pruning</text>
+<rect x="210" y="507" width="74" height="18" rx="9" fill="#eaf8fa" stroke="#0b6d7e" stroke-width="1"/>
+<text x="247" y="520" class="t-sm" text-anchor="middle" style="fill:#0b6d7e;font-weight:700;font-size:11px">list SNPs</text>
+<text x="22" y="539" class="t-sm" style="font-size:11.5px;fill:var(--fg)">r² within 50-SNP windows</text>
+<text x="22" y="557" class="t-sm" style="font-size:11.5px">threshold: r² &gt; 0.3</text>
+<rect x="8" y="576" width="284" height="68" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="8" y="576" width="6" height="68" rx="2" fill="var(--q3)" stroke="none" stroke-width="1"/>
+<text x="22" y="595" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">4 · Relatedness</text>
+<rect x="210" y="583" width="74" height="18" rx="9" fill="#edf9f2" stroke="#1d7a4c" stroke-width="1"/>
+<text x="247" y="596" class="t-sm" text-anchor="middle" style="fill:#1d7a4c;font-weight:700;font-size:11px">flag</text>
+<text x="22" y="615" class="t-sm" style="font-size:11.5px;fill:var(--fg)">PI_HAT for each pair</text>
+<text x="22" y="633" class="t-sm" style="font-size:11.5px">threshold: your choice</text>
+<rect x="8" y="652" width="284" height="68" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="8" y="652" width="6" height="68" rx="2" fill="var(--q3)" stroke="none" stroke-width="1"/>
+<text x="22" y="671" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">5 · Heterozygosity</text>
+<rect x="210" y="659" width="74" height="18" rx="9" fill="#edf9f2" stroke="#1d7a4c" stroke-width="1"/>
+<text x="247" y="672" class="t-sm" text-anchor="middle" style="fill:#1d7a4c;font-weight:700;font-size:11px">flag</text>
+<text x="22" y="691" class="t-sm" style="font-size:11.5px;fill:var(--fg)">het rate and F per person</text>
+<text x="22" y="709" class="t-sm" style="font-size:11.5px">threshold: ±3 SD, or |F| &gt; 0.1</text>
+<rect x="8" y="728" width="284" height="68" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="8" y="728" width="6" height="68" rx="2" fill="var(--q3)" stroke="none" stroke-width="1"/>
+<text x="22" y="747" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">6 · PCA</text>
+<rect x="210" y="735" width="74" height="18" rx="9" fill="#edf9f2" stroke="#1d7a4c" stroke-width="1"/>
+<text x="247" y="748" class="t-sm" text-anchor="middle" style="fill:#1d7a4c;font-weight:700;font-size:11px">flag</text>
+<text x="22" y="767" class="t-sm" style="font-size:11.5px;fill:var(--fg)">principal component scores</text>
+<text x="22" y="785" class="t-sm" style="font-size:11.5px">threshold: inspect the plots</text>
+<rect x="8" y="804" width="284" height="68" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="8" y="804" width="6" height="68" rx="2" fill="var(--q7)" stroke="none" stroke-width="1"/>
+<text x="22" y="823" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">7 · Reference PCA</text>
+<rect x="210" y="811" width="74" height="18" rx="9" fill="#f6f7f9" stroke="#5a6370" stroke-width="1"/>
+<text x="247" y="824" class="t-sm" text-anchor="middle" style="fill:#5a6370;font-weight:700;font-size:11px">interpret</text>
+<text x="22" y="843" class="t-sm" style="font-size:11.5px;fill:var(--fg)">PCs with 1000 Genomes</text>
+<text x="22" y="861" class="t-sm" style="font-size:11.5px">threshold: compare with labels</text>
+<rect x="8" y="880" width="284" height="68" rx="8" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<rect x="8" y="880" width="6" height="68" rx="2" fill="var(--q7)" stroke="none" stroke-width="1"/>
+<text x="22" y="899" class="t-sm" style="fill:var(--fg);font-weight:700;font-size:12.5px">8 · GrafAnc</text>
+<rect x="210" y="887" width="74" height="18" rx="9" fill="#f6f7f9" stroke="#5a6370" stroke-width="1"/>
+<text x="247" y="900" class="t-sm" text-anchor="middle" style="fill:#5a6370;font-weight:700;font-size:11px">interpret</text>
+<text x="22" y="919" class="t-sm" style="font-size:11.5px;fill:var(--fg)">GD scores and Pe, Pf, Pa</text>
+<text x="22" y="937" class="t-sm" style="font-size:11.5px">threshold: continental group</text>
+<text x="8" y="964" class="t-sm" style="font-size:11.5px">Step 1's filtered fileset feeds steps 2–8;</text>
+<text x="8" y="980" class="t-sm" style="font-size:11.5px">steps 4–6 use only step 3's SNP list.</text>
+</svg>
+  </figure>
+  <p class="mm-statement">Each QC step computes one statistic for every SNP or every person, looks at its distribution, chooses a threshold, removes or flags what lies beyond it, and records the decision. The practical applies this loop eight times, and the files each step writes are what the next step reads.</p>
+  <ul class="mm-hooks">
+    <li><strong>Why first.</strong> A small genotyping error that differs between cases and controls produces an association as convincing as a real one, and the larger the study, the more convincing it becomes.</li>
+    <li><strong>The data.</strong> PennCATH: 1,401 people who had coronary angiography, genotyped at 861,473 SNPs, distributed as a PLINK fileset.</li>
+    <li><strong>The toy data.</strong> A small simulated study with the same file format, used by the lab on every step page.</li>
+    <li><strong>Eight steps.</strong> Missingness, Hardy–Weinberg, LD pruning, relatedness, heterozygosity, PCA, reference PCA and GrafAnc: each a statistic, a threshold and an action.</li>
+    <li><strong>A chain of files.</strong> Each output name records the filters already applied, so the file names tell you where you are in the pipeline.</li>
+    <li><strong>How to work through it.</strong> In the browser on the toy data, or on your own computer with the real data; the commands are the same.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0 and Part B</div>
+  <p>Where genotype errors come from, and what sample QC and variant QC check, is in <a href="../0-biological-foundations/samples-to-genotypes.html#qc">Lecture 0 · Quality control</a>; <a href="../0-biological-foundations/lecture-1-bridge.html#practical">Lecture 0 · The practical, decoded</a> previews the eight steps in plain words. The statistics the steps use are taught in Part B: <a href="frequencies-hwe.html">allele frequencies and Hardy–Weinberg equilibrium</a>, <a href="linkage-disequilibrium.html">linkage disequilibrium</a> and <a href="population-structure.html">population structure</a>.</p>
+</aside>
+
+<h2 id="why-qc">Why quality control comes before association testing <span class="tag core">Core</span></h2>
+<p>A GWAS compares, SNP by SNP, how often each allele occurs in people with the disease (cases) and without it (controls), or how a measured trait changes with the number of copies of an allele. The test takes the genotype calls at face value. Genotype calling, described in <a href="../0-biological-foundations/samples-to-genotypes.html#calling">Lecture 0 · Genotype calling</a>, makes errors that are invisible one call at a time: a degraded DNA sample gives many missing calls; a SNP whose intensity clusters overlap is miscalled in some people; a sample contaminated with another person's DNA looks heterozygous at too many SNPs; the same person sampled twice looks like two people. Relatives, and people of different ancestry, violate the assumption that participants are independent draws from one population. QC looks for the statistical trace of each of these problems in the whole genotype matrix and removes or flags the SNPs and people responsible.<sup><a href="#src-1">1</a>,<a href="#src-2">2</a></sup></p>
+<p>Errors do damage in two ways. Random errors that hit cases and controls alike blur the genotypes and cost power. Errors that differ between cases and controls, called differential errors, are worse: they create allele-frequency differences that the test cannot tell apart from a real effect. In the words of the GENEVA consortium's report on GWAS quality control, "even small sources of systematic or random error can cause spurious results or obscure real effects".<sup><a href="#src-3">3</a></sup></p>
+
+<h3 id="bias-grows">How a small bias becomes a significant result</h3>
+<p>Take a SNP with no real association and an allele frequency \(\bar{p}\) in everyone. Suppose a genotyping problem that affects only the cases, for example cases processed in a different laboratory, shifts their measured allele frequency by \(\Delta\). With \(n\) cases and \(n\) controls, the allelic test statistic is approximately</p>
+<div class="eq-block">
+  <div class="eq-display">\[ z^2 = \frac{n\,\Delta^2}{\bar{p}\,(1 - \bar{p})} \]</div>
+  <dl class="eq-terms">
+    <dt>\(z^2\)</dt><dd>The allelic test statistic: the square of \(z\), the difference between the case and control allele frequencies divided by its standard error. It is large when the frequencies differ by more than chance allows; the p-value is the probability that a standard normal variable lies further from 0 than \(z\). The formula gives the statistic's value when each group's estimated frequency equals its expected value; sampling noise moves the statistic of any one study around it.</dd>
+    <dt>\(n\)</dt><dd>The number of people in each group (equal numbers of cases and controls); each person contributes two allele copies.</dd>
+    <dt>\(\bar{p}\)</dt><dd>The allele frequency, the same in cases and controls because the SNP has no real effect; between 0 and 1.</dd>
+    <dt>\(\Delta\)</dt><dd>The error in the cases' measured allele frequency caused by the genotyping problem, as a difference in frequency (0.01 = one percentage point).</dd>
+  </dl>
+  <p class="eq-intuition">Each group's allele frequency is estimated from \(2n\) allele copies, with variance \(\bar{p}(1-\bar{p})/(2n)\); the difference between the two estimates has variance \(\bar{p}(1-\bar{p})/n\), and \(z\) is \(\Delta\) divided by its square root. The bias \(\Delta\) does not shrink as the study grows, but the standard error does, as \(1/\sqrt{n}\), so \(z^2\) grows in proportion to \(n\). If the error hits cases and controls equally, \(\Delta = 0\) and there is no false signal at all, only noise. With \(\bar{p} = 0.30\) and an error of one percentage point (\(\Delta = 0.01\)):</p>
+</div>
+<div class="table-wrap">
+<table class="compact nums">
+  <thead><tr><th>People per group</th><th>\(z^2\)</th><th>p-value</th></tr></thead>
+  <tbody>
+    <tr><td>1,000</td><td>0.48</td><td>0.49</td></tr>
+    <tr><td>10,000</td><td>4.8</td><td>0.029</td></tr>
+    <tr><td>62,400</td><td>29.7</td><td>5 × 10⁻⁸</td></tr>
+    <tr><td>100,000</td><td>47.6</td><td>5.2 × 10⁻¹²</td></tr>
+  </tbody>
+</table>
+</div>
+<p>An error of one percentage point is undetectable at 1,000 people per group and reaches the genome-wide significance threshold (a p-value below 5 × 10⁻⁸) at about 62,400. Conversely, with 500 people per group the error would have to be about 11 percentage points to reach that threshold, large enough for QC to catch. Large studies therefore need cleaner data, not less clean, and the most dangerous errors are those that line up with case–control status: different laboratories, arrays, plates or DNA sources for cases and controls.</p>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> Two laboratories, one inflated test</div>
+  <p>In 2005 David Clayton and colleagues in Cambridge genotyped 6,322 SNPs in 816 people with type 1 diabetes and 877 population controls from Great Britain. Across all SNPs the association statistics were inflated by 11.2%, more than chance allows. Population structure, differences in ancestry between cases and controls, explained part of it. The rest came from "differential bias in genotype scoring between case and control DNA samples, which originated from two laboratories, causing false-positive associations".<sup><a href="#src-4">4</a></sup> Genotype scoring means genotype calling: the case DNA and the control DNA came from different laboratories, and the calls differed subtly between the two sets.</p>
+</aside>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> One weak sample can change its neighbors' genotypes</div>
+  <p>Genotype calling is often done one plate (batch) of samples at a time, and the calling algorithm learns where the intensity clusters lie from the samples it is given. In the Genetics of Kidneys in Diabetes (GoKinD) study, Pluzhnikov and colleagues showed that "even a few DNA samples of marginally acceptable quality can profoundly alter the allele calls for other samples on the plate". The result was a bias in allele frequencies between plates, which can produce false associations when cases and controls are not randomized to plates. A standard battery of QC checks was not enough to detect it; the authors detected and corrected it with additional information, including the raw signal intensities.<sup><a href="#src-5">5</a></sup></p>
+</aside>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> A longevity signature that came from the arrays</div>
+  <p>In July 2010 a GWAS of 1,055 centenarians and 1,267 controls reported a model of 150 SNPs that predicted exceptional longevity with 77% accuracy.<sup><a href="#src-6">6</a></sup> Other geneticists soon pointed to how the samples had been genotyped: the first 90% of the centenarians on Illumina's HumanCNV370 array, the last 10% on its newer 610-Quad array, and the controls on four different arrays. When the mix of arrays differs between cases and controls, any SNP that one array reads differently looks like an association, and critics said that this had happened for the two most strongly associated SNPs.<sup><a href="#src-7">7</a></sup> The paper was retracted in 2011, after the authors found that "technical errors in the Illumina 610 array and an inadequate quality control protocol introduced false positive" SNPs.<sup><a href="#src-8">8</a></sup> A reanalysis of 801 centenarians and 914 genetically matched controls, with stricter quality control, was published in 2012.<sup><a href="#src-9">9</a></sup></p>
+</aside>
+
+<p>Published QC protocols turn these lessons into routine checks on samples (missing calls, heterozygosity, sex, relatedness, ancestry) and on SNPs (missing calls, Hardy–Weinberg equilibrium, allele frequency, differential missingness), run before association testing, with thresholds chosen and reported.<sup><a href="#src-1">1</a>,<a href="#src-2">2</a></sup> The practical runs the core of such a protocol; what it leaves out is listed at the end of this page.</p>
+
+<h2 id="penncath">The data: 1,401 people from the PennCATH study <span class="tag core">Core</span></h2>
+<p>PennCATH is a hospital-based study of genes and biomarkers for coronary artery disease (CAD) at the University of Pennsylvania. Between July 1998 and March 2003 it recruited 3,815 consecutive patients undergoing cardiac catheterization.<sup><a href="#src-10">10</a></sup> During catheterization a thin tube is passed through a blood vessel to the heart and contrast dye is injected; X-ray images of the coronary arteries (coronary angiography) then show how much each vessel is narrowed. The narrowing, called stenosis, is given as the percentage by which the vessel's inner diameter is reduced. From these patients the investigators drew a nested case–control sample of 1,401 patients, all recorded as white, for a GWAS:<sup><a href="#src-10">10</a></sup></p>
+<ul>
+  <li><strong>Cases (933):</strong> at least one coronary vessel narrowed by 50% or more, at an early age: men 60 or younger, women 65 or younger.</li>
+  <li><strong>Controls (468):</strong> less than 10% narrowing in every vessel, in men older than 40 and women older than 45.</li>
+</ul>
+<p>Defining cases and controls from angiograms, rather than from a diagnosis in a medical record, measures coronary atherosclerosis directly; Lecture 0 discusses why this matters in <a href="../0-biological-foundations/phenotypes.html#case-definition">Case definitions</a>. PennCATH was one of the discovery studies of a 2011 GWAS of coronary artery disease and myocardial infarction.<sup><a href="#src-10">10</a></sup> Its genotypes, measured on the Affymetrix Genome-Wide Human SNP Array 6.0, were later released for teaching with a tutorial paper on GWAS analysis.<sup><a href="#src-11">11</a></sup></p>
+
+<h3 id="files">The files the practical starts from</h3>
+<div class="table-wrap">
+<table class="compact stack">
+  <thead><tr><th>Files</th><th>What they hold</th><th>Size</th></tr></thead>
+  <tbody>
+    <tr><td><code>penncath.bed</code>, <code>.bim</code>, <code>.fam</code></td><td data-label="What they hold">The study: 1,401 people (937 coded male, 464 female) × 861,473 SNPs on chromosomes 1–22, positions on the GRCh37 genome build; 2.25% of genotype calls are missing (the log's "total genotyping rate" is 0.977517)</td><td data-label="Size">302 MB, 24 MB, 26 kB</td></tr>
+    <tr><td><code>all_pops_<wbr>1kgenomes_<wbr>markersForPCA.bed</code>, <code>.bim</code>, <code>.fam</code></td><td data-label="What they hold">The reference for step 7: the 2,504 people of the 1000 Genomes Project, from 26 populations,<sup><a href="#src-12">12</a></sup> at 17,490 SNPs chosen for PCA; 17,213 of them are also in <code>penncath.bim</code></td><td data-label="Size">11 MB, 0.5 MB, 63 kB</td></tr>
+    <tr><td><code>penncath.log</code>, <code>sim_pheno.*</code> and others</td><td data-label="What they hold">Files Session 1 does not use, in the same folder: PLINK's log from when the workshop rewrote the fileset in 2023 (the source of the counts above), and a quantitative trait simulated with the program GCTA from three SNPs<sup><a href="#src-13">13</a></sup></td><td data-label="Size">under 30 kB each</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Three details of these files matter later, and <a href="plink-data.html">The data: PLINK .bed, .bim and .fam files, inside out</a> opens them line by line. Every individual ID in <code>penncath.fam</code> is 1 (people are told apart by their family IDs), which is why step 8 builds unique IDs before running GrafAnc. The file has no X chromosome, so recorded sex cannot be checked against the genotypes. And the phenotype column does not divide people the way the design above does: PLINK's log counts 463 cases, 470 controls and 468 missing phenotypes, while a clinical table distributed with another teaching copy of PennCATH<sup><a href="#src-14">14</a></sup> records CAD in all 933 people coded case or control and in none of the 468. Only step 2 uses the phenotype; <a href="plink-data.html#phenotype-column">What column 6 holds</a> sets out the evidence.</p>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> Getting the files</div>
+  <p>The workshop shares both filesets in a <a href="https://drive.google.com/drive/folders/1kVJH4tM8R8O0hITnvifCV-hoai-Mgn-b?usp=sharing" target="_blank" rel="noopener">Google Drive folder</a>, under <code>data/<wbr>workshop1/<wbr>inputs/<wbr>penncath_withPheno</code> and <code>data/<wbr>workshop1/<wbr>inputs/<wbr>ref</code>. <a href="setup.html">Set up your computer</a> explains where to put them and how to set the three variables every command uses: <code>input_dir</code>, <code>reference_dir</code> and <code>analysis_dir</code>.</p>
+</aside>
+
+<section id="toy-data">
+<h2 id="toy-dataset">The toy dataset <span class="tag core">Core</span></h2>
+<p>The real genotypes, 1.2 billion of them in a 302 MB file, are too large to load into a web page, so the lab on the step pages works on a small dataset made for this site, the toy study. It has the same three-file format and the same folder layout as the real data, so every command on the step pages is the practical's command with the file names changed: <code>toy</code> for <code>penncath</code>, and <code>toy_1kg</code> for the 1000 Genomes files. Its genotypes are simulated, which means that what is in them is known exactly: the step pages can ask you to find a problem that was put there on purpose, and then check your answer.</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <thead><tr><th>Path in the lab</th><th>What it holds</th></tr></thead>
+  <tbody>
+    <tr><td><code>data/<wbr>inputs/<wbr>penncath_withPheno/<wbr>toy.bed</code>, <code>.bim</code>, <code>.fam</code></td><td data-label="What it holds">The toy study: <span data-card="study_people">?</span> people and <span data-card="study_snps">?</span> SNPs</td></tr>
+    <tr><td><code>data/inputs/ref/toy_1kg.bed</code>, <code>.bim</code>, <code>.fam</code></td><td data-label="What it holds">The toy reference panel that stands in for the 1000 Genomes files in step 7: <span data-card="ref_people">?</span> people and <span data-card="ref_snps">?</span> SNPs</td></tr>
+    <tr><td><code>analysis/</code></td><td data-label="What it holds">Empty at the start; every output file goes here, as in the practical</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The folders sit under <code>/home/student/statgen-workshop/</code>, and the shell variables <code>input_dir</code>, <code>reference_dir</code> and <code>analysis_dir</code> point to them, exactly as on your own computer after <a href="setup.html">setup</a>.</p>
+
+<h3 id="toy-contents">What the toy files contain</h3>
+<div class="table-wrap">
+<table class="compact stack po-compare">
+  <thead><tr><th></th><th>Toy study, <code>toy.*</code></th><th>Toy reference panel, <code>toy_1kg.*</code></th></tr></thead>
+  <tbody>
+    <tr><td>People</td><td data-label="Toy study"><span data-card="study_people">?</span>: <span data-card="study_males">?</span> coded male and <span data-card="study_females">?</span> female</td><td data-label="Toy reference panel"><span data-card="ref_people">?</span>, from <span data-card="ref_populations">?</span> populations in <span data-card="ref_super_populations">?</span> super-populations: <span data-card="ref_afr">?</span> African (AFR), <span data-card="ref_amr">?</span> admixed American (AMR), <span data-card="ref_eas">?</span> East Asian (EAS), <span data-card="ref_eur">?</span> European (EUR) and <span data-card="ref_sas">?</span> South Asian (SAS)</td></tr>
+    <tr><td>Phenotype</td><td data-label="Toy study">Simulated coronary artery disease, in column 6 of <code>toy.fam</code>: <span data-card="study_cases">?</span> cases (coded 2), <span data-card="study_controls">?</span> controls (coded 1) and <span data-card="study_pheno_missing">?</span> people with a missing phenotype (−9)</td><td data-label="Toy reference panel">Missing (−9) for everyone</td></tr>
+    <tr><td>SNPs</td><td data-label="Toy study"><span data-card="study_snps">?</span>, on the <span data-card="study_chromosomes">?</span> autosomes</td><td data-label="Toy reference panel"><span data-card="ref_snps">?</span>, of which <span data-card="merge1_shared_snps">?</span> are also in the study</td></tr>
+    <tr><td>Genetic ancestry</td><td data-label="Toy study">Mostly European-like, with a few African-like, East-Asian-like, South-Asian-like and admixed African–European people; the counts are in the spoiler at the end of <a href="#toy-simulation">How the toy data were simulated</a></td><td data-label="Toy reference panel">Each person's population and super-population are listed in a file laid out like the 1000 Genomes file that step 7 reads</td></tr>
+    <tr><td>File conventions</td><td data-label="Toy study">Those of <code>penncath.*</code>: family IDs are numbers in quotation marks, every individual ID is 1, parents are unknown, and positions follow GRCh37-like coordinates</td><td data-label="Toy reference panel">Family ID and individual ID are both the person's panel ID; parents are unknown</td></tr>
+  </tbody>
+</table>
+</div>
+<p>Labels such as European-like refer to branches of the simulation's population model; the branches are named after the 1000 Genomes populations whose allele frequencies they imitate. The labels describe simulated genotypes, not anyone's identity. Each step of the practical has something to find in these files; <a href="#toy-simulation">How the toy data were simulated</a>, below, explains how the problems were made.</p>
+
+<h3 id="toy-vs-penncath">How the toy study differs from PennCATH</h3>
+<p>The toy study copies PennCATH's file conventions, not its people or its errors. These differences change what the steps show:<sup><a href="#src-15">15</a></sup></p>
+<div class="table-wrap">
+<table class="compact stack po-compare">
+  <thead><tr><th></th><th>PennCATH (your computer)</th><th>Toy study (browser lab)</th></tr></thead>
+  <tbody>
+    <tr><td>Size</td><td data-label="PennCATH">1,401 people × 861,473 SNPs; 302 MB of genotypes</td><td data-label="Toy study"><span data-card="study_people">?</span> people × <span data-card="study_snps">?</span> SNPs, small enough for each command to finish in a browser tab in well under a second</td></tr>
+    <tr><td>People</td><td data-label="PennCATH">Real patients, all recorded as white; the practical expects GrafAnc to place more than 99% of them in its EUR group<sup><a href="#src-13">13</a></sup></td><td data-label="Toy study">Simulated people, mostly European-like, with a few people from each of the other groups so that steps 6–8 have something to show</td></tr>
+    <tr><td>Errors and relatives</td><td data-label="PennCATH">Real array errors, and any relatives or duplicates; nobody knows in advance which samples or SNPs are faulty</td><td data-label="Toy study">Planted on purpose and recorded, so answers can be checked</td></tr>
+    <tr><td>Phenotype column</td><td data-label="PennCATH">463 people coded 2, 470 coded 1 and 468 coded −9; a clinical table records CAD for all 933 people coded 1 or 2 (<a href="plink-data.html#phenotype-column">What column 6 holds</a>)</td><td data-label="Toy study">A simulated CAD status, coded the way PLINK defines it: 2 case, 1 control, −9 unknown</td></tr>
+    <tr><td>Allele frequencies</td><td data-label="PennCATH">213,108 of the 861,472 SNPs with calls have a minor allele frequency (MAF), the frequency of the less common allele, below 0.05: 24.7%. That count includes 26,153 monomorphic SNPs, where only one allele is seen; among the 835,319 polymorphic SNPs the share is 22.4%.</td><td data-label="Toy study"><span data-card="study_maf_lt_0_05">?</span> of the <span data-card="study_snps">?</span> SNPs have a MAF below 0.05: <span data-card="study_maf_lt_0_05_percent">?</span>%. The simulation kept mostly common SNPs, so the <code>--maf 0.05</code> filter of step 6 removes only <span data-card="pca_maf_removed">?</span> of the <span data-card="prune_in">?</span> SNPs it is given</td></tr>
+    <tr><td>Missing calls</td><td data-label="PennCATH"><code>--geno 0.01</code> removes 291,750 of 861,473 SNPs: 33.9%.</td><td data-label="Toy study"><code>--geno 0.01</code> removes <span data-card="geno_removed">?</span> of <span data-card="study_snps">?</span> SNPs</td></tr>
+    <tr><td>Allele names</td><td data-label="PennCATH">The 26,153 monomorphic SNPs have −9 as the name of the allele no one carries (<a href="plink-data.html#a1-a2">The data · A1 and A2</a>)</td><td data-label="Toy study">Every SNP has two alleles, each A, C, G or T; none is monomorphic</td></tr>
+    <tr><td>SNP IDs</td><td data-label="PennCATH">rsIDs, the identifiers of the dbSNP database</td><td data-label="Toy study">Made-up IDs (<code>tsnp</code> followed by digits) that no database knows</td></tr>
+    <tr><td>Causal SNP</td><td data-label="PennCATH">Unknown, as in any real study</td><td data-label="Toy study">One simulated causal SNP, with an effect exaggerated on purpose so that a study of this size shows it</td></tr>
+    <tr><td>Programs</td><td data-label="PennCATH">PLINK 1.9 and GrafAnc</td><td data-label="Toy study">The lab's emulators, written for this site in JavaScript; they are not PLINK or GrafAnc. On the toy files the PLINK emulator writes the same files as real PLINK 1.9.0, byte for byte, and the GrafAnc emulator was checked against real GrafAnc on PennCATH (<a href="#emulator-note">how</a>)</td></tr>
+  </tbody>
+</table>
+</div>
+<p class="po-emu" id="emulator-note"><strong>How the lab and these numbers were checked.</strong> For this site the practical was run with real PLINK 1.9.0 (the release of 27 September 2026, on macOS) on both datasets. On the toy files, every file that the practical's commands and the terminals on the step pages write is identical, byte for byte, to what the lab writes, and the console output differs only in the lines that name the program, the computer, the folder and the time. On the PennCATH files, the run gives the counts quoted on these pages, including the two in the table (from <code>--freq</code> and <code>--geno 0.01</code>). GrafAnc, built from the source code the workshop uses, gave the same scores as the lab's GrafAnc for all 1,380 PennCATH people when the lab's GrafAnc was given GrafAnc's own reference.<sup><a href="#src-15">15</a></sup></p>
+<p>Numbers written next to "toy" on the step pages refer to the toy data. PennCATH numbers come from the practical's materials, the PLINK log distributed with the data, counts of lines and values in the files themselves, and the run of real PLINK and GrafAnc described above. The step pages give only some of PennCATH's results, so that you can check yours; to see the rest, run the commands yourself.</p>
+<p>The toy files are ordinary PLINK files, released into the public domain (CC0) with a data card that documents the simulation, its settings and every planted problem.<sup><a href="#src-15">15</a></sup> You can download them (<a href="data/toy.bed">toy.bed</a>, <a href="data/toy.bim">toy.bim</a>, <a href="data/toy.fam">toy.fam</a>, <a href="data/toy_1kg.bed">toy_1kg.bed</a>, <a href="data/toy_1kg.bim">toy_1kg.bim</a>, <a href="data/toy_1kg.fam">toy_1kg.fam</a>, and the data card, <a href="data/README.md">README.md</a>, a Markdown text file) and run the practical's commands on them with real PLINK: you should get the same files as the lab (<a href="#emulator-note">how the lab was checked</a>). Real GrafAnc cannot be used on them: it matches SNPs to its own ancestry SNPs by rsID or by genome position, and the toy SNPs have made-up IDs and simulated positions. Run on the toy study, it finds 1 ancestry SNP and stops without writing a table.</p>
+
+<h2 id="toy-simulation">How the toy data were simulated <span class="tag optional">Optional</span></h2>
+<p>The toy data come from a simulation program written for this site. It draws every random number from a fixed seed, so it always writes the same files. Every person and every genotype is simulated, and every ID is made up. Knowing how the data were made tells you what each QC step should find, and why. This section describes the mechanisms; which people and SNPs they affect is listed in the spoiler at its end.<sup><a href="#src-15">15</a></sup></p>
+
+<h3 id="sim-populations">Populations and allele frequencies</h3>
+<p>Each simulated person belongs to a population, and each population has its own allele frequency at every SNP: the share of its allele copies that carry a given allele. The frequencies come from a tree of populations. An ancestral population splits into an African branch and an out-of-Africa branch; the out-of-Africa branch splits into a West Eurasian branch, which gives the European and South Asian populations, and an East Asian branch. The tips of the tree are named after 1000 Genomes populations: CEU, GBR and TSI (European), YRI and LWK (African), CHB, JPT and CHS (East Asian), and GIH, PJL and BEB (South Asian).</p>
+<p>Along each branch the allele frequencies change at random. In real populations this change is genetic drift, which comes from each generation passing on only a finite sample of its parents' alleles. The simulation draws each population's frequency from its parent population's with the Balding–Nichols model: from a beta distribution whose mean is the parent's frequency \(p\) and whose variance is \(F\,p(1-p)\), where \(F\) is the amount of drift on that branch (a different quantity from the F of step 5). A larger \(F\) moves frequencies further from the parent's.</p>
+<p>How far apart two populations' allele frequencies are is summarized by the fixation index, \(F_{\mathrm{ST}}\): the fraction of the variance in allele frequency that lies between the populations rather than within them. It is 0 when the frequencies are identical and 1 when each population carries only one allele, a different one in each (<a href="population-structure.html#fst">Population structure · Measuring the differences</a>). The drifts were chosen so that \(F_{\mathrm{ST}}\) between the simulated African, European and East Asian groups is close to values reported for the 1000 Genomes super-populations, while the three European-like populations differ only slightly from each other.</p>
+<p>Some populations are mixtures. The South Asian branch takes part of its frequencies from a branch related to East Asians, following a model of South Asian history in which a West-Eurasian-related population mixed with a deeply diverged one. This places South-Asian-like people about halfway between European-like and East-Asian-like people; in real 1000 Genomes data, South Asians lie closer to Europeans. The admixed study people carry stretches of chromosome inherited from an African-like and a European-like population (admixture). Most of them descend from several generations of mixing and have different African-like shares; the first-generation admixed person has one parent from each population. The panel's admixed American populations are built the same way, from European-like, African-like and Native-American-like branches.</p>
+<p>Genotyping arrays carry SNPs that were first discovered in a limited set of people and populations. Array SNPs therefore tend to be common in several populations, and their allele frequencies are shifted toward intermediate values: this is SNP ascertainment bias.<sup><a href="#src-16">16</a></sup> The simulation imitates it by keeping a candidate SNP only if its minor allele frequency is high enough, both averaged over the African, European and East Asian branches and in the European branch. So the toy study has few SNPs with MAF below 0.05 and no monomorphic SNPs.</p>
+
+<h3 id="sim-ld">Haplotypes and linkage disequilibrium</h3>
+<p>Alleles at nearby SNPs are correlated because they are inherited together on the same stretch of chromosome. This correlation is linkage disequilibrium (LD); step 3 lists a subset of SNPs with little LD between them, for the steps that need nearly independent SNPs. To create it, part of the SNPs sit in blocks a few hundred kilobases (kb) long, with neighboring SNPs a few kb apart; the other SNPs are isolated, far from any other SNP. Without the blocks, SNPs spread evenly over the genome would hardly be correlated, and step 3 would have little to do.</p>
+<p>Each block starts from a small set of founder haplotypes: ancestral versions of that stretch of chromosome, each with its own string of alleles. Their alleles come from coalescent trees, genealogies of the founder haplotypes that change along the block. A SNP is a mutation on one branch of the local tree, so every founder below that branch carries the new allele. Each simulated chromosome copy is then built from segments copied from the founders, in the way of the Li–Stephens model: it copies one founder for a stretch, then switches to another, choosing founders with its population's drifted founder frequencies. The switches come at shorter distances in African-like populations, so LD extends over shorter distances there, as in real data (<a href="linkage-disequilibrium.html#populations">LD differs between populations</a>).</p>
+<p>One region imitates a large inversion, a segment of chromosome that occurs in two orientations. Chromosome copies with different orientations do not recombine within the segment, so most of its SNPs track the orientation and stay correlated over millions of bases. Such long-range LD regions can take over principal components unless the SNPs are pruned (<a href="qc-ld-pruning.html#long-range">Long-range LD regions</a>).</p>
+
+<h3 id="sim-relatives">Relatives</h3>
+<p>Relatives are made by simulated meiosis, the cell division that makes eggs and sperm. A parent passes on one copy of each chromosome, assembled from the parent's own two copies: at each crossover, placed at random along the chromosome, the transmitted copy switches from one of the parent's copies to the other. The simulation records, for every allele, which chromosome copy of the family's oldest simulated generation it came from. So for any two people it knows exactly the share of the genome they inherited from the same ancestral copy, their identity by descent (IBD), which is the quantity step 4 estimates. A relative's meioses were redrawn until the realized IBD was typical of the relationship rather than unusually high or low.</p>
+<p>Two other kinds of planted people come from the same records. A duplicate is one simulated person entered twice under different IDs, with independent missing calls and errors. Inbreeding comes from parents who are related to each other: their child carries, in parts of the genome, two copies of the same ancestral stretch, which lowers the child's heterozygosity. Parents and grandparents are simulated but not included, and the parent columns of <code>toy.fam</code> are 0 for everyone, so relatives are hidden, as in PennCATH.</p>
+
+<h3 id="sim-calls">Genotype calls</h3>
+<p>Genotype calling turns the array's two intensity signals at a SNP into a genotype (<a href="../0-biological-foundations/samples-to-genotypes.html#calling">Lecture 0 · Genotype calling</a>). The simulation starts from each person's true genotypes and adds four kinds of problem.</p>
+<p><strong>Contamination.</strong> A sample's DNA can be mixed with another person's. The simulation models the array signal of such a mixture through the B allele frequency, the share of a SNP's signal that comes from allele B, which sits near 0, 0.5 and 1 for the genotypes AA, AB and BB:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ b = (1-\alpha)\,\frac{g_1}{2} + \alpha\,\frac{g_2}{2} + \varepsilon \]</div>
+  <dl class="eq-terms">
+    <dt>\(b\)</dt><dd>The B allele frequency that the array measures for the mixed sample at one SNP; between 0 and 1, apart from noise.</dd>
+    <dt>\(\alpha\)</dt><dd>The contaminating person's share of the DNA in the sample; between 0 and 1, one value per sample.</dd>
+    <dt>\(g_1\)</dt><dd>The number of copies of allele B in the genotype of the person the sample belongs to: 0, 1 or 2.</dd>
+    <dt>\(g_2\)</dt><dd>The same count for the contaminating person.</dd>
+    <dt>\(\varepsilon\)</dt><dd>Measurement noise: a normal variable with mean 0 and a small standard deviation, drawn for each call.</dd>
+  </dl>
+  <p class="eq-intuition">Each person contributes their own B allele frequency, \(g/2\), in proportion to their share of the DNA. With \(\alpha = 0\) the sample gives \(g_1/2\) plus noise, a clean call, and wherever the two people have the same genotype the mixture gives the same value. Take for illustration \(\alpha = 0.3\) and a caller that calls any \(b\) between 0.2 and 0.8 heterozygous. A person who is AA (\(g_1 = 0\)) mixed with a BB contaminant (\(g_2 = 2\)) gives \(b \approx 0.3\) and is called AB; mixed with an AB contaminant, \(b \approx 0.15\), still AA. A heterozygous person stays heterozygous whatever the contaminant carries (\(b \approx 0.35\), \(0.5\) or \(0.65\)). So, at this \(\alpha\), contamination adds heterozygous calls at the SNPs where the contaminant carries the opposite homozygote and leaves the other calls unchanged.</p>
+</div>
+<p>The extra heterozygous calls are what step 5 detects. They have a second effect: the contaminated sample almost never carries the homozygote opposite to anyone else's, which step 4 reads as relatedness to everyone (<a href="qc-relatedness.html#contamination-bias">Contamination: one sample related to everyone</a>).</p>
+<p><strong>Miscalled clusters.</strong> At a few SNPs the simulated caller draws a cluster boundary in the wrong place. Either most true heterozygotes are called as the common homozygote, giving too few heterozygotes, or most common homozygotes are called heterozygous, giving too many; the second imitates a probe that also binds a second place in the genome, where everyone carries the minor allele. Either way the genotype counts no longer fit the Hardy–Weinberg proportions for the SNP's allele frequency, which is what step 2 tests (<a href="frequencies-hwe.html#errors">What a genotyping error does to the counts</a>). These SNPs were chosen so that the distortion is strong in the controls, whose rows step 2 reads.</p>
+<p><strong>Random errors.</strong> Every call has a small chance of being replaced by a wrong genotype, and the chance is larger for degraded samples.</p>
+<p><strong>Missing calls.</strong> Whether a call is missing depends on both the person and the SNP:</p>
+<div class="eq-block">
+  <div class="eq-display">\[ m_{ij} = \frac{1}{1 + e^{-(\mu + u_i + v_j)}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(m_{ij}\)</dt><dd>The probability that the call of person \(i\) at SNP \(j\) is missing; between 0 and 1.</dd>
+    <dt>\(e\)</dt><dd>The base of the natural logarithm, about 2.718.</dd>
+    <dt>\(\mu\)</dt><dd>The base rate on the log-odds scale, \(\log(r/(1-r))\) for a missing rate \(r\) of a typical person at a typical SNP; one value for the whole study.</dd>
+    <dt>\(u_i\)</dt><dd>Person \(i\)'s offset, one for each person in the study: small and random for most people, large and positive for samples simulated as degraded (poor DNA), and moderately positive for samples simulated as low quality.</dd>
+    <dt>\(v_j\)</dt><dd>SNP \(j\)'s offset, one for each SNP: small and random for most SNPs, and large and positive for SNPs simulated with a high missing rate, as if their assay worked poorly.</dd>
+  </dl>
+  <p class="eq-intuition">The function \(1/(1+e^{-x})\) is the logistic function of logistic regression: it turns any number into a probability. The person and SNP offsets add on the log-odds scale, so a raised person offset costs far more calls at a poor SNP than at a good one. Take illustrative values, not the simulation's: a base rate of 0.1%, a weak sample with a person offset of 2, and poor SNPs with a SNP offset of 3. An ordinary person misses 0.1% of calls at ordinary SNPs and 2.0% at poor SNPs; the weak sample misses 0.73% and 12.9%. If a tenth of the SNPs were poor, the weak sample's overall missing rate would be \(0.9 \times 0.73\% + 0.1 \times 12.9\% = 1.95\%\), above the 1% threshold. After <code>--geno 0.01</code> removes the poor SNPs, which miss 2% or more of their calls, it is 0.73%. This is why step 1 filters SNPs first (<a href="qc-missingness.html#order">Why the order matters</a>).</p>
+</div>
+
+<h3 id="sim-phenotype">Phenotype and the causal SNP</h3>
+<p>Each person was first set as a case, a control or missing. One SNP was then made causal. Its effect is given by penetrance, the probability of disease given the genotype: the same for zero or one copy of the risk allele, and many times higher for two (a recessive model). The effect is far larger than any real CAD variant's, on purpose, so that a study of <span data-card="study_cases">?</span> cases shows it. Each case's genotypes in the causal SNP's block were drawn by rejection sampling: a set of genotypes is drawn for the person's population and kept with probability equal to its penetrance, or else drawn again; a control's draw is kept with probability one minus the penetrance. This gives cases more risk alleles than controls, in exactly the proportions the model implies. Relatives inherit their genotypes by meiosis, so their status was drawn from their own genotype instead. Missing phenotypes were assigned without regard to genotype.</p>
+<p>One consequence matters for step 2. Cases are enriched for people with two risk alleles, so among the cases the causal SNP has too few heterozygotes for its allele frequency, a departure from Hardy–Weinberg proportions caused by a real effect, while the controls are in equilibrium. This is why step 2 reads the controls' rows (<a href="frequencies-hwe.html#case-only">Why QC tests the controls</a>).</p>
+
+<h3 id="sim-panel">The reference panel</h3>
+<p>The panel's people are drawn from the same model as the study, with the same tree and founders, so the study's and the panel's allele frequencies agree. Its SNPs are common SNPs thinned so that no two nearby SNPs are strongly correlated, as in a file of markers chosen for PCA, and few of them lie in the inversion-like region. Some are A/T or C/G SNPs, which are strand-ambiguous: their two alleles are complementary bases, so the letters cannot show which strand a file uses. The study's <code>.bim</code> file, for its part, writes some of its SNPs on the reverse strand, each allele replaced by its complement, as data from some arrays do. Step 7 has to repair this before the two files can be merged (<a href="qc-reference-pca.html#strand-problems">What goes wrong when two files meet</a>).</p>
+
+<p>The list below gives away what each step should find. Run the steps first, then open it to check your answers.</p>
+<details class="po-spoiler">
+  <summary>Spoiler: what was planted, step by step <span class="po-hint">(open after you have run the steps)</span></summary>
+  <p>People are named by their family IDs in <code>toy.fam</code>, written without the quotation marks, and SNPs by their IDs in <code>toy.bim</code>. Every count comes from the lab's emulators run on the toy files.</p>
+
+  <h4>Step 1 · Missingness</h4>
+  <ul>
+    <li><code>--geno 0.01</code> removes <span data-card="geno_removed">?</span> SNPs and leaves <span data-card="geno_snps_left">?</span>. Most of the removed SNPs were simulated with high missing rates; the rest are ordinary SNPs whose few random missing calls happen to exceed 1% of the people.</li>
+    <li><code>--mind 0.01</code> then removes <span data-card="mind_removed">?</span> people, exactly the samples simulated as degraded; PLINK lists them in <code>toy.geno0.01.mind0.01.irem</code>. That leaves <span data-card="qc_people">?</span> people and <span data-card="qc_snps">?</span> SNPs.</li>
+    <li>Run on the raw data instead, <code>--mind 0.01</code> would remove <span data-card="imiss_raw_gt_0_01">?</span> people: the degraded samples, the samples simulated as low quality, and an ordinary person. The low-quality samples miss their calls mostly at the SNPs that <code>--geno</code> removes, and the ordinary person is only just above 1%; after <code>--geno</code> both fall below the threshold, so filtering SNPs first keeps them.</li>
+  </ul>
+
+  <h4>Step 2 · Hardy–Weinberg equilibrium</h4>
+  <ul>
+    <li><span data-card="hwe_unaff_p_lt_1e8">?</span> SNPs have a p-value below 1e-8 in the controls' (UNAFF) rows, and all of them are planted calling errors: <span data-card="hwe_planted_deficit_ids">?</span> have too few heterozygotes, and <span data-card="hwe_planted_excess_ids">?</span> too many.</li>
+    <li>The causal SNP, <span data-card="sim_causal_snp">?</span>, has a p-value of <span data-card="hwe_causal_aff_p">?</span> in the cases (AFF rows) and <span data-card="hwe_causal_all_p">?</span> in everyone (ALL rows), but <span data-card="hwe_causal_unaff_p">?</span> in the controls: a real effect, not an error.</li>
+    <li>Below 1e-3 the controls' rows hold <span data-card="hwe_unaff_p_lt_1e3">?</span> SNPs: the planted ones and an ordinary SNP that crosses this looser threshold by chance. That matters for the exercise's choice of threshold.</li>
+  </ul>
+
+  <h4>Step 3 · LD pruning</h4>
+  <ul>
+    <li><code>--indep-pairwise 50 5 0.3</code> keeps <span data-card="prune_in">?</span> SNPs in <code>.prune.in</code> and lists <span data-card="prune_out">?</span> in <code>.prune.out</code>.</li>
+    <li>The inversion-like region lies on chromosome <span data-card="long_range_chr">?</span>, from <span data-card="long_range_start_mb">?</span> to <span data-card="long_range_end_mb">?</span> Mb. Of its <span data-card="long_range_snps_qc">?</span> SNPs that pass step 1, pruning keeps <span data-card="long_range_snps_prune_in">?</span>.</li>
+  </ul>
+
+  <h4>Step 4 · Relatedness</h4>
+  <div class="table-wrap">
+  <table class="compact stack po-ibd">
+    <thead><tr><th>Pair</th><th>Planted relationship (expected Z0, Z1, Z2; PI_HAT)</th><th>Z0</th><th>Z1</th><th>Z2</th><th>PI_HAT</th></tr></thead>
+    <tbody>
+      <tr><td><span data-card="ibd_duplicate_fids">?</span></td><td data-label="Planted relationship (expected)">The same person twice (0, 0, 1; 1)</td><td data-label="Z0"><span data-card="ibd_duplicate_z0">?</span></td><td data-label="Z1"><span data-card="ibd_duplicate_z1">?</span></td><td data-label="Z2"><span data-card="ibd_duplicate_z2">?</span></td><td data-label="PI_HAT"><span data-card="ibd_duplicate_pihat">?</span></td></tr>
+      <tr><td><span data-card="ibd_parent_offspring_fids">?</span></td><td data-label="Planted relationship (expected)">Parent and child (0, 1, 0; 0.5)</td><td data-label="Z0"><span data-card="ibd_parent_offspring_z0">?</span></td><td data-label="Z1"><span data-card="ibd_parent_offspring_z1">?</span></td><td data-label="Z2"><span data-card="ibd_parent_offspring_z2">?</span></td><td data-label="PI_HAT"><span data-card="ibd_parent_offspring_pihat">?</span></td></tr>
+      <tr><td><span data-card="ibd_full_sibs_fids">?</span></td><td data-label="Planted relationship (expected)">Full siblings (0.25, 0.5, 0.25; 0.5)</td><td data-label="Z0"><span data-card="ibd_full_sibs_z0">?</span></td><td data-label="Z1"><span data-card="ibd_full_sibs_z1">?</span></td><td data-label="Z2"><span data-card="ibd_full_sibs_z2">?</span></td><td data-label="PI_HAT"><span data-card="ibd_full_sibs_pihat">?</span></td></tr>
+      <tr><td><span data-card="ibd_half_sibs_fids">?</span></td><td data-label="Planted relationship (expected)">Half siblings, second degree (0.5, 0.5, 0; 0.25)</td><td data-label="Z0"><span data-card="ibd_half_sibs_z0">?</span></td><td data-label="Z1"><span data-card="ibd_half_sibs_z1">?</span></td><td data-label="Z2"><span data-card="ibd_half_sibs_z2">?</span></td><td data-label="PI_HAT"><span data-card="ibd_half_sibs_pihat">?</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <ul>
+    <li><span data-card="pairs_pihat_gt_0_1875">?</span> pairs have PI_HAT above 0.1875. Apart from the planted pairs, every one of them includes sample <span data-card="het_contaminated_fid">?</span>, the contaminated sample: it almost never carries the homozygote opposite to anyone else's, the estimator reads that as shared ancestry, and some of its pairs reach the half siblings' PI_HAT. Step 5 shows the cause.</li>
+    <li>Leaving that sample out, every unplanted pair lies well below the half siblings. No cousins were planted: their expected PI_HAT, 0.125, falls inside the scatter of unrelated pairs.</li>
+  </ul>
+
+  <h4>Step 5 · Heterozygosity</h4>
+  <ul>
+    <li>The ±3 SD rule flags <span data-card="het_outliers_3sd">?</span> people (<span data-card="het_outliers_3sd_fids">?</span>), and the |F| &gt; 0.1 rule flags <span data-card="het_f_abs_gt_0_1">?</span> (<span data-card="het_f_fids">?</span>).</li>
+    <li><span data-card="het_inbred_fid">?</span> is the child of two full siblings: F is <span data-card="het_inbred_f">?</span>, and the heterozygosity rate <span data-card="het_inbred_rate">?</span> against a mean of <span data-card="het_rate_mean">?</span>. <span data-card="het_contaminated_fid">?</span> is the contaminated sample: F is <span data-card="het_contaminated_f">?</span>, and the rate <span data-card="het_contaminated_rate">?</span>.</li>
+    <li>The other flags come from ancestry, not from errors. F is measured against the allele frequencies of a mostly European-like sample. The first-generation admixed person, whose two chromosome copies come from different populations, therefore has a strongly negative F, and an East-Asian-like person's F only just passes 0.1, making that person the only one flagged by one rule and not the other. That person, and an admixed person just inside the ±3 SD band, are within about one genotype call of a cutoff (<a href="qc-heterozygosity.html#two-rules">Two rules, different people</a>).</li>
+  </ul>
+
+  <h4>Step 6 · PCA of the study</h4>
+  <ul>
+    <li>PC1 separates the <span data-card="sim_african_like">?</span> African-like people (eigenvalue <span data-card="pca_eigenval_1">?</span>). PC2 separates the <span data-card="sim_east_asian_like">?</span> East-Asian-like people, with the <span data-card="sim_south_asian_like">?</span> South-Asian-like people between them and the European-like people (eigenvalue <span data-card="pca_eigenval_2">?</span>).</li>
+    <li>Without pruning (<code>--maf 0.05 --pca</code> on all <span data-card="pca_unpruned_snps">?</span> SNPs that pass the MAF filter; not part of the practical), PC<span data-card="pca_unpruned_inversion_pc">?</span> instead sorts people by how many inverted copies of the chromosome <span data-card="long_range_chr">?</span> region they carry (correlation <span data-card="pca_unpruned_inversion_r">?</span>). With pruning, the region's strongest correlation with any PC is <span data-card="pca_pruned_inversion_r">?</span>, on PC<span data-card="pca_pruned_inversion_pc">?</span>.</li>
+  </ul>
+
+  <h4>Step 7 · Merging with the reference panel</h4>
+  <ul>
+    <li>The first <code>--bmerge</code> fails with exit code <span data-card="merge1_exit_code">?</span> (the number PLINK returns to the shell; 0 means success) and writes <span data-card="merge1_missnp">?</span> SNPs to <code>-merge.missnp</code>. These are shared SNPs that <code>toy.bim</code> writes on the reverse strand and that are not A/T or C/G, so the two files together name three or more alleles.</li>
+    <li><code>--flip</code> with that list flips <span data-card="flip_snps">?</span> SNPs, and the second merge combines <span data-card="merge2_people">?</span> people and <span data-card="merge2_snps">?</span> SNPs.</li>
+    <li><span data-card="sim_palindromic_swapped">?</span> shared A/T or C/G SNPs are also on the reverse strand in the study. They merge without any message, with their alleles exchanged, so at each of them the study's allele frequency is close to one minus the panel's. Comparing allele frequencies between the study and the panel's European people can find them, unless a frequency is close to 0.5.</li>
+    <li>For the merged PCA, <code>--geno 0.1</code> removes the <span data-card="merged_geno_removed">?</span> SNPs present in only one of the two files and <code>--maf 0.05</code> removes <span data-card="merged_maf_removed">?</span>, which leaves <span data-card="merged_pca_snps">?</span>. Study people fall on the panel clusters of their simulated populations; admixed people lie between EUR and AFR, and South-Asian-like people between EUR and EAS.</li>
+  </ul>
+
+  <h4>Step 8 · GrafAnc</h4>
+  <ul>
+    <li>Of the <span data-card="grafanc_samples">?</span> people who pass step 1, the lab's GrafAnc assigns <span data-card="grafanc_eur">?</span> to EUR (<span data-card="grafanc_eur_percent">?</span>%), <span data-card="grafanc_afr">?</span> to AFR, <span data-card="grafanc_eas">?</span> to EAS, <span data-card="grafanc_sas">?</span> to SAS and <span data-card="grafanc_amr">?</span> to AMR.</li>
+    <li>Everyone who is not admixed is assigned the group of their simulated population. The AFR group holds the African-like people and the admixed people with the largest African-like shares. The other admixed people are assigned AMR, because the reference populations nearest to them are the admixed American ones, which in the simulation also have African-like and European-like ancestry. A group is an assignment relative to the reference populations available, not a statement about anyone's origins.</li>
+  </ul>
+</details>
+</section>
+
+<h2 id="eight-steps">The eight steps <span class="tag core">Core</span></h2>
+<p>Each step answers one question about the data. The table gives the practical's command (abbreviated; the step pages show it in full), the statistic it computes, the threshold the practical uses, and what a flagged SNP, person or pair can mean: something technical (an artifact of the measurement) or something biological (a real property of the people).</p>
+<div class="table-wrap">
+<table class="stack steps">
+  <thead><tr><th>Step</th><th>Command and output</th><th>Statistic and threshold</th><th>A flag can mean</th></tr></thead>
+  <tbody>
+    <tr><td><a href="qc-missingness.html">1 · Missingness</a><span class="q">Which SNPs and people have too many missing calls?</span></td><td data-label="Command and output"><code>--missing</code> → <code>.lmiss</code>, <code>.imiss</code>; <code>--geno 0.01</code> → new fileset; <code>--missing</code> again; <code>--mind 0.01</code> → new fileset</td><td data-label="Statistic and threshold">F_MISS, the fraction of calls missing per SNP and per person. Remove SNPs above 0.01, recount, then remove people above 0.01.</td><td data-label="A flag can mean">Technical: poor or degraded DNA (people); a probe that hybridizes badly (SNPs).</td></tr>
+    <tr><td><a href="qc-hwe.html">2 · Hardy–Weinberg</a><span class="q">Are the genotype counts consistent with the allele frequencies?</span></td><td data-label="Command and output"><code>--hardy</code> → <code>.hwe</code> (genotype counts, observed and expected heterozygosity, P)</td><td data-label="Statistic and threshold">Exact-test p-value, read from the controls' (UNAFF) rows. The practical counts SNPs below 1e-8 and leaves the filter to the exercise.</td><td data-label="A flag can mean">Technical: calling errors, such as heterozygotes called as homozygotes. Biological: population structure, or in cases a real association.</td></tr>
+    <tr><td><a href="qc-ld-pruning.html">3 · LD pruning</a><span class="q">Which SNPs are roughly independent of each other?</span></td><td data-label="Command and output"><code>--indep-pairwise 50 5 0.3</code> → <code>.prune.in</code>, <code>.prune.out</code></td><td data-label="Statistic and threshold">r², the squared correlation between two SNPs' genotypes, within a 50-SNP window moved 5 SNPs at a time. One SNP of each pair above 0.3 goes to <code>.prune.out</code>.</td><td data-label="A flag can mean">Not a fault: correlated SNPs (linkage disequilibrium) would give some regions too much weight in steps 4–6, so those steps use only <code>.prune.in</code>.</td></tr>
+    <tr><td><a href="qc-relatedness.html">4 · Relatedness</a><span class="q">Are any two people related, or the same person twice?</span></td><td data-label="Command and output"><code>--extract …prune.in --genome</code> → <code>.genome</code> (Z0, Z1, Z2, PI_HAT for every pair)</td><td data-label="Statistic and threshold">PI_HAT, the estimated share of the genome two people inherited from recent common ancestors. The practical asks you to choose the threshold.</td><td data-label="A flag can mean">Technical: duplicated or mixed-up samples. Biological: relatives, which break the independence that standard tests assume.</td></tr>
+    <tr><td><a href="qc-heterozygosity.html">5 · Heterozygosity</a><span class="q">Does anyone have too many or too few heterozygous calls?</span></td><td data-label="Command and output"><code>--extract …prune.in --het</code> → <code>.het</code> (O(HOM), E(HOM), N(NM), F)</td><td data-label="Statistic and threshold">Heterozygosity rate per person, flagged beyond ±3 standard deviations; or F, PLINK's inbreeding estimate, flagged beyond ±0.1.</td><td data-label="A flag can mean">Technical: contamination (excess), poor DNA. Biological: inbreeding (deficit), ancestry different from most of the sample.</td></tr>
+    <tr><td><a href="qc-pca.html">6 · PCA</a><span class="q">What are the main axes of genetic variation among the people?</span></td><td data-label="Command and output"><code>--extract …prune.in --maf 0.05 --pca</code> → <code>.eigenvec</code>, <code>.eigenval</code></td><td data-label="Statistic and threshold">Principal component scores per person; the practical plots PC1 against PC2 and PC2 against PC3 and asks what clusters mean.</td><td data-label="A flag can mean">Biological: genetic ancestry that differs from most of the sample, usually handled by adjusting the analysis rather than by removal. Technical: batch effects can also form clusters.</td></tr>
+    <tr><td><a href="qc-reference-pca.html">7 · Reference PCA</a><span class="q">Where do the people fall relative to labeled reference populations?</span></td><td data-label="Command and output"><code>--bmerge</code> with the 1000 Genomes fileset → fails with <code>-merge.missnp</code>; <code>--flip</code>; merge again; <code>--geno 0.1 --maf 0.05 --pca</code></td><td data-label="Statistic and threshold">Principal components of study and reference people together, compared with the reference's super-population labels.</td><td data-label="A flag can mean">Technical: strand or allele mismatches stop the merge. Biological: genetic similarity to the reference groups.</td></tr>
+    <tr><td><a href="qc-grafanc.html">8 · GrafAnc</a><span class="q">Which reference-based ancestry group is each person assigned?</span></td><td data-label="Command and output"><code>--update-ids</code> → <code>.uniqueIDs</code>; <code>grafanc</code> → <code>penncath_grafanc_out.txt</code></td><td data-label="Statistic and threshold">Genetic-distance scores (GD1–GD3) and ancestry components (Pe, Pf, Pa) relative to reference populations; a group code (AncGroupID).</td><td data-label="A flag can mean">Not a fault: a reference-based assignment, compared with step 7. The practical expects more than 99% of PennCATH's people to receive GrafAnc's European (EUR) group.<sup><a href="#src-13">13</a></sup></td></tr>
+  </tbody>
+</table>
+</div>
+<p>Only step 1 removes anything in the practical. Step 3 writes a list of SNPs that later steps use; the other steps produce numbers and plots that the reader judges, and the <a href="qc-exercise.html">exercise</a> turns those judgments into a cleaned fileset with PLINK options such as <code>--hwe</code> and <code>--remove</code>. Step 1 removes SNPs before people <a href="qc-missingness.html#order">for a reason</a>: a SNP that failed on the array adds a missing call to everyone, and removing such SNPs first keeps them from pushing good samples over the person-level threshold.</p>
+
+<div class="widget" id="w-funnel">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">The toy data through the eight steps</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This funnel needs JavaScript. The table above lists what each step removes, flags or lists.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The bars shrink only at step 1. From step 2 on, the counts are flags and lists: SNPs that fail a test, pairs of people who look related, people with unusual heterozygosity, SNPs kept for the analyses that need independent SNPs. Nothing is removed until you decide in the exercise, which is where most of the analyst's judgment goes. Click a row to see the command the lab runs for that step and the file it writes.</p>
+
+<h2 id="file-chain">Each step reads the file the last one wrote <span class="tag core">Core</span></h2>
+<figure class="fig">
+  <div class="fig-body">
+<svg viewBox="0 0 760 500" role="img" aria-labelledby="pch-t pch-d" class="only-wide">
+<title id="pch-t">Which files each step reads and writes</title>
+<desc id="pch-d">The input fileset penncath goes into step 1, which writes penncath.imiss and penncath.lmiss, the filtered fileset penncath.geno0.01 with its own missingness tables, and the fileset penncath.geno0.01.mind0.01 (with a .irem list of removed people), marked with a star. That fileset is the input of every later step. Step 2 writes the .hwe table. Step 3 writes .prune.in and .prune.out; steps 4, 5 and 6 read .prune.in and write .LD0.3.genome, .LD0.3.het and .LD0.3.eigenvec with .eigenval. Step 7 merges with the 1000 Genomes reference fileset, gets a -merge.missnp list on the first try, writes a flipped fileset _flipSNPs, then the merged fileset .merge1kgenomes and its .eigenvec and .eigenval. Step 8 writes penncath.updateIDs.txt, the fileset .uniqueIDs and the GrafAnc output penncath_grafanc_out.txt.</desc>
+<defs><marker id="pch-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker><pattern id="pch-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cfd5dd" stroke-width="3"/></pattern></defs>
+<rect x="10" y="12" width="190" height="46" rx="6" fill="var(--g0)" stroke="var(--g2)" stroke-width="1.3"/>
+<text x="18" y="30" class="t-sm" style="font-family:var(--mono);font-size:11.5px;fill:var(--fg);font-weight:700">penncath</text>
+<text x="18" y="48" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">.bed .bim .fam (input)</text>
+<line x1="105" y1="58" x2="105" y2="72" stroke="#8a93a0" stroke-width="1.3" marker-end="url(#pch-arr)"/>
+<circle cx="22" cy="88" r="11" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="22" y="92" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">1</text>
+<text x="39" y="92" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:11.5px">missingness</text>
+<rect x="10" y="104" width="190" height="30" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="18" y="123" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">penncath.imiss .lmiss</text>
+<line x1="105" y1="134" x2="105" y2="162" stroke="#8a93a0" stroke-width="1.3" marker-end="url(#pch-arr)"/>
+<text x="112" y="152" class="t-xs" style="font-family:var(--mono);font-size:10.5px;fill:var(--accent-hover)">--geno 0.01</text>
+<rect x="10" y="164" width="190" height="46" rx="6" fill="#e9f2fb" stroke="var(--accent)" stroke-width="1.3"/>
+<text x="18" y="182" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg);font-weight:700">penncath.geno0.01</text>
+<text x="18" y="200" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">+ .imiss .lmiss</text>
+<line x1="105" y1="210" x2="105" y2="238" stroke="#8a93a0" stroke-width="1.3" marker-end="url(#pch-arr)"/>
+<text x="112" y="228" class="t-xs" style="font-family:var(--mono);font-size:10.5px;fill:var(--accent-hover)">--mind 0.01</text>
+<rect x="10" y="240" width="190" height="46" rx="6" fill="#e9f2fb" stroke="var(--accent)" stroke-width="2.2"/>
+<text x="18" y="258" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg);font-weight:700">penncath.geno0.01</text>
+<text x="18" y="276" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg);font-weight:700">.mind0.01 (+ .irem)</text>
+<text x="186" y="266" class="t-b" text-anchor="middle" style="fill:var(--accent);font-size:15px">★</text>
+<text x="18" y="308" class="t-sm" style="font-size:11px;fill:var(--fg)">★ = penncath.geno0.01.mind0.01,</text>
+<text x="18" y="323" class="t-sm" style="font-size:11px;fill:var(--fg)">the input of steps 2–8</text>
+<rect x="10" y="350" width="14" height="12" rx="6" fill="#e9f2fb" stroke="var(--accent)" stroke-width="1.1"/>
+<text x="30" y="360" class="t-xs" style="font-size:10.5px">fileset (.bed .bim .fam)</text>
+<rect x="10" y="370" width="14" height="12" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="30" y="380" class="t-xs" style="font-size:10.5px">table or list (text)</text>
+<rect x="10" y="390" width="14" height="12" rx="6" fill="#f4ecf7" stroke="var(--q7)" stroke-width="1.1"/>
+<text x="30" y="400" class="t-xs" style="font-size:10.5px">reference fileset</text>
+<path d="M200,263 L262,263" stroke="var(--accent)" stroke-width="2.2" fill="none"/>
+<path d="M262,46 L262,446" stroke="var(--accent)" stroke-width="2.2" fill="none"/>
+<line x1="262" y1="57" x2="288" y2="57" stroke="var(--accent)" stroke-width="2.2"/>
+<circle cx="302" cy="32" r="11" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="302" y="36" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">2</text>
+<text x="319" y="36" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:11.5px">Hardy–Weinberg</text>
+<rect x="290" y="44" width="300" height="26" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="298" y="61" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.hwe</text>
+<line x1="262" y1="113" x2="288" y2="113" stroke="var(--accent)" stroke-width="2.2"/>
+<circle cx="302" cy="88" r="11" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="302" y="92" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">3</text>
+<text x="319" y="92" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:11.5px">LD pruning</text>
+<rect x="290" y="100" width="300" height="26" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="298" y="117" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.prune.in  ★.prune.out</text>
+<line x1="262" y1="177" x2="288" y2="177" stroke="var(--accent)" stroke-width="2.2"/>
+<circle cx="302" cy="152" r="11" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="302" y="156" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">4</text>
+<text x="319" y="156" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:11.5px">relatedness (with .prune.in)</text>
+<rect x="290" y="164" width="300" height="26" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="298" y="181" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.LD0.3.genome</text>
+<line x1="262" y1="233" x2="288" y2="233" stroke="var(--accent)" stroke-width="2.2"/>
+<circle cx="302" cy="208" r="11" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="302" y="212" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">5</text>
+<text x="319" y="212" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:11.5px">heterozygosity (with .prune.in)</text>
+<rect x="290" y="220" width="300" height="26" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="298" y="237" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.LD0.3.het</text>
+<line x1="262" y1="289" x2="288" y2="289" stroke="var(--accent)" stroke-width="2.2"/>
+<circle cx="302" cy="264" r="11" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="302" y="268" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">6</text>
+<text x="319" y="268" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:11.5px">PCA (with .prune.in, --maf 0.05)</text>
+<rect x="290" y="276" width="300" height="26" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="298" y="293" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.LD0.3.eigenvec .eigenval</text>
+<path d="M592,113 C650,113 650,177 592,177" stroke="#8a93a0" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#pch-arr)"/>
+<path d="M592,113 C664,113 664,233 592,233" stroke="#8a93a0" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#pch-arr)"/>
+<path d="M592,113 C678,113 678,289 592,289" stroke="#8a93a0" stroke-width="1.2" fill="none" stroke-dasharray="4 3" marker-end="url(#pch-arr)"/>
+<text x="700" y="196" class="t-xs" text-anchor="middle" style="font-family:var(--mono);font-size:10.5px">.prune.in</text>
+<text x="700" y="210" class="t-xs" text-anchor="middle" style="font-size:10.5px">used by 4–6</text>
+<line x1="262" y1="361" x2="288" y2="361" stroke="var(--accent)" stroke-width="2.2"/>
+<circle cx="302" cy="336" r="11" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="302" y="340" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">7</text>
+<text x="319" y="340" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:11.5px">reference PCA</text>
+<rect x="530" y="318" width="220" height="28" rx="6" fill="#f4ecf7" stroke="var(--q7)" stroke-width="1.3"/>
+<text x="538" y="336" class="t-sm" style="font-family:var(--mono);font-size:10px;fill:var(--fg)">all_pops_1kgenomes_markersForPCA</text>
+<text x="420" y="340" class="t-xs" style="font-size:10.5px;fill:var(--q7);font-weight:700">+ 1000 Genomes →</text>
+<rect x="290" y="350" width="230" height="42" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="298" y="367" class="t-sm" style="font-family:var(--mono);font-size:10.5px;fill:var(--fg)">★.merge1kgenomes-merge.missnp</text>
+<text x="298" y="383" class="t-sm" style="font-family:var(--mono);font-size:10.5px;fill:var(--fg)">★_flipSNPs (flipped fileset)</text>
+<rect x="530" y="356" width="220" height="36" rx="6" fill="#e9f2fb" stroke="var(--accent)" stroke-width="1.3"/>
+<text x="538" y="371" class="t-sm" style="font-family:var(--mono);font-size:10.5px;fill:var(--fg);font-weight:700">★.merge1kgenomes</text>
+<text x="538" y="386" class="t-sm" style="font-family:var(--mono);font-size:10.5px;fill:var(--fg)">+ .eigenvec .eigenval</text>
+<line x1="640" y1="346" x2="640" y2="354" stroke="#8a93a0" stroke-width="1.3" marker-end="url(#pch-arr)"/>
+<line x1="262" y1="446" x2="288" y2="446" stroke="var(--accent)" stroke-width="2.2"/>
+<circle cx="302" cy="420" r="11" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="302" y="424" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">8</text>
+<text x="319" y="424" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:11.5px">GrafAnc</text>
+<rect x="290" y="434" width="460" height="44" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1"/>
+<text x="298" y="452" class="t-sm" style="font-family:var(--mono);font-size:10.5px;fill:var(--fg)">penncath.updateIDs.txt → ★.uniqueIDs (fileset)</text>
+<text x="298" y="469" class="t-sm" style="font-family:var(--mono);font-size:10.5px;fill:var(--fg)">→ penncath_grafanc_out.txt (one line per person)</text>
+</svg>
+<svg viewBox="0 0 300 862" role="img" aria-labelledby="pcn-t pcn-d" class="only-narrow">
+<title id="pcn-t">Which files each step reads and writes</title>
+<desc id="pcn-d">From top to bottom: the input fileset penncath; step 1 writes penncath.imiss and .lmiss, then the fileset penncath.geno0.01, then the fileset penncath.geno0.01.mind0.01 (star), the input of steps 2 to 8. Step 2 writes star.hwe; step 3 star.prune.in and star.prune.out; steps 4 to 6 use prune.in and write star.LD0.3.genome, star.LD0.3.het and star.LD0.3.eigenvec and .eigenval; step 7 uses the 1000 Genomes reference fileset and writes the merge-missnp list, the flipped fileset and the merged fileset with its eigenvectors; step 8 writes penncath.updateIDs.txt, the uniqueIDs fileset and penncath_grafanc_out.txt.</desc>
+<rect x="8" y="10" width="284" height="40" rx="6" fill="var(--g0)" stroke="var(--g2)" stroke-width="1.2"/>
+<text x="16" y="27" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg);font-weight:700">penncath</text>
+<text x="16" y="42" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">.bed .bim .fam (input)</text>
+<circle cx="20" cy="74" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="20" y="78" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">1</text>
+<text x="36" y="78" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:12px">missingness</text>
+<rect x="8" y="88" width="284" height="25" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1.2"/>
+<text x="16" y="105" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">penncath.imiss .lmiss</text>
+<text x="14" y="135" class="t-xs" style="font-family:var(--mono);font-size:11px;fill:var(--accent-hover)">--geno 0.01</text>
+<rect x="8" y="139" width="284" height="40" rx="6" fill="#e9f2fb" stroke="var(--accent)" stroke-width="1.2"/>
+<text x="16" y="156" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg);font-weight:700">penncath.geno0.01</text>
+<text x="16" y="171" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">+ .imiss .lmiss</text>
+<text x="14" y="201" class="t-xs" style="font-family:var(--mono);font-size:11px;fill:var(--accent-hover)">--mind 0.01</text>
+<rect x="8" y="205" width="284" height="40" rx="6" fill="#e9f2fb" stroke="var(--accent)" stroke-width="1.2"/>
+<text x="16" y="222" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg);font-weight:700">★ penncath.geno0.01</text>
+<text x="16" y="237" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">  .mind0.01 (+ .irem)</text>
+<text x="10" y="271" class="t-sm" style="font-size:11.5px;fill:var(--fg)">★ is the input of steps 2–8</text>
+<circle cx="20" cy="293" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="20" y="297" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">2</text>
+<text x="36" y="297" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:12px">Hardy–Weinberg</text>
+<rect x="8" y="307" width="284" height="25" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1.2"/>
+<text x="16" y="324" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.hwe</text>
+<circle cx="20" cy="356" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="20" y="360" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">3</text>
+<text x="36" y="360" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:12px">LD pruning</text>
+<rect x="8" y="370" width="284" height="25" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1.2"/>
+<text x="16" y="387" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.prune.in  ★.prune.out</text>
+<circle cx="20" cy="419" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="20" y="423" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">4</text>
+<text x="36" y="423" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:12px">relatedness (+ .prune.in)</text>
+<rect x="8" y="433" width="284" height="25" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1.2"/>
+<text x="16" y="450" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.LD0.3.genome</text>
+<circle cx="20" cy="482" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="20" y="486" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">5</text>
+<text x="36" y="486" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:12px">heterozygosity (+ .prune.in)</text>
+<rect x="8" y="496" width="284" height="25" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1.2"/>
+<text x="16" y="513" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.LD0.3.het</text>
+<circle cx="20" cy="545" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="20" y="549" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">6</text>
+<text x="36" y="549" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:12px">PCA (+ .prune.in, --maf 0.05)</text>
+<rect x="8" y="559" width="284" height="25" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1.2"/>
+<text x="16" y="576" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.LD0.3.eigenvec .eigenval</text>
+<circle cx="20" cy="608" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="20" y="612" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">7</text>
+<text x="36" y="612" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:12px">reference PCA</text>
+<rect x="8" y="622" width="284" height="25" rx="6" fill="#f4ecf7" stroke="var(--q7)" stroke-width="1.2"/>
+<text x="16" y="639" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">all_pops_1kgenomes_markersForPCA</text>
+<rect x="8" y="659" width="284" height="40" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1.2"/>
+<text x="16" y="676" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.merge1kgenomes-merge.missnp</text>
+<text x="16" y="691" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★_flipSNPs (flipped fileset)</text>
+<rect x="8" y="711" width="284" height="40" rx="6" fill="#e9f2fb" stroke="var(--accent)" stroke-width="1.2"/>
+<text x="16" y="728" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg);font-weight:700">★.merge1kgenomes</text>
+<text x="16" y="743" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">+ .eigenvec .eigenval</text>
+<circle cx="20" cy="775" r="10" fill="var(--mm)" stroke="none" stroke-width="1"/>
+<text x="20" y="779" class="t-sm" text-anchor="middle" style="fill:#fff;font-weight:700;font-size:11px">8</text>
+<text x="36" y="779" class="t-sm" style="fill:var(--mm);font-weight:700;font-size:12px">GrafAnc</text>
+<rect x="8" y="789" width="284" height="55" rx="6" fill="#fff" stroke="var(--border-strong)" stroke-width="1.2"/>
+<text x="16" y="806" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">penncath.updateIDs.txt</text>
+<text x="16" y="821" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">★.uniqueIDs (fileset)</text>
+<text x="16" y="836" class="t-sm" style="font-family:var(--mono);font-size:11px;fill:var(--fg)">penncath_grafanc_out.txt</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">The practical's files.</span> ★ stands for the prefix <code>penncath.geno0.01.mind0.01</code>, the fileset left after step 1, which every later step reads. Every PLINK run also writes a <code>.log</code> file with the same prefix (not drawn). <span class="fig-credit">Drawn for this page from the practical's commands.</span></figcaption>
+</figure>
+<p>PLINK names every file it writes after the <code>--out</code> prefix plus an extension that says what the file is, and the practical builds its prefixes so that a file's name records its history:</p>
+<ul>
+  <li><strong>Each filter adds a suffix.</strong> <code>penncath</code> becomes <code>penncath.geno0.01</code> after the SNP filter and <code>penncath.geno0.01.mind0.01</code> after the person filter. A name that contains <code>geno0.01.mind0.01</code> was made from data that passed step 1.</li>
+  <li><strong><code>.LD0.3</code> marks analyses on the pruned SNPs.</strong> The relatedness, heterozygosity and PCA outputs carry it because they were computed only on the SNPs in <code>.prune.in</code> (pruned at r² 0.3).</li>
+  <li><strong>The extension says which statistic.</strong> <code>.imiss</code>/<code>.lmiss</code> (missingness per person/per SNP), <code>.hwe</code>, <code>.genome</code>, <code>.het</code>, <code>.eigenvec</code>/<code>.eigenval</code>; their columns are explained on each step's page and in the <a href="https://www.cog-genomics.org/plink/1.9/formats" target="_blank" rel="noopener">PLINK file format reference</a>.<sup><a href="#src-17">17</a></sup></li>
+  <li><strong>Only filesets are inputs to PLINK.</strong> The tables (<code>.hwe</code>, <code>.het</code>, …) are read by R for plots and by the reader; lists such as <code>.prune.in</code> and <code>-merge.missnp</code> go back into PLINK through <code>--extract</code> and <code>--flip</code>.</li>
+</ul>
+<p>Because every step after step 1 reads the same fileset, the steps can be run in any order once step 1 is done, provided step 3 comes before steps 4–6. That is also why each step page can recreate what it needs from scratch in the lab.</p>
+
+<h2 id="how-to-use">How to work through the practical on this site <span class="tag core">Core</span></h2>
+<p>The next pages explain the input files (<a href="plink-data.html">page 12</a>), the tools (<a href="tools.html">page 13</a>) and how to set up your own computer (<a href="setup.html">page 14</a>). Pages 15–22 take one step each, and page 23 is the exercise. Every step page has the same parts: what the step finds and why, the statistic in exact terms, a terminal to run the step on the toy data, a plot of the output with a threshold you can move, the choice of threshold, the practical's R code (with an R console that runs it in the browser), and the same commands for the real data.</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <thead><tr><th></th><th>In the browser lab</th><th>On your own computer</th></tr></thead>
+  <tbody>
+    <tr><td>Data</td><td data-label="In the browser lab">The toy study, <code>toy.*</code></td><td data-label="On your own computer">PennCATH, <code>penncath.*</code></td></tr>
+    <tr><td>Commands</td><td data-label="In the browser lab">The practical's, with <code>toy</code> for <code>penncath</code> and <code>toy_1kg</code> for the 1000 Genomes files</td><td data-label="On your own computer">The practical's</td></tr>
+    <tr><td>PLINK and GrafAnc</td><td data-label="In the browser lab">Emulators written in JavaScript that run the practical's commands and write files with PLINK's names and columns; a file panel shows what each command wrote</td><td data-label="On your own computer">PLINK 1.9 and GrafAnc, installed as on <a href="setup.html">page 14</a></td></tr>
+    <tr><td>R</td><td data-label="In the browser lab">Plots drawn by the page, and an optional R console (R compiled to run in the browser) that runs the practical's R code on the lab's files; its first run downloads about 38 MB</td><td data-label="On your own computer">R with the packages the practical loads</td></tr>
+    <tr><td>Results</td><td data-label="In the browser lab">Checked against the toy data's known contents</td><td data-label="On your own computer">Yours to interpret; the step pages say what to look for</td></tr>
+  </tbody>
+</table>
+</div>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 8 · The practical on the workshop website</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-008.jpg" alt="Lecture 1, slide 8: a screenshot of the workshop website's Session 1 Practical tab. Its contents list runs standard QC steps using Colab, gets the data from a shared Google Drive, and assigns ancestry using GrafPop; its objectives are to introduce Google Colaboratory, the importance of quality control, and the basic skills to perform QC of GWAS data with PLINK." loading="lazy"><figcaption>Lecture 1 · slide 8</figcaption></figure>
+    <div><p>Slide 8 points to the practical on the workshop website. The screenshot shows an earlier version, which ran in Google Colab (a service that runs notebooks in the browser) and assigned ancestry with GrafPop. The current practical runs in RStudio on Biowulf, NIH's computing cluster, with PLINK 1.9, R and GrafAnc; this site follows the current version, in the browser or on your own computer.<sup><a href="#src-13">13</a></sup> The data still come from a shared Google Drive folder, as described above.</p></div>
+  </div>
+</aside>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 106 · On to the practical</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-106.jpg" alt="Lecture 1, slide 106: the title 'Enough talk… on to hands-on practice!' above a black-and-white photograph of two men under a banner reading 'The truth is concrete', with 'After a break…' in the corner" loading="lazy"><figcaption>Lecture 1 · slide 106</figcaption></figure>
+    <div><p>The last slide of the lecture hands over to the practical, after a break. This page and the twelve after it are that practical.</p></div>
+  </div>
+</aside>
+
+<h2 id="beyond">What the practical does not do <span class="tag optional">Optional</span></h2>
+<p>The practical itself says that its steps "illustrate core GWAS QC concepts but are not an exhaustive production QC protocol".<sup><a href="#src-13">13</a></sup> Checks that a full protocol usually adds:<sup><a href="#src-1">1</a>,<a href="#src-2">2</a>,<a href="#src-3">3</a></sup></p>
+<ul>
+  <li><strong>Sex check.</strong> Compares recorded sex with sex estimated from X-chromosome heterozygosity (<code>--check-sex</code>) to find mix-ups of samples. Impossible here: the PennCATH files have no X chromosome.</li>
+  <li><strong>Differential missingness.</strong> Tests whether a SNP's missing calls are more common in cases than in controls (<code>--test-missing</code>), one signature of differential errors like those in the stories above.</li>
+  <li><strong>Batch and plate effects.</strong> Compares allele frequencies and missingness between genotyping batches or plates; needs batch information, which is not part of these files.<sup><a href="#src-5">5</a></sup></li>
+  <li><strong>Minor allele frequency filter.</strong> Removes rare SNPs (<code>--maf</code>), whose calls are less reliable and whose tests have little power; the practical applies <code>--maf 0.05</code> only to the PCAs of steps 6 and 7.</li>
+  <li><strong>Mendelian errors.</strong> In family data, genotypes impossible given the parents' genotypes (<code>--mendel</code>); PennCATH has no families.</li>
+  <li><strong>Contamination estimates.</strong> Methods that estimate the fraction of another person's DNA in a sample, from array data alone or together with sequence reads, and detect contamination as low as 1%.<sup><a href="#src-18">18</a></sup></li>
+  <li><strong>Sample identity and duplicates</strong> against known genotypes from another assay, <strong>allele and genome-build harmonization</strong> before merging with other data, <strong>comparison of allele frequencies with an external reference</strong>, and, after imputation, <strong>post-imputation QC</strong> of imputation quality scores.</li>
+</ul>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021 · Experimentation › Data processing</div>
+  <p>The reading places quality control between genotyping and imputation. Its Figure 1, panel c, draws the stage as a plot of principal components in which "your data" sit among reference populations, the picture that step 7 makes. The text states that "generating reliable results from GWAS requires careful quality control" and gives example steps: removing rare or monomorphic variants, variants out of Hardy–Weinberg equilibrium and SNPs missing in a fraction of people (steps 1 and 2), and comparing self-reported sex with sex inferred from the X and Y chromosomes (the sex check above).<sup><a href="#src-19">19</a></sup> Its Table 1 lists PLINK/PLINK2 for these filters. Its section on population stratification describes PCA used first to find and exclude outliers and then to supply covariates for the association model; step 6 is the first of these uses.</p>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>Genotype errors that differ between cases and controls create false associations whose test statistic grows in proportion to sample size; QC exists to find them before association testing.</li>
+    <li>Every QC step is the same loop: compute a statistic per SNP or person, look at its distribution, choose a threshold, remove or flag, and record the decision.</li>
+    <li>The practical's eight steps: missingness (remove SNPs, then people, above 1%), Hardy–Weinberg in controls, LD pruning (r² 0.3), relatedness (PI_HAT), heterozygosity (±3 SD or |F| &gt; 0.1), PCA, PCA with 1000 Genomes, and GrafAnc.</li>
+    <li>Only step 1 removes data; the other steps flag or list, and the exercise turns flags into removals.</li>
+    <li>File names record history: each filter adds a suffix, <code>.LD0.3</code> marks analyses on pruned SNPs, and all later steps read <code>penncath.geno0.01.mind0.01</code>.</li>
+    <li>The lab runs the same commands on a small simulated toy study whose problems were planted and recorded, so every answer can be checked; on the toy files its PLINK writes the same files as real PLINK 1.9.0. PennCATH's QC results come from running PLINK yourself; the step pages quote some of them so that you can check yours.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Why does the practical remove SNPs with too many missing calls before it removes people?</summary><div class="a"><p>A SNP that failed on the array is missing in many people at once. If people were filtered first, those bad SNPs would add to every person's missing-call count and could push good samples over the 1% threshold. Removing bad SNPs first means the person filter measures the quality of each DNA sample, not of the array's worst probes.</p></div></details>
+  <details class="q"><summary>A genotyping problem shifts the cases' allele frequency by 0.005 at a SNP with \(\bar{p} = 0.2\) and no real effect. What is \(z^2\) with 50,000 people per group, and with 500,000?</summary><div class="a"><p>\(z^2 = n\Delta^2 / (\bar{p}(1-\bar{p})) = 50{,}000 \times 0.005^2 / 0.16 = 7.8\), a p-value of about 0.005: suggestive but far from genome-wide significance. With 500,000 per group, \(z^2 = 78\), far beyond the threshold of 29.7. The error is the same; only the sample size changed.</p></div></details>
+  <details class="q"><summary>Why does step 2 judge Hardy–Weinberg equilibrium in the controls rather than in everyone?</summary><div class="a"><p>A SNP that truly affects the disease changes genotype frequencies among cases, who are selected for having the disease, so it can depart from Hardy–Weinberg proportions in cases for a real biological reason. Controls are closer to a sample of the population, so a departure there points to a calling problem rather than an association.</p></div></details>
+  <details class="q"><summary>What does the name <code>penncath.geno0.01.mind0.01.LD0.3.het</code> tell you about how the file was made?</summary><div class="a"><p>It is a heterozygosity table (<code>.het</code>) computed on the fileset that passed both missingness filters of step 1 (<code>geno0.01.mind0.01</code>), using only the LD-pruned SNPs from step 3 (<code>LD0.3</code>, pruned at r² 0.3).</p></div></details>
+  <details class="q"><summary>After running all eight steps, how many people and SNPs has the practical removed beyond step 1?</summary><div class="a"><p>None from <code>penncath.geno0.01.mind0.01</code>, the fileset the exercise starts from. Steps 2–8 compute statistics, lists and plots; they flag SNPs (Hardy–Weinberg), pairs of people (relatedness) and people (heterozygosity, PCA, ancestry) but do not remove them. Step 7's <code>--geno 0.1</code> drops SNPs only from the merged copy used for its PCA. The exercise asks you to choose thresholds and build the cleaned fileset with options such as <code>--hwe</code> and <code>--remove</code>, and the practical notes that a well-justified analysis may remove no one on some criteria.</p></div></details>
+  <details class="q"><summary>What can the toy study teach that PennCATH cannot, and the other way round?</summary><div class="a"><p>The toy study's problems were placed on purpose and are recorded, so you can check whether a step found them and see what each threshold catches; it is also small enough to run in a browser. PennCATH has real array errors that no one listed in advance, real ancestry and real size, so its results are the ones that resemble a real analysis, and you get them by running PLINK yourself. The two also differ in ways that change the numbers: <code>--geno 0.01</code> removes about a third of PennCATH's SNPs but a small share of the toy's.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">Session 1 practical</a> <span class="src">· DCEG Statistical Genetics Workshop</span> <span class="level intro">intro</span> — the practical this part of the lecture follows, with its R Markdown code.</li>
+    <li><a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">Data quality control in genetic case-control association studies</a> <span class="src">· Anderson et al. 2010, Nature Protocols</span> <span class="level intro">intro</span> — a step-by-step PLINK protocol with the same checks and the reasoning for each threshold.</li>
+    <li><a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">A tutorial on conducting genome-wide association studies: quality control and statistical analysis</a> <span class="src">· Marees et al. 2018</span> <span class="level intro">intro</span> — a QC and association tutorial with scripts on GitHub.</li>
+    <li><a href="https://pbreheny.github.io/adv-gwas-tutorial/quality_control.html" target="_blank" rel="noopener">GWAS tutorial: quality control</a> <span class="src">· Breheny</span> <span class="level intro">intro</span> — QC of the same PennCATH files done mostly in R.</li>
+    <li><a href="https://doi.org/10.1002/gepi.20516" target="_blank" rel="noopener">Quality control and quality assurance in genotypic data for GWAS</a> <span class="src">· Laurie et al. 2010, Genetic Epidemiology</span> <span class="level intermediate">intermediate</span> — the QC system of a large consortium, including intensity data, batches and duplicates.</li>
+    <li><a href="https://doi.org/10.1016/j.ajhg.2010.06.005" target="_blank" rel="noopener">Spoiling the whole bunch</a> <span class="src">· Pluzhnikov et al. 2010, AJHG</span> <span class="level advanced">advanced</span> — how a few weak samples bias the calls of a whole plate, and how to detect it.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Anderson CA, Pettersson FH, Clarke GM, Cardon LR, Morris AP, Zondervan KT. Data quality control in genetic case-control association studies. <em>Nat Protoc</em>. 2010;5(9):1564–1573. <a href="https://doi.org/10.1038/nprot.2010.116" target="_blank" rel="noopener">doi:10.1038/nprot.2010.116</a></li>
+    <li id="src-2">Marees AT, de Kluiver H, Stringer S, et al. A tutorial on conducting genome-wide association studies: quality control and statistical analysis. <em>Int J Methods Psychiatr Res</em>. 2018;27(2):e1608. <a href="https://doi.org/10.1002/mpr.1608" target="_blank" rel="noopener">doi:10.1002/mpr.1608</a></li>
+    <li id="src-3">Laurie CC, Doheny KF, Mirel DB, et al. Quality control and quality assurance in genotypic data for genome-wide association studies. <em>Genet Epidemiol</em>. 2010;34(6):591–602. <a href="https://doi.org/10.1002/gepi.20516" target="_blank" rel="noopener">doi:10.1002/gepi.20516</a></li>
+    <li id="src-4">Clayton DG, Walker NM, Smyth DJ, et al. Population structure, differential bias and genomic control in a large-scale, case-control association study. <em>Nat Genet</em>. 2005;37(11):1243–1246. <a href="https://doi.org/10.1038/ng1653" target="_blank" rel="noopener">doi:10.1038/ng1653</a></li>
+    <li id="src-5">Pluzhnikov A, Below JE, Konkashbaev A, et al. Spoiling the whole bunch: quality control aimed at preserving the integrity of high-throughput genotyping. <em>Am J Hum Genet</em>. 2010;87(1):123–128. <a href="https://doi.org/10.1016/j.ajhg.2010.06.005" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2010.06.005</a></li>
+    <li id="src-6">Sebastiani P, Solovieff N, Puca A, et al. Genetic signatures of exceptional longevity in humans. <em>Science</em>. Published online July 1, 2010; retracted. <a href="https://doi.org/10.1126/science.1190532" target="_blank" rel="noopener">doi:10.1126/science.1190532</a></li>
+    <li id="src-7">Welsh J. Longevity debate: chips to blame? <em>The Scientist</em>. 2010. <a href="https://www.the-scientist.com/longevity-debate-chips-to-blame-43197" target="_blank" rel="noopener">the-scientist.com</a></li>
+    <li id="src-8">Sebastiani P, Solovieff N, Puca A, et al. Retraction. <em>Science</em>. 2011;333(6041):404. <a href="https://doi.org/10.1126/science.333.6041.404-a" target="_blank" rel="noopener">doi:10.1126/science.333.6041.404-a</a></li>
+    <li id="src-9">Sebastiani P, Solovieff N, Dewan AT, et al. Genetic signatures of exceptional longevity in humans. <em>PLoS One</em>. 2012;7(1):e29848. <a href="https://doi.org/10.1371/journal.pone.0029848" target="_blank" rel="noopener">doi:10.1371/journal.pone.0029848</a></li>
+    <li id="src-10">Reilly MP, Li M, He J, et al. Identification of ADAMTS7 as a novel locus for coronary atherosclerosis and association of ABO with myocardial infarction in the presence of coronary atherosclerosis: two genome-wide association studies. <em>Lancet</em>. 2011;377(9763):383–392. <a href="https://doi.org/10.1016/S0140-6736(10)61996-4" target="_blank" rel="noopener">doi:10.1016/S0140-6736(10)61996-4</a></li>
+    <li id="src-11">Reed E, Nunez S, Kulp D, Qian J, Reilly MP, Foulkes AS. A guide to genome-wide association analysis and post-analytic interrogation. <em>Stat Med</em>. 2015;34(28):3769–3792. <a href="https://doi.org/10.1002/sim.6605" target="_blank" rel="noopener">doi:10.1002/sim.6605</a></li>
+    <li id="src-12">The 1000 Genomes Project Consortium. A global reference for human genetic variation. <em>Nature</em>. 2015;526(7571):68–74. <a href="https://doi.org/10.1038/nature15393" target="_blank" rel="noopener">doi:10.1038/nature15393</a></li>
+    <li id="src-13">DCEG Statistical Genetics Workshop. Session 1 practical: quality control of GWAS data with PLINK. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_1/practical" target="_blank" rel="noopener">Workshop website</a>; code at <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/tree/main/src" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a>; data in the workshop's <a href="https://drive.google.com/drive/folders/1kVJH4tM8R8O0hITnvifCV-hoai-Mgn-b?usp=sharing" target="_blank" rel="noopener">shared folder</a> (<code>penncath.log</code>, <code>sim_pheno.par</code>, <code>gcta_sim.log</code>).</li>
+    <li id="src-14">Breheny P. GWAS tutorial: data formats, summary statistics, and quality control. <a href="https://pbreheny.github.io/adv-gwas-tutorial/quality_control.html" target="_blank" rel="noopener">pbreheny.github.io/adv-gwas-tutorial</a>. The clinical table <code>penncath.csv</code> is in the tutorial's data download.</li>
+    <li id="src-15">Toy data of this site and their data card, <a href="data/README.md">data/README.md</a>: how the data were simulated, the planted problems step by step, the differences from PennCATH, and the lab's results on the toy files and on the real PennCATH files. Simulated data, released under CC0 1.0 (public domain dedication).</li>
+    <li id="src-16">Lachance J, Tishkoff SA. SNP ascertainment bias in population genetic analyses: why it is important, and how to correct it. <em>BioEssays</em>. 2013;35(9):780–786. <a href="https://doi.org/10.1002/bies.201300014" target="_blank" rel="noopener">doi:10.1002/bies.201300014</a></li>
+    <li id="src-17">PLINK 1.9 documentation: <a href="https://www.cog-genomics.org/plink/1.9/formats" target="_blank" rel="noopener">file formats</a>, <a href="https://www.cog-genomics.org/plink/1.9/filter" target="_blank" rel="noopener">filters</a> and <a href="https://www.cog-genomics.org/plink/1.9/basic_stats" target="_blank" rel="noopener">basic statistics</a>.</li>
+    <li id="src-18">Jun G, Flickinger M, Hetrick KN, et al. Detecting and estimating contamination of human DNA samples in sequencing and array-based genotype data. <em>Am J Hum Genet</em>. 2012;91(5):839–848. <a href="https://doi.org/10.1016/j.ajhg.2012.09.004" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2012.09.004</a></li>
+    <li id="src-19">Uffelmann E, Huang QQ, Munung NS, et al. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

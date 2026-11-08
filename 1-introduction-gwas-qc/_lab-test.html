@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab test page · Lecture 1</title>
+<meta name="description" content="Internal test page for the in-browser lab: the whole practical in one terminal, a widget built on Lab.run, Lab.readTable and Lab.plot, and the R console.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<link rel="stylesheet" href="assets/css/lab.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/lab/toy-data.js"></script>
+<script defer src="assets/js/lab/data-card.js"></script>
+<script defer src="assets/js/lab/plink-core.js"></script>
+<script defer src="assets/js/lab/grafanc-core.js"></script>
+<script defer src="assets/js/lab/lab.js"></script>
+<script defer src="assets/js/lab/rlab.js"></script>
+<style>
+body[data-page="_lab-test"] .test-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 8px 22px; }
+body[data-page="_lab-test"] .test-grid h4 { margin: 0.6em 0 0.2em; font-size: 0.95rem; }
+</style>
+</head>
+<body data-page="_lab-test">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Internal · test page for the lab (not linked from the course)</p>
+  <h1>Lab test page</h1>
+  <p class="lede">Every part of the in-browser lab on one page: a terminal whose suggested commands run the whole practical on the toy data, a terminal with a setup step, a widget built on <code>Lab.run</code>, <code>Lab.readTable</code> and <code>Lab.plot</code>, and the R console. The markup is documented in <code>assets/js/lab/LAB.md</code>.</p>
+</header>
+
+<h2 id="practical">The practical in one terminal</h2>
+<p>Press <strong>Run next</strong> repeatedly (or click a suggestion and press Enter) to run steps 1–8 of the practical with <code>toy</code> in place of <code>penncath</code>. Open <strong>Show files</strong> to watch the output files appear.</p>
+
+<div class="lab" id="lab-practical" data-title="Steps 1–8 · the practical on the toy data">
+<pre class="lab-script">ls ${input_dir}
+which plink
+plink --version
+head ${input_dir}/toy.fam
+plink --bfile ${input_dir}/toy --missing --out ${analysis_dir}/toy
+plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01
+plink --bfile ${analysis_dir}/toy.geno0.01 --mind 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --hardy --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --indep-pairwise 50 5 0.3 --out ${analysis_dir}/toy.geno0.01.mind0.01
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --genome --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --het \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --extract ${analysis_dir}/toy.geno0.01.mind0.01.prune.in \
+      --maf 0.05 --pca --out ${analysis_dir}/toy.geno0.01.mind0.01.LD0.3
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --bmerge ${reference_dir}/toy_1kg.bed \
+      ${reference_dir}/toy_1kg.bim \
+      ${reference_dir}/toy_1kg.fam \
+      --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes || true
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 \
+      --flip ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes-merge.missnp \
+      --make-bed \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01_flipSNPs \
+      --bmerge ${reference_dir}/toy_1kg.bed \
+      ${reference_dir}/toy_1kg.bim \
+      ${reference_dir}/toy_1kg.fam \
+      --make-bed --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes \
+      --geno 0.1 --maf 0.05 --pca \
+      --out ${analysis_dir}/toy.geno0.01.mind0.01.merge1kgenomes
+cd ${analysis_dir}
+git clone https://github.com/Illumina/akt.git
+awk '{
+    gsub("\"", "", $1);
+    print "\"" $1 "\"", $2, "\"" $1 "\"", "\"" $1 "_" $2 "\""
+}' ${analysis_dir}/toy.geno0.01.mind0.01.fam &gt; ${analysis_dir}/toy.updateIDs.txt
+plink --bfile ${analysis_dir}/toy.geno0.01.mind0.01 --update-ids \
+     ${analysis_dir}/toy.updateIDs.txt --make-bed \
+     --out ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs
+if [ ! -d "${analysis_dir}/grafanc" ]; then
+    cd ${analysis_dir}
+    git clone https://github.com/jimmy-penn/grafanc.git
+fi
+if [ -f "${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz" ]; then
+    gunzip ${analysis_dir}/grafanc/cpp/data/AncSnpPopAFs.txt.gz
+fi
+ls ${analysis_dir}/grafanc/bin/
+module load bcftools/1.23
+export GRAFPATH=${analysis_dir}/grafanc/cpp
+${analysis_dir}/grafanc/bin/grafanc \
+    ${analysis_dir}/toy.geno0.01.mind0.01.uniqueIDs \
+    ${analysis_dir}/toy_grafanc_out.txt
+head ${analysis_dir}/toy_grafanc_out.txt
+du -sh ${analysis_dir}</pre>
+</div>
+
+<h2 id="setup">A terminal that starts after step 1</h2>
+<p>Its setup command filters variants by missingness when the page loads, so the reader can go on from step 1 without running it. The file panel starts open on the setup's output.</p>
+
+<div class="lab" id="lab-setup" data-title="Step 2 · sample missingness, after the variant filter" data-files="${analysis_dir}/toy.geno0.01.bed">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --geno 0.01 --make-bed --out ${analysis_dir}/toy.geno0.01</pre>
+<pre class="lab-script">plink --bfile ${analysis_dir}/toy.geno0.01 --missing --out ${analysis_dir}/toy.geno0.01
+head ${analysis_dir}/toy.geno0.01.imiss
+sort -k6,6gr ${analysis_dir}/toy.geno0.01.imiss | head -5</pre>
+</div>
+
+<h2 id="widget">A widget built on the lab</h2>
+
+<div class="widget" id="w-labtest">
+  <div class="widget-head"><span class="badge">Interactive</span><span class="wtitle">Missingness and QC plots from the lab's files (toy data, simulated)</span></div>
+  <div class="widget-body">
+    <div class="controls">
+      <button type="button" class="btn primary" id="w-labtest-run">Run plink --missing</button>
+      <span class="note" id="w-labtest-status">Waiting for the lab…</span>
+    </div>
+    <div id="w-labtest-hist"></div>
+    <div class="test-grid">
+      <div><h4>Hardy–Weinberg Q–Q (toy.geno0.01.mind0.01.hwe)</h4><div id="w-labtest-qq"><p class="note">Run step 3 of the practical (plink --hardy) to fill this plot.</p></div></div>
+      <div><h4>PCA with the reference panel</h4><div id="w-labtest-pca"><p class="note">Run step 5 of the practical (the merged PCA) to fill this plot.</p></div></div>
+    </div>
+    <h4>What each filter removed</h4>
+    <div id="w-labtest-bar"></div>
+  </div>
+</div>
+<p class="after-widget"><strong>What to notice:</strong> the histogram reads <code>analysis/toy.lmiss</code> from the lab's file system. Drag the red line (or use the slider) to see how many variants a <code>--geno</code> threshold would remove; it redraws whenever a terminal writes the file again.</p>
+
+<h2 id="r-console">The R console</h2>
+<p>The first run downloads R (WebR) into the browser; later runs reuse it. The code reads the same files as the terminals.</p>
+
+<div class="rlab" id="r-lmiss" data-title="Plot variant missingness in R" data-packages="data.table,ggplot2">
+<pre class="lab-setup">plink --bfile ${input_dir}/toy --missing --out ${analysis_dir}/toy</pre>
+<pre class="rlab-code">library(data.table)
+library(ggplot2)
+variant_miss &lt;- fread(file.path(analysis_dir, "toy.lmiss"))
+print(head(variant_miss))
+ggplot(variant_miss, aes(x = F_MISS)) +
+  geom_histogram(bins = 50) +
+  geom_vline(xintercept = 0.01, color = "red") +
+  labs(title = "Variant missingness (toy data)")</pre>
+</div>
+
+</article>
+</main>
+</div>
+<script>
+/* The test widget: Lab.run + Lab.readTable + Lab.plot.* + the lab:fs-change event. */
+document.addEventListener("DOMContentLoaded", function () {
+  if (!window.Lab) return;
+  var A = Lab.paths.analysis_dir;
+  var status = document.getElementById("w-labtest-status");
+  var runBtn = document.getElementById("w-labtest-run");
+  var hist = null;
+
+  function drawHist() {
+    var t = Lab.readTable(A + "/toy.lmiss");
+    if (!t) { status.textContent = "No toy.lmiss yet: press the button or run step 1 in a terminal."; return; }
+    status.textContent = t.n + " variants in toy.lmiss.";
+    var opts = { bins: 40, xLabel: "F_MISS", unit: "variants",
+      threshold: { value: 0.01, min: 0, max: 0.2, step: 0.005, label: "--geno", direction: "above", verb: "would be removed" } };
+    if (hist) hist.update(t.col("F_MISS")); else hist = Lab.plot.histogram("#w-labtest-hist", t.col("F_MISS"), opts);
+  }
+  function drawQQ() {
+    var t = Lab.readTable(A + "/toy.geno0.01.mind0.01.hwe");
+    if (!t) return;
+    var rows = t.objects().filter(function (r) { return r.TEST === "UNAFF"; });
+    Lab.plot.qq("#w-labtest-qq", rows.map(function (r) { return r.P; }), {
+      labels: rows.map(function (r) { return r.SNP; }),
+      refLines: [{ y: 8, label: "p = 1e-8 (--hwe)" }] });
+  }
+  function drawPCA() {
+    var pcs = Lab.readTable(A + "/toy.geno0.01.mind0.01.merge1kgenomes.eigenvec");
+    var panel = Lab.readTable(A + "/akt/data/integrated_call_samples_v3.20130502.ALL.panel");
+    if (!pcs) return;
+    var pop = {};
+    if (panel) panel.objects().forEach(function (r) { pop[r.sample] = r.super_pop; });
+    var pts = pcs.rows.map(function (r) { return { x: r[2], y: r[3], group: pop[r[1]] || "toy study", label: r[0] + " " + r[1] }; });
+    Lab.plot.scatter("#w-labtest-pca", pts, { xLabel: "PC1", yLabel: "PC2", equal: true, highlight: "toy study",
+      groups: ["toy study"], legendTitle: "Super-population" });
+  }
+  function drawBar() {
+    var c = window.TOY_CARD || {};
+    var data = [["--geno 0.01", c.geno_removed], ["--mind 0.01", c.mind_removed], ["HWE p < 1e-8", c.hwe_unaff_p_lt_1e8]]
+      .filter(function (d) { return typeof d[1] === "number"; });
+    if (!data.length) { document.getElementById("w-labtest-bar").textContent = "TOY_CARD has no filter counts yet."; return; }
+    Lab.plot.bar("#w-labtest-bar", data, { xLabel: "Removed", ariaLabel: "Variants or people removed by each QC filter",
+      note: "--geno removes variants, --mind people; the HWE bar counts variants with p < 1e-8 in controls (TOY_CARD geno_removed, mind_removed, hwe_unaff_p_lt_1e8)." });
+  }
+  runBtn.addEventListener("click", function () {
+    runBtn.disabled = true;
+    status.textContent = "Running plink --missing…";
+    Lab.run("plink --bfile ${input_dir}/toy --missing --out ${analysis_dir}/toy").then(function (res) {
+      runBtn.disabled = false;
+      status.textContent = res.code === 0 ? "Done: " + res.outputs.length + " files written." : "plink exited with code " + res.code + ".";
+    });
+  });
+  document.addEventListener("lab:fs-change", function (e) {
+    var p = e.detail.paths.join(" ");
+    if (/toy\.lmiss/.test(p)) drawHist();
+    if (/\.hwe/.test(p)) drawQQ();
+    if (/merge1kgenomes\.eigenvec|\.panel/.test(p)) drawPCA();
+  });
+  Lab.ready.then(function () { drawHist(); drawQQ(); drawPCA(); drawBar(); });
+});
+</script>
+</body>
+</html>

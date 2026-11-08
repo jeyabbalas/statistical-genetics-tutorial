@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Statistical genetics · Tutorials</title>
-  <meta name="description" content="Statistical genetics tutorials for data scientists: explore the biology, measurements, and data behind genetic association studies. Start with Lecture 0, Biological foundations.">
+  <meta name="description" content="Statistical genetics tutorials for data scientists: the biology, measurements and data behind genetic association studies (Lecture 0), then genetic epidemiology, GWAS and hands-on quality control with PLINK (Lecture 1).">
   <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
@@ -28,7 +28,7 @@
       <h1>Statistical genetics</h1>
       <p class="lede">From the biology of genetic variation to the data used to study human traits. A growing collection of tutorials for data scientists and machine-learning researchers.</p>
       <div class="chips">
-        <span class="chip">1 lecture available</span>
+        <span class="chip">2 lectures available</span>
         <span class="chip data">Interactive examples</span>
         <span class="chip">Read at your own pace</span>
       </div>
@@ -82,34 +82,103 @@
           <span class="lecture-meta">13 topics · 2 parts</span>
         </div>
       </article>
+      <article class="lecture-card l1" aria-labelledby="lecture-1-title">
+        <div class="lecture-heading">
+          <span class="lecture-number" aria-hidden="true">01</span>
+          <div>
+            <p class="eyebrow">Lecture 1 <span class="availability">Available</span></p>
+            <h3 id="lecture-1-title"><a href="1-introduction-gwas-qc/index.html">Genetic epidemiology, GWAS and quality control</a></h3>
+          </div>
+        </div>
+        <p class="lecture-description">Session 1 of the DCEG Statistical Genetics Workshop: what genetic epidemiology studies and how its findings reach medicine, the population-genetic ideas a GWAS depends on (allele frequencies, Hardy–Weinberg tests, linkage disequilibrium, population structure), the GWAS from design to use, and a hands-on practical that cleans real genotype data with PLINK, also runnable in the browser on a toy dataset.</p>
+
+        <div class="lecture-parts">
+          <section aria-labelledby="l1-part-a">
+            <h4 id="l1-part-a">Part A · Genetic epidemiology</h4>
+            <ul class="topic-list">
+              <li><a href="1-introduction-gwas-qc/genetic-epidemiology.html">What it does</a></li>
+              <li><a href="1-introduction-gwas-qc/field-map.html">The field map</a></li>
+              <li><a href="1-introduction-gwas-qc/social-context.html">Social context</a></li>
+            </ul>
+          </section>
+          <section aria-labelledby="l1-part-b">
+            <h4 id="l1-part-b">Part B · A few basic definitions</h4>
+            <ul class="topic-list">
+              <li><a href="1-introduction-gwas-qc/snp-data.html">SNP data</a></li>
+              <li><a href="1-introduction-gwas-qc/frequencies-hwe.html">Frequencies &amp; HWE</a></li>
+              <li><a href="1-introduction-gwas-qc/linkage-disequilibrium.html">Linkage disequilibrium</a></li>
+              <li><a href="1-introduction-gwas-qc/population-structure.html">Population structure</a></li>
+            </ul>
+          </section>
+          <section aria-labelledby="l1-part-c">
+            <h4 id="l1-part-c">Part C · GWAS from start to finish</h4>
+            <ul class="topic-list">
+              <li><a href="1-introduction-gwas-qc/gwas-design.html">Design &amp; data</a></li>
+              <li><a href="1-introduction-gwas-qc/gwas-analysis.html">Testing &amp; results</a></li>
+              <li><a href="1-introduction-gwas-qc/gwas-applications.html">Applications &amp; limits</a></li>
+            </ul>
+          </section>
+          <section aria-labelledby="l1-part-d">
+            <h4 id="l1-part-d">Part D · Practical: quality control</h4>
+            <ul class="topic-list">
+              <li><a href="1-introduction-gwas-qc/practical-overview.html">Overview</a></li>
+              <li><a href="1-introduction-gwas-qc/plink-data.html">PLINK files</a></li>
+              <li><a href="1-introduction-gwas-qc/tools.html">Tools</a></li>
+              <li><a href="1-introduction-gwas-qc/setup.html">Setup</a></li>
+              <li><a href="1-introduction-gwas-qc/qc-missingness.html">Eight QC steps</a></li>
+              <li><a href="1-introduction-gwas-qc/qc-exercise.html">Exercise</a></li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="lecture-actions">
+          <a class="btn primary" href="1-introduction-gwas-qc/index.html">Open Lecture 1 <span aria-hidden="true">→</span></a>
+          <span class="lecture-meta">23 pages · 4 parts · PLINK lab in the browser</span>
+        </div>
+      </article>
       <p class="upcoming">More lectures will be added here as the collection grows.</p>
     </section>
 
     <section aria-labelledby="study-aids">
       <h2 id="study-aids">Alongside the lectures</h2>
       <div class="card-grid">
-        <a class="card" href="0-biological-foundations/glossary.html">
+        <a class="card" href="1-introduction-gwas-qc/glossary.html">
           <span class="card-num">Look it up</span>
-          <span class="card-title">Lecture 0 glossary</span>
-          <span class="card-desc">Definitions, connections, and links back to the topics where each term appears.</span>
+          <span class="card-title">Glossary</span>
+          <span class="card-desc">Every term used in Lectures 0 and 1, with definitions, connections, and the pages where each term appears.</span>
+        </a>
+        <a class="card" href="1-introduction-gwas-qc/slide-guide.html">
+          <span class="card-num">Follow the slides</span>
+          <span class="card-title">Lecture 1 slide guide</span>
+          <span class="card-desc">All 124 slides of the Session 1 lecture, each linked to the Lecture 1 section that explains it.</span>
         </a>
         <a class="card" href="0-biological-foundations/lecture-1-bridge.html">
           <span class="card-num">Connect the ideas</span>
           <span class="card-title">Lecture 1 decoder</span>
-          <span class="card-desc">A guide to the source GWAS lecture, mapping its 124 slides to the foundations in Lecture 0.</span>
+          <span class="card-desc">A beginner's guide to the Session 1 slides, mapping each one to the biology in Lecture 0.</span>
+        </a>
+        <a class="card" href="1-introduction-gwas-qc/setup.html">
+          <span class="card-num">Run it yourself</span>
+          <span class="card-title">Set up your computer</span>
+          <span class="card-desc">Install PLINK, R and GrafAnc on macOS, Linux or Windows, or use a cloud service, and get the practical's data.</span>
+        </a>
+        <a class="card" href="1-introduction-gwas-qc/resources.html">
+          <span class="card-num">Go further</span>
+          <span class="card-title">Curated resources, Lecture 1</span>
+          <span class="card-desc">Papers, books, software documentation, data portals and courses on genetic epidemiology, GWAS and quality control.</span>
         </a>
         <a class="card" href="0-biological-foundations/resources.html">
           <span class="card-num">Go further</span>
-          <span class="card-title">Curated resources</span>
-          <span class="card-desc">Books, papers, videos, and documentation organized by topic and level.</span>
+          <span class="card-title">Curated resources, Lecture 0</span>
+          <span class="card-desc">Books, papers, videos, and documentation on the biology, organized by topic and level.</span>
         </a>
       </div>
-      <p class="source-note">Source slides for the Lecture 1 decoder: <a href="sources/DCEGStatGen_09sep26.pdf">DCEG course overview and introduction (PDF)</a>.</p>
+      <p class="source-note">Source slides for Lecture 1 and its decoder: <a href="sources/lecture_1/DCEGStatGen_09sep26.pdf">DCEG course overview and introduction (PDF)</a>.</p>
     </section>
 
     <aside class="callout data" aria-label="Learning with these tutorials">
       <span class="callout-title">Learn by exploring</span>
-      <p>Lecture 0 combines visual mental models, interactive widgets, and examples of real data formats. Widgets use simulated data; individual participant values are made up. Each topic marks core material and optional detail so you can choose how deeply to read.</p>
+      <p>Each lecture combines visual mental models, interactive widgets, and examples of real data formats; Lecture 1 adds a terminal in the browser that runs the practical&#8217;s PLINK commands on a simulated toy dataset. Widgets use simulated data; individual participant values are made up. Each topic marks core material and optional detail so you can choose how deeply to read.</p>
     </aside>
 
     <footer class="site-footer">

@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run the practical on your own computer or in the cloud · Lecture 1</title>
+<meta name="description" content="How to run the Session 1 practical without NIH's Biowulf cluster: what a computer needs, one project folder with the three folder variables, installing PLINK 1.9, R and its packages and GrafAnc on macOS, Linux or Windows (WSL), downloading and checking the six input files, running the practical's R Markdown file or this site's scripts, and cloud options.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<!-- Widgets for this page, one file each: assets/js/widgets/PAGEKEY-NAME.js -->
+<script defer src="assets/js/widgets/setup-path-translator.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="setup"]. */
+body[data-page="setup"] article :is(p, li, dd, dt, td, caption) > code { overflow-wrap: anywhere; }
+body[data-page="setup"] table.hashes td:last-child code { overflow-wrap: anywhere; word-break: break-all; font-size: 0.8rem; }
+body[data-page="setup"] table.needs td:first-child, body[data-page="setup"] table.trouble td:first-child { font-weight: 600; }
+body[data-page="setup"] .tabset > .tab-panel h4 { margin: 1.1em 0 0.3em; font-size: 0.98rem; }
+body[data-page="setup"] .untested { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #7a4705; background: #fdf3e1; border: 1px solid #ecd3a5; border-radius: 999px; padding: 0 8px; vertical-align: 1px; }
+/* Path translator */
+body[data-page="setup"] #w-path-translator .pt-controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-start; margin-bottom: 4px; }
+body[data-page="setup"] #w-path-translator .pt-field { display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 3px; font-size: 0.86rem; font-weight: 600; color: var(--fg-muted); min-width: 0; }
+body[data-page="setup"] #w-path-translator .pt-folder { flex: 2 1 260px; }
+body[data-page="setup"] #w-path-translator .pt-system { flex: 1 1 220px; }
+body[data-page="setup"] #w-path-translator .pt-field input, body[data-page="setup"] #w-path-translator .pt-field select { width: 100%; max-width: 100%; min-width: 0; height: 2.3rem; box-sizing: border-box; font: inherit; font-weight: 400; color: var(--fg); padding: 5px 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--bg); }
+body[data-page="setup"] #w-path-translator .pt-field input { font-family: var(--mono); font-size: 0.9rem; }
+body[data-page="setup"] #w-path-translator .pt-problems { border-left: 3px solid var(--pitfall); background: var(--pitfall-soft); padding: 8px 12px; border-radius: 6px; margin: 10px 0; font-size: 0.9rem; }
+body[data-page="setup"] #w-path-translator .pt-notes { font-size: 0.9rem; margin-top: 10px; }
+body[data-page="setup"] #w-path-translator .pt-h { font-size: 0.74rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 4px; }
+body[data-page="setup"] #w-path-translator ul { margin: 0; padding-left: 1.2em; }
+body[data-page="setup"] #w-path-translator li { overflow-wrap: anywhere; }
+body[data-page="setup"] #w-path-translator pre.code { font-size: 0.8rem; }
+</style>
+</head>
+<body data-page="setup">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part D · Practical · Page 14 of 23</p>
+  <h1>Run the practical on your own computer or in the cloud</h1>
+  <p class="lede">The practical was written for Biowulf, the shared Linux computing cluster of the US National Institutes of Health, where PLINK is already installed and the data sit in a shared folder. Readers of this site have no account there. This page builds the same working environment on your own computer, or on a computer rented from a cloud service: one project folder, three folder variables, three programs (PLINK 1.9, R with three packages, and GrafAnc) and six data files, each compared with its published checksum, a number computed from every byte of a file that shows whether the file arrived complete and unchanged. After that, every command of the practical runs as written.</p>
+  <div class="chips">
+    <span class="chip core">Slide 8</span>
+    <span class="chip time">≈ 40 min to read; 1–2 h to set up</span>
+    <span class="chip data">Shows up in the data as: six input files with known sizes and checksums</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">One folder, three variables, three programs, six checked files</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 356" role="img" aria-labelledby="mm-t mm-d">
+<title id="mm-t">The working environment the practical needs</title>
+<desc id="mm-d">Left: one project folder, ~/statgen-workshop, with four subfolders. data/inputs/penncath_withPheno holds penncath.bed, .bim and .fam and is named by the variable input_dir; data/inputs/ref holds the 1000 Genomes reference fileset and is named by reference_dir; analysis holds every file the eight steps write and is named by analysis_dir; tools holds plink and is added to PATH. Right: three programs, PLINK 1.9 for steps 1 to 8, R with tidyverse, data.table and glue for plots and counts, and GrafAnc for step 8, a Linux program that runs on Linux, in WSL, or in Docker on a Mac. Bottom: six input files are checked by size and SHA-256 checksum, and then the practical's commands run unchanged, for example plink --bfile ${input_dir}/penncath --missing --out ${analysis_dir}/penncath.</desc>
+<defs><marker id="mm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5a6370"/></marker></defs>
+<rect x="12" y="12" width="474" height="244" rx="8" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="28" y="38" class="t-h">One project folder</text>
+<text x="411" y="56" class="t-xs" text-anchor="middle">variable</text>
+<text x="28" y="66" class="t-mono">~/statgen-workshop/</text>
+<text x="28" y="90" class="t-mono">├─ data/inputs/penncath_withPheno/</text>
+<text x="28" y="110" class="t-mono">│</text>
+<text x="60" y="110" class="t-sm">penncath.bed, .bim, .fam (326 MB)</text>
+<text x="28" y="134" class="t-mono">├─ data/inputs/ref/</text>
+<text x="28" y="154" class="t-mono">│</text>
+<text x="60" y="154" class="t-sm">all_pops_1kgenomes_markersForPCA.* (11 MB)</text>
+<text x="28" y="178" class="t-mono">├─ analysis/</text>
+<text x="28" y="198" class="t-mono">│</text>
+<text x="60" y="198" class="t-sm">every file the eight steps write (about 3 GB)</text>
+<text x="28" y="222" class="t-mono">└─ tools/</text>
+<text x="60" y="242" class="t-sm">plink, and any other program you add</text>
+<line x1="300" y1="86" x2="352" y2="86" stroke="#5a6370" stroke-dasharray="4 3" marker-end="url(#mm-arr)"/>
+<line x1="184" y1="130" x2="352" y2="130" stroke="#5a6370" stroke-dasharray="4 3" marker-end="url(#mm-arr)"/>
+<line x1="130" y1="174" x2="352" y2="174" stroke="#5a6370" stroke-dasharray="4 3" marker-end="url(#mm-arr)"/>
+<line x1="106" y1="218" x2="352" y2="218" stroke="#5a6370" stroke-dasharray="4 3" marker-end="url(#mm-arr)"/>
+<rect x="354" y="74" width="116" height="24" rx="12" fill="#fff" stroke="#4e79a7"/>
+<text x="412" y="91" class="t-mono" text-anchor="middle">input_dir</text>
+<rect x="354" y="118" width="116" height="24" rx="12" fill="#fff" stroke="#4e79a7"/>
+<text x="412" y="135" class="t-mono" text-anchor="middle">reference_dir</text>
+<rect x="354" y="162" width="116" height="24" rx="12" fill="#fff" stroke="#4e79a7"/>
+<text x="412" y="179" class="t-mono" text-anchor="middle">analysis_dir</text>
+<rect x="354" y="206" width="116" height="24" rx="12" fill="#fff" stroke="#4e79a7"/>
+<text x="412" y="223" class="t-mono" text-anchor="middle">PATH</text>
+<rect x="502" y="12" width="246" height="244" rx="8" fill="#fff" stroke="#2f3b4c" stroke-width="1.5"/>
+<text x="518" y="38" class="t-h">Three programs</text>
+<text x="518" y="68" class="t-b">PLINK 1.9</text>
+<text x="518" y="86" class="t-sm">steps 1–8; macOS, Linux, WSL</text>
+<text x="518" y="102" class="t-sm">zip file, Homebrew, conda or apt</text>
+<text x="518" y="132" class="t-b">R + three packages</text>
+<text x="518" y="150" class="t-sm">tidyverse, data.table, glue</text>
+<text x="518" y="166" class="t-sm">plots and counts from PLINK's tables</text>
+<text x="518" y="196" class="t-b">GrafAnc</text>
+<text x="518" y="214" class="t-sm">step 8; a Linux program: runs on</text>
+<text x="518" y="230" class="t-sm">Linux, in WSL, or in Docker on a Mac</text>
+<rect x="12" y="272" width="736" height="76" rx="8" fill="#f1f8ef" stroke="#59a14f"/>
+<text x="28" y="295" class="t-b">Six files, checked by size and SHA-256 checksum; then the practical's commands, unchanged</text>
+<text x="28" y="319" class="t-mono">plink --bfile ${input_dir}/penncath --missing --out ${analysis_dir}/penncath</text>
+<text x="28" y="339" class="t-sm">On Biowulf the three variables hold /data/… paths; on your computer they hold paths inside the project folder.</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 300 640" role="img" aria-labelledby="mm-t2 mm-d2">
+<title id="mm-t2">The working environment the practical needs</title>
+<desc id="mm-d2">Top: the project folder ~/statgen-workshop with data/inputs/penncath_withPheno (input_dir), data/inputs/ref (reference_dir), analysis (analysis_dir) and tools (on PATH). Middle: three programs, PLINK 1.9, R with tidyverse, data.table and glue, and GrafAnc. Bottom: six files checked by size and checksum, then the practical's commands unchanged.</desc>
+<rect x="6" y="6" width="288" height="290" rx="8" fill="#eef3f8" stroke="#4e79a7"/>
+<text x="16" y="30" class="t-h">One project folder</text>
+<text x="16" y="56" class="t-mono">~/statgen-workshop/</text>
+<text x="16" y="80" class="t-mono">├─ data/inputs/</text>
+<text x="16" y="102" class="t-mono">│  ├─ penncath_withPheno/</text>
+<text x="16" y="124" class="t-mono">│  │</text>
+<rect x="72" y="109" width="110" height="21" rx="10" fill="#fff" stroke="#4e79a7"/>
+<text x="127" y="124" class="t-mono" text-anchor="middle">input_dir</text>
+<text x="16" y="148" class="t-mono">│  └─ ref/</text>
+<text x="16" y="170" class="t-mono">│</text>
+<rect x="72" y="155" width="122" height="21" rx="10" fill="#fff" stroke="#4e79a7"/>
+<text x="133" y="170" class="t-mono" text-anchor="middle">reference_dir</text>
+<text x="16" y="194" class="t-mono">├─ analysis/</text>
+<text x="16" y="216" class="t-mono">│</text>
+<rect x="48" y="201" width="116" height="21" rx="10" fill="#fff" stroke="#4e79a7"/>
+<text x="106" y="216" class="t-mono" text-anchor="middle">analysis_dir</text>
+<text x="16" y="240" class="t-mono">└─ tools/</text>
+<rect x="48" y="247" width="64" height="21" rx="10" fill="#fff" stroke="#4e79a7"/>
+<text x="80" y="262" class="t-mono" text-anchor="middle">PATH</text>
+<text x="16" y="286" class="t-sm">inputs 338 MB; outputs about 3 GB</text>
+<rect x="6" y="306" width="288" height="160" rx="8" fill="#fff" stroke="#2f3b4c" stroke-width="1.5"/>
+<text x="16" y="330" class="t-h">Three programs</text>
+<text x="16" y="354" class="t-b">PLINK 1.9</text>
+<text x="16" y="372" class="t-sm">steps 1–8; macOS, Linux, WSL</text>
+<text x="16" y="398" class="t-b">R + three packages</text>
+<text x="16" y="416" class="t-sm">tidyverse, data.table, glue</text>
+<text x="16" y="442" class="t-b">GrafAnc</text>
+<text x="16" y="460" class="t-sm">step 8; Linux, WSL, or Docker</text>
+<rect x="6" y="478" width="288" height="152" rx="8" fill="#f1f8ef" stroke="#59a14f"/>
+<text x="16" y="502" class="t-b">Six files, checked by size</text>
+<text x="16" y="520" class="t-b">and SHA-256 checksum</text>
+<text x="16" y="546" class="t-sm">then the practical's commands, unchanged:</text>
+<text x="16" y="572" class="t-mono">plink --bfile</text>
+<text x="16" y="592" class="t-mono">  ${input_dir}/penncath --missing</text>
+<text x="16" y="612" class="t-mono">  --out ${analysis_dir}/penncath</text>
+</svg>
+  </figure>
+  <p class="mm-statement">The practical needs one project folder whose three data subfolders are named by the variables <code>input_dir</code>, <code>reference_dir</code> and <code>analysis_dir</code>, three programs that the shell can find, and six input files whose sizes and checksums match the published ones. Once those exist, the practical's commands run unchanged; only the values of the three variables differ from Biowulf.</p>
+  <ul class="mm-hooks">
+    <li><strong>What the computer needs.</strong> About 5 GB of free disk, 4–8 GB of memory, and macOS, Linux or Windows with WSL.</li>
+    <li><strong>One folder, three variables.</strong> The same layout as the in-browser lab, under <code>~/statgen-workshop</code>; the variables are set once and kept for every new terminal and for R.</li>
+    <li><strong>Three programs.</strong> PLINK 1.9 from its official zip file or a package manager, R with tidyverse, data.table and glue, and GrafAnc, which runs only on Linux: natively, in WSL, or in Docker.</li>
+    <li><strong>Six files, checked.</strong> Download PennCATH and the reference panel from the workshop's shared folder and compare each file's size and SHA-256 checksum with the table.</li>
+    <li><strong>Run it.</strong> Either the practical's own R Markdown file with its setup chunk replaced, or this site's scripts, which run all eight steps and draw the plots.</li>
+    <li><strong>When something fails.</strong> Almost every failure is one of six causes: PATH, permissions, processor type, an incomplete file, a path with a space, or a missing library.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From the previous pages</div>
+  <p>How the shell turns a typed line into a program run, and what <code>PATH</code> and the folder variables are, is on <a href="tools.html#shell">The tools · The shell</a>; what each program does is on the rest of that page. <a href="practical-overview.html">The practical: what it does and how to work through it</a> lists the eight steps, and <a href="plink-data.html">The data: PLINK .bed, .bim and .fam files</a> takes the input files apart.</p>
+</aside>
+
+<h2 id="needs">What your computer needs <span class="tag core">Core</span></h2>
+<p>The input files take 338 MB. The other numbers in the table were measured when the whole practical was run for this site with real PLINK 1.9.0 and GrafAnc on a Mac (an Apple M5 Pro with 18 cores and 48 GB of memory, November 2026); a computer with fewer cores takes longer. PLINK writes binary genotype files whose size follows from the numbers of people and SNPs (<a href="tools.html#plink-bits">\(3 + m\lceil n/4 \rceil\) bytes</a> for \(m\) SNPs and \(n\) people)<sup><a href="#src-1">1</a></sup>, and text reports with one line per SNP, per person or per pair of people, so the sizes can be worked out before anything runs.</p>
+<div class="table-wrap">
+<table class="compact stack needs">
+  <caption>Resources for the whole practical (measured on one Mac; the plan leaves room to spare)</caption>
+  <thead><tr><th>Resource</th><th>Plan for</th><th>Why</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Resource">Disk</td><td data-label="Plan for">5 GB free</td><td data-label="Why">Inputs 338 MB. PLINK's outputs took 1.75 GB: four PennCATH-sized filesets of 212–216 MB each (after the SNP filter, after the sample filter, with flipped strands, with new IDs); the merged PennCATH + 1000 Genomes fileset, 575 MB (3,884 people × 575,627 SNPs), plus a temporary copy of the same size while PLINK writes it, deleted at the end<sup><a href="#src-2">2</a></sup>; the <code>.hwe</code> report, 152 MB (three lines per SNP); and the <code>.genome</code> report, 93 MB (one line for each of 951,510 pairs of 1,380 people). The GrafAnc repository adds about 0.19 GB (71 MB of files, 73 MB of history, and 47 MB more once its reference table is decompressed; the practical estimates 30 MB). Docker images, if you use them, need space of their own: they download 0.26 GB (GrafAnc) and 1.3 GB (RStudio with tidyverse) and take more once unpacked.</td></tr>
+    <tr><td data-label="Resource">Memory</td><td data-label="Plan for">4 GB; 8 GB is comfortable</td><td data-label="Why">By default PLINK reserves half of the computer's memory as its workspace and works within it (24,576 MB on the 48 GB Mac); <code>--memory</code> sets the amount in MB.<sup><a href="#src-3">3</a></sup> It needed far less: its peak memory use was 0.87 GB, during the merge. The merged PCA, with its 3,884 × 3,884 matrix of 8-byte numbers (0.12 GB), peaked at 0.19 GB, and every other step stayed below 0.1 GB. GrafAnc peaked at 0.22 GB.</td></tr>
+    <tr><td data-label="Resource">Processor</td><td data-label="Plan for">Any 64-bit processor</td><td data-label="Why">A processor's architecture is the instruction set its programs are built for: x86_64 for Intel and AMD processors, arm64 for Apple Silicon Macs and some Linux and Windows computers (<code>uname -m</code> prints yours). PLINK 1.9's official downloads are for x86_64 and, on macOS, also for arm64; Ubuntu's package also covers arm64 Linux. GrafAnc's ready-built program and the workshop's GrafAnc image are x86_64 only: on an Apple Silicon Mac, Docker runs the image by emulation (translating each instruction in software), more slowly; on arm64 Linux, GrafAnc has to be compiled (route 3 below).</td></tr>
+    <tr><td data-label="Resource">System</td><td data-label="Plan for">macOS 11 or later; Linux; Windows 10 version 2004 or later, or Windows 11</td><td data-label="Why">PLINK's macOS build needs macOS 11; its Linux build needs a C library (glibc) of version 2.31 or later, as in Ubuntu 20.04 and later. Windows runs everything inside WSL, Microsoft's Linux environment for Windows.</td></tr>
+    <tr><td data-label="Resource">Time</td><td data-label="Plan for">1–2 hours to set up; seconds to minutes per step</td><td data-label="Why">Installing and downloading take most of the time. On the Mac, all of the practical's PLINK commands together took 14 seconds; the slowest were the merge and the merged PCA, about 3 seconds each, and the relatedness calculation, 2 seconds. GrafAnc took about 8 seconds and <code>qc_plots.R</code> about 7. On the workshop's server, PLINK rewrote the whole PennCATH fileset in 4 seconds (its <code>penncath.log</code>).<sup><a href="#src-4">4</a></sup> A laptop with fewer cores takes longer.</td></tr>
+  </tbody>
+</table>
+</div>
+<p>The number of pairs is \(n(n-1)/2\) for \(n\) people: with \(n = 1{,}380\) people left after QC (the practical's count), that is \(1{,}380 \times 1{,}379 / 2 = 951{,}510\) pairs, each one line of the <code>.genome</code> file.</p>
+
+<h2 id="layout">One folder, three variables <span class="tag core">Core</span></h2>
+<p>A <dfn>terminal</dfn> is the window where you type commands; the program inside it that reads them is the shell (bash on Linux and WSL, zsh on macOS; both treat every command here the same way). Every command in the practical names its files through three folder variables: <code>${input_dir}</code> for PennCATH, <code>${reference_dir}</code> for the 1000 Genomes reference panel and <code>${analysis_dir}</code> for everything the steps write.<sup><a href="#src-5">5</a></sup> On Biowulf they point to <code>/data/…</code> folders. On your computer they point into one project folder, with the same layout as the <a href="practical-overview.html">in-browser lab</a>:</p>
+<pre class="tree"><span class="dir">~/statgen-workshop/</span>                       <span class="note">the project folder (~ is your home folder)</span>
+├── <span class="dir">data/inputs/penncath_withPheno/</span>     <span class="note">= input_dir</span>
+│   ├── penncath.bed                    <span class="note">302,377,026 bytes</span>
+│   ├── penncath.bim                    <span class="note">24,051,506 bytes</span>
+│   └── penncath.fam                    <span class="note">25,686 bytes</span>
+├── <span class="dir">data/inputs/ref/</span>                    <span class="note">= reference_dir</span>
+│   ├── all_pops_1kgenomes_markersForPCA.bed
+│   ├── all_pops_1kgenomes_markersForPCA.bim
+│   └── all_pops_1kgenomes_markersForPCA.fam
+├── <span class="dir">analysis/</span>                           <span class="note">= analysis_dir: every output, about 3 GB</span>
+├── <span class="dir">tools/</span>                              <span class="note">plink (this folder goes on PATH)</span>
+└── <span class="dir">scripts/</span>                            <span class="note">this site's scripts, if you use them</span></pre>
+<p>Keep the folder name free of spaces and special characters: the practical writes <code>${input_dir}</code> without quotation marks, so the shell would split a path such as <code>~/My Projects</code> into two words. Keep it out of folders that a cloud service synchronizes (iCloud Drive, OneDrive, Dropbox, Google Drive), which would upload about 3 GB of intermediate files. On Windows, keep it in the Linux home folder of WSL, not under <code>/mnt/c</code>, where Linux programs read and write files much more slowly.<sup><a href="#src-6">6</a></sup></p>
+<p>Create the folders and set the variables in a terminal. <code>export</code> makes a variable an <dfn>environment variable</dfn>, one that the shell passes on to every program it starts; <code>PATH</code> is the environment variable that lists the folders in which the shell looks for programs, so putting <code>tools</code> first lets you type <code>plink</code> after copying PLINK there:</p>
+<span class="code-label bash">bash or zsh</span>
+<pre class="code"><span class="cm"># Create the folders (once)</span>
+mkdir -p ~/statgen-workshop/data/inputs/penncath_withPheno \
+         ~/statgen-workshop/data/inputs/ref \
+         ~/statgen-workshop/analysis \
+         ~/statgen-workshop/tools \
+         ~/statgen-workshop/scripts
+
+<span class="cm"># Set the three folder variables and PATH for this terminal</span>
+export input_dir="$HOME/statgen-workshop/data/inputs/penncath_withPheno"
+export reference_dir="$HOME/statgen-workshop/data/inputs/ref"
+export analysis_dir="$HOME/statgen-workshop/analysis"
+export PATH="$HOME/statgen-workshop/tools:$PATH"</pre>
+<p>These settings last until the terminal closes. To have them in every new terminal, add the four <code>export</code> lines once to the shell's start-up file, which the shell reads when it starts: <code>~/.zshrc</code> on macOS, <code>~/.bashrc</code> on Linux and WSL. The quoted <code>'EOF'</code> keeps <code>$HOME</code> and <code>$PATH</code> as written, so they are expanded each time a terminal starts:</p>
+<span class="code-label bash">bash or zsh · once</span>
+<pre class="code"><span class="cm"># On Linux and WSL: ~/.bashrc</span>
+cat >> ~/.zshrc <<'EOF'
+export input_dir="$HOME/statgen-workshop/data/inputs/penncath_withPheno"
+export reference_dir="$HOME/statgen-workshop/data/inputs/ref"
+export analysis_dir="$HOME/statgen-workshop/analysis"
+export PATH="$HOME/statgen-workshop/tools:$PATH"
+EOF</pre>
+<p>R does not read those files when RStudio is opened from the Dock, the Start menu or a launcher, and the practical's bash chunks inherit their environment from R. The practical therefore sets the folders in R and passes them on with <code>Sys.setenv()</code>; on your computer the R version adds the <code>tools</code> folder to R's <code>PATH</code> as well:</p>
+<span class="code-label r">r · replaces the practical's setup chunk</span>
+<pre class="code"><span class="cm"># The folders, in R</span>
+base          &lt;- path.expand("~/statgen-workshop")
+input_dir     &lt;- file.path(base, "data", "inputs", "penncath_withPheno")
+reference_dir &lt;- file.path(base, "data", "inputs", "ref")
+analysis_dir  &lt;- file.path(base, "analysis")
+dir.create(analysis_dir, recursive = TRUE, showWarnings = FALSE)
+Sys.setenv(input_dir = input_dir, reference_dir = reference_dir, analysis_dir = analysis_dir,
+           PATH = paste(file.path(base, "tools"), Sys.getenv("PATH"), sep = .Platform$path.sep))</pre>
+<p><code>path.expand()</code> replaces <code>~</code> with your home folder; <code>file.path()</code> joins folder names with <code>/</code>; <code>.Platform$path.sep</code> is the character that separates folders in <code>PATH</code> (<code>:</code> on macOS and Linux).</p>
+
+<h3 id="translator">Try it: your folder, your system</h3>
+<p>If you want a different folder, or work in Docker, type the folder and pick your system. The widget writes the commands above for that folder and warns about names that would break the practical's commands.</p>
+<div class="widget" id="w-path-translator">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Translate the practical's paths for your computer</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. For the default folder, ~/statgen-workshop, it writes the same commands as above.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> The R lines and the shell lines name the same three folders, so a bash chunk and an R chunk always see the same files. Type <code>~/My Projects/statgen</code>: the widget flags the space, because the practical's unquoted <code>${input_dir}</code> would become two words. Choose Windows with WSL and type <code>C:\Users\Ana\statgen-workshop</code>: the widget converts it to <code>/mnt/c/Users/Ana/statgen-workshop</code> and recommends the Linux home folder instead. Choose Docker: the folder inside the container is always <code>/home/rstudio/statgen-workshop</code>, whatever it is called on your computer.</p>
+
+<h2 id="install">Install the programs <span class="tag core">Core</span></h2>
+<p>Pick your system in any of the tab sets below; all of them switch together. Each subsection ends with a command that shows the program works. On Windows, everything happens inside WSL, so the Windows tab starts by installing it.</p>
+
+<h3 id="plink">PLINK 1.9</h3>
+<p>The practical uses PLINK 1.9, whose official stable version 1.9.0 was released on 27 September 2026.<sup><a href="#src-7">7</a></sup> Its download is a zip file with the program <code>plink</code>, a license file, two example files and <code>prettify</code>, a small program that lines up the columns of a text table (the practical does not use it). The macOS build runs natively on both Intel and Apple Silicon Macs. Downloading with <code>curl</code> in a terminal, as below, avoids a macOS block: a file downloaded by a web browser carries a quarantine mark, and Gatekeeper, the macOS check on programs from the internet, refuses to start an unsigned program that carries it.<sup><a href="#src-8">8</a></sup></p>
+<div class="tabset" data-group="os">
+  <section class="tab-panel" data-label="macOS">
+    <span class="code-label bash">zsh · Terminal</span>
+<pre class="code">cd ~/statgen-workshop/tools
+curl -fLO https://s3.amazonaws.com/plink1-assets/plink_mac_20260927.zip
+unzip -o plink_mac_20260927.zip plink
+rm plink_mac_20260927.zip
+plink --version          <span class="cm"># prints a line starting "PLINK v1.9"</span></pre>
+    <p>Alternatives: <code>brew install plink1</code> with <a href="https://brew.sh/" target="_blank" rel="noopener">Homebrew</a>, a package manager for macOS (it installs the command <code>plink</code> and cannot be installed together with PuTTY, a remote-login program that also has a command called <code>plink</code>)<sup><a href="#src-9">9</a></sup>; or the conda environment below. If you downloaded the zip in a browser and macOS says the developer cannot be verified, open System Settings → Privacy &amp; Security and click Open Anyway, or remove the quarantine mark in the terminal with <code>xattr -d com.apple.quarantine ~/statgen-workshop/tools/plink</code>.</p>
+  </section>
+  <section class="tab-panel" data-label="Linux">
+    <span class="code-label bash">bash</span>
+<pre class="code">sudo apt install -y curl unzip
+cd ~/statgen-workshop/tools
+curl -fLO https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20260927.zip
+unzip -o plink_linux_x86_64_20260927.zip plink
+rm plink_linux_x86_64_20260927.zip
+plink --version                       <span class="cm"># prints a line starting "PLINK v1.9"</span></pre>
+    <p>The <code>apt</code> commands on this page are for Debian and Ubuntu; other Linux systems have the same packages under similar names. This build is for x86_64 processors. On an arm64 Linux computer, or if you prefer the package manager, Ubuntu's package installs the program as <code>plink1.9</code> (version 1.90b7.7 on Ubuntu 26.04 for both processor types; Ubuntu 24.04 has an older build for x86_64 only)<sup><a href="#src-10">10</a></sup>; link it under the name the practical uses:</p>
+<pre class="code">sudo apt install -y plink1.9
+ln -s /usr/bin/plink1.9 ~/statgen-workshop/tools/plink</pre>
+  </section>
+  <section class="tab-panel" data-label="Windows (WSL)">
+    <p>First install WSL, the Windows Subsystem for Linux, which runs a Linux system (Ubuntu by default) inside Windows.<sup><a href="#src-11">11</a></sup> Open PowerShell as administrator (right-click the Start button → Terminal (Admin)) and run:</p>
+    <span class="code-label">PowerShell · administrator</span>
+<pre class="code">wsl --install</pre>
+    <p>Restart Windows, open <strong>Ubuntu</strong> from the Start menu and choose a Linux user name and password. Everything from here on is typed in that Ubuntu terminal, and the project folder lives in its home folder. Then install PLINK exactly as on Linux:</p>
+    <span class="code-label bash">bash · Ubuntu terminal</span>
+<pre class="code">sudo apt update && sudo apt install -y curl unzip
+cd ~/statgen-workshop/tools
+curl -fLO https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20260927.zip
+unzip -o plink_linux_x86_64_20260927.zip plink
+rm plink_linux_x86_64_20260927.zip
+plink --version                       <span class="cm"># prints a line starting "PLINK v1.9"</span></pre>
+    <p>PLINK also has a native Windows build (<code>plink_win64_20260927.zip</code>), but the practical's commands are bash commands and GrafAnc needs Linux, so WSL keeps everything in one place.</p>
+  </section>
+</div>
+<p>Run the <code>mkdir</code> and <code>export</code> lines of <a href="#layout">One folder, three variables</a> first, so that <code>~/statgen-workshop/tools</code> exists and is on <code>PATH</code>; otherwise run <code>./plink --version</code> inside that folder.</p>
+
+<h3 id="plink2">PLINK 2 (optional)</h3>
+<p>The practical does not need PLINK 2; <a href="tools.html#plink2">The tools · PLINK 2.0</a> explains which of its commands differ. If you want it for later sessions, its downloads are on the PLINK 2.0 page (for example <code>plink2_mac_arm64_20261107.zip</code> for Apple Silicon Macs and <code>plink2_linux_avx2_20261107.zip</code> for recent Intel and AMD processors), Homebrew calls it <code>plink-ng</code>, and Bioconda calls it <code>plink2</code>. It installs as <code>plink2</code>, so it does not replace PLINK 1.9.</p>
+
+<h3 id="r">R, an editor and three packages</h3>
+<p>R reads PLINK's report tables and draws the plots. The practical loads three packages: tidyverse (a collection of packages for tables and plots, including dplyr and ggplot2), data.table (for its fast file reader <code>fread()</code>) and glue. RStudio or Positron, both from Posit, give R an editor, a console, a plot pane and a terminal tab, and RStudio's Knit button runs an R Markdown file.<sup><a href="#src-12">12</a></sup></p>
+<div class="tabset" data-group="os">
+  <section class="tab-panel" data-label="macOS">
+    <ol>
+      <li>Install R from <a href="https://cloud.r-project.org/bin/macosx/" target="_blank" rel="noopener">CRAN</a>, the Comprehensive R Archive Network: take the installer for Apple Silicon (arm64) or for Intel (x86_64) to match your Mac.<sup><a href="#src-13">13</a></sup> (Homebrew's R also works, but it compiles packages from source, which is much slower.)</li>
+      <li>Install <a href="https://posit.co/download/rstudio-desktop/" target="_blank" rel="noopener">RStudio Desktop</a> or <a href="https://positron.posit.co/" target="_blank" rel="noopener">Positron</a>.</li>
+      <li>In the R console, install the packages. CRAN has ready-built versions for macOS, so this takes a few minutes:</li>
+    </ol>
+    <span class="code-label r">r · console</span>
+<pre class="code">install.packages(c("tidyverse", "data.table", "glue", "rmarkdown"))</pre>
+  </section>
+  <section class="tab-panel" data-label="Linux">
+    <p>Ubuntu's own R package is enough for the practical; CRAN's Ubuntu page shows how to get the newest R instead.<sup><a href="#src-13">13</a></sup> On Linux, R packages are compiled from source, which needs a C compiler and the development files of several system libraries. These are the libraries the tidyverse needs on Ubuntu:</p>
+    <span class="code-label bash">bash</span>
+<pre class="code">sudo apt install -y r-base r-base-dev build-essential \
+  libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev \
+  libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev</pre>
+    <p>Then install the packages into your personal R library (compiling the tidyverse takes 10–30 minutes):</p>
+    <span class="code-label bash">bash</span>
+<pre class="code">Rscript -e 'lib &lt;- Sys.getenv("R_LIBS_USER"); dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+install.packages(c("tidyverse", "data.table", "glue", "rmarkdown"), lib = lib, repos = "https://cloud.r-project.org")'</pre>
+    <p>For an editor, install <a href="https://posit.co/download/rstudio-desktop/" target="_blank" rel="noopener">RStudio Desktop</a> or <a href="https://positron.posit.co/" target="_blank" rel="noopener">Positron</a> (both have Ubuntu packages), or run R in the terminal.</p>
+  </section>
+  <section class="tab-panel" data-label="Windows (WSL)">
+    <p>Install R inside Ubuntu exactly as on Linux, so that R, PLINK and GrafAnc share one file system:</p>
+    <span class="code-label bash">bash · Ubuntu terminal</span>
+<pre class="code">sudo apt install -y r-base r-base-dev build-essential \
+  libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev \
+  libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev
+Rscript -e 'lib &lt;- Sys.getenv("R_LIBS_USER"); dir.create(lib, recursive = TRUE, showWarnings = FALSE)
+install.packages(c("tidyverse", "data.table", "glue", "rmarkdown"), lib = lib, repos = "https://cloud.r-project.org")'</pre>
+    <p>Two ways to work with R there. <strong>In the terminal:</strong> <code>Rscript qc_plots.R</code> (see <a href="#scripts">the scripts</a>) writes the plots as PNG files, which you open from Windows. <strong>In an editor:</strong> Visual Studio Code with its WSL extension opens the Ubuntu folder and terminal directly. <strong>In a browser:</strong> RStudio Server in Docker (<a href="#docker-r">below</a>) works with Docker Desktop's WSL integration. RStudio for Windows runs a Windows version of R, separate from the Linux system that holds PLINK and the files, so it is the least direct choice; it can read the results through the path <code>\\wsl.localhost\Ubuntu\home\YOUR-LINUX-NAME\statgen-workshop\analysis</code> <span class="untested">not tested here</span>.</p>
+  </section>
+</div>
+<p>Check the packages: <code>Rscript -e 'library(tidyverse); library(data.table); library(glue)'</code> should print the tidyverse's list of attached packages and no error.</p>
+
+<h3 id="git">git and the build tools</h3>
+<p><dfn>git</dfn> copies a code repository with <code>git clone URL</code>; the practical uses it to fetch GrafAnc and a table of 1000 Genomes populations. A C and C++ compiler is needed only to compile R packages on Linux or to build GrafAnc from its source code.</p>
+<div class="tabset" data-group="os">
+  <section class="tab-panel" data-label="macOS">
+<pre class="code">xcode-select --install     <span class="cm"># Apple's command-line tools: git, make and the clang compiler</span>
+git --version</pre>
+  </section>
+  <section class="tab-panel" data-label="Linux">
+<pre class="code">sudo apt install -y git build-essential
+git --version</pre>
+  </section>
+  <section class="tab-panel" data-label="Windows (WSL)">
+<pre class="code">sudo apt install -y git build-essential     <span class="cm"># in the Ubuntu terminal</span>
+git --version</pre>
+  </section>
+</div>
+
+<h3 id="grafanc">GrafAnc</h3>
+<p>GrafAnc assigns each person to a genetic ancestry group from about 282,000 selected SNPs (<a href="tools.html#grafanc">The tools · GrafAnc</a>). It is a Linux program: its repository contains a ready-built program for 64-bit Linux, <code>bin/grafanc</code>, which the practical runs, and its source code relies on features that only Linux has (the <code>sysinfo</code> system call and the <code>/proc</code> file system), so it cannot be compiled for macOS or Windows without changing its code.<sup><a href="#src-14">14</a></sup> It also needs htslib, a C library for genomic file formats, installed on the system. On Biowulf the practical makes htslib available with <code>module load bcftools/1.23</code>; bcftools itself is never run. (That reading is ours: the practical does not say why it loads bcftools.)</p>
+<p>The workshop also publishes a Docker image with GrafAnc built from a fixed version of its source, with a small patch: the original program can corrupt its output table when compiled with optimization, and it reports failure (exit status 1) even after a successful run.<sup><a href="#src-15">15</a></sup> <dfn>Docker</dfn> runs a program inside a <em>container</em>, an isolated Linux environment created from an <em>image</em> that bundles the program with everything it needs; Docker Desktop provides it on macOS and Windows.<sup><a href="#src-16">16</a></sup></p>
+<p>None of the three routes below has been tested by us <span class="untested">untested</span>. (To check the lab and the PennCATH results for this site, GrafAnc was compiled on a Mac after replacing the two functions that use those Linux features; that is not one of these routes.) Steps 1–7 do not need GrafAnc, so you can set it up last.</p>
+<div class="tabset" data-group="os">
+  <section class="tab-panel" data-label="macOS">
+    <h4>Docker image (the only route on a Mac)</h4>
+    <p>Install and start <a href="https://docs.docker.com/desktop/" target="_blank" rel="noopener">Docker Desktop</a>, then download the image once (about 264 MB). It is built for Intel processors; on an Apple Silicon Mac Docker runs it under emulation, which <code>--platform linux/amd64</code> requests explicitly:</p>
+    <span class="code-label bash">zsh · Terminal</span>
+<pre class="code">docker pull --platform linux/amd64 ghcr.io/dceg-workshops/graftools:1.0.1</pre>
+    <p>After the ID update of step 8, run GrafAnc on the files in the analysis folder:</p>
+<pre class="code">docker run --rm --platform linux/amd64 --user "$(id -u):$(id -g)" \
+  -v "${analysis_dir}":/work ghcr.io/dceg-workshops/graftools:1.0.1 \
+  grafanc penncath.geno0.01.mind0.01.uniqueIDs penncath_grafanc_out.txt</pre>
+    <p><code>-v "${analysis_dir}":/work</code> makes your analysis folder appear inside the container as <code>/work</code>, the image's working directory (the folder in which its commands start), so GrafAnc reads and writes files there by name alone; a path such as <code>/Users/ana/…</code> does not exist inside the container. <code>--user</code> runs it under your user number, so the output file belongs to you; <code>--rm</code> deletes the stopped container afterwards. The image sets <code>GRAFPATH</code> and holds the decompressed reference table, so the practical's <code>git clone</code>, <code>gunzip</code> and <code>module load</code> lines are not needed.</p>
+  </section>
+  <section class="tab-panel" data-label="Linux">
+    <h4>Route 1: the repository's program, as in the practical</h4>
+    <p>Install htslib's run-time library from the package manager (Ubuntu 24.04 and later call it <code>libhts3t64</code>; Ubuntu 22.04 calls it <code>libhts3</code>; Ubuntu's <code>bcftools</code> package installs it too). Then follow the practical: clone the repository into the analysis folder, decompress the reference table once, and point <code>GRAFPATH</code> at the folder that contains <code>data/AncSnpPopAFs.txt</code>:</p>
+    <span class="code-label bash">bash</span>
+<pre class="code">sudo apt install -y libhts3t64
+cd "${analysis_dir}"
+git clone https://github.com/jimmy-penn/grafanc.git
+gunzip grafanc/cpp/data/AncSnpPopAFs.txt.gz
+export GRAFPATH="${analysis_dir}/grafanc/cpp"
+"${analysis_dir}/grafanc/bin/grafanc" \
+    "${analysis_dir}/penncath.geno0.01.mind0.01.uniqueIDs" \
+    "${analysis_dir}/penncath_grafanc_out.txt"
+head -3 "${analysis_dir}/penncath_grafanc_out.txt"</pre>
+    <p>Judge success by the output file, not by the exit status: this version exits with status 1 after a successful run. If it stops with <code>error while loading shared libraries: libhts.so.3</code>, the library is missing.</p>
+    <h4>Route 2: the Docker image</h4>
+    <p>Install Docker Engine (or Docker Desktop) and use the two commands of the macOS tab; on an x86_64 computer the image runs natively.</p>
+    <h4>Route 3: build it with the workshop's patch</h4>
+    <p>This repeats the build steps of the workshop's Dockerfile: the same fixed version of the source, the same patch, and a similar compile command, with htslib from the package manager instead of a copy built from source. GrafAnc's own makefile expects htslib in the folder <code>~/htslib/1.20</code>, so the last command compiles the files directly:<sup><a href="#src-15">15</a></sup></p>
+    <span class="code-label bash">bash</span>
+<pre class="code">sudo apt install -y build-essential git curl zlib1g-dev libhts-dev
+cd "${analysis_dir}"
+[ -d grafanc ] || git clone https://github.com/jimmy-penn/grafanc.git
+cd grafanc
+git checkout b5e51c78b5004a8388418ce56755bb2f71f24eb5
+curl -fLO https://raw.githubusercontent.com/DCEG-workshops/statgen_workshop_tutorial/main/docker_images/GRAFTOOLS/grafanc-output.patch
+git apply --unidiff-zero grafanc-output.patch
+cd cpp
+[ -f data/AncSnpPopAFs.txt.gz ] && gunzip data/AncSnpPopAFs.txt.gz
+g++ -O2 -std=c++11 -pthread -I. -o grafanc *.cpp -lhts -lz -lm
+./grafanc     <span class="cm"># with no arguments it prints its usage</span></pre>
+    <p>The program built here sits in <code>cpp/</code>, next to the <code>data/</code> folder that holds the reference table, so it finds the table even without <code>GRAFPATH</code>; it exits with status 0 on success. Run it as in route 1, with <code>"${analysis_dir}/grafanc/cpp/grafanc"</code> in place of the <code>bin/grafanc</code> path.</p>
+  </section>
+  <section class="tab-panel" data-label="Windows (WSL)">
+    <p>WSL is Linux, so route 1 of the Linux tab works in the Ubuntu terminal unchanged: install <code>libhts3t64</code>, clone, decompress, set <code>GRAFPATH</code> and run <code>bin/grafanc</code>. Route 3 (build with the patch) also works there.</p>
+    <p>Alternatively install Docker Desktop for Windows and turn on its integration with your Ubuntu distribution (Settings → Resources → WSL integration); the <code>docker</code> commands of the macOS tab then work in the Ubuntu terminal.</p>
+  </section>
+</div>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> GrafAnc's exit status in scripts</div>
+  <p>A script that stops at the first failing command (bash's <code>set -e</code>) stops right after a successful run of the repository's <code>bin/grafanc</code>, because that program returns 1, the code for failure. Write <code>grafanc … || true</code> and then test that the output file exists and is not empty, as <a href="#scripts"><code>qc_pipeline.sh</code></a> does. The patched builds (the Docker image and route 3) return 0.</p>
+</aside>
+
+<h3 id="conda">Or: one conda environment for everything but GrafAnc</h3>
+<p><dfn>conda</dfn> installs programs and libraries into a separate folder called an environment, without administrator rights; Miniforge is a small installer for it that uses the community channel conda-forge.<sup><a href="#src-17">17</a></sup> The file <a href="scripts/environment.yml" download><code>environment.yml</code></a> lists PLINK 1.9 (from Bioconda, the channel for bioinformatics software), R with the three packages and rmarkdown, pandoc, git, curl, unzip and htslib:</p>
+<span class="code-label bash">bash or zsh</span>
+<pre class="code">conda env create -f environment.yml     <span class="cm"># once; "mamba env create" is faster</span>
+conda activate statgen-workshop         <span class="cm"># in every new terminal</span>
+plink --version</pre>
+<p>Bioconda builds PLINK 1.9 for Linux and for Intel Macs only.<sup><a href="#src-18">18</a></sup> On an Apple Silicon Mac, either (A) build the whole environment for Intel Macs, which then runs through Rosetta 2, Apple's translator for Intel programs, or (B) leave PLINK out and install the native macOS zip as above. Option B lasts longer: Apple says Rosetta is available through macOS 27, and from macOS 28 only for certain older games.<sup><a href="#src-19">19</a></sup></p>
+<span class="code-label bash">zsh · Apple Silicon</span>
+<pre class="code"><span class="cm"># Option A: an Intel environment, run through Rosetta 2</span>
+CONDA_SUBDIR=osx-64 conda env create -f environment.yml
+conda activate statgen-workshop
+conda config --env --set subdir osx-64
+
+<span class="cm"># Option B: a native environment without PLINK; PLINK from its zip file (above)</span>
+grep -v 'plink' environment.yml &gt; environment-arm64.yml
+conda env create -f environment-arm64.yml</pre>
+<p>The versions in the file were checked against the channels in November 2026, but we have not created the environment ourselves <span class="untested">untested</span>. GrafAnc is not in conda; use one of the routes above.</p>
+
+<h2 id="data">Download the data and check it <span class="tag core">Core</span></h2>
+<p>The workshop shares its input files in a Google Drive folder.<sup><a href="#src-4">4</a></sup> You need six of them: the three PennCATH files from <code>data/workshop1/inputs/penncath_withPheno</code> and the three reference-panel files from <code>data/workshop1/inputs/ref</code>. (The PennCATH folder also holds logs and simulation files that the practical does not use.) Three ways to get them:</p>
+<div class="tabset" data-group="dl">
+  <section class="tab-panel" data-label="Script">
+    <p><a href="scripts/download_data.sh" download><code>download_data.sh</code></a> downloads each file with <code>curl</code>, resumes an interrupted download, recognizes the web page that Google Drive sends instead of a file when a download is refused, falls back to <code>gdown</code> if it is installed, and keeps a file only if its size and SHA-256 checksum match the table below:</p>
+<pre class="code">cd ~/statgen-workshop/scripts
+bash download_data.sh            <span class="cm"># then: bash download_data.sh --check</span></pre>
+  </section>
+  <section class="tab-panel" data-label="curl">
+    <p>Each file has a Google Drive file ID; the address below downloads a file directly and skips Drive's question about files too large for its virus scan (<code>confirm=t</code>). <code>-C -</code> resumes an interrupted download:</p>
+<pre class="code">drive="https://drive.usercontent.google.com/download?export=download&amp;confirm=t&amp;id="
+cd "${input_dir}"
+curl -fL -C - -o penncath.bed "${drive}1BzzNvW6kpRCgBoMqb-XTaEioTeWhPX6E"
+curl -fL -C - -o penncath.bim "${drive}1nkCwwWpIkYvmYGdQM1K6PfErHXEyHlYH"
+curl -fL -C - -o penncath.fam "${drive}1Ti4I_QuuQje1ZG1uZ9yx1HOq5dmHmkr1"
+cd "${reference_dir}"
+curl -fL -C - -o all_pops_1kgenomes_markersForPCA.bed "${drive}1xljnuC31_NAJ4ROlNizMJbw0BW27GQvq"
+curl -fL -C - -o all_pops_1kgenomes_markersForPCA.bim "${drive}1VOAxnOkweda76YqRI13UPt26f-IA8zyn"
+curl -fL -C - -o all_pops_1kgenomes_markersForPCA.fam "${drive}1zpDNUDUDIpcQU9SDiFsBwbAI2SiVs2d7"</pre>
+  </section>
+  <section class="tab-panel" data-label="gdown">
+    <p><code>gdown</code> is a Python program for Google Drive downloads (<code>pip install gdown</code>; it needs Python 3.10 or later).<sup><a href="#src-20">20</a></sup> It takes the same file IDs:</p>
+<pre class="code">cd "${input_dir}"
+gdown 1BzzNvW6kpRCgBoMqb-XTaEioTeWhPX6E -O penncath.bed
+gdown 1nkCwwWpIkYvmYGdQM1K6PfErHXEyHlYH -O penncath.bim
+gdown 1Ti4I_QuuQje1ZG1uZ9yx1HOq5dmHmkr1 -O penncath.fam
+cd "${reference_dir}"
+gdown 1xljnuC31_NAJ4ROlNizMJbw0BW27GQvq -O all_pops_1kgenomes_markersForPCA.bed
+gdown 1VOAxnOkweda76YqRI13UPt26f-IA8zyn -O all_pops_1kgenomes_markersForPCA.bim
+gdown 1zpDNUDUDIpcQU9SDiFsBwbAI2SiVs2d7 -O all_pops_1kgenomes_markersForPCA.fam</pre>
+  </section>
+  <section class="tab-panel" data-label="Browser">
+    <p>Open the <a href="https://drive.google.com/drive/folders/1kVJH4tM8R8O0hITnvifCV-hoai-Mgn-b?usp=sharing" target="_blank" rel="noopener">shared folder</a>, go to <code>data/workshop1/inputs/penncath_withPheno</code>, and download the three <code>penncath</code> files one at a time (selecting several makes Drive pack them into a zip file). For <code>penncath.bed</code>, Drive warns that it cannot scan a file this large for viruses; choose Download anyway. Repeat for the three files in <code>data/workshop1/inputs/ref</code>, then move all six from your Downloads folder into the project folder (on Windows, into <code>\\wsl.localhost\Ubuntu\home\YOUR-LINUX-NAME\statgen-workshop\data\inputs\…</code>). Check them as below: an interrupted browser download can leave a shorter file under the full name.</p>
+  </section>
+</div>
+
+<h3 id="checksums">Check every file</h3>
+<p>A <dfn>checksum</dfn> is a fixed-length number computed from every byte of a file; SHA-256 gives 64 hexadecimal digits. Changing any byte changes the checksum completely, so a file whose size and SHA-256 checksum match the table is the workshop's file, complete and unchanged. The values were computed from the files in the workshop's folder in November 2026.</p>
+<div class="table-wrap">
+<table class="compact stack hashes">
+  <caption>The six input files: size in bytes and SHA-256 checksum</caption>
+  <thead><tr><th>File</th><th>Bytes</th><th>SHA-256</th></tr></thead>
+  <tbody>
+    <tr><td data-label="File"><code>penncath.bed</code></td><td data-label="Bytes" class="num">302,377,026</td><td data-label="SHA-256"><code>b98881c0a0f5218ab059813ccf1d0a2ce1dbc624162fbbd5726a989b7c5fc09e</code></td></tr>
+    <tr><td data-label="File"><code>penncath.bim</code></td><td data-label="Bytes" class="num">24,051,506</td><td data-label="SHA-256"><code>7a3a31ed769d183d4d5d9a3b195f0dcd5f536b326069ceb773c24fe6df088ed7</code></td></tr>
+    <tr><td data-label="File"><code>penncath.fam</code></td><td data-label="Bytes" class="num">25,686</td><td data-label="SHA-256"><code>33c244871b843eded61506751ce3767fec091ae3625f43919802a3ba55d185ef</code></td></tr>
+    <tr><td data-label="File"><code>all_pops_1kgenomes_markersForPCA.bed</code></td><td data-label="Bytes" class="num">10,948,743</td><td data-label="SHA-256"><code>c97e9898fa175fc3cf9f20e1f7aac9d267822ad38c7a21169cffd150d55c63a0</code></td></tr>
+    <tr><td data-label="File"><code>all_pops_1kgenomes_markersForPCA.bim</code></td><td data-label="Bytes" class="num">484,892</td><td data-label="SHA-256"><code>ac89fec20d885873bb8b25cb2171b265818fdef5fbccdbd33f224788af1aa2e5</code></td></tr>
+    <tr><td data-label="File"><code>all_pops_1kgenomes_markersForPCA.fam</code></td><td data-label="Bytes" class="num">62,600</td><td data-label="SHA-256"><code>fbda960fb539b8091b6e661fe228b8c92e5d733c60aa425c61ef9e2239608f9d</code></td></tr>
+  </tbody>
+</table>
+</div>
+<p>Write the table to a file once and let the checksum program compare all six files with it: <code>shasum -a 256 -c</code> on macOS, <code>sha256sum -c</code> on Linux and WSL. Each line must end in <code>OK</code>:</p>
+<span class="code-label bash">bash or zsh</span>
+<pre class="code">cd ~/statgen-workshop/data/inputs
+cat &gt; SHA256SUMS &lt;&lt;'EOF'
+b98881c0a0f5218ab059813ccf1d0a2ce1dbc624162fbbd5726a989b7c5fc09e  penncath_withPheno/penncath.bed
+7a3a31ed769d183d4d5d9a3b195f0dcd5f536b326069ceb773c24fe6df088ed7  penncath_withPheno/penncath.bim
+33c244871b843eded61506751ce3767fec091ae3625f43919802a3ba55d185ef  penncath_withPheno/penncath.fam
+c97e9898fa175fc3cf9f20e1f7aac9d267822ad38c7a21169cffd150d55c63a0  ref/all_pops_1kgenomes_markersForPCA.bed
+ac89fec20d885873bb8b25cb2171b265818fdef5fbccdbd33f224788af1aa2e5  ref/all_pops_1kgenomes_markersForPCA.bim
+fbda960fb539b8091b6e661fe228b8c92e5d733c60aa425c61ef9e2239608f9d  ref/all_pops_1kgenomes_markersForPCA.fam
+EOF
+shasum -a 256 -c SHA256SUMS      <span class="cm"># Linux and WSL: sha256sum -c SHA256SUMS</span></pre>
+<span class="output-label">Output</span>
+<pre class="output">penncath_withPheno/penncath.bed: OK
+penncath_withPheno/penncath.bim: OK
+penncath_withPheno/penncath.fam: OK
+ref/all_pops_1kgenomes_markersForPCA.bed: OK
+ref/all_pops_1kgenomes_markersForPCA.bim: OK
+ref/all_pops_1kgenomes_markersForPCA.fam: OK</pre>
+<p>The size of a <code>.bed</code> file can also be checked against its own <code>.bim</code> and <code>.fam</code> files, because PLINK stores each SNP's genotypes in \(\lceil n/4 \rceil\) bytes after a 3-byte header (<a href="tools.html#plink-bits">The tools · two bits per genotype</a>). For PennCATH, \(m = 861{,}473\) SNPs (lines of the <code>.bim</code>) and \(n = 1{,}401\) people (lines of the <code>.fam</code>) give \(3 + 861{,}473 \times 351 = 302{,}377{,}026\) bytes, exactly the size in the table; a file of any other size is incomplete, and PLINK refuses it with <code>Error: Invalid .bed file size</code>.</p>
+<span class="code-label bash">bash or zsh</span>
+<pre class="code"><span class="prompt">$ </span>cd "${input_dir}"
+<span class="prompt">$ </span>m=$(wc -l &lt; penncath.bim); n=$(wc -l &lt; penncath.fam)
+<span class="prompt">$ </span>echo "expected $(( 3 + m * ((n + 3) / 4) )), found $(( $(wc -c &lt; penncath.bed) ))"
+<span class="no-copy">expected 302377026, found 302377026</span></pre>
+<p>Step 7 also needs a table of the 1000 Genomes samples with their population and super-population. The practical clones a whole repository (akt, about 43 MB) to get one 55 KB file from it; the identical file can be downloaded on its own from the 1000 Genomes Project, into the folder where the practical's R code looks for it:<sup><a href="#src-21">21</a></sup></p>
+<span class="code-label bash">bash or zsh</span>
+<pre class="code">mkdir -p "${analysis_dir}/akt/data" && cd "${analysis_dir}/akt/data"
+curl -fLO https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel
+shasum -a 256 integrated_call_samples_v3.20130502.ALL.panel    <span class="cm"># b4023dc6ee2d62ee89c8d4d347db4d348e65518d66d346574cdae7a4bbd76858</span></pre>
+<p>If you do this, skip the practical's <code>git clone https://github.com/Illumina/akt.git</code> chunk, which would fail because the folder <code>akt</code> already exists.</p>
+
+<h2 id="run">Run the practical <span class="tag core">Core</span></h2>
+<p>With the programs installed and the files checked, there are two ways to run the eight steps. The first runs the workshop's own document with three paths changed; the second runs this site's scripts, which do the same steps from a terminal.</p>
+
+<h3 id="biowulf">From Biowulf to your computer</h3>
+<p>Everything in the practical that depends on Biowulf, and what replaces it:</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>The practical's Biowulf-specific lines and their replacements</caption>
+  <thead><tr><th>In the practical (Biowulf)</th><th>On your computer</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Biowulf">PLINK 1.9 loaded as a Biowulf module before the RStudio session starts</td><td data-label="Your computer">PLINK installed once in <code>~/statgen-workshop/tools</code> (or by Homebrew, conda or apt) and found through <code>PATH</code></td></tr>
+    <tr><td data-label="Biowulf">RStudio Server started from NIH HPC OnDemand</td><td data-label="Your computer">RStudio Desktop or Positron; or RStudio Server in Docker (<a href="#docker-r">below</a>); or a terminal and the scripts</td></tr>
+    <tr><td data-label="Biowulf"><code>input_dir &lt;- "/data/DCEG_shared/statgen_workshop_2026/data/workshop1/inputs/penncath_withPheno"</code></td><td data-label="Your computer"><code>~/statgen-workshop/data/inputs/penncath_withPheno</code></td></tr>
+    <tr><td data-label="Biowulf"><code>reference_dir &lt;- "/data/DCEG_shared/statgen_workshop_2026/data/workshop1/inputs/ref"</code></td><td data-label="Your computer"><code>~/statgen-workshop/data/inputs/ref</code></td></tr>
+    <tr><td data-label="Biowulf"><code>analysis_dir &lt;- file.path("/data", username, "Stats_Gen", "workshop1", "01_analysis")</code></td><td data-label="Your computer"><code>~/statgen-workshop/analysis</code></td></tr>
+    <tr><td data-label="Biowulf"><code>username &lt;- Sys.getenv("USER")</code> and its check</td><td data-label="Your computer">Not needed: the folders do not contain your user name</td></tr>
+    <tr><td data-label="Biowulf"><code>module load bcftools/1.23</code> before GrafAnc</td><td data-label="Your computer">Linux and WSL: the htslib library from the package manager; macOS: nothing (the Docker image contains it)</td></tr>
+    <tr><td data-label="Biowulf"><code>${analysis_dir}/grafanc/bin/grafanc …</code></td><td data-label="Your computer">The same on Linux and WSL; <code>docker run … grafanc …</code> on macOS (<a href="#grafanc">GrafAnc</a>)</td></tr>
+    <tr><td data-label="Biowulf"><code>git clone https://github.com/Illumina/akt.git</code></td><td data-label="Your computer">The same, or only the panel file with <code>curl</code> (<a href="#data">above</a>)</td></tr>
+    <tr><td data-label="Biowulf">Persistent storage under <code>/data/$USER</code></td><td data-label="Your computer">Your own disk: about 3 GB for <code>analysis/</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="run-rmd">Run the practical's R Markdown file</h3>
+<p>The practical is an R Markdown file, <code>01_qc.Rmd</code>: text with chunks of R and bash code. Knitting it runs every chunk in order and writes an HTML report with the code, its output and the plots; each bash chunk runs as a separate bash process started by R, which is why the folders are passed through <code>Sys.setenv()</code>.<sup><a href="#src-22">22</a></sup> To run it on your computer:</p>
+<ol>
+  <li>Download it into the project folder:
+<pre class="code">cd ~/statgen-workshop
+curl -fLO https://raw.githubusercontent.com/DCEG-workshops/statgen_workshop_tutorial/main/src/01_qc.Rmd</pre></li>
+  <li>Open it in RStudio or Positron and replace the body of the first chunk, <code>setup-paths</code>, with the R lines of <a href="#layout">One folder, three variables</a> (or the widget's R block). Keep the chunk's first line, <code>```{r setup-paths}</code>, and its closing <code>```</code>.</li>
+  <li>In the chunk <code>run-grafanc</code>, delete <code>module load bcftools/1.23</code>. On Linux and WSL leave the rest. On macOS, replace the chunk's GrafAnc call with the <code>docker run</code> command of the GrafAnc section and delete the chunk <code>grafanc-install</code>, which only clones and decompresses the repository the image already contains:
+<pre class="code">```{bash run-grafanc}
+docker run --rm --platform linux/amd64 --user "$(id -u):$(id -g)" \
+  -v "${analysis_dir}":/work ghcr.io/dceg-workshops/graftools:1.0.1 \
+  grafanc penncath.geno0.01.mind0.01.uniqueIDs penncath_grafanc_out.txt
+head ${analysis_dir}/penncath_grafanc_out.txt
+```</pre>
+  If R cannot find <code>docker</code>, add the folder that holds it (<code>/usr/local/bin</code> for Docker Desktop) to the <code>PATH</code> line of the setup chunk. <span class="untested">untested</span></li>
+  <li>Run the chunks one at a time (the green arrow at the top right of each chunk, or Cmd+Shift+Enter on macOS and Ctrl+Shift+Enter elsewhere) or knit the whole file with the Knit button. Without RStudio, run <code>Rscript -e 'rmarkdown::render("01_qc.Rmd")'</code>; it needs pandoc, a document converter that RStudio includes and that a package manager installs on its own (<code>sudo apt install pandoc</code>, <code>brew install pandoc</code>).</li>
+</ol>
+<p>If the chunk <code>check-plink</code> prints nothing for <code>which plink</code>, R does not see PLINK: check that the <code>PATH</code> line of the setup chunk names the folder that holds <code>plink</code>. If PLINK came from Homebrew, add <code>/opt/homebrew/bin</code> (Apple Silicon) or <code>/usr/local/bin</code> (Intel) to that line; if it came from conda, start RStudio from a terminal in which the environment is active.</p>
+
+<h3 id="scripts">Or run the downloadable scripts</h3>
+<p>This site's five files run the same eight steps from a terminal, with the folder layout of this page, and write the practical's plots as PNG files. They follow the practical's commands, file names and thresholds, and credit it; they are not the workshop's code. Save them in <code>~/statgen-workshop/scripts</code>.</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Scripts for the practical (written for this site)</caption>
+  <thead><tr><th>File</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td data-label="File"><a href="scripts/setup_check.sh" download><code>setup_check.sh</code></a></td><td data-label="What it does">Reports the system, memory and free disk; whether <code>plink</code> is PLINK 1.9; R and its packages; git and curl; GrafAnc or Docker; and the size, <code>.bed</code> header and SHA-256 checksum of each input file. Changes nothing; ends with status 1 if something essential is missing.</td></tr>
+    <tr><td data-label="File"><a href="scripts/download_data.sh" download><code>download_data.sh</code></a></td><td data-label="What it does">Downloads the six input files into the layout above and keeps each one only if its size and checksum match; <code>--check</code> only checks.</td></tr>
+    <tr><td data-label="File"><a href="scripts/environment.yml" download><code>environment.yml</code></a></td><td data-label="What it does">The conda environment of <a href="#conda">the conda section</a>.</td></tr>
+    <tr><td data-label="File"><a href="scripts/qc_pipeline.sh" download><code>qc_pipeline.sh</code></a></td><td data-label="What it does">Steps 1–8 with PLINK and GrafAnc, each step commented. Continues past the expected failure of the first merge, flips the listed SNPs and merges again; downloads the 1000 Genomes panel file and checks its checksum; runs GrafAnc natively on Linux and through Docker on macOS, and judges success by its output file.</td></tr>
+    <tr><td data-label="File"><a href="scripts/qc_plots.R" download><code>qc_plots.R</code></a></td><td data-label="What it does">Reads the reports in <code>analysis/</code>, prints the practical's counts and saves its plots in <code>analysis/plots/</code>; skips any step whose files do not exist yet.</td></tr>
+  </tbody>
+</table>
+</div>
+<span class="code-label bash">bash or zsh</span>
+<pre class="code">cd ~/statgen-workshop/scripts
+bash setup_check.sh        <span class="cm"># what is missing?</span>
+bash download_data.sh      <span class="cm"># the six input files, checked</span>
+bash qc_pipeline.sh        <span class="cm"># steps 1-8; PLINK's .log files land in analysis/</span>
+Rscript qc_plots.R         <span class="cm"># counts in the terminal, plots in analysis/plots/</span></pre>
+<p>Settings are environment variables put in front of the command. <code>bash qc_pipeline.sh 7 8</code> runs only steps 7 and 8; <code>GRAFANC_MODE=skip bash qc_pipeline.sh</code> leaves GrafAnc out; <code>PLINK_OPTS="--memory 2000 --threads 2" bash qc_pipeline.sh</code> limits PLINK to 2,000 MB and two processor threads; <code>STATGEN_DIR=/other/folder</code> uses another project folder. The header of each script lists all of them.</p>
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> What has and has not been tested</div>
+  <p>The scripts pass bash's syntax check (<code>bash -n</code>) and R's parser. <code>qc_pipeline.sh</code> was run end to end on the PennCATH files with real PLINK 1.9.0 on macOS (bash 3.2), with GrafAnc left out (<code>GRAFANC_MODE=skip</code>): every step finished, the first merge failed as designed, and the results match the practical's description. GrafAnc, compiled on the Mac as described under <a href="#grafanc">GrafAnc</a>, was then run on the pipeline's output, and <code>qc_plots.R</code> drew every plot from the results with R 4.6.2. <code>download_data.sh --check</code> confirmed the sizes and checksums of the six files. The rest was tested on macOS with stand-in programs: a path with a space and a GrafAnc that exits with status 1 for the pipeline, and a refused download and a truncated file for the download script. The pipeline's Docker and Linux routes for GrafAnc have not been run, so read PLINK's <code>.log</code> files and compare the results with the practical's own description.</p>
+</aside>
+
+<h2 id="cloud">No suitable computer: run it in the cloud <span class="tag optional">Optional</span></h2>
+<p>A cloud service lends you a Linux computer through the browser. Each option below runs the practical; they differ in cost, memory, how long files are kept and whether you have administrator rights. Limits change; check the provider's page before relying on a number here.</p>
+<div class="table-wrap">
+<table class="compact stack">
+  <caption>Cloud options at a glance (free tiers as of November 2026)</caption>
+  <thead><tr><th>Service</th><th>What you get</th><th>Free use</th><th>GrafAnc</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Service"><a href="#codespaces">GitHub Codespaces</a></td><td data-label="What you get">A Linux container with VS Code in the browser; administrator rights</td><td data-label="Free use">120 core-hours and 15 GB of storage a month (about 60 hours on a 2-core machine)</td><td data-label="GrafAnc">Linux route 1 or 3</td></tr>
+    <tr><td data-label="Service"><a href="#colab">Google Colab</a></td><td data-label="What you get">A notebook with an R runtime on a Linux machine; administrator rights</td><td data-label="Free use">Sessions of at most 12 hours; files deleted when the session ends</td><td data-label="GrafAnc">Linux route 1</td></tr>
+    <tr><td data-label="Service"><a href="#posit-cloud">Posit Cloud</a></td><td data-label="What you get">RStudio in the browser</td><td data-label="Free use">About 1 GB of memory and 25 compute hours a month</td><td data-label="GrafAnc">Not without administrator rights</td></tr>
+    <tr><td data-label="Service"><a href="#vm">A cloud virtual machine</a></td><td data-label="What you get">A whole Linux computer that you size yourself</td><td data-label="Free use">Paid by the hour; some providers give new users credit</td><td data-label="GrafAnc">Any route</td></tr>
+    <tr><td data-label="Service"><a href="#docker-r">Docker (rocker)</a></td><td data-label="What you get">RStudio Server with tidyverse and PLINK, on your computer or a virtual machine</td><td data-label="Free use">Free software</td><td data-label="GrafAnc">The workshop's image, next to it</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="codespaces">GitHub Codespaces</h3>
+<p>A codespace is a Linux container that GitHub runs for one of your repositories, with Visual Studio Code in the browser and a terminal. A GitHub Free account includes 120 core-hours of compute and 15 GB-months of storage each month; a 2-core machine uses two core-hours per hour, so about 60 hours. Without a payment method, codespaces stop when the free amount is used up.<sup><a href="#src-23">23</a></sup> A file named <code>.devcontainer/devcontainer.json</code> in the repository says which image to start from and what to install.<sup><a href="#src-24">24</a></sup> This one starts from the Rocker project's <code>rocker/tidyverse</code> image (R 4.6.2 with the tidyverse, data.table, rmarkdown and pandoc on Ubuntu 26.04)<sup><a href="#src-25">25</a></sup> and adds PLINK 1.9, htslib, git, curl and unzip from Ubuntu:</p>
+<span class="code-label">json · .devcontainer/devcontainer.json</span>
+<pre class="code">{
+  "name": "statgen-workshop",
+  "image": "rocker/tidyverse:4.6.2",
+  "postCreateCommand": "apt-get update &amp;&amp; apt-get install -y --no-install-recommends plink1.9 libhts3t64 git curl unzip &amp;&amp; ln -sf /usr/bin/plink1.9 /usr/local/bin/plink",
+  "customizations": { "vscode": { "extensions": ["REditorSupport.r"] } }
+}</pre>
+<p>Create a repository (it can be private) with this file, then Code → Codespaces → Create codespace. The container runs as the administrator, so the installation needs no <code>sudo</code>. In its terminal, keep the project in <code>/workspaces</code>, the folder a codespace keeps when its container is rebuilt, and follow this page with <code>STATGEN_DIR=/workspaces/statgen-workshop</code> (or the widget with that folder and Linux). GrafAnc runs as on Linux, route 1. Plots written by <code>qc_plots.R</code> open in the editor's file list. <span class="untested">untested</span></p>
+
+<h3 id="colab">Google Colab</h3>
+<p>Colab runs notebooks on a Linux machine in Google's cloud. Its focus is Python, but it offers an R runtime (Runtime → Change runtime type → R); the R runtime of October 2026 runs R 4.6.1 on Ubuntu 24.04.<sup><a href="#src-26">26</a></sup> Free sessions last at most 12 hours and end earlier when idle, and every file is deleted with the session, so download the results you want to keep. In an R notebook, shell commands run through <code>system()</code>; this helper prints their output in the notebook:</p>
+<span class="code-label r">r · Colab, R runtime</span>
+<pre class="code"># Run a shell command
+sh &lt;- function(cmd) cat(system(paste(cmd, "2&gt;&amp;1"), intern = TRUE), sep = "\n")
+
+# PLINK 1.9 for Linux, into a folder on PATH (Colab runs as the administrator)
+sh("curl -fsSLO https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20260927.zip")
+sh("unzip -o plink_linux_x86_64_20260927.zip plink -d /usr/local/bin && plink --version")
+
+# The folders and variables, under /content
+base &lt;- "/content/statgen-workshop"
+input_dir &lt;- file.path(base, "data", "inputs", "penncath_withPheno")
+reference_dir &lt;- file.path(base, "data", "inputs", "ref")
+analysis_dir &lt;- file.path(base, "analysis")
+for (d in c(input_dir, reference_dir, analysis_dir)) dir.create(d, recursive = TRUE, showWarnings = FALSE)
+Sys.setenv(input_dir = input_dir, reference_dir = reference_dir, analysis_dir = analysis_dir)
+
+# The six input files from the workshop's Google Drive folder
+ids &lt;- c("penncath_withPheno/penncath.bed" = "1BzzNvW6kpRCgBoMqb-XTaEioTeWhPX6E",
+         "penncath_withPheno/penncath.bim" = "1nkCwwWpIkYvmYGdQM1K6PfErHXEyHlYH",
+         "penncath_withPheno/penncath.fam" = "1Ti4I_QuuQje1ZG1uZ9yx1HOq5dmHmkr1",
+         "ref/all_pops_1kgenomes_markersForPCA.bed" = "1xljnuC31_NAJ4ROlNizMJbw0BW27GQvq",
+         "ref/all_pops_1kgenomes_markersForPCA.bim" = "1VOAxnOkweda76YqRI13UPt26f-IA8zyn",
+         "ref/all_pops_1kgenomes_markersForPCA.fam" = "1zpDNUDUDIpcQU9SDiFsBwbAI2SiVs2d7")
+options(timeout = 3600)
+for (f in names(ids)) {
+  url &lt;- paste0("https://drive.usercontent.google.com/download?export=download&amp;confirm=t&amp;id=", ids[[f]])
+  download.file(url, file.path(base, "data", "inputs", f), mode = "wb")
+}
+sh(paste("cd", file.path(base, "data", "inputs"), "&amp;&amp; sha256sum */*"))   # compare with the table above
+
+# Then each PLINK command of the practical, for example
+sh("plink --bfile ${input_dir}/penncath --missing --out ${analysis_dir}/penncath")</pre>
+<p>Check that <code>library(tidyverse)</code>, <code>library(data.table)</code> and <code>library(glue)</code> load; install whichever does not with <code>install.packages()</code>. For GrafAnc, <code>sh("apt-get install -y libhts3t64")</code> and then Linux route 1. <span class="untested">untested</span></p>
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 8 · The practical page in the lecture</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-008.jpg" alt="Lecture 1, slide 8: a screenshot of the workshop website's Session 1 Practical tab. It says the workshop introduces Jupyter notebooks through Google Colaboratory and is a quick guide to GWAS QC with PLINK and R; its contents list running standard QC steps in Colab, getting the data from a shared Google Drive, the QC steps, and assigning ancestry with GrafPop; the prerequisites are a Google account, basic knowledge of genetics, GWAS and QC, and familiarity with command-line tools." loading="lazy"><figcaption>Lecture 1 · slide 8</figcaption></figure>
+    <div><p>Slide 8 is a screenshot of the practical's page on the workshop website. It shows an earlier version, which ran in Google Colab as Jupyter notebooks, took the data from a shared Google Drive and assigned ancestry with GrafPop (GRAF-pop, the program that GrafAnc succeeds). The current practical, <code>01_qc.Rmd</code>, runs in RStudio on Biowulf and uses GrafAnc, and it is the one this site follows.<sup><a href="#src-5">5</a></sup> The Colab route above brings the current practical back to the environment the slide describes: the same shared Drive folder, PLINK run from a notebook, and R for the plots.</p></div>
+  </div>
+</aside>
+
+<h3 id="posit-cloud">Posit Cloud</h3>
+<p>Posit Cloud runs RStudio in the browser. Each project is a Linux container whose files live in <code>/cloud/project</code>; RStudio's Terminal tab gives a bash shell. Its free plan gives each project about 1 GB of memory and one processor, and about 25 compute hours a month; these figures come from Posit's plan page and forum and are approximate.<sup><a href="#src-27">27</a></sup> Install PLINK by downloading the Linux zip into a folder of the project, use <code>/cloud/project/statgen-workshop</code> as the project folder, and install the R packages with <code>install.packages()</code>. Two limits matter: 1 GB of memory may not be enough for the merge and the merged PCA (step 7), and without administrator rights the htslib library that GrafAnc needs cannot be installed, so run step 8 elsewhere or skip it (<code>GRAFANC_MODE=skip</code>). <span class="untested">untested</span></p>
+
+<h3 id="vm">A cloud virtual machine</h3>
+<p>Any cloud provider can rent you a virtual machine: a whole Linux computer running in its data center, billed by the hour while it runs. Choose Ubuntu 24.04 or later on an x86_64 processor, with 2 processors, 8 GB of memory and a 20 GB disk; connect to it with <code>ssh</code> from your terminal (or Visual Studio Code's Remote SSH extension) and follow the Linux tabs of this page. Copy plots back with <code>scp</code>, and stop or delete the machine when you are done, because a running machine is billed whether or not you use it.</p>
+
+<h3 id="docker-r">Docker: RStudio with tidyverse and PLINK in one image</h3>
+<p>The Rocker project publishes Docker images with R, RStudio Server and the tidyverse, for both x86_64 and arm64 processors; <code>rocker/tidyverse:4.6.2</code> is a 1.3 GB download.<sup><a href="#src-25">25</a></sup> Add PLINK 1.9 from Ubuntu with a two-line <code>Dockerfile</code> (a recipe from which Docker builds an image), saved in an otherwise empty folder:</p>
+<span class="code-label">Dockerfile</span>
+<pre class="code">FROM rocker/tidyverse:4.6.2
+RUN apt-get update &amp;&amp; apt-get install -y --no-install-recommends plink1.9 git curl unzip \
+ &amp;&amp; ln -s /usr/bin/plink1.9 /usr/local/bin/plink &amp;&amp; rm -rf /var/lib/apt/lists/*</pre>
+<span class="code-label bash">bash or zsh · in that folder</span>
+<pre class="code">docker build -t statgen-r .
+docker run --rm -p 8787:8787 -e PASSWORD=choose-a-password \
+  -v "$HOME/statgen-workshop":/home/rstudio/statgen-workshop statgen-r</pre>
+<p>Open <code>http://localhost:8787</code> in a browser and sign in as <code>rstudio</code> with the password you chose. The project folder on your computer appears inside the container as <code>/home/rstudio/statgen-workshop</code>, so in R set <code>base &lt;- "/home/rstudio/statgen-workshop"</code> (the widget's Docker choice writes the lines). Files written in RStudio appear in your folder and stay there after the container stops. Run GrafAnc from your computer's terminal with the workshop's image, on the same folder. On a Linux computer, add <code>-e USERID=$(id -u) -e GROUPID=$(id -g)</code> to <code>docker run</code> so that the files RStudio writes belong to you. <span class="untested">untested</span></p>
+
+<h2 id="troubleshooting">When something fails <span class="tag core">Core</span></h2>
+<p>Read the first error line: it names the cause. These are the failures this set-up is most likely to meet, with what each message means and how to fix it.</p>
+<div class="table-wrap">
+<table class="compact stack trouble">
+  <caption>Common failures, their causes and fixes</caption>
+  <thead><tr><th>Message or symptom</th><th>Cause</th><th>Fix</th></tr></thead>
+  <tbody>
+    <tr><td data-label="Symptom"><code>plink: command not found</code></td><td data-label="Cause">No folder on <code>PATH</code> holds <code>plink</code>: the <code>export PATH=…</code> line was not run in this terminal, or PLINK is elsewhere</td><td data-label="Fix"><code>ls ~/statgen-workshop/tools</code>; run the <code>export</code> lines or open a new terminal after adding them to <code>~/.zshrc</code> or <code>~/.bashrc</code></td></tr>
+    <tr><td data-label="Symptom"><code>which plink</code> is empty in RStudio, but works in the terminal</td><td data-label="Cause">RStudio opened from the Dock or Start menu does not read the shell's start-up file</td><td data-label="Fix">Set <code>PATH</code> in the setup chunk with <code>Sys.setenv()</code>, as on this page</td></tr>
+    <tr><td data-label="Symptom"><code>Permission denied</code> when running <code>plink</code></td><td data-label="Cause">The file is not marked as executable</td><td data-label="Fix"><code>chmod +x ~/statgen-workshop/tools/plink</code></td></tr>
+    <tr><td data-label="Symptom">macOS: "cannot be opened because the developer cannot be verified" or "Apple could not verify…"</td><td data-label="Cause">Gatekeeper blocks a program downloaded by a browser</td><td data-label="Fix">System Settings → Privacy &amp; Security → Open Anyway, or <code>xattr -d com.apple.quarantine ~/statgen-workshop/tools/plink</code>; or download with <code>curl</code></td></tr>
+    <tr><td data-label="Symptom"><code>Exec format error</code>, <code>cannot execute binary file</code> or <code>bad CPU type in executable</code></td><td data-label="Cause">The program was built for the other processor type (x86_64 against arm64)</td><td data-label="Fix"><code>uname -m</code> shows yours; download the matching build, use the macOS universal zip, or run x86_64 programs under emulation (Docker <code>--platform linux/amd64</code>, Rosetta 2)</td></tr>
+    <tr><td data-label="Symptom"><code>plink --version</code> prints a PuTTY release</td><td data-label="Cause">PuTTY's <code>plink</code>, a remote-login program, comes first on <code>PATH</code></td><td data-label="Fix">Put <code>~/statgen-workshop/tools</code> first on <code>PATH</code> (as the <code>export</code> line does), or call PLINK by its full path</td></tr>
+    <tr><td data-label="Symptom"><code>Error: Failed to open /penncath.bed.</code></td><td data-label="Cause"><code>${input_dir}</code> is empty in this shell, so the path lost its folder</td><td data-label="Fix"><code>echo "${input_dir}"</code>; set the variables (terminal) or run the setup chunk first (R)</td></tr>
+    <tr><td data-label="Symptom"><code>Error: Invalid .bed file size (expected … bytes).</code></td><td data-label="Cause">An incomplete or damaged <code>.bed</code> file</td><td data-label="Fix">Check the checksums; download the file again (<code>download_data.sh</code> resumes)</td></tr>
+    <tr><td data-label="Symptom">A downloaded file of a few kilobytes that starts with <code>&lt;!DOCTYPE html&gt;</code></td><td data-label="Cause">Google Drive sent a web page instead of the file, usually because a shared file has reached its daily download limit</td><td data-label="Fix">Try again later, use the browser, or use <code>gdown</code></td></tr>
+    <tr><td data-label="Symptom">A path is cut at a space; files "not found" that exist</td><td data-label="Cause">The project folder's name contains a space and the practical does not quote paths</td><td data-label="Fix">Rename the folder, or quote every path (<code>"${input_dir}"</code>)</td></tr>
+    <tr><td data-label="Symptom"><code>$'\r': command not found</code></td><td data-label="Cause">A script was saved with Windows line endings</td><td data-label="Fix"><code>sed -i 's/\r$//' script.sh</code> (Linux, WSL), or save it again with Unix (LF) line endings</td></tr>
+    <tr><td data-label="Symptom">An R package fails to install on Linux: <code>configuration failed</code>, <code>… was not found</code></td><td data-label="Cause">A system library's development files are missing</td><td data-label="Fix">Install the library the message names (the <code>apt install</code> line of the R section lists the usual ones)</td></tr>
+    <tr><td data-label="Symptom">PLINK stops with an out-of-memory message, or the system ends it (<code>Killed</code>)</td><td data-label="Cause">Not enough free memory for the step</td><td data-label="Fix">Close other programs; give PLINK a limit it can keep (<code>--memory 2000</code>); use a larger machine for steps 4 and 7</td></tr>
+    <tr><td data-label="Symptom"><code>error while loading shared libraries: libhts.so.3</code></td><td data-label="Cause">GrafAnc's program needs the htslib library</td><td data-label="Fix"><code>sudo apt install libhts3t64</code> (<code>libhts3</code> on Ubuntu 22.04), or use the Docker image</td></tr>
+    <tr><td data-label="Symptom">GrafAnc's output exists but the script or chunk reports failure</td><td data-label="Cause">The unpatched GrafAnc exits with status 1 after a successful run</td><td data-label="Fix">Check the output file instead of the exit status (<code>|| true</code>)</td></tr>
+    <tr><td data-label="Symptom">Docker: <code>no matching manifest for linux/arm64</code></td><td data-label="Cause">The GrafAnc image is built for x86_64 only</td><td data-label="Fix">Add <code>--platform linux/amd64</code></td></tr>
+    <tr><td data-label="Symptom"><code>fatal: destination path 'akt' already exists</code> (or <code>'grafanc'</code>)</td><td data-label="Cause">The folder is there from an earlier run</td><td data-label="Fix">Skip the clone; the practical's GrafAnc chunk already skips it when the folder exists</td></tr>
+  </tbody>
+</table>
+</div>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>The practical needs one project folder, three folder variables (<code>input_dir</code>, <code>reference_dir</code>, <code>analysis_dir</code>) set in both the shell and R, PLINK 1.9 on <code>PATH</code>, R with tidyverse, data.table and glue, and, for step 8, GrafAnc.</li>
+    <li>Plan for about 5 GB of free disk and 4–8 GB of memory; the input files take 338 MB and the outputs about 3 GB (estimates from the file formats).</li>
+    <li>A downloaded file is right when its size and SHA-256 checksum match the published values; a <code>.bed</code> file must also have exactly \(3 + m\lceil n/4 \rceil\) bytes.</li>
+    <li>GrafAnc is a Linux program: run it natively on Linux or in WSL (it needs the htslib library), or in the workshop's Docker image on a Mac. The unpatched program exits with status 1 even when it succeeds.</li>
+    <li>On your computer, only three things change in the practical: the setup chunk's paths, the <code>module load</code> lines, and, on macOS, how GrafAnc is started.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>Your download of <code>penncath.bed</code> has 302,377,025 bytes. The <code>.bim</code> file has 861,473 lines and the <code>.fam</code> file 1,401. Is the file complete, and what would PLINK do with it?</summary><div class="a"><p>No. Each SNP takes \(\lceil 1{,}401/4 \rceil = 351\) bytes, so the file must have \(3 + 861{,}473 \times 351 = 302{,}377{,}026\) bytes; it is one byte short. PLINK compares the size with the one it computes from the <code>.bim</code> and <code>.fam</code> files and stops with <code>Error: Invalid .bed file size (expected 302377026 bytes).</code> Download the file again; its SHA-256 checksum confirms the new copy.</p></div></details>
+  <details class="q"><summary>Yesterday's commands worked. Today, in a new terminal, the first PLINK command of step 1 stops with <code>Error: Failed to open /penncath.bed.</code> What happened?</summary><div class="a"><p>The command names its input as <code>--bfile ${input_dir}/penncath</code>. <code>export</code> sets a variable only for the terminal in which it runs and the programs that terminal starts. In the new terminal <code>input_dir</code> is not set, the shell replaces <code>${input_dir}</code> with nothing, and PLINK receives <code>/penncath</code>. Run the <code>export</code> lines again, or add them once to <code>~/.zshrc</code> or <code>~/.bashrc</code> so that every new terminal has them.</p></div></details>
+  <details class="q"><summary>Why does step 8 need Docker on a Mac but not on Linux, and why does the <code>docker run</code> command name the files without their folder?</summary><div class="a"><p>GrafAnc is a Linux program: the repository's ready-built program is a Linux executable, and its source code uses Linux-only system calls, so it cannot be compiled for macOS. Docker runs it in a Linux container. Inside the container your folders do not exist; <code>-v "${analysis_dir}":/work</code> makes the analysis folder appear as <code>/work</code>, the image's working directory, so names without a folder (<code>penncath.geno0.01.mind0.01.uniqueIDs</code>) are found there and the output is written there, which is your analysis folder.</p></div></details>
+  <details class="q"><summary>On an Apple Silicon Mac, <code>conda env create -f environment.yml</code> fails because no package <code>plink</code> is found. Why, and what are the two ways out?</summary><div class="a"><p>Bioconda builds PLINK 1.9 only for Linux (linux-64) and Intel Macs (osx-64), not for Apple Silicon (osx-arm64), so the solver finds no matching package. Either create the whole environment for Intel Macs with <code>CONDA_SUBDIR=osx-64</code>, which then runs through Rosetta 2, or leave PLINK out of the environment and install the official macOS zip, which runs natively on Apple Silicon.</p></div></details>
+  <details class="q"><summary>The merged PennCATH + 1000 Genomes fileset has 3,884 people and at most 878,963 SNPs. How large can its <code>.bed</code> file be, and how much disk does step 7 need at its peak?</summary><div class="a"><p>Each SNP takes \(\lceil 3{,}884/4 \rceil = 971\) bytes, so the file has at most \(3 + 878{,}963 \times 971 = 853{,}473{,}076\) bytes, about 0.85 GB. When <code>--bmerge</code> is combined with <code>--make-bed</code>, PLINK first writes the merged data to an intermediate fileset (<code>…-merge.bed</code>), then writes the final one and deletes the intermediate at the end, so for a moment both exist: about 1.7 GB on top of the files already there.</p></div></details>
+  <details class="q"><summary><code>qc_pipeline.sh</code> starts with <code>set -e</code>, which stops a script at the first command that fails. Two commands in the practical "fail" when everything is fine. Which, and how does the script handle them?</summary><div class="a"><p>The first <code>--bmerge</code> fails by design: PLINK lists the SNPs with conflicting alleles in <code>…-merge.missnp</code> and exits with a non-zero status. The script appends <code>|| true</code> and then checks whether the <code>.missnp</code> file exists before flipping. The repository's GrafAnc program exits with status 1 after a successful run; the script again appends <code>|| true</code> and then requires that the output file exists and is not empty.</p></div></details>
+  <details class="q"><summary>A classmate keeps the project in <code>~/Library/Mobile Documents/com~apple~CloudDocs/Stat Gen</code>. Name two problems with this folder.</summary><div class="a"><p>It contains a space (in <code>Mobile Documents</code> and <code>Stat Gen</code>), so the practical's unquoted <code>${input_dir}</code> would be split into separate words and PLINK would not find its files. It is inside iCloud Drive, which would upload about 3 GB of intermediate files and may keep some files only online, where PLINK cannot read them. <code>~/statgen-workshop</code> avoids both.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://swcarpentry.github.io/shell-novice/" target="_blank" rel="noopener">The Unix Shell</a> <span class="src">· Software Carpentry</span> <span class="level intro">intro</span> — a step-by-step lesson on the terminal, files, folders, variables and scripts.</li>
+    <li><a href="https://learn.microsoft.com/en-us/windows/wsl/" target="_blank" rel="noopener">Windows Subsystem for Linux documentation</a> <span class="src">· Microsoft</span> <span class="level intro">intro</span> — installing WSL, moving files between Windows and Linux, and using it with VS Code and Docker.</li>
+    <li><a href="https://docs.docker.com/get-started/" target="_blank" rel="noopener">Get started with Docker</a> <span class="src">· Docker</span> <span class="level intro">intro</span> — images, containers, volumes and Dockerfiles, with exercises.</li>
+    <li><a href="https://rocker-project.org/" target="_blank" rel="noopener">The Rocker project</a> <span class="src">· Rocker</span> <span class="level intermediate">intermediate</span> — Docker images for R and RStudio, their options (passwords, user IDs) and how they are built.</li>
+    <li><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html" target="_blank" rel="noopener">Getting started with conda</a> <span class="src">· conda</span> <span class="level intermediate">intermediate</span> — environments, channels and environment files.</li>
+    <li><a href="https://bookdown.org/yihui/rmarkdown-cookbook/" target="_blank" rel="noopener">R Markdown Cookbook</a> <span class="src">· Xie, Dervieux and Riederer</span> <span class="level intermediate">intermediate</span> — chunk options, other languages such as bash, and knitting from the command line.</li>
+    <li><a href="https://containers.dev/" target="_blank" rel="noopener">Development Containers</a> <span class="src">· containers.dev</span> <span class="level advanced">advanced</span> — the specification behind <code>devcontainer.json</code>, used by Codespaces and VS Code.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">PLINK 1.9 documentation. File formats: .bed (PLINK binary genotype table). <a href="https://www.cog-genomics.org/plink/1.9/formats" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/formats</a></li>
+    <li id="src-2">Chang CC. plink-ng source code, PLINK 1.9 directory: <code>plink.c</code> (merge with <code>--make-bed</code> writes and later deletes an intermediate <code>-merge</code> fileset; error messages). <a href="https://github.com/chrchang/plink-ng/tree/master/1.9" target="_blank" rel="noopener">github.com/chrchang/plink-ng</a></li>
+    <li id="src-3">PLINK 1.9 documentation. Miscellaneous: <code>--memory</code> and <code>--threads</code>. <a href="https://www.cog-genomics.org/plink/1.9/other" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/other</a></li>
+    <li id="src-4">DCEG Statistical Genetics Workshop. Shared data folder (Google Drive): <code>data/workshop1/inputs/penncath_withPheno</code>, including <code>penncath.log</code>, and <code>data/workshop1/inputs/ref</code>. <a href="https://drive.google.com/drive/folders/1kVJH4tM8R8O0hITnvifCV-hoai-Mgn-b?usp=sharing" target="_blank" rel="noopener">Google Drive folder</a></li>
+    <li id="src-5">DCEG Statistical Genetics Workshop. Session 1 practical, <code>src/01_qc.Rmd</code>. <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/blob/main/src/01_qc.Rmd" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a></li>
+    <li id="src-6">Microsoft. Working across Windows and Linux file systems. <a href="https://learn.microsoft.com/en-us/windows/wsl/filesystems" target="_blank" rel="noopener">learn.microsoft.com/en-us/windows/wsl/filesystems</a></li>
+    <li id="src-7">PLINK 1.9 home page: downloads and version history (1.9.0 stable release, 27 September 2026). <a href="https://www.cog-genomics.org/plink/1.9/" target="_blank" rel="noopener">cog-genomics.org/plink/1.9/</a></li>
+    <li id="src-8">Apple. Open a Mac app from an unknown developer (macOS User Guide). <a href="https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac" target="_blank" rel="noopener">support.apple.com/guide/mac-help/mh40616</a></li>
+    <li id="src-9">Homebrew formulae: <code>plink1</code> (PLINK 1.9) and <code>plink-ng</code> (PLINK 2). <a href="https://formulae.brew.sh/formula/plink1" target="_blank" rel="noopener">formulae.brew.sh/formula/plink1</a></li>
+    <li id="src-10">Ubuntu packages: <code>plink1.9</code>. <a href="https://packages.ubuntu.com/resolute/plink1.9" target="_blank" rel="noopener">packages.ubuntu.com/resolute/plink1.9</a></li>
+    <li id="src-11">Microsoft. How to install Linux on Windows with WSL. <a href="https://learn.microsoft.com/en-us/windows/wsl/install" target="_blank" rel="noopener">learn.microsoft.com/en-us/windows/wsl/install</a></li>
+    <li id="src-12">Posit. RStudio Desktop; Positron. <a href="https://posit.co/download/rstudio-desktop/" target="_blank" rel="noopener">posit.co/download/rstudio-desktop</a>; <a href="https://positron.posit.co/" target="_blank" rel="noopener">positron.posit.co</a></li>
+    <li id="src-13">The Comprehensive R Archive Network (CRAN). R for macOS, Windows and Ubuntu. <a href="https://cloud.r-project.org/" target="_blank" rel="noopener">cloud.r-project.org</a></li>
+    <li id="src-14">Jin Y. GrafAnc repository: README (requirements, build, prebuilt program) and <code>GrafAncDocumentation.md</code>. <a href="https://github.com/jimmy-penn/grafanc" target="_blank" rel="noopener">github.com/jimmy-penn/grafanc</a></li>
+    <li id="src-15">DCEG Statistical Genetics Workshop. GrafAnc Docker recipe: <code>docker_images/GRAFTOOLS/Dockerfile</code> and <code>grafanc-output.patch</code>; image <code>ghcr.io/dceg-workshops/graftools:1.0.1</code>. <a href="https://github.com/DCEG-workshops/statgen_workshop_tutorial/tree/main/docker_images/GRAFTOOLS" target="_blank" rel="noopener">github.com/DCEG-workshops/statgen_workshop_tutorial</a></li>
+    <li id="src-16">Docker. Docker Desktop documentation. <a href="https://docs.docker.com/desktop/" target="_blank" rel="noopener">docs.docker.com/desktop</a></li>
+    <li id="src-17">conda documentation: Getting started; conda-forge: Miniforge. <a href="https://docs.conda.io/projects/conda/en/latest/user-guide/getting-started.html" target="_blank" rel="noopener">docs.conda.io</a>; <a href="https://github.com/conda-forge/miniforge" target="_blank" rel="noopener">github.com/conda-forge/miniforge</a></li>
+    <li id="src-18">Bioconda recipe: <code>plink</code> (builds for linux-64 and osx-64). <a href="https://bioconda.github.io/recipes/plink/README.html" target="_blank" rel="noopener">bioconda.github.io/recipes/plink</a>. Grüning B, Dale R, Sjödin A, et al. Bioconda: sustainable and comprehensive software distribution for the life sciences. <em>Nat Methods</em>. 2018;15(7):475–476. <a href="https://doi.org/10.1038/s41592-018-0046-7" target="_blank" rel="noopener">doi:10.1038/s41592-018-0046-7</a></li>
+    <li id="src-19">Apple. Using Intel-based apps on a Mac with Apple silicon (support article 102527). <a href="https://support.apple.com/en-us/102527" target="_blank" rel="noopener">support.apple.com/en-us/102527</a></li>
+    <li id="src-20">Wada K. gdown: download a large file from Google Drive. <a href="https://github.com/wkentaro/gdown" target="_blank" rel="noopener">github.com/wkentaro/gdown</a></li>
+    <li id="src-21">1000 Genomes Project. Sample panel file <code>integrated_call_samples_v3.20130502.ALL.panel</code>. <a href="https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/integrated_call_samples_v3.20130502.ALL.panel" target="_blank" rel="noopener">ftp.1000genomes.ebi.ac.uk</a></li>
+    <li id="src-22">Xie Y, Dervieux C, Riederer E. <em>R Markdown Cookbook</em>. Section "Run shell scripts". <a href="https://bookdown.org/yihui/rmarkdown-cookbook/eng-bash.html" target="_blank" rel="noopener">bookdown.org/yihui/rmarkdown-cookbook/eng-bash.html</a></li>
+    <li id="src-23">GitHub Docs. GitHub Codespaces billing (included usage); Changing the machine type for your codespace. <a href="https://docs.github.com/en/billing/concepts/product-billing/github-codespaces" target="_blank" rel="noopener">docs.github.com: Codespaces billing</a>; <a href="https://docs.github.com/en/codespaces/customizing-your-codespace/changing-the-machine-type-for-your-codespace" target="_blank" rel="noopener">machine types</a></li>
+    <li id="src-24">Development Container Specification: <code>devcontainer.json</code> reference. <a href="https://containers.dev/implementors/json_reference/" target="_blank" rel="noopener">containers.dev/implementors/json_reference</a></li>
+    <li id="src-25">Boettiger C, Eddelbuettel D. An introduction to Rocker: Docker containers for R. <em>R J</em>. 2017;9(2):527–536. <a href="https://doi.org/10.32614/RJ-2017-065" target="_blank" rel="noopener">doi:10.32614/RJ-2017-065</a>; Rocker project, versioned images (<code>rocker/tidyverse</code>). <a href="https://rocker-project.org/images/versioned/rstudio.html" target="_blank" rel="noopener">rocker-project.org/images/versioned/rstudio.html</a></li>
+    <li id="src-26">Google. Colaboratory frequently asked questions; Colab runtime versions. <a href="https://research.google.com/colaboratory/faq.html" target="_blank" rel="noopener">research.google.com/colaboratory/faq.html</a>; <a href="https://research.google.com/colaboratory/runtime-version-faq.html" target="_blank" rel="noopener">runtime-version-faq.html</a></li>
+    <li id="src-27">Posit. Posit Cloud plans. <a href="https://posit.cloud/plans" target="_blank" rel="noopener">posit.cloud/plans</a>; free-plan limits as reported in Posit Community discussions (approximate).</li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

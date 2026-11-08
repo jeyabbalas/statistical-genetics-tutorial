@@ -1,0 +1,155 @@
+[
+  {
+    "id": "penncath",
+    "term": "PennCATH",
+    "aka": [
+      "PennCATH study",
+      "Penn catheterization study"
+    ],
+    "short": "A hospital-based study of coronary artery disease at the University of Pennsylvania, of patients who had cardiac catheterization in 1998–2003. Genotype data on 1,401 of its participants (861,473 SNPs) are a widely used teaching dataset and the data of the Session 1 practical.",
+    "long": "<p>The genotyped subset was a case–control study nested in the cohort. Cases had at least one coronary artery narrowed by 50% or more at an early age (men 60 or younger, women 65 or younger); controls had less than 10% narrowing in every vessel (men older than 40, women older than 45). The publications describe the participants as white or of European ancestry. PennCATH was one of the discovery studies of Reilly et al. 2011 (<em>Lancet</em>), and its genotypes, measured on the Affymetrix 6.0 array, were later released for teaching with Reed et al. 2015 (<em>Statistics in Medicine</em>).</p>",
+    "l1": "Slide 8 and the practical: <code>penncath.bed</code>, <code>.bim</code> and <code>.fam</code> (page 11 describes the dataset; page 12 opens the files).",
+    "see": [
+      "coronary-artery-disease",
+      "case-control-study",
+      "plink-binary",
+      "coronary-angiography"
+    ],
+    "links": [
+      {
+        "t": "Reilly et al. 2011, Lancet",
+        "u": "https://doi.org/10.1016/S0140-6736(10)61996-4"
+      },
+      {
+        "t": "Reed et al. 2015, Stat Med",
+        "u": "https://doi.org/10.1002/sim.6605"
+      }
+    ],
+    "match": [
+      "PennCATH"
+    ],
+    "cs": true,
+    "noPlural": true,
+    "owner": "practical-overview"
+  },
+  {
+    "id": "coronary-angiography",
+    "term": "coronary angiography (cardiac catheterization)",
+    "aka": [
+      "angiogram",
+      "cardiac catheterization"
+    ],
+    "short": "An X-ray examination of the arteries that supply the heart. A thin tube (catheter) is passed through a blood vessel to the heart, contrast dye is injected, and the X-ray images show where and how much each coronary artery is narrowed.",
+    "long": "<p>The narrowing (stenosis) of each vessel is read from the images as the percentage by which its diameter is reduced. Studies such as PennCATH use these readings to define cases (for example, at least one vessel narrowed by 50% or more) and controls (no vessel narrowed by 10% or more), which is a more direct measure of coronary atherosclerosis than a diagnosis code.</p>",
+    "l1": "The PennCATH cases and controls were defined from coronary angiograms (page 11).",
+    "see": [
+      "coronary-artery-disease",
+      "atherosclerosis",
+      "stenosis",
+      "case-definition"
+    ],
+    "links": [
+      {
+        "t": "NHLBI: Cardiac catheterization",
+        "u": "https://www.nhlbi.nih.gov/health/cardiac-catheterization"
+      },
+      {
+        "t": "MedlinePlus: Coronary angiography",
+        "u": "https://medlineplus.gov/ency/article/003876.htm"
+      }
+    ],
+    "match": [
+      "coronary angiography",
+      "angiography",
+      "angiogram",
+      "angiographic",
+      "cardiac catheterization",
+      "catheterization"
+    ],
+    "owner": "practical-overview"
+  },
+  {
+    "id": "stenosis",
+    "term": "stenosis",
+    "aka": [
+      "arterial narrowing"
+    ],
+    "short": "Narrowing of a blood vessel. In coronary angiography it is reported as the percentage reduction of an artery's inner diameter at its narrowest point, for example 50% stenosis.",
+    "see": [
+      "coronary-angiography",
+      "atherosclerosis"
+    ],
+    "match": [
+      "stenosis"
+    ],
+    "noPlural": true,
+    "owner": "practical-overview"
+  },
+  {
+    "id": "differential-error",
+    "term": "differential genotyping error",
+    "aka": [
+      "differential error",
+      "differential bias"
+    ],
+    "short": "A genotyping error whose rate or direction differs between cases and controls, for example because they were genotyped in different laboratories, batches or arrays. It creates allele-frequency differences between the groups that an association test cannot tell apart from a real effect.",
+    "long": "<p>Errors that hit cases and controls alike (non-differential) cost power but create no false signal. A differential error of \\(\\Delta\\) in allele frequency gives an allelic test statistic of about \\(n\\Delta^2/[\\bar{p}(1-\\bar{p})]\\) with \\(n\\) people per group, so it grows with sample size: at an allele frequency of 0.3, an error of one percentage point that is invisible with 1,000 people per group reaches genome-wide significance with about 62,000. Clayton et al. (2005) traced part of the inflated test statistics of a type 1 diabetes study to case and control DNA from two laboratories. QC looks for such errors with tests of differential missingness and of batch and plate effects.</p>",
+    "l1": "Page 11 shows why differential errors make QC come before association testing.",
+    "see": [
+      "batch-effect",
+      "differential-missingness",
+      "misclassification",
+      "genomic-inflation"
+    ],
+    "links": [
+      {
+        "t": "Clayton et al. 2005, Nat Genet: population structure, differential bias and genomic control",
+        "u": "https://doi.org/10.1038/ng1653"
+      },
+      {
+        "t": "Pluzhnikov et al. 2010, AJHG: Spoiling the whole bunch",
+        "u": "https://doi.org/10.1016/j.ajhg.2010.06.005"
+      }
+    ],
+    "match": [
+      "differential genotyping errors",
+      "differential genotyping error",
+      "differential errors",
+      "differential error"
+    ],
+    "noPlural": true,
+    "owner": "practical-overview"
+  },
+  {
+    "id": "snp-ascertainment-bias",
+    "term": "SNP ascertainment bias",
+    "aka": [
+      "ascertainment bias (of SNPs)",
+      "SNP ascertainment"
+    ],
+    "short": "The distortion in a set of SNPs that comes from how the SNPs were chosen. Genotyping arrays carry SNPs first discovered in a limited set of people and populations, so array SNPs tend to be common in several populations and rare SNPs are underrepresented.",
+    "long": "<p>Before an array is designed, its SNPs have to be discovered, usually by sequencing a modest number of people from a few populations, and then selected, often for being common in those populations. A SNP that is rare, or common only in a population that was not sequenced, has little chance of being chosen. Compared with whole-genome sequences, array data therefore have fewer rare alleles, allele frequencies shifted toward intermediate values, and SNPs that are older and shared by several populations. Statistics that depend on the allele frequency spectrum, such as estimates of population history, are biased unless the ascertainment is modeled. The lab's toy data imitate the effect by keeping a simulated SNP only if its minor allele is common enough.</p>",
+    "l1": "Page 11 (the toy data's simulation): the toy study keeps mostly common SNPs, like an array.",
+    "see": [
+      "allele-frequency-spectrum",
+      "maf",
+      "genotyping-array"
+    ],
+    "links": [
+      {
+        "t": "Lachance and Tishkoff 2013, BioEssays",
+        "u": "https://doi.org/10.1002/bies.201300014"
+      },
+      {
+        "t": "Clark et al. 2005, Genome Research",
+        "u": "https://doi.org/10.1101/gr.4107905"
+      }
+    ],
+    "match": [
+      "SNP ascertainment bias",
+      "SNP ascertainment"
+    ],
+    "noPlural": true,
+    "owner": "practical-overview"
+  }
+]

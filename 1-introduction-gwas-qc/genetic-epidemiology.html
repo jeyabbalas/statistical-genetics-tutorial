@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Genetic epidemiology: what it is and how it improves health · Lecture 1</title>
+<meta name="description" content="What epidemiology and genetic epidemiology measure, and how genetic findings improve health: drug targets (ANGPTL3, PCSK9, BCL11A), newborn and risk-stratified screening, Mendelian randomization and TWAS, with simulators for Mendelian randomization and breast cancer screening.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/widgets/genetic-epidemiology-screening.js"></script>
+<script defer src="assets/js/widgets/genetic-epidemiology-mr.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="genetic-epidemiology"]. */
+body[data-page="genetic-epidemiology"] .mental-model svg { display: block; width: 100%; height: auto; }
+body[data-page="genetic-epidemiology"] .ge-svg-mark { fill: var(--q1); }
+body[data-page="genetic-epidemiology"] table td.num, body[data-page="genetic-epidemiology"] table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+body[data-page="genetic-epidemiology"] .ge-quote { border-left: 3px solid var(--border-strong); margin: 0.8em 0 1.1em; padding: 2px 0 2px 14px; color: var(--fg); font-style: italic; }
+/* Mendelian randomization widget */
+body[data-page="genetic-epidemiology"] .mr-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 18px; align-items: start; }
+body[data-page="genetic-epidemiology"] .widget .mr-slider { display: flex; flex-direction: column; align-items: stretch; gap: 2px; margin: 0 0 10px; font-size: 0.88rem; }
+body[data-page="genetic-epidemiology"] .widget .mr-slider input[type="range"] { width: 100%; }
+body[data-page="genetic-epidemiology"] .widget .mr-select { display: flex; gap: 8px; align-items: center; margin: 0 0 10px; font-size: 0.88rem; }
+body[data-page="genetic-epidemiology"] .mr-buttons { margin: 2px 0 8px; }
+body[data-page="genetic-epidemiology"] .mr-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+body[data-page="genetic-epidemiology"] .mr-presets .btn { font-size: 0.8rem; padding: 4px 9px; }
+body[data-page="genetic-epidemiology"] .mr-plot svg, body[data-page="genetic-epidemiology"] .mr-reps svg { display: block; width: 100%; height: auto; }
+body[data-page="genetic-epidemiology"] .mr-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.8rem; color: var(--fg-muted); margin-top: 6px; }
+body[data-page="genetic-epidemiology"] .mr-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+body[data-page="genetic-epidemiology"] .mr-legend b.ln { display: inline-block; width: 24px; height: 0; border-top: 3px solid var(--q2); margin-right: 6px; vertical-align: 3px; }
+body[data-page="genetic-epidemiology"] .mr-legend b.ln.iv { border-top: 3px dashed var(--q1); }
+body[data-page="genetic-epidemiology"] .mr-legend i.mr-mean { width: 12px; height: 12px; background: var(--g1); border: 2px solid #1d2127; box-sizing: border-box; }
+body[data-page="genetic-epidemiology"] svg line.mr-ols { stroke: var(--q2); stroke-width: 2.6; }
+body[data-page="genetic-epidemiology"] svg line.mr-iv { stroke: var(--q1); stroke-width: 2.6; }
+body[data-page="genetic-epidemiology"] svg text.mr-lab, body[data-page="genetic-epidemiology"] svg text.sc-lab { paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; fill: var(--fg); }
+body[data-page="genetic-epidemiology"] .mr-readout { margin-top: 12px; overflow-x: auto; }
+body[data-page="genetic-epidemiology"] table.mr-tab { font-size: 0.8rem; }
+body[data-page="genetic-epidemiology"] table.mr-tab th, body[data-page="genetic-epidemiology"] table.mr-tab td { padding: 4px 8px; vertical-align: top; text-align: left; border-bottom: 1px solid var(--border); }
+body[data-page="genetic-epidemiology"] table.mr-tab th { font-weight: 700; width: 28%; }
+body[data-page="genetic-epidemiology"] .mr-reps { margin-top: 14px; }
+body[data-page="genetic-epidemiology"] #mr-reps-out { margin-top: 6px; }
+@media (max-width: 760px) {
+  body[data-page="genetic-epidemiology"] .mr-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  body[data-page="genetic-epidemiology"] table.mr-tab th, body[data-page="genetic-epidemiology"] table.mr-tab td { display: block; width: auto; border-bottom: 0; }
+  body[data-page="genetic-epidemiology"] table.mr-tab td { padding-top: 0; border-bottom: 1px solid var(--border); }
+}
+/* Risk-stratified screening widget */
+body[data-page="genetic-epidemiology"] .sc-sets { border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px 10px; margin: 6px 0 12px; font-size: 0.88rem; min-width: 0; }
+body[data-page="genetic-epidemiology"] .sc-sets legend { font-weight: 700; padding: 0 4px; }
+body[data-page="genetic-epidemiology"] .widget .sc-radio, body[data-page="genetic-epidemiology"] .widget .sc-check { display: flex; align-items: flex-start; gap: 6px; margin: 5px 0; }
+body[data-page="genetic-epidemiology"] .widget .sc-radio input, body[data-page="genetic-epidemiology"] .widget .sc-check input { margin-top: 3px; flex: 0 0 auto; }
+body[data-page="genetic-epidemiology"] .sc-sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; flex: 0 0 auto; margin: 3px 6px 0 0; vertical-align: -1px; }
+body[data-page="genetic-epidemiology"] .widget .sc-thr { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+body[data-page="genetic-epidemiology"] #sc-svg { display: block; width: 100%; max-width: 620px; height: auto; margin: 4px auto 8px; }
+body[data-page="genetic-epidemiology"] .widget .sc-readout { font-family: var(--font); overflow-x: auto; }
+body[data-page="genetic-epidemiology"] table.sc-tab { font-size: 0.82rem; }
+body[data-page="genetic-epidemiology"] table.sc-tab th, body[data-page="genetic-epidemiology"] table.sc-tab td { padding: 5px 7px; border-bottom: 1px solid var(--border); vertical-align: top; }
+body[data-page="genetic-epidemiology"] table.sc-tab thead th { font-size: 0.76rem; text-align: left; }
+body[data-page="genetic-epidemiology"] table.sc-tab thead th.num { text-align: right; }
+body[data-page="genetic-epidemiology"] table.sc-tab tr.sc-on td { background: #fff; font-weight: 700; }
+body[data-page="genetic-epidemiology"] .sc-readout .note { margin: 8px 0 0; }
+@media (max-width: 640px) {
+  body[data-page="genetic-epidemiology"] table.sc-tab td.num { text-align: left; }
+}
+</style>
+</head>
+<body data-page="genetic-epidemiology">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part A · Genetic epidemiology · Page 1 of 23</p>
+  <h1>Genetic epidemiology: what it is and how it improves health</h1>
+  <p class="lede">Epidemiology measures how often a disease occurs, in whom, and what makes it more or less likely. Genetic epidemiology adds the genotype, a determinant of health that is fixed at conception. This page defines both fields, shows the data each one collects, and follows the routes from a genetic finding to better health that slides 10–25 describe: new drugs, screening of newborns and of people at high risk, and two methods that use genotypes to answer causal questions, Mendelian randomization and the transcriptome-wide association study (TWAS).</p>
+  <div class="chips">
+    <span class="chip core">Slides 10–25</span>
+    <span class="chip time">≈ 90 min</span>
+    <span class="chip data">Shows up in the data as: a genotype column next to exposure, biomarker and outcome columns; GWAS summary statistics of an exposure and an outcome; predicted gene expression</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">One causal chain, read in four ways</h2>
+  <figure>
+<svg class="only-wide" viewBox="0 0 760 410" role="img" aria-labelledby="ge-mmw-t ge-mmw-d"><title id="ge-mmw-t">The causal chain of genetic epidemiology and four ways to use it</title><desc id="ge-mmw-d">Top: four boxes joined by arrows, from genotype G to a molecule M (gene expression or protein) to a biomarker or exposure X to a disease Y, with a box U for environment, social factors and confounders that points to X and Y. Below: four rows, one per use, marking which boxes are measured, which are predicted and which arrow is being estimated. Drug targets use the whole chain. Screening uses G, sometimes with X, to predict Y. Mendelian randomization uses G to estimate the arrow from X to Y. TWAS predicts M from G and tests predicted M against Y.</desc>
+<defs>
+<marker id="ge-aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker>
+<marker id="ge-aw-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4e79a7"/></marker>
+<marker id="ge-aw-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e15759"/></marker>
+<marker id="ge-aw-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker>
+</defs>
+<text x="12" y="44" class="t-b">The causal chain</text>
+<text x="12" y="62" class="t-xs">arrows are causal effects;</text>
+<text x="12" y="75" class="t-xs">real chains have many more</text>
+<text x="12" y="88" class="t-xs">boxes and arrows</text>
+<rect x="197" y="22" width="116" height="64" rx="8" fill="var(--g0)" stroke="var(--q1)" stroke-width="1.5"/>
+<text x="255" y="44" class="t-b" text-anchor="middle">Genotype G</text>
+<text x="255" y="61" class="t-xs" text-anchor="middle">fixed at conception</text>
+<text x="255" y="74" class="t-xs" text-anchor="middle">e.g. a PCSK9 variant</text>
+<rect x="337" y="22" width="116" height="64" rx="8" fill="var(--g0)" stroke="var(--q1)" stroke-width="1.5"/>
+<text x="395" y="44" class="t-b" text-anchor="middle">Molecule M</text>
+<text x="395" y="61" class="t-xs" text-anchor="middle">gene expression,</text>
+<text x="395" y="74" class="t-xs" text-anchor="middle">protein level</text>
+<rect x="477" y="22" width="116" height="64" rx="8" fill="var(--g0)" stroke="var(--q1)" stroke-width="1.5"/>
+<text x="535" y="44" class="t-b" text-anchor="middle">Biomarker X</text>
+<text x="535" y="61" class="t-xs" text-anchor="middle">or exposure, e.g.</text>
+<text x="535" y="74" class="t-xs" text-anchor="middle">LDL cholesterol</text>
+<rect x="617" y="22" width="116" height="64" rx="8" fill="var(--g0)" stroke="var(--q1)" stroke-width="1.5"/>
+<text x="675" y="44" class="t-b" text-anchor="middle">Disease Y</text>
+<text x="675" y="61" class="t-xs" text-anchor="middle">e.g. coronary</text>
+<text x="675" y="74" class="t-xs" text-anchor="middle">heart disease</text>
+<line x1="313" y1="54" x2="335" y2="54" stroke="#5b6470" stroke-width="1.6" marker-end="url(#ge-aw)"/>
+<line x1="453" y1="54" x2="475" y2="54" stroke="#5b6470" stroke-width="1.6" marker-end="url(#ge-aw)"/>
+<line x1="593" y1="54" x2="615" y2="54" stroke="#5b6470" stroke-width="1.6" marker-end="url(#ge-aw)"/>
+<rect x="477" y="106" width="256" height="30" rx="6" fill="#fdf3e1" stroke="#e0b25c"/>
+<text x="605" y="125" class="t-sm" text-anchor="middle">U: environment, social factors, confounders</text>
+<line x1="535" y1="106" x2="535" y2="89" stroke="#5b6470" stroke-width="1.4" marker-end="url(#ge-aw)"/>
+<line x1="675" y1="106" x2="675" y2="89" stroke="#5b6470" stroke-width="1.4" marker-end="url(#ge-aw)"/>
+<line x1="12" y1="154" x2="748" y2="154" stroke="#e2e6ea"/>
+<text x="12" y="178" class="t-b">How each use reads the chain</text>
+<text x="255" y="178" class="t-xs" text-anchor="middle">G</text>
+<text x="395" y="178" class="t-xs" text-anchor="middle">M</text>
+<text x="535" y="178" class="t-xs" text-anchor="middle">X</text>
+<text x="675" y="178" class="t-xs" text-anchor="middle">Y</text>
+<g stroke="#e3e7ec" stroke-dasharray="3 4"><line x1="255" y1="186" x2="255" y2="362"/><line x1="395" y1="186" x2="395" y2="362"/><line x1="535" y1="186" x2="535" y2="362"/><line x1="675" y1="186" x2="675" y2="362"/></g>
+<text x="12" y="204" class="t-b">1  Drug targets</text>
+<text x="24" y="219" class="t-xs">a variant shows what a drug does</text>
+<line x1="261" y1="208" x2="663" y2="208" stroke="#4e79a7" stroke-width="2" marker-end="url(#ge-aw-b)"/>
+<circle cx="255" cy="208" r="6.5" fill="#4e79a7"/><circle cx="395" cy="208" r="6.5" fill="#4e79a7"/><circle cx="535" cy="208" r="6.5" fill="#4e79a7"/><circle cx="675" cy="208" r="6.5" fill="#4e79a7"/>
+<text x="325" y="200" class="t-xs" text-anchor="middle">drug acts here</text>
+<text x="12" y="248" class="t-b">2  Screening</text>
+<text x="24" y="263" class="t-xs">flag high risk before disease</text>
+<line x1="261" y1="252" x2="667" y2="252" stroke="#8a93a0" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ge-aw-g)"/>
+<circle cx="255" cy="252" r="6.5" fill="#4e79a7"/><circle cx="535" cy="252" r="6.5" fill="#4e79a7"/><circle cx="675" cy="252" r="6.5" fill="#fff" stroke="#4e79a7" stroke-width="2"/>
+<text x="605" y="244" class="t-xs" text-anchor="middle">predicted risk</text>
+<text x="12" y="292" class="t-b">3  Mendelian randomization</text>
+<text x="24" y="307" class="t-xs">G as an instrument for X → Y</text>
+<line x1="261" y1="296" x2="527" y2="296" stroke="#4e79a7" stroke-width="2" marker-end="url(#ge-aw-b)"/>
+<line x1="541" y1="296" x2="667" y2="296" stroke="#e15759" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#ge-aw-r)"/>
+<circle cx="255" cy="296" r="6.5" fill="#4e79a7"/><circle cx="535" cy="296" r="6.5" fill="#4e79a7"/><circle cx="675" cy="296" r="6.5" fill="#4e79a7"/>
+<text x="605" y="289" class="t-b" text-anchor="middle" fill="#e15759">?</text>
+<text x="12" y="336" class="t-b">4  TWAS</text>
+<text x="24" y="351" class="t-xs">predict M from G, test M against Y</text>
+<line x1="261" y1="340" x2="387" y2="340" stroke="#4e79a7" stroke-width="2" marker-end="url(#ge-aw-b)"/>
+<line x1="402" y1="340" x2="667" y2="340" stroke="#e15759" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#ge-aw-r)"/>
+<circle cx="255" cy="340" r="6.5" fill="#4e79a7"/><circle cx="395" cy="340" r="6.5" fill="#fff" stroke="#4e79a7" stroke-width="2"/><circle cx="675" cy="340" r="6.5" fill="#4e79a7"/>
+<text x="325" y="332" class="t-xs" text-anchor="middle">weights</text>
+<text x="535" y="333" class="t-b" text-anchor="middle" fill="#e15759">?</text>
+<line x1="12" y1="374" x2="748" y2="374" stroke="#e2e6ea"/>
+<circle cx="20" cy="392" r="6" fill="#4e79a7"/><text x="32" y="396" class="t-xs">measured in the study</text>
+<circle cx="168" cy="392" r="6" fill="#fff" stroke="#4e79a7" stroke-width="2"/><text x="180" y="396" class="t-xs">predicted</text>
+<line x1="250" y1="392" x2="282" y2="392" stroke="#4e79a7" stroke-width="2" marker-end="url(#ge-aw-b)"/><text x="290" y="396" class="t-xs">effect used</text>
+<line x1="372" y1="392" x2="404" y2="392" stroke="#e15759" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#ge-aw-r)"/><text x="412" y="396" class="t-xs">effect being estimated (?)</text>
+<line x1="556" y1="392" x2="588" y2="392" stroke="#8a93a0" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ge-aw-g)"/><text x="596" y="396" class="t-xs">prediction, not a causal claim</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 360 500" role="img" aria-labelledby="ge-mmn-t ge-mmn-d"><title id="ge-mmn-t">The causal chain of genetic epidemiology and four ways to use it</title><desc id="ge-mmn-d">Four boxes joined by arrows: genotype G, molecule M (expression or protein), biomarker or exposure X, disease Y, with environment, social factors and confounders U pointing to X and Y. Below, four rows mark which boxes each use measures, predicts or estimates: drug targets use the whole chain; screening predicts Y from G and X; Mendelian randomization estimates the arrow from X to Y; TWAS predicts M from G and tests it against Y.</desc>
+<defs>
+<marker id="ge-an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker>
+<marker id="ge-an-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#4e79a7"/></marker>
+<marker id="ge-an-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e15759"/></marker>
+<marker id="ge-an-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a93a0"/></marker>
+</defs>
+<text x="10" y="18" class="t-b">The causal chain</text>
+<rect x="10" y="28" width="72" height="66" rx="7" fill="var(--g0)" stroke="var(--q1)" stroke-width="1.4"/>
+<text x="46" y="50" class="t-h" text-anchor="middle">G</text><text x="46" y="67" class="t-xs" text-anchor="middle">genotype,</text><text x="46" y="80" class="t-xs" text-anchor="middle">inherited</text>
+<rect x="98" y="28" width="72" height="66" rx="7" fill="var(--g0)" stroke="var(--q1)" stroke-width="1.4"/>
+<text x="134" y="50" class="t-h" text-anchor="middle">M</text><text x="134" y="67" class="t-xs" text-anchor="middle">expression,</text><text x="134" y="80" class="t-xs" text-anchor="middle">protein</text>
+<rect x="186" y="28" width="72" height="66" rx="7" fill="var(--g0)" stroke="var(--q1)" stroke-width="1.4"/>
+<text x="222" y="50" class="t-h" text-anchor="middle">X</text><text x="222" y="67" class="t-xs" text-anchor="middle">biomarker,</text><text x="222" y="80" class="t-xs" text-anchor="middle">exposure</text>
+<rect x="274" y="28" width="72" height="66" rx="7" fill="var(--g0)" stroke="var(--q1)" stroke-width="1.4"/>
+<text x="310" y="50" class="t-h" text-anchor="middle">Y</text><text x="310" y="67" class="t-xs" text-anchor="middle">disease</text>
+<line x1="82" y1="61" x2="96" y2="61" stroke="#5b6470" stroke-width="1.5" marker-end="url(#ge-an)"/>
+<line x1="170" y1="61" x2="184" y2="61" stroke="#5b6470" stroke-width="1.5" marker-end="url(#ge-an)"/>
+<line x1="258" y1="61" x2="272" y2="61" stroke="#5b6470" stroke-width="1.5" marker-end="url(#ge-an)"/>
+<rect x="186" y="112" width="160" height="34" rx="6" fill="#fdf3e1" stroke="#e0b25c"/>
+<text x="266" y="126" class="t-xs" text-anchor="middle">U: environment, social</text><text x="266" y="139" class="t-xs" text-anchor="middle">factors, confounders</text>
+<line x1="222" y1="112" x2="222" y2="97" stroke="#5b6470" stroke-width="1.3" marker-end="url(#ge-an)"/>
+<line x1="310" y1="112" x2="310" y2="97" stroke="#5b6470" stroke-width="1.3" marker-end="url(#ge-an)"/>
+<line x1="10" y1="162" x2="350" y2="162" stroke="#e2e6ea"/>
+<text x="10" y="182" class="t-b">How each use reads the chain</text>
+<text x="10" y="208" class="t-sm"><tspan font-weight="700" fill="#1d2127">1 Drug targets</tspan> · a variant shows what a drug does</text>
+<line x1="52" y1="230" x2="298" y2="230" stroke="#4e79a7" stroke-width="2" marker-end="url(#ge-an-b)"/>
+<circle cx="46" cy="230" r="6" fill="#4e79a7"/><circle cx="134" cy="230" r="6" fill="#4e79a7"/><circle cx="222" cy="230" r="6" fill="#4e79a7"/><circle cx="310" cy="230" r="6" fill="#4e79a7"/>
+<text x="10" y="266" class="t-sm"><tspan font-weight="700" fill="#1d2127">2 Screening</tspan> · flag high risk before disease</text>
+<line x1="52" y1="288" x2="302" y2="288" stroke="#8a93a0" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ge-an-g)"/>
+<circle cx="46" cy="288" r="6" fill="#4e79a7"/><circle cx="222" cy="288" r="6" fill="#4e79a7"/><circle cx="310" cy="288" r="6" fill="#fff" stroke="#4e79a7" stroke-width="2"/>
+<text x="10" y="324" class="t-sm"><tspan font-weight="700" fill="#1d2127">3 Mendelian randomization</tspan> · G as instrument</text>
+<line x1="52" y1="346" x2="214" y2="346" stroke="#4e79a7" stroke-width="2" marker-end="url(#ge-an-b)"/>
+<line x1="228" y1="346" x2="302" y2="346" stroke="#e15759" stroke-width="2.4" stroke-dasharray="5 4" marker-end="url(#ge-an-r)"/>
+<circle cx="46" cy="346" r="6" fill="#4e79a7"/><circle cx="222" cy="346" r="6" fill="#4e79a7"/><circle cx="310" cy="346" r="6" fill="#4e79a7"/>
+<text x="266" y="339" class="t-b" text-anchor="middle" fill="#e15759">?</text>
+<text x="10" y="382" class="t-sm"><tspan font-weight="700" fill="#1d2127">4 TWAS</tspan> · predict M from G, test M against Y</text>
+<line x1="52" y1="404" x2="126" y2="404" stroke="#4e79a7" stroke-width="2" marker-end="url(#ge-an-b)"/>
+<line x1="141" y1="404" x2="302" y2="404" stroke="#e15759" stroke-width="2.4" stroke-dasharray="5 4" marker-end="url(#ge-an-r)"/>
+<circle cx="46" cy="404" r="6" fill="#4e79a7"/><circle cx="134" cy="404" r="6" fill="#fff" stroke="#4e79a7" stroke-width="2"/><circle cx="310" cy="404" r="6" fill="#4e79a7"/>
+<text x="222" y="397" class="t-b" text-anchor="middle" fill="#e15759">?</text>
+<line x1="10" y1="426" x2="350" y2="426" stroke="#e2e6ea"/>
+<circle cx="18" cy="446" r="5.5" fill="#4e79a7"/><text x="30" y="450" class="t-xs">measured</text>
+<circle cx="106" cy="446" r="5.5" fill="#fff" stroke="#4e79a7" stroke-width="2"/><text x="118" y="450" class="t-xs">predicted</text>
+<line x1="186" y1="446" x2="212" y2="446" stroke="#4e79a7" stroke-width="2" marker-end="url(#ge-an-b)"/><text x="220" y="450" class="t-xs">effect used</text>
+<line x1="12" y1="474" x2="38" y2="474" stroke="#e15759" stroke-width="2.4" stroke-dasharray="5 4" marker-end="url(#ge-an-r)"/><text x="46" y="478" class="t-xs">effect being estimated (?)</text>
+<line x1="186" y1="474" x2="212" y2="474" stroke="#8a93a0" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ge-an-g)"/><text x="220" y="478" class="t-xs">prediction only</text>
+</svg>
+  </figure>
+  <p class="mm-statement">Genetic epidemiology studies one causal chain, from genotype through molecules and biomarkers to disease, with environment, social factors and confounders acting along the way. Its uses read the chain in different ways: a variant as evidence about a drug target, a genotype as a risk marker, a genotype as an instrument for a causal question, and a genotype as a predictor of a molecule that was not measured.</p>
+  <ul class="mm-hooks">
+    <li><strong>The chain and its data.</strong> Epidemiology measures how disease is distributed and what determines it; genetic epidemiology adds G, a determinant fixed at conception and measured for millions of variants at once.</li>
+    <li><strong>1 · Drug targets.</strong> People whose variant lowers a protein (G → M) show what a lifetime of a drug against that protein does to X and Y: <em>ANGPTL3</em>, <em>PCSK9</em>, <em>BCL11A</em>.</li>
+    <li><strong>2 · Screening.</strong> Rare high-risk variants, newborn tests and polygenic scores identify people at high absolute risk of Y early enough to prevent or detect it.</li>
+    <li><strong>3 · Mendelian randomization.</strong> Because alleles are assigned at random at conception, the ratio of G’s effects on Y and on X estimates the arrow X → Y without the confounders U, if G has no other path to Y.</li>
+    <li><strong>4 · TWAS.</strong> Weights learned where expression was measured predict M from genotypes in GWAS samples, so the arrow M → Y can be tested in hundreds of thousands of people.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0</div>
+  <p><a href="../0-biological-foundations/uk-biobank.html#epidemiology">Epidemiology in five ideas</a> defines exposures, outcomes, cohort and case–control designs and confounding. <a href="../0-biological-foundations/genotype-to-phenotype.html#stories">From a variant to a medicine</a> tells the <em>PCSK9</em>, <em>ANGPTL3</em> and <em>BCL11A</em> stories with their biology, and <a href="../0-biological-foundations/genotype-to-phenotype.html#mendelian-randomization">Mendelian randomization</a> introduces the Wald ratio. This page adds the data, the numbers and the statistics behind them.</p>
+</aside>
+
+<h2 id="definitions">What epidemiology and genetic epidemiology study <span class="tag core">Core</span></h2>
+
+<p>Slide 11 starts from the standard definition in the <em>Dictionary of Epidemiology</em>:</p>
+<p class="ge-quote">“Epidemiology is the study of the distribution and determinants of health-related states or events in specified populations, and the application of this study to the control of health problems.”<sup class="cite"><a href="#src-1">1</a></sup></p>
+<p>Each phrase names something that is measured or done. The table decodes them with examples from UK Biobank, the cohort of about 500,000 volunteers that Lecture 0 describes.</p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>The definition of epidemiology, phrase by phrase.</caption>
+  <thead><tr><th scope="col">Phrase</th><th scope="col">What it means</th><th scope="col">What is measured, for example in UK Biobank</th></tr></thead>
+  <tbody>
+    <tr><td>distribution</td><td data-label="What it means">How often a health state occurs, and in whom, where and when.</td><td data-label="What is measured">Counts of cases among the people at risk: prevalence (the share of people who have the condition at one time) and incidence (new cases per person per year), by age, sex, region and calendar year.</td></tr>
+    <tr><td>determinants</td><td data-label="What it means">Factors that change the probability of the health state, from molecules to social conditions.</td><td data-label="What is measured">Questionnaire answers (smoking, diet), physical measurements, blood biomarkers, medicines, an area’s deprivation score, and in genetic epidemiology the genotype.</td></tr>
+    <tr><td>health-related states or events</td><td data-label="What it means">Diseases and deaths, but also measurements and behaviors.</td><td data-label="What is measured">Diagnoses from hospital records, death registrations, LDL cholesterol levels, self-reported behaviors.</td></tr>
+    <tr><td>specified populations</td><td data-label="What it means">A defined group that the results are about (the target population), studied through a sample.</td><td data-label="What is measured">People aged 40–69 registered with the National Health Service, recruited in 2006–2010; the sample is not representative of all UK adults (Lecture 0, <a href="../0-biological-foundations/uk-biobank.html#who">who is in UK Biobank</a>).</td></tr>
+    <tr><td>application … to the control of health problems</td><td data-label="What it means">Using the results to prevent, detect or treat disease.</td><td data-label="What is measured">Screening programs, drug development, guidelines on diet or medicines.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Slide 11 then adds one step (“Genetic variation is one of the determinants of health-related states in populations, so…”) and defines genetic epidemiology as “the study of the role of genetic factors in determining health and disease in families and in populations, and the interplay of such genetic factors with social and environmental factors”. The wording follows a widely quoted definition, usually credited to the textbook of Khoury, Beaty and Cohen (1993),<sup class="cite"><a href="#src-2">2</a></sup> with “social” added. An earlier definition by Newton Morton (1982) was narrower: “a science which deals with the etiology, distribution, and control of disease in groups of relatives and with inherited causes of disease in populations”.<sup class="cite"><a href="#src-3">3</a></sup> In 1982 most genetic studies of disease were studies of families; today most are studies of unrelated people in large cohorts and biobanks, and the slide’s definition names both.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 10–11 · Two definitions</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-011.jpg" alt="Lecture 1, slide 11: the definition of epidemiology, a sentence saying that genetic variation is one determinant of health, and the definition of genetic epidemiology as the role of genetic factors in families and populations and their interplay with social and environmental factors" loading="lazy"><figcaption>Lecture 1 · slide 11</figcaption></figure>
+    <div><p>Slide 10 is the agenda (“Intro to genetic epidemiology”). Slide 11 is built as an argument: epidemiology studies determinants of health; genetic variation is one determinant; so genetic epidemiology studies genetic determinants. The last words, “interplay of such genetic factors with social and environmental factors”, announce the gene–environment interaction of Session 3 and the social context of <a href="social-context.html">page 3</a>. The slide quotes the dictionary definition with “states” only; the dictionary says “states or events”.</p></div>
+  </div>
+</aside>
+
+<h3 id="data-compared">What the data look like</h3>
+<p>For a data scientist the difference between the two fields is a difference in columns and rows. Classical epidemiology works with a participant table: one row per person, a few hundred to a few thousand columns of exposures, covariates and outcomes. Genetic epidemiology joins that table, by participant ID, to a genotype matrix with one column per genetic variant, and sometimes adds the relationships between participants.<sup class="cite"><a href="#src-4">4</a></sup></p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>What a classical and a genetic epidemiology study collect and compute.</caption>
+  <thead><tr><th scope="col">Element</th><th scope="col">Epidemiology</th><th scope="col">What genetic epidemiology adds</th></tr></thead>
+  <tbody>
+    <tr><td>Who is studied</td><td data-label="Epidemiology">A sample of a defined population: a cohort followed over time, or cases and controls.</td><td data-label="Genetic epidemiology adds">Relatives (twins, parents and children, extended families), and very large biobanks of unrelated people.</td></tr>
+    <tr><td>Determinants measured</td><td data-label="Epidemiology">Questionnaires, physical measurements, biomarkers in stored blood, medicines, records of the place people live.</td><td data-label="Genetic epidemiology adds">Genotypes at 10⁵–10⁷ variants per person, from arrays, imputation or sequencing; family relationships.</td></tr>
+    <tr><td>Outcomes</td><td data-label="Epidemiology">Diagnoses, deaths, times to an event, quantitative measurements.</td><td data-label="Genetic epidemiology adds">The same outcomes, plus molecular traits such as gene expression and protein levels used as intermediate outcomes.</td></tr>
+    <tr><td>Designs</td><td data-label="Epidemiology">Cohort, case–control, cross-sectional studies; randomized trials.</td><td data-label="Genetic epidemiology adds">Twin and family studies, linkage studies, genome-wide association studies (GWAS), sequencing studies of rare variants, Mendelian randomization.</td></tr>
+    <tr><td>Core analysis</td><td data-label="Epidemiology">A regression of the outcome on the exposure, with confounders as covariates.</td><td data-label="Genetic epidemiology adds">The same regression repeated for each of millions of variants, with genetic principal components or a mixed model for ancestry and relatedness, and a significance threshold of 5 × 10⁻⁸ for the many tests.</td></tr>
+    <tr><td>Shape of the data</td><td data-label="Epidemiology">People × variables: about 10⁵ × 10³ in UK Biobank’s participant table.</td><td data-label="Genetic epidemiology adds">People × variants: about 5 × 10⁵ × 10⁷ after imputation in UK Biobank, stored in genotype file formats rather than as a table.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="genotype-special">Why a genotype is an unusual determinant</h3>
+<p>A germline genotype differs from every other column in the participant table in five ways, and each one is used or guarded against somewhere in the course:</p>
+<ul>
+  <li><strong>It is fixed at conception.</strong> A disease cannot change a person’s germline genotype, so an association between a genotype and a disease cannot be reverse causation (Lecture 0, <a href="../0-biological-foundations/inheritance.html#special-variables">why inherited genotypes are special variables</a>).</li>
+  <li><strong>It is assigned at random within a family.</strong> Each parent passes one of their two alleles to a child with probability ½, independently of the child’s later diet or income. This is the basis of Mendelian randomization (<a href="#mendelian-randomization">below</a>).</li>
+  <li><strong>It is measured once, cheaply and with little error,</strong> for millions of variants at once, which is what makes GWAS possible.</li>
+  <li><strong>It is correlated with ancestry.</strong> Allele frequencies differ between populations, and so do environments. Without adjustment, a genotype can be associated with a trait only because both differ between groups: population stratification (<a href="population-structure.html">page 7</a>, and the simulator on <a href="social-context.html">page 3</a>).</li>
+  <li><strong>It is correlated with nearby variants.</strong> Linkage disequilibrium means the variant that shows the association is often not the one that causes it (<a href="linkage-disequilibrium.html">page 6</a>).</li>
+</ul>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> One analysis, two tables</div>
+  <p>A genetic epidemiology analysis file has the participant table on the left (ID, age, sex, LDL cholesterol, statin use, coronary heart disease yes or no) and, after a join on the ID, one column per variant holding 0, 1 or 2 copies of an allele. Lecture 0 shows these tables in <a href="../0-biological-foundations/the-data.html#analysis-matrix">the analysis-ready matrix</a>; the practical of this lecture cleans the genotype part (<a href="practical-overview.html">page 11</a>).</p>
+</aside>
+
+<h3 id="routes">How can genetic epidemiology improve health?</h3>
+<p>Slides 12–14 ask this question and give two answers; slide 21 adds a third. The rest of this page takes them in turn.</p>
+<ol>
+  <li><strong>Disease biology that leads to new medicines</strong> (slides 15–17): a variant that changes a protein and protects against disease marks that protein as a drug target. <a href="#drugs">Drug targets</a>.</li>
+  <li><strong>Direct clinical and public-health uses</strong> (slides 19–20): testing for rare high-risk variants, newborn screening, and screening schedules set by each person’s risk. <a href="#public-health">Screening</a>.</li>
+  <li><strong>“But wait, there’s more!”</strong> (slides 22–25): genotypes as research tools for causal questions about non-genetic exposures and about genes. <a href="#mendelian-randomization">Mendelian randomization</a> and <a href="#twas">TWAS</a>.</li>
+</ol>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 12–14, 18 and 21 · How genetic epidemiology improves health</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-013.jpg" alt="Lecture 1, slide 13: two bullets, genetic epidemiology has contributed to a deeper understanding of disease biology leading to new therapeutics, and it also has direct clinical and public health applications" loading="lazy"><figcaption>Lecture 1 · slide 13</figcaption></figure>
+    <div><p>Slide 12 asks “How can genetic epidemiology improve human health?”. Slides 13 and 14 give the two bullets; slide 18 repeats them with the first one grayed out, to move from therapeutics to public health; slide 21 adds “But wait, there’s more!”, which leads to Mendelian randomization and TWAS.</p></div>
+  </div>
+</aside>
+
+<h2 id="drugs">From disease biology to drug targets <span class="tag core">Core</span></h2>
+
+<p>A drug target is the molecule, usually a protein, that a drug binds to change its activity. Most candidate drugs fail in development because acting on the target does not change the disease enough, or because it causes harm. Human genetics can show both before a drug exists. A loss-of-function variant is a variant that reduces or abolishes the activity of the gene’s product, so people who carry one have had less of the protein’s activity since conception. Comparing carriers with non-carriers, in the same population, shows what lowering the protein does over a whole life (the G → M → X → Y row of the mental model):</p>
+<ul>
+  <li>if carriers have lower levels of a biomarker that causes disease, such as LDL cholesterol, the protein affects the disease pathway;</li>
+  <li>if carriers have less disease, inhibiting the protein is likely to help;</li>
+  <li>if carriers, including people with two inactive copies, are otherwise healthy, inhibiting it is likely to be safe.</li>
+</ul>
+<p>Slides 15–17 show three ways of finding such variants. In <strong>forward genetics</strong> the search starts from people with an unusual phenotype and looks for the variant; in <strong>reverse genetics</strong> it starts from a gene and looks for people whose copies do not work; in a <strong>GWAS</strong> it starts from a common trait and tests millions of common variants.</p>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> <em>ANGPTL3</em>: from one family to a drug (forward genetics, slide 15)</div>
+  <p><strong>2010.</strong> Musunuru and colleagues sequenced the exomes (the protein-coding parts of the genome) of two siblings from a family with very low LDL cholesterol, HDL cholesterol and triglycerides. Both carried two different nonsense variants in <em>ANGPTL3</em>, one on each copy of the gene: they were compound heterozygotes with no working ANGPTL3 protein, and they were healthy.<sup class="cite"><a href="#src-5">5</a></sup></p>
+  <p><strong>2017.</strong> Dewey and colleagues sequenced 58,335 participants of the DiscovEHR study. Carriers of one loss-of-function copy had lower triglycerides and LDL cholesterol, and loss-of-function variants were found in 0.33% of people with coronary artery disease against 0.45% of controls, an odds ratio of 0.59 (95% CI 0.41–0.85). In the same paper, evinacumab, a monoclonal antibody that blocks ANGPTL3, lowered triglycerides by up to 76% and LDL cholesterol by up to 23% in healthy volunteers.<sup class="cite"><a href="#src-6">6</a></sup></p>
+  <p><strong>2020–2021.</strong> In a trial of 65 patients with homozygous familial hypercholesterolemia, whose LDL cholesterol stays very high despite other drugs because their LDL receptors barely work, evinacumab lowered LDL cholesterol by 47.1% against a 1.9% rise on placebo.<sup class="cite"><a href="#src-7">7</a></sup> The U.S. Food and Drug Administration (FDA) approved it for this disease on 11 February 2021.<sup class="cite"><a href="#src-8">8</a></sup></p>
+</aside>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> <em>PCSK9</em>: from a gene to a class of drugs (reverse genetics, slide 16)</div>
+  <p><strong>2003.</strong> Variants in <em>PCSK9</em> that increase the protein’s activity were found in French families with very high LDL cholesterol inherited as a dominant trait.<sup class="cite"><a href="#src-9">9</a></sup> The gene was now known to act on LDL cholesterol, so the next question ran the other way: what happens to people whose <em>PCSK9</em> does not work?</p>
+  <p><strong>2005–2006.</strong> Cohen and colleagues sequenced <em>PCSK9</em> in people with low LDL cholesterol and found two nonsense variants, carried by about 2% of African Americans and associated with 40% lower LDL cholesterol.<sup class="cite"><a href="#src-10">10</a></sup> In 15 years of follow-up of the ARIC cohort, the 2.6% of 3,363 Black participants with one of these variants had 28% lower LDL cholesterol and 88% fewer coronary heart disease events (hazard ratio 0.11, 95% CI 0.02–0.81); among 9,524 white participants, the 3.2% carrying the missense variant R46L had 15% lower LDL cholesterol and 47% fewer events (hazard ratio 0.50).<sup class="cite"><a href="#src-11">11</a></sup> In 2006 a healthy woman with two inactivating variants, one on each copy, was found to have no detectable PCSK9 in her blood and LDL cholesterol of 14 mg/dL.<sup class="cite"><a href="#src-12">12</a></sup></p>
+  <p><strong>2015–2017.</strong> The FDA approved two monoclonal antibodies against PCSK9, alirocumab (July 2015) and evolocumab (August 2015).<sup class="cite"><a href="#src-13">13</a></sup> In the FOURIER trial of 27,564 patients with cardiovascular disease, evolocumab lowered LDL cholesterol by 59%, from a median of 92 to 30 mg/dL, and over a median of 2.2 years the primary outcome (cardiovascular death, heart attack, stroke, hospital admission for unstable angina or coronary revascularization) occurred in 9.8% of patients on evolocumab against 11.3% on placebo (hazard ratio 0.85).<sup class="cite"><a href="#src-14">14</a></sup></p>
+</aside>
+
+<aside class="callout story">
+  <div class="callout-title"><span class="badge">Story</span> <em>BCL11A</em>: from a GWAS to gene editing (slide 17)</div>
+  <p><strong>Background.</strong> Fetal hemoglobin (HbF) is the main hemoglobin before birth. Adults who keep making more of it have milder sickle cell disease and β-thalassemia, the two most common hemoglobinopathies (inherited diseases of hemoglobin), because HbF dilutes or replaces the faulty adult hemoglobin. Slide 17’s first sentence says this: HbF “contributes to variability in the expression of hemoglobinopathies”.</p>
+  <p><strong>2007–2008.</strong> A study of people with extreme F-cell levels mapped a locus at <em>BCL11A</em> on chromosome 2p15.<sup class="cite"><a href="#src-15">15</a></sup> Uda and colleagues then ran a GWAS of HbF in 4,305 Sardinians genotyped at 362,129 SNPs: the strongest association, at rs11886868 in <em>BCL11A</em>, had a p-value below 10⁻³⁵. The HbF-raising allele was more common in patients with milder forms of β-thalassemia than in those with the severe form, and the same variant was associated with HbF levels in patients with sickle cell disease.<sup class="cite"><a href="#src-16">16</a></sup> Later in 2008, laboratory work showed that the BCL11A protein represses the fetal globin genes in adult red-cell precursors.<sup class="cite"><a href="#src-17">17</a></sup></p>
+  <p><strong>2011–2013.</strong> Turning off <em>BCL11A</em> in the red-cell lineage of mice that carry the human sickle cell genes restored HbF and corrected the disease (Xu et al., the second paper on the slide).<sup class="cite"><a href="#src-18">18</a></sup> The GWAS variants turned out to lie in an enhancer, a regulatory DNA element, that drives <em>BCL11A</em> only in red-cell precursors; disrupting that enhancer lowers BCL11A there and nowhere else.<sup class="cite"><a href="#src-19">19</a></sup></p>
+  <p><strong>2020–2026.</strong> Frangoul and colleagues (the third paper on the slide) edited the enhancer with CRISPR-Cas9 in the blood stem cells of the first two patients, one with transfusion-dependent β-thalassemia and one with sickle cell disease; about 80% of the target alleles were edited, and for more than a year the first patient needed no transfusions and the second had no pain crises (vaso-occlusive events).<sup class="cite"><a href="#src-20">20</a></sup> The therapy, exagamglogene autotemcel (exa-cel, sold as Casgevy), was approved by the FDA on 8 December 2023 for sickle cell disease from age 12,<sup class="cite"><a href="#src-21">21</a></sup> after 29 of 30 evaluable patients in the pivotal trial were free of vaso-occlusive crises for at least 12 months.<sup class="cite"><a href="#src-22">22</a></sup> Approval for transfusion-dependent β-thalassemia followed in January 2024, and on 1 July 2026 both approvals were extended to children from age 2.<sup class="cite"><a href="#src-23">23</a></sup></p>
+</aside>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 15–17 · Genetics leading to new therapeutics</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-015.jpg" alt="Lecture 1, slide 15: three New York Times headlines about rare gene mutations and cholesterol drugs, a box reading Forward Genetics, Phenotype to Genotype, and a paragraph about a healthy proband with very low LDL cholesterol whose siblings carried loss-of-function variants in ANGPTL3" loading="lazy"><figcaption>Lecture 1 · slide 15</figcaption></figure>
+    <div><p>Slides 15 and 16 share three newspaper headlines (New York Times, 2013, 2014 and 2017) about genetics-led cholesterol drugs. The box on each slide names the direction of the search: “Forward Genetics: Phenotype → Genotype” for <em>ANGPTL3</em>, “Reverse Genetics: Genotype → Phenotype” for <em>PCSK9</em>. Both end with the same conclusion: “Drugs that mimic the effect of this mutation are more likely to be safe and effective.” Two details are simplified on the slides: the <em>ANGPTL3</em> siblings carried two different loss-of-function variants rather than “two copies” of one, and the healthy person without working <em>PCSK9</em> was a compound heterozygote rather than “homozygous” (Lecture 0, <a href="../0-biological-foundations/genotype-to-phenotype.html#angptl3">ANGPTL3 and BCL11A</a>). Slide 17 shows the titles of Uda et al. (2008) and Xu et al. (2011) and a 2020 newspaper story about a teenager with sickle cell disease in an early gene-therapy trial; its last sentence, “Trials … are now underway”, has since been overtaken by the approvals in the story above.</p></div>
+  </div>
+</aside>
+
+<p>The three stories are one table:</p>
+<div class="table-wrap">
+<table class="stack">
+  <caption>Three genes that became drug targets through human genetics.</caption>
+  <thead><tr><th scope="col">Gene</th><th scope="col">How it was found</th><th scope="col">Key genetic observation</th><th scope="col">Drug and kind</th><th scope="col">First U.S. approval</th></tr></thead>
+  <tbody>
+    <tr><td><em>ANGPTL3</em></td><td data-label="How it was found">Forward genetics: exome sequencing of a family with very low lipids</td><td data-label="Key genetic observation">Healthy people with no working copy; carriers of one inactive copy: odds ratio 0.59 for coronary artery disease</td><td data-label="Drug and kind">Evinacumab, monoclonal antibody</td><td data-label="First U.S. approval">February 2021</td></tr>
+    <tr><td><em>PCSK9</em></td><td data-label="How it was found">Reverse genetics: sequencing the gene in people with low LDL cholesterol</td><td data-label="Key genetic observation">Nonsense variants: 28% lower LDL cholesterol, 88% fewer coronary events over 15 years</td><td data-label="Drug and kind">Alirocumab and evolocumab, monoclonal antibodies (later inclisiran, a small interfering RNA)</td><td data-label="First U.S. approval">July 2015</td></tr>
+    <tr><td><em>BCL11A</em></td><td data-label="How it was found">GWAS of fetal hemoglobin levels</td><td data-label="Key genetic observation">Common enhancer variants lower <em>BCL11A</em> in red-cell precursors and raise HbF</td><td data-label="Drug and kind">Exa-cel, CRISPR-Cas9 editing of the patient’s own stem cells</td><td data-label="First U.S. approval">December 2023</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3 id="lifelong">Lifelong genetic effects and trial effects</h3>
+<p>A variant acts from conception; a drug in a trial acts for a few years in adults who already have disease. The two can be compared per unit of biomarker. Combining nine variants in six genes that lower LDL cholesterol, in 312,321 people, Ference and colleagues estimated that each 1 mmol/L (38.7 mg/dL) of lifelong lower LDL cholesterol goes with a 54.5% (95% CI 48.8–59.5%) lower risk of coronary heart disease, about three times the reduction per mmol/L seen when a statin is started later in life.<sup class="cite"><a href="#src-24">24</a></sup> In the statin trials, which lasted about five years, each 1.0 mmol/L reduction lowered the risk of major vascular events by about 22% (rate ratio 0.78).<sup class="cite"><a href="#src-25">25</a></sup> The same logic explains the <em>PCSK9</em> numbers: a 28% reduction from a typical LDL cholesterol of about 3.5 mmol/L is about 1 mmol/L, yet carriers had 88% fewer events. Genetic studies therefore show the direction and the safety of an effect better than its size in a short trial.</p>
+
+<h3 id="genetic-support">Genetic support raises the success rate of drugs</h3>
+<p>These stories are not exceptions. Nelson and colleagues traced drug development programs from the start to approval: the share of drug mechanisms with support from human genetic associations rose from 2.0% at the preclinical stage to 8.2% among approved drugs, and they estimated that choosing genetically supported targets could double the success rate.<sup class="cite"><a href="#src-26">26</a></sup> With ten more years of data, Minikel and colleagues estimated that a drug mechanism with genetic support is 2.6 times as likely to succeed in clinical development as one without.<sup class="cite"><a href="#src-27">27</a></sup></p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021, “Outlook”</div>
+  <p>The reading makes the same point in its Outlook section: “Retrospective reviews of drug development projects have shown that studies targeting GWAS disease risk genes were less likely to fail owing to lack of efficacy.”<sup class="cite"><a href="#src-28">28</a></sup> It names the <em>PCSK9</em> inhibitors as the example inspired by a rare loss-of-function variant, and the Open Targets database as a tool that links GWAS genes to drugs.</p>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> A variant is not a drug</div>
+  <ul>
+    <li><strong>Timing and size.</strong> A variant’s effect accumulates over a lifetime; a drug started at 60 acts on disease that has already developed (previous section).</li>
+    <li><strong>Direction.</strong> A gain-of-function variant that causes disease, like the 2003 <em>PCSK9</em> variants, suggests a target, but only carriers of loss-of-function variants show what inhibiting it does.</li>
+    <li><strong>Few carriers.</strong> Rare variants give wide confidence intervals: the hazard ratio of 0.11 for <em>PCSK9</em> nonsense carriers had a 95% interval from 0.02 to 0.81.</li>
+    <li><strong>Other effects.</strong> Carriers show the protein’s effects on every trait, not only the one of interest; a drug may also act on other proteins. Both are checked by testing the variant against many traits (a phenome-wide association study).</li>
+  </ul>
+</aside>
+
+<h2 id="public-health">Screening: genetics in clinics and public health <span class="tag core">Core</span></h2>
+
+<p>Screening means testing people without symptoms to find those who have a disease, or a high risk of it, early enough to act. Slides 19 and 20 show three kinds of genetic screening. They read the chain from the left end (G, or a molecule G controls) to a prediction of Y; none of them needs the variant to be the cause, only to predict.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 18–19 · Genetics in public health</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-019.jpg" alt="Lecture 1, slide 19: bullets on predictive screening for rare risk variants (BRCA1, BRCA2, Lynch syndrome) and diagnostic newborn screening for 29 conditions recommended by the American College of Medical Genetics, next to a table of the 29 core conditions grouped by test" loading="lazy"><figcaption>Lecture 1 · slide 19</figcaption></figure>
+    <div><p>The slide separates <strong>predictive</strong> screening (finding healthy carriers of rare variants that raise the risk of a disease that has not started) from <strong>diagnostic</strong> screening (finding newborns who already have a treatable condition without symptoms). The table on the right is the core panel of the American College of Medical Genetics (ACMG) report of 2006, decoded in the table below. The citations are a chapter by Brice and Zimmern in <em>Human Genome Epidemiology</em> (2nd edition, 2010, edited by Khoury and colleagues) and the ACMG report by Watson and colleagues.<sup class="cite"><a href="#src-29">29</a></sup></p></div>
+  </div>
+</aside>
+
+<h3 id="predictive">Predictive testing for rare high-risk variants</h3>
+<p>Pathogenic variants in <em>BRCA1</em> or <em>BRCA2</em>, genes whose proteins repair broken DNA, are carried by about 1 in 400 people (0.2–0.3%), and by about 2% of people of Ashkenazi Jewish ancestry.<sup class="cite"><a href="#src-30">30</a></sup> In a prospective study of 6,036 <em>BRCA1</em> and 3,820 <em>BRCA2</em> carriers, the risk of breast cancer by age 80 was 72% and 69%, and of ovarian cancer 44% and 17%,<sup class="cite"><a href="#src-31">31</a></sup> against about 13% and 1.1% over a lifetime for women in general in the United States.<sup class="cite"><a href="#src-30">30</a></sup> Carriers are offered breast MRI from a younger age and surgery that removes the ovaries or breasts to reduce risk. Lynch syndrome, caused by a pathogenic variant in one of the DNA mismatch-repair genes, is carried by about 1 in 279 people and brings high risks of colorectal and endometrial cancer; carriers are offered colonoscopy every one to two years.<sup class="cite"><a href="#src-32">32</a></sup></p>
+<p>Two numbers show what such testing can and cannot do. Each first-degree relative of a carrier has a 50% chance of carrying the same variant, so testing the relatives of a known carrier (cascade testing) finds many carriers with few tests. But carriers are rare: with the round numbers above, 0.25% of women times a 70% risk is about 0.18% of women, roughly 1 in 70 of all breast cancers if about 13% of women develop one. Most breast cancers occur in women without a high-risk variant, which is why risk-stratified screening (below) adds common variants.</p>
+
+<h3 id="newborn">Newborn screening</h3>
+<p>Newborn screening tests every baby, usually from drops of blood taken from the heel a day or two after birth and dried on filter paper, for treatable conditions that cause no symptoms at first. Phenylketonuria (PKU) is the classic example: babies with two non-working copies of <em>PAH</em> cannot break down the amino acid phenylalanine, which builds up and damages the developing brain, and a low-phenylalanine diet started in the first weeks prevents the damage. The genotype is fixed, but the disease is preventable by changing the environment, here the diet.</p>
+<p>In 2006 the ACMG recommended a uniform U.S. panel of 29 core conditions, chosen by scoring each candidate on whether a reliable test exists, whether early treatment helps, and how well the condition is understood, plus 25 secondary conditions that the same tests find.<sup class="cite"><a href="#src-29">29</a>,<a href="#src-33">33</a></sup> The federal Recommended Uniform Screening Panel that grew from it listed 38 core and 26 secondary conditions after infantile Krabbe disease was added in July 2024.<sup class="cite"><a href="#src-34">34</a></sup> Slide 19’s table groups the 29 core conditions by the test that finds them:</p>
+
+<div class="table-wrap">
+<table class="stack">
+  <caption>The 29 core conditions of the 2006 ACMG panel (slide 19), grouped by test. Abbreviations as on the slide.</caption>
+  <thead><tr><th scope="col">Test</th><th scope="col">Group</th><th scope="col">Conditions</th><th scope="col" class="num">Count</th></tr></thead>
+  <tbody>
+    <tr><td>Tandem mass spectrometry (MS/MS): acylcarnitines</td><td data-label="Group">Organic acid conditions</td><td data-label="Conditions">IVA isovaleric acidemia; GA I glutaric acidemia type I; HMG 3-hydroxy-3-methylglutaric aciduria; MCD multiple carboxylase deficiency; MUT and Cbl A,B methylmalonic acidemias; 3MCC 3-methylcrotonyl-CoA carboxylase deficiency; PROP propionic acidemia; BKT β-ketothiolase deficiency</td><td class="num" data-label="Count">9</td></tr>
+    <tr><td>MS/MS: acylcarnitines</td><td data-label="Group">Fatty acid oxidation disorders</td><td data-label="Conditions">MCAD, VLCAD and LCHAD (medium-chain, very-long-chain and long-chain 3-hydroxy acyl-CoA dehydrogenase deficiencies); TFP trifunctional protein deficiency; CUD carnitine uptake defect</td><td class="num" data-label="Count">5</td></tr>
+    <tr><td>MS/MS: amino acids</td><td data-label="Group">Amino acid disorders</td><td data-label="Conditions">PKU phenylketonuria; MSUD maple syrup urine disease; HCY homocystinuria; CIT citrullinemia; ASA argininosuccinic aciduria; TYR I tyrosinemia type I</td><td class="num" data-label="Count">6</td></tr>
+    <tr><td>Separation of hemoglobin types</td><td data-label="Group">Hemoglobinopathies</td><td data-label="Conditions">Hb SS sickle cell anemia; Hb S/βTh sickle β-thalassemia; Hb S/C sickle-hemoglobin C disease</td><td class="num" data-label="Count">3</td></tr>
+    <tr><td>Other assays</td><td data-label="Group">Others</td><td data-label="Conditions">CH congenital hypothyroidism (thyroid hormones); BIOT biotinidase deficiency and GALT galactosemia (enzyme activity); CAH congenital adrenal hyperplasia (a steroid hormone); HEAR hearing loss (a hearing test); CF cystic fibrosis (a pancreatic enzyme, often followed by a DNA test)</td><td class="num" data-label="Count">6</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Most of these tests measure a molecule that the genotype controls (M or X in the mental model), not the DNA itself: an inborn error of metabolism, an inherited block in a chemical pathway, shows up as a high or low concentration of a metabolite. Tandem mass spectrometry measures dozens of metabolites in one blood spot in a few minutes, which is why one test covers 20 of the 29 conditions.</p>
+<p>A screen is not a diagnosis. Take illustrative numbers: a condition affects 1 in 10,000 newborns, the test flags every affected baby, and it also flags 0.1% of healthy babies. Of 1,000,000 newborns, 100 are affected and about 1,000 healthy babies are flagged as well, so only about 100 of 1,100 positive screens (9%) are true. This share is the positive predictive value, and it is why every positive screen is followed by a confirmatory test.</p>
+
+<h3 id="risk-stratified">Risk-stratified screening</h3>
+<p>Breast cancer screening by mammography is offered by age: in England from 50 to 71 every three years, in the United States from 40. Risk-stratified screening sets the start, the interval or the type of test by each woman’s estimated absolute risk instead: the probability that she develops breast cancer over a stated period, here from age 20 to 80. Slide 20 shows the model that computes it, BOADICEA, in the version of Lee and colleagues (2019). It combines rare variants in <em>BRCA1</em>, <em>BRCA2</em>, <em>PALB2</em>, <em>CHEK2</em> and <em>ATM</em>; a polygenic score of 313 SNPs (a weighted sum of risk alleles); a residual polygenic and family component; questionnaire risk factors such as age at first period, number of children, height, body mass index, alcohol and hormone use; and mammographic density, the share of the breast that looks dense on the mammogram.<sup class="cite"><a href="#src-35">35</a></sup></p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 20 · Risk-stratified screening for breast cancer</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-020.jpg" alt="Lecture 1, slide 20: two panels of curves of predicted lifetime breast cancer risk against the cumulative percentage of women, for a carrier of a CHEK2 variant, with one curve per set of risk factors and background bands for near-population, moderate and high risk" loading="lazy"><figcaption>Lecture 1 · slide 20</figcaption></figure>
+    <div><p>The two panels are from Figure 3 of Lee et al. (2019). Each curve sorts women from lowest to highest predicted risk: the x-axis is the cumulative percentage of women, the y-axis the predicted risk of breast cancer by age 80. The flat line is the population average (about 11%). Each other curve uses more information: no risk factors, questionnaire risk factors (QRFs) only, QRFs and mammographic density (MD), the polygenic score (PRS) only, and all three together. The more information, the steeper the curve, so more women land in the lowest band and more in the highest. The colored bands are the risk categories of the National Institute for Health and Care Excellence (NICE) in England: near-population risk below 17%, moderate 17% to below 30%, high 30% or more.<sup class="cite"><a href="#src-36">36</a></sup> Both panels are for women who carry the <em>CHEK2</em> variant 1100delC, without (left) and with (right) a mother diagnosed at 50; the widget below simulates women from the general population.</p></div>
+  </div>
+</aside>
+
+<p>Risk models multiply relative risks. A relative risk is the risk in one group divided by the risk in a reference group, and models usually assume that each factor multiplies the rate of disease by its own relative risk, whatever the other factors are. The polygenic score of Mavaddat and colleagues has an odds ratio of 1.61 per standard deviation (95% CI 1.57–1.65): a woman 1 SD above the mean has 1.61 times the rate of the average woman, 2 SD above has 1.61² ≈ 2.6 times.<sup class="cite"><a href="#src-37">37</a></sup> The model turns the combined relative risk into an absolute risk:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} r_i = 1 - \exp\!\left(-\Lambda_0\, e^{\eta_i}\right) \\ \eta_i = \sum_{k=1}^{K} \ln \mathrm{RR}_{ik} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(r_i\)</dt><dd>Absolute risk of woman \(i\): the probability that she is diagnosed with breast cancer between ages 20 and 80, between 0 and 1.</dd>
+    <dt>\(\Lambda_0\)</dt><dd>Baseline cumulative hazard from 20 to 80: the sum of the yearly rates of breast cancer, for a woman whose relative risks are all 1. Set so that the model’s average risk matches cancer registry rates; about 0.10 in the widget below.</dd>
+    <dt>\(e^{\eta_i}\)</dt><dd>Her combined relative risk: the factor by which her rates are multiplied, from 0 upward.</dd>
+    <dt>\(\eta_i\)</dt><dd>The logarithm of the combined relative risk, the sum of the logarithms of the separate relative risks.</dd>
+    <dt>\(\mathrm{RR}_{ik}\)</dt><dd>Relative risk of woman \(i\) from factor \(k\), for example \(1.61^{z}\) for a polygenic score \(z\) standard deviations from the mean.</dd>
+    <dt>\(k, K\)</dt><dd>Index and number of risk factors (polygenic score, density, questionnaire factors, rare variants).</dd>
+  </dl>
+  <p class="eq-intuition">Relative risks multiply, so their logarithms add, which is why \(\eta_i\) is a sum. Multiplying every yearly rate by \(e^{\eta_i}\) multiplies the cumulative hazard by the same factor, and the probability of at least one event when the cumulative hazard is \(H\) is \(1 - e^{-H}\). For small \(H\) the risk is close to \(H\) itself; for large \(H\) it approaches 1 but never exceeds it, which a plain product of relative risks would not guarantee. With \(\Lambda_0 = 0.10\): a woman with all relative risks 1 has \(1 - e^{-0.10} = 9.5\%\); a score 2 SD above the mean gives \(e^{\eta} = 2.59\) and \(1 - e^{-0.259} = 22.8\%\), in the moderate band; 2 SD below gives 3.8%; a <em>BRCA1</em> carrier with a relative risk of about 12 gives \(1 - e^{-1.2} = 70\%\). The model ignores death from other causes, which real models such as BOADICEA include.</p>
+</div>
+
+<p>With all factors, BOADICEA predicts lifetime risks for women in the UK from 2.8% at the 1st percentile to 30.6% at the 99th; 14.7% of women fall in the moderate band and 1.1% in the high band.<sup class="cite"><a href="#src-35">35</a></sup> The widget simulates a cohort with the same spread and asks the screening question directly: if extra screening is offered above a risk threshold, how many women are offered it, and how many of the women who will develop breast cancer are among them?</p>
+
+<div class="widget" id="w-screening">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Who would a risk threshold offer extra screening?</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The text above describes what it shows: with all risk factors, about 14% of women are above a 17% threshold, and they include about 27% of the women who later develop breast cancer.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> With no personal information every woman gets the average risk of 11%, so a 17% threshold offers nobody extra screening and a 10% threshold offers everybody. Each information set spreads the predicted risks further apart: at the 17% threshold the polygenic score alone offers extra screening to about 12% of women, who include about 22% of the future cases, and all factors together offer it to about 14%, who include about 27% of the cases. These women have about twice the rate of breast cancer of the women below the threshold (about 210 against 90 per 1,000). Adding a <em>BRCA1</em>/<em>BRCA2</em> test moves the 1 in 400 carriers to the top of the curve but changes the overall numbers little, because carriers are rare. Most future cases remain below any threshold that offers extra screening to a small group: a risk model ranks women, it does not say who will get the disease.</p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021, “Applications · Risk prediction”</div>
+  <p>The reading describes polygenic scores as weighted sums of risk alleles that “can be used to identify individuals at a high risk of disease for clinical interventions and provide additional information over traditional clinical risk scores for stratified screening”, and its Figure 4 shows how a score is computed from GWAS summary statistics. It also warns that scores built from GWAS of one ancestry predict less well in others.<sup class="cite"><a href="#src-28">28</a></sup></p>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> High relative risk, modest absolute risk</div>
+  <p>A score in the top 1% has a relative risk of about 3 compared with the average woman, which sounds alarming, but the lifetime risk it implies is about 30%: most women in the top 1% never develop breast cancer. Thresholds such as 17% and 30% are policy choices that weigh the benefits of extra screening against its costs and harms. And the 313-SNP score was developed in women of European ancestry; its relative risks are smaller in other ancestries, a consequence of who has been studied (<a href="social-context.html">page 3</a>).</p>
+</aside>
+
+<h2 id="mendelian-randomization">Mendelian randomization: genotypes as instruments <span class="tag core">Core</span></h2>
+
+<p>Does raising HDL cholesterol prevent heart attacks? Does lowering C-reactive protein (CRP), a blood marker of inflammation, prevent them? Observational data cannot answer this directly: people with high HDL cholesterol also exercise more, drink differently and have different diets, and these confounders (U in the mental model) affect both the exposure X and the outcome Y. A randomized controlled trial, which assigns the treatment at random, answers it, but needs a drug, years and tens of thousands of patients. Mendelian randomization (MR) uses the random assignment of alleles at conception instead.<sup class="cite"><a href="#src-38">38</a>,<a href="#src-39">39</a></sup> The idea was first proposed by Martijn Katan in 1986, for the question whether low cholesterol causes cancer.<sup class="cite"><a href="#src-40">40</a></sup></p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 21–24 · Mendelian randomization</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-022.jpg" alt="Lecture 1, slide 22: four small causal diagrams from Sekula et al. 2016, a conceptual model with genetic variant, exposure of interest, outcome and confounders, then three panels for assumptions 1 to 3: the variant affects the exposure, the variant is not linked to the confounders, and the variant has no path to the outcome except through the exposure" loading="lazy"><figcaption>Lecture 1 · slide 22</figcaption></figure>
+    <div><p>Slide 22 (from Sekula et al. 2016) draws the three assumptions of an instrumental variable. A: the conceptual model, genetic variant → exposure → outcome, with confounders pointing to exposure and outcome. B, Assumption 1 (relevance): the green arrow, the variant affects the exposure. C, Assumption 2 (independence): no arrow from the variant to the confounders. D, Assumption 3 (exclusion restriction): no path from the variant to the outcome that bypasses the exposure. Slide 23 shows the first pages of Elliott et al. (2009) on CRP and Voight et al. (2012) on HDL cholesterol (“HLD” on the slide means HDL), with the conclusion that neither causes coronary heart disease, “consistent with clinical trials”. Slide 24 links a two-minute video introduction that, in the slide’s words, “glosses over some important pesky details (to be discussed later)”: the assumptions and the statistics below.</p></div>
+  </div>
+</aside>
+
+<h3 id="mr-model">Why the naive regression fails, in one simulation</h3>
+<p>The widget below simulates people from the simplest model in which MR works. Each person \(i\) has a genotype \(g_i\) (0, 1 or 2 copies of an allele with frequency 0.3), an unmeasured confounder \(u_i\), an exposure and an outcome:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} X_i = \gamma g_i + c\,u_i + \varepsilon_{Xi} \\ Y_i = \beta X_i + c\,u_i + \alpha g_i + \varepsilon_{Yi} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(X_i, Y_i\)</dt><dd>Exposure (for example HDL cholesterol) and outcome of person \(i\), in standardized simulation units.</dd>
+    <dt>\(\gamma\)</dt><dd>Change in the exposure per copy of the allele: the strength of the instrument (Assumption 1 needs \(\gamma \ne 0\)).</dd>
+    <dt>\(g_i\)</dt><dd>Number of copies of the allele that person \(i\) carries: 0, 1 or 2.</dd>
+    <dt>\(c\)</dt><dd>Strength of confounding: \(u_i\) raises both \(X_i\) and \(Y_i\) by \(c\) per unit.</dd>
+    <dt>\(u_i\)</dt><dd>Unmeasured confounder of person \(i\), standard normal and independent of \(g_i\) (Assumption 2).</dd>
+    <dt>\(\varepsilon_{Xi}, \varepsilon_{Yi}\)</dt><dd>Independent standard normal noise.</dd>
+    <dt>\(\beta\)</dt><dd>The causal effect of \(X\) on \(Y\), which the study wants: the change in \(Y\) when \(X\) is raised by one unit.</dd>
+    <dt>\(\alpha\)</dt><dd>Direct effect of the genotype on \(Y\) that bypasses \(X\) (horizontal pleiotropy). Assumption 3 says \(\alpha = 0\).</dd>
+  </dl>
+  <p class="eq-intuition">Regressing \(Y\) on \(X\) gives a slope that converges to \(\beta\) plus \(c^2 / \Var(X)\), because people with high \(u\) are high on both. With \(\beta = 0\), \(c = 1\), \(\gamma = 0.25\) and allele frequency 0.3, \(\Var(g) = 2 \times 0.3 \times 0.7 = 0.42\) and \(\Var(X) = 0.25^2 \times 0.42 + 1 + 1 \approx 2.03\), so the naive slope is about 0.49 although \(X\) has no effect at all. Regressing on the genotype instead avoids \(u\): \(g\) is independent of \(u\), so the slope of \(X\) on \(g\) is \(\gamma\) and the slope of \(Y\) on \(g\) is \(\beta\gamma + \alpha\). Their ratio is \(\beta + \alpha/\gamma\), which equals \(\beta\) when \(\alpha = 0\).</p>
+</div>
+
+<p>The two slopes on the genotype are estimated by ordinary regressions, and their ratio is the Wald ratio:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \hat{\beta}_{\mathrm{IV}} = \frac{\hat{\beta}_{GY}}{\hat{\beta}_{GX}} \\ \SE(\hat{\beta}_{\mathrm{IV}}) \approx \frac{\SE(\hat{\beta}_{GY})}{|\hat{\beta}_{GX}|} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{\beta}_{\mathrm{IV}}\)</dt><dd>The instrumental-variable (MR) estimate of the causal effect \(\beta\), in units of \(Y\) per unit of \(X\).</dd>
+    <dt>\(\hat{\beta}_{GY}\)</dt><dd>Estimated slope of the outcome on the genotype (units of \(Y\) per allele; a log odds ratio per allele for a disease).</dd>
+    <dt>\(\hat{\beta}_{GX}\)</dt><dd>Estimated slope of the exposure on the genotype (units of \(X\) per allele).</dd>
+    <dt>\(\SE(\cdot)\)</dt><dd>Standard error of an estimate; the second line is the first-order approximation that treats \(\hat{\beta}_{GX}\) as known.</dd>
+  </dl>
+  <p class="eq-intuition">Each allele moves the exposure by \(\beta_{GX}\) and, only through the exposure, the outcome by \(\beta\,\beta_{GX}\); dividing removes the per-allele scale. The denominator is also why precision depends on instrument strength: the standard error of \(\hat{\beta}_{GY}\) is divided by \(|\hat{\beta}_{GX}|\), so halving the variant’s effect on the exposure doubles the standard error of the ratio. Worked example: \(\hat{\beta}_{GX} = 0.25\) per allele and \(\hat{\beta}_{GY} = 0.05\) (standard error 0.03) give \(\hat{\beta}_{\mathrm{IV}} = 0.20\) with standard error \(0.03/0.25 = 0.12\), a 95% confidence interval from −0.04 to 0.44. When \(\hat{\beta}_{GX}\) is near 0 the approximation fails and the ratio becomes unstable.</p>
+</div>
+
+<p>Instrument strength is summarized by the F statistic of the regression of the exposure on the genotype:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} F = \left(\frac{\hat{\beta}_{GX}}{\SE(\hat{\beta}_{GX})}\right)^{2} \\ \approx \frac{n R^2}{1 - R^2} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(F\)</dt><dd>First-stage F statistic for one variant: the squared z-score of its association with the exposure, from 0 upward.</dd>
+    <dt>\(n\)</dt><dd>Number of people in which the exposure was regressed on the genotype.</dd>
+    <dt>\(R^2\)</dt><dd>Share of the variance of the exposure explained by the genotype, between 0 and 1; single variants usually explain well under 1%.</dd>
+  </dl>
+  <p class="eq-intuition">The z-score of a regression slope grows with the square root of the sample size and with the variance the predictor explains, so \(F\) grows in proportion to \(n R^2\). A common rule asks for \(F \ge 10\). Below that, chance correlation between the genotype and the confounders in the sample is not small compared with the genotype’s real effect, and in one-sample MR the estimate is pulled toward the confounded naive estimate: for an expected \(F\) of 10 the bias is roughly a tenth of the naive estimate’s bias.<sup class="cite"><a href="#src-41">41</a></sup> In the default simulation, \(n = 5{,}000\) and \(R^2 = 1.3\%\) give \(F \approx 66\); with \(\gamma = 0.03\), \(R^2 = 0.02\%\) and \(F \approx 1\), a weak instrument.</p>
+</div>
+
+<div class="widget" id="w-mr">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">Mendelian randomization simulator</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The text above describes what it shows: with no causal effect and strong confounding, the naive slope is about 0.5 while the Wald ratio is close to 0.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> In the default settings X has no effect on Y (β = 0), yet the naive slope is about 0.5 and its confidence interval excludes 0: that is confounding. The three genotype groups have different mean exposures but the same mean outcome, so the dashed line through the group means is flat and the Wald ratio is near 0, with a much wider interval. “Repeat 200 times” shows that the Wald ratio is centered on the truth with about 95% coverage, while the naive slope never covers it. Set γ to 0.03 (the “Weak instrument” preset): F drops below 10, single estimates swing wildly, and across repeats the Wald ratio drifts toward the naive slope. With the “Pleiotropy” preset (α = 0.05) the Wald ratio converges to α/γ = 0.2 instead of 0, and a larger sample only makes the wrong answer more precise: no sample size fixes a broken assumption.</p>
+
+<h3 id="two-sample">Two-sample MR from GWAS summary statistics</h3>
+<p>The two slopes do not have to come from the same people. In two-sample MR, \(\hat{\beta}_{GX}\) comes from a published GWAS of the exposure and \(\hat{\beta}_{GY}\) from a GWAS of the outcome in other people, both read from summary statistics (per-variant estimates and standard errors) after the alleles are aligned. Many variants are combined into one estimate, for example by inverse-variance weighting of their Wald ratios, and methods such as MR-Egger and the weighted median test whether some variants violate Assumption 3. <a href="gwas-applications.html">Page 10</a> simulates them. In two-sample designs a weak instrument biases the estimate toward zero rather than toward the naive estimate.<sup class="cite"><a href="#src-42">42</a></sup></p>
+
+<h3 id="mr-results">CRP and HDL cholesterol: MR and the trials</h3>
+<p>Slide 23’s two examples are the cases in which MR is most useful: strong observational associations that turn out not to be causal.</p>
+<ul>
+  <li><strong>HDL cholesterol.</strong> In observational data, each 1 SD higher HDL cholesterol went with 38% lower odds of myocardial infarction, a heart attack (odds ratio 0.62). Voight and colleagues used a variant in <em>LIPG</em>, 396Ser (allele frequency 2.6%), that raises HDL cholesterol by 0.14 mmol/L and changes no other lipid. Observational data predicted an odds ratio of 0.87 for carriers; among 20,913 cases and 95,407 controls the observed odds ratio was 0.99 (95% CI 0.88–1.11). A score of 14 HDL-raising variants gave 0.93 (0.68–1.26) per SD. As a positive control, a score of 13 LDL-raising variants gave 2.13 per SD, larger than the observational 1.54, as expected for a lifelong cause.<sup class="cite"><a href="#src-43">43</a></sup></li>
+  <li><strong>CRP.</strong> Elliott and colleagues found five loci associated with CRP in a GWAS of 17,967 people plus 13,615 for replication. Among 28,112 cases of coronary heart disease and 100,823 controls, variants in the <em>CRP</em> gene associated with 20% lower CRP gave an odds ratio of 1.00 (0.97–1.02), where observational data predicted 0.94.<sup class="cite"><a href="#src-44">44</a></sup> A larger analysis of 194,418 participants, 46,557 with coronary heart disease, concluded that CRP “is unlikely to be even a modest causal factor”.<sup class="cite"><a href="#src-45">45</a></sup></li>
+</ul>
+
+<figure class="fig">
+  <div class="fig-body">
+<svg class="only-wide" viewBox="0 0 700 356" role="img" aria-label="Forest plot comparing odds ratios from observational data with Mendelian randomization estimates. HDL cholesterol per 1 SD: observational 0.62, genetic score 0.93. HDL cholesterol per 0.14 mmol/L: expected 0.87, LIPG carriers 0.99. LDL cholesterol per 1 SD: observational 1.54, genetic score 2.13. CRP 20 percent lower: expected 0.94, CRP gene variants 1.00.">
+<text x="10" y="22" class="t-b">Exposure, change, and estimate</text>
+<text x="368" y="22" class="t-b" text-anchor="end">Odds ratio (95% CI)</text>
+<line x1="496" y1="34" x2="496" y2="312" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<text x="10" y="50" class="t-b">HDL cholesterol, 1 SD higher → myocardial infarction</text>
+<text x="24" y="70" class="t-sm">observational association</text><text x="368" y="70" class="t-xs" text-anchor="end">0.62 (0.58–0.66)</text>
+<line x1="404.8" y1="66" x2="426.5" y2="66" stroke="#f28e2b" stroke-width="2"/><rect x="411" y="61" width="10" height="10" fill="#f28e2b"/>
+<text x="24" y="90" class="t-sm">score of 14 HDL variants (MR)</text><text x="368" y="90" class="t-xs" text-anchor="end">0.93 (0.68–1.26)</text>
+<line x1="431.5" y1="86" x2="534.7" y2="86" stroke="#4e79a7" stroke-width="2"/><path d="M483.9,80 L489.9,86 L483.9,92 L477.9,86 z" fill="#4e79a7"/>
+<text x="10" y="120" class="t-b">HDL cholesterol, 0.14 mmol/L higher → myocardial infarction</text>
+<text x="24" y="140" class="t-sm">expected from observational data</text><text x="368" y="140" class="t-xs" text-anchor="end">0.87 (0.84–0.91)</text>
+<line x1="466.8" y1="136" x2="480.3" y2="136" stroke="#f28e2b" stroke-width="2"/><rect x="467.7" y="131" width="10" height="10" fill="#f28e2b"/>
+<text x="24" y="160" class="t-sm">LIPG 396Ser carriers (MR)</text><text x="368" y="160" class="t-xs" text-anchor="end">0.99 (0.88–1.11)</text>
+<line x1="474.6" y1="156" x2="513.5" y2="156" stroke="#4e79a7" stroke-width="2"/><path d="M494.4,150 L500.4,156 L494.4,162 L488.4,156 z" fill="#4e79a7"/>
+<text x="10" y="190" class="t-b">LDL cholesterol, 1 SD higher → myocardial infarction</text>
+<text x="24" y="210" class="t-sm">observational association</text><text x="368" y="210" class="t-xs" text-anchor="end">1.54 (1.45–1.63)</text>
+<line x1="558.3" y1="206" x2="577.8" y2="206" stroke="#f28e2b" stroke-width="2"/><rect x="563.3" y="201" width="10" height="10" fill="#f28e2b"/>
+<text x="24" y="230" class="t-sm">score of 13 LDL variants (MR)</text><text x="368" y="230" class="t-xs" text-anchor="end">2.13 (1.69–2.69)</text>
+<line x1="583.9" y1="226" x2="661.7" y2="226" stroke="#4e79a7" stroke-width="2"/><path d="M622.6,220 L628.6,226 L622.6,232 L616.6,226 z" fill="#4e79a7"/>
+<text x="10" y="260" class="t-b">CRP 20% lower → coronary heart disease</text>
+<text x="24" y="280" class="t-sm">expected from observational data</text><text x="368" y="280" class="t-xs" text-anchor="end">0.94 (0.94–0.95)</text>
+<line x1="485.7" y1="276" x2="487.5" y2="276" stroke="#f28e2b" stroke-width="2"/><rect x="480.7" y="271" width="10" height="10" fill="#f28e2b"/>
+<text x="24" y="300" class="t-sm">variants in the CRP gene (MR)</text><text x="368" y="300" class="t-xs" text-anchor="end">1.00 (0.97–1.02)</text>
+<line x1="490.9" y1="296" x2="499.4" y2="296" stroke="#4e79a7" stroke-width="2"/><path d="M496,290 L502,296 L496,302 L490,296 z" fill="#4e79a7"/>
+<line x1="380" y1="314" x2="680" y2="314" stroke="#5b6470"/>
+<g class="t-xs" text-anchor="middle">
+<line x1="380" y1="314" x2="380" y2="319" stroke="#5b6470"/><text x="380" y="330">0.5</text>
+<line x1="447.9" y1="314" x2="447.9" y2="319" stroke="#5b6470"/><text x="447.9" y="330">0.75</text>
+<line x1="496" y1="314" x2="496" y2="319" stroke="#5b6470"/><text x="496" y="330">1</text>
+<line x1="563.9" y1="314" x2="563.9" y2="319" stroke="#5b6470"/><text x="563.9" y="330">1.5</text>
+<line x1="612.1" y1="314" x2="612.1" y2="319" stroke="#5b6470"/><text x="612.1" y="330">2</text>
+<line x1="680" y1="314" x2="680" y2="319" stroke="#5b6470"/><text x="680" y="330">3</text>
+</g>
+<text x="530" y="348" class="t-sm" text-anchor="middle">odds ratio (log scale); below 1 = lower risk</text>
+<rect x="10" y="335" width="10" height="10" fill="#f28e2b"/><text x="25" y="344" class="t-xs">observational</text>
+<path d="M112,334 L118,340 L112,346 L106,340 z" fill="#4e79a7"/><text x="124" y="344" class="t-xs">Mendelian randomization</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 360 502" role="img" aria-label="Forest plot comparing odds ratios from observational data with Mendelian randomization estimates. HDL cholesterol per 1 SD: observational 0.62, genetic score 0.93. HDL cholesterol per 0.14 mmol/L: expected 0.87, LIPG carriers 0.99. LDL cholesterol per 1 SD: observational 1.54, genetic score 2.13. CRP 20 percent lower: expected 0.94, CRP gene variants 1.00.">
+<text x="10" y="18" class="t-b">Odds ratio with 95% CI</text>
+<text x="10" y="34" class="t-xs">Outcome: myocardial infarction (HDL, LDL) or</text>
+<text x="10" y="47" class="t-xs">coronary heart disease (CRP)</text>
+<text x="10" y="72" class="t-b">HDL cholesterol, 1 SD higher</text>
+<text x="22" y="90" class="t-sm">observational: 0.62 (0.58–0.66)</text>
+<line x1="143.8" y1="93" x2="143.8" y2="109" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<line x1="46.5" y1="101" x2="69.6" y2="101" stroke="#f28e2b" stroke-width="2"/>
+<rect x="53.4" y="96" width="10" height="10" fill="#f28e2b"/>
+<text x="22" y="122" class="t-sm">score of 14 HDL variants (MR): 0.93 (0.68–1.26)</text>
+<line x1="143.8" y1="125" x2="143.8" y2="141" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<line x1="74.9" y1="133" x2="185.1" y2="133" stroke="#4e79a7" stroke-width="2"/>
+<path d="M130.8,127 L136.8,133 L130.8,139 L124.8,133 z" fill="#4e79a7"/>
+<text x="10" y="166" class="t-b">HDL cholesterol, 0.14 mmol/L higher</text>
+<text x="22" y="184" class="t-sm">expected from observational data: 0.87 (0.84–0.91)</text>
+<line x1="143.8" y1="187" x2="143.8" y2="203" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<line x1="112.6" y1="195" x2="126.9" y2="195" stroke="#f28e2b" stroke-width="2"/>
+<rect x="113.9" y="190" width="10" height="10" fill="#f28e2b"/>
+<text x="22" y="216" class="t-sm">LIPG 396Ser carriers (MR): 0.99 (0.88–1.11)</text>
+<line x1="143.8" y1="219" x2="143.8" y2="235" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<line x1="121.0" y1="227" x2="162.4" y2="227" stroke="#4e79a7" stroke-width="2"/>
+<path d="M142.0,221 L148.0,227 L142.0,233 L136.0,227 z" fill="#4e79a7"/>
+<text x="10" y="260" class="t-b">LDL cholesterol, 1 SD higher</text>
+<text x="22" y="278" class="t-sm">observational: 1.54 (1.45–1.63)</text>
+<line x1="143.8" y1="281" x2="143.8" y2="297" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<line x1="210.1" y1="289" x2="231.0" y2="289" stroke="#f28e2b" stroke-width="2"/>
+<rect x="215.9" y="284" width="10" height="10" fill="#f28e2b"/>
+<text x="22" y="310" class="t-sm">score of 13 LDL variants (MR): 2.13 (1.69–2.69)</text>
+<line x1="143.8" y1="313" x2="143.8" y2="329" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<line x1="237.5" y1="321" x2="320.5" y2="321" stroke="#4e79a7" stroke-width="2"/>
+<path d="M278.8,315 L284.8,321 L278.8,327 L272.8,321 z" fill="#4e79a7"/>
+<text x="10" y="354" class="t-b">CRP 20% lower</text>
+<text x="22" y="372" class="t-sm">expected from observational data: 0.94 (0.94–0.95)</text>
+<line x1="143.8" y1="375" x2="143.8" y2="391" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<line x1="132.7" y1="383" x2="134.6" y2="383" stroke="#f28e2b" stroke-width="2"/>
+<rect x="127.7" y="378" width="10" height="10" fill="#f28e2b"/>
+<text x="22" y="404" class="t-sm">variants in the CRP gene (MR): 1.00 (0.97–1.02)</text>
+<line x1="143.8" y1="407" x2="143.8" y2="423" stroke="#8a93a0" stroke-dasharray="3 3"/>
+<line x1="138.3" y1="415" x2="147.3" y2="415" stroke="#4e79a7" stroke-width="2"/>
+<path d="M143.8,409 L149.8,415 L143.8,421 L137.8,415 z" fill="#4e79a7"/>
+<line x1="20" y1="432" x2="340" y2="432" stroke="#5b6470"/>
+<g class="t-xs" text-anchor="middle">
+<line x1="20" y1="432" x2="20" y2="437" stroke="#5b6470"/><text x="20" y="448">0.5</text>
+<line x1="92.4" y1="432" x2="92.4" y2="437" stroke="#5b6470"/><text x="92.4" y="448">0.75</text>
+<line x1="143.8" y1="432" x2="143.8" y2="437" stroke="#5b6470"/><text x="143.8" y="448">1</text>
+<line x1="216.2" y1="432" x2="216.2" y2="437" stroke="#5b6470"/><text x="216.2" y="448">1.5</text>
+<line x1="267.6" y1="432" x2="267.6" y2="437" stroke="#5b6470"/><text x="267.6" y="448">2</text>
+<line x1="340" y1="432" x2="340" y2="437" stroke="#5b6470"/><text x="340" y="448">3</text>
+</g>
+<text x="180" y="466" class="t-xs" text-anchor="middle">odds ratio (log scale); below 1 = lower risk</text>
+<rect x="10" y="481" width="10" height="10" fill="#f28e2b"/><text x="25" y="490" class="t-xs">observational</text>
+<path d="M128,480 L134,486 L128,492 L122,486 z" fill="#4e79a7"/><text x="140" y="490" class="t-xs">Mendelian randomization</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">Observational associations and MR estimates for three biomarkers.</span> For HDL cholesterol and CRP the genetic estimates are close to 1 although the observational ones are not; for LDL cholesterol, a known cause, the genetic estimate is larger than the observational one. Outcomes: myocardial infarction (HDL and LDL, Voight et al. 2012) and coronary heart disease (CRP, Elliott et al. 2009).<sup class="cite"><a href="#src-43">43</a>,<a href="#src-44">44</a></sup> <span class="fig-credit">Drawn for this lecture from the published estimates.</span></figcaption>
+</figure>
+
+<p>What did the trials find? For HDL cholesterol, two large trials raised it without benefit. Dalcetrapib raised HDL cholesterol by 31–40% in 15,871 patients after an acute coronary syndrome, and the primary outcome occurred in 8.3% on dalcetrapib against 8.0% on placebo (hazard ratio 1.04, 95% CI 0.93–1.16); the trial was stopped for futility.<sup class="cite"><a href="#src-46">46</a></sup> Extended-release niacin raised HDL cholesterol by 6 mg/dL in 25,673 patients without reducing major vascular events.<sup class="cite"><a href="#src-47">47</a></sup> For CRP the story has a twist that MR anticipated. No drug lowers CRP alone, but a variant in <em>IL6R</em>, the gene for the receptor of interleukin-6, a signal upstream of CRP, lowers CRP by 8.35% per allele and also lowers the risk of coronary heart disease (odds ratio 0.95 per allele among 25,458 cases and 100,740 controls).<sup class="cite"><a href="#src-48">48</a></sup> MR thus pointed to the interleukin pathway rather than to CRP itself, and in the CANTOS trial canakinumab, an antibody against interleukin-1β, lowered CRP and reduced recurrent cardiovascular events (hazard ratio 0.85 at the 150 mg dose, 95% CI 0.74–0.98, in 10,061 patients) without changing lipids.<sup class="cite"><a href="#src-49">49</a></sup></p>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021, “Applications”</div>
+  <p>The reading presents MR as a use of GWAS summary statistics that “can be applied when a randomized control trial is not feasible”, lists the same three assumptions as slide 22, and distinguishes vertical pleiotropy (trait A causes trait B, which MR estimates) from horizontal pleiotropy (a variant affects two traits separately, which breaks Assumption 3).<sup class="cite"><a href="#src-28">28</a></sup></p>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Assumptions 2 and 3 cannot be proven from the data</div>
+  <ul>
+    <li><strong>Pleiotropy</strong> (Assumption 3): a variant chosen for HDL cholesterol may also change triglycerides. Voight and colleagues chose <em>LIPG</em> 396Ser because it changes no other lipid; with many variants, methods that allow some invalid instruments are used (<a href="gwas-applications.html">page 10</a>).</li>
+    <li><strong>Population stratification</strong> (Assumption 2): if allele frequency and the outcome both differ by ancestry, the genotype is linked to confounders. MR inherits every bias of the GWAS it uses (<a href="social-context.html">page 3</a>).</li>
+    <li><strong>Linkage disequilibrium:</strong> the instrument may be correlated with a variant in a neighboring gene that affects the outcome directly.</li>
+    <li><strong>Lifelong, small changes:</strong> MR estimates the effect of a lifelong shift in the exposure, which is not the effect of a drug given for five years (see <a href="#lifelong">above</a>).</li>
+  </ul>
+</aside>
+
+<p>Slide 24’s video is on <a href="https://www.youtube.com/watch?v=LoTgfGotaQ4" target="_blank" rel="noopener">YouTube</a>. The Methods Primer by Sanderson and colleagues covers the assumptions, the estimators and the reporting of MR studies in depth.<sup class="cite"><a href="#src-50">50</a></sup></p>
+
+<h2 id="twas">TWAS: testing genetically predicted gene expression <span class="tag core">Core</span></h2>
+
+<p>Gene expression, the amount of a gene’s RNA in a tissue, is one of the molecules M between genotype and disease. Measuring it needs tissue samples, which no biobank of 500,000 people has. A transcriptome-wide association study (TWAS) tests expression without measuring it in the GWAS sample, in two stages (slide 25).<sup class="cite"><a href="#src-51">51</a>,<a href="#src-52">52</a></sup></p>
+<ol>
+  <li><strong>Train.</strong> In a reference dataset that has both genotypes and measured expression, such as GTEx (Genotype-Tissue Expression, a collection of tissues from deceased donors), fit a prediction model for each gene: its expression regressed on the variants near the gene. The models use penalized regression, such as the lasso or the elastic net, or only the strongest expression-associated variant (eQTL). FUSION uses the variants within 500 kb of the gene and keeps the model with the best cross-validated accuracy; PrediXcan uses an elastic net on the variants within 1 Mb.<sup class="cite"><a href="#src-53">53</a></sup></li>
+  <li><strong>Test.</strong> Apply the weights to the GWAS data and test the predicted expression against the trait, one gene at a time.</li>
+</ol>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \hat{m}_i = \sum_{j=1}^{J} w_j\, g_{ij} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\hat{m}_i\)</dt><dd>Predicted expression of one gene in person \(i\) of the GWAS sample, in the units of the training data (usually standardized).</dd>
+    <dt>\(j, J\)</dt><dd>Index and number of variants in the gene’s model, from one to a few hundred variants near the gene.</dd>
+    <dt>\(w_j\)</dt><dd>Weight of variant \(j\), estimated in the reference data; the lasso and the elastic net set many weights to 0.</dd>
+    <dt>\(g_{ij}\)</dt><dd>Number of copies (0, 1 or 2, or an imputed dosage) of variant \(j\)’s counted allele in person \(i\).</dd>
+  </dl>
+  <p class="eq-intuition">This is the same weighted sum as a polygenic score, applied to one gene’s expression instead of to a disease. It predicts only the part of expression that the nearby variants explain, the genetically regulated part; the rest, from environment and from distant variants, is missing. Predicted expression is a function of genotypes alone, so it is fixed at conception like a genotype, and testing it against the trait asks whether the inherited part of the gene’s expression goes with the trait. If a gene’s model has one variant with weight 0.8, then \(\hat{m}_i\) is 0, 0.8 or 1.6 for 0, 1 or 2 copies.</p>
+</div>
+
+<p>With only GWAS summary statistics, the test statistic for a gene combines the variants’ z-scores with the same weights:<sup class="cite"><a href="#src-52">52</a></sup></p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ z_{\mathrm{TWAS}} = \frac{\mathbf{w}^{\top}\mathbf{z}}{\sqrt{\mathbf{w}^{\top}\boldsymbol{\Sigma}\,\mathbf{w}}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(z_{\mathrm{TWAS}}\)</dt><dd>The gene’s TWAS z-score; approximately standard normal if the predicted expression is not associated with the trait.</dd>
+    <dt>\(\mathbf{w}\)</dt><dd>Vector of the \(J\) weights of the gene’s expression model.</dd>
+    <dt>\(\mathbf{z}\)</dt><dd>Vector of the GWAS z-scores (effect estimate divided by its standard error) of the same \(J\) variants, with alleles aligned to the weights.</dd>
+    <dt>\(\boldsymbol{\Sigma}\)</dt><dd>The \(J \times J\) matrix of correlations (linkage disequilibrium) between the variants, taken from a reference panel such as 1000 Genomes.</dd>
+  </dl>
+  <p class="eq-intuition">The numerator is a weighted sum of z-scores. Under the null hypothesis the z-scores are standard normal with correlations \(\boldsymbol{\Sigma}\), so the variance of the sum is \(\mathbf{w}^{\top}\boldsymbol{\Sigma}\mathbf{w}\), and dividing by its square root makes the result standard normal again. With one variant of weight 1, \(z_{\mathrm{TWAS}}\) is just that variant’s z-score. With two variants of weight 0.5 and z-scores of 3 each: if they are uncorrelated, \(3/\sqrt{0.5} = 4.24\); if their correlation is 0.8, \(3/\sqrt{0.9} = 3.16\), because correlated variants carry partly the same information and add less evidence.</p>
+</div>
+
+<figure class="fig">
+  <div class="fig-body">
+<svg class="only-wide" viewBox="0 0 700 250" role="img" aria-label="Diagram of the two stages of a TWAS. Stage 1, in reference data with genotypes and measured expression, fits weights for each gene. Stage 2 applies the weights to GWAS data, either to individual genotypes to predict expression and regress the trait on it, or to summary statistics with an LD reference to compute a TWAS z-score.">
+<defs><marker id="ge-tw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker></defs>
+<rect x="10" y="12" width="310" height="160" rx="10" fill="var(--g0)" stroke="var(--q1)"/>
+<text x="24" y="36" class="t-b">Stage 1 · train (reference data)</text>
+<text x="24" y="58" class="t-sm">e.g. GTEx: a few hundred donors per tissue</text>
+<text x="24" y="82" class="t">genotypes of the variants near the gene</text>
+<text x="24" y="102" class="t">measured expression of the gene</text>
+<text x="24" y="126" class="t-sm">fit expression ~ variants (lasso, elastic net,</text>
+<text x="24" y="142" class="t-sm">top eQTL …); keep the best cross-validated model</text>
+<text x="24" y="162" class="t-b">→ one weight per variant, for each gene</text>
+<line x1="322" y1="92" x2="376" y2="92" stroke="#5b6470" stroke-width="1.8" marker-end="url(#ge-tw)"/>
+<text x="349" y="84" class="t-xs" text-anchor="middle">weights</text>
+<rect x="380" y="12" width="310" height="160" rx="10" fill="#fff" stroke="var(--q1)"/>
+<text x="394" y="36" class="t-b">Stage 2 · test (GWAS data)</text>
+<text x="394" y="60" class="t-sm">individual genotypes and a trait:</text>
+<text x="404" y="80" class="t">expression = Σ w × g, then regress Y on it</text>
+<text x="394" y="106" class="t-sm">or summary statistics and an LD reference:</text>
+<text x="404" y="126" class="t">z = wᵀz / √(wᵀΣw)</text>
+<text x="394" y="152" class="t-sm">one test per gene, about 10⁴ genes per tissue</text>
+<rect x="10" y="190" width="680" height="50" rx="8" fill="#fdf3e1" stroke="#e0b25c"/>
+<text x="24" y="211" class="t-sm">Output per gene: TWAS z-score and p-value, with the model’s cross-validated R². Nearby genes often share</text>
+<text x="24" y="229" class="t-sm">eQTLs in linkage disequilibrium, so several genes in one region can be significant; at most one may be causal.</text>
+</svg>
+<svg class="only-narrow" viewBox="0 0 360 452" role="img" aria-label="Diagram of the two stages of a TWAS, stacked. Stage 1, in reference data with genotypes and measured expression, fits weights for each gene. Stage 2 applies the weights to GWAS data, either to individual genotypes to predict expression and regress the trait on it, or to summary statistics with an LD reference to compute a TWAS z-score.">
+<defs><marker id="ge-tw-n" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6470"/></marker></defs>
+<rect x="10" y="10" width="340" height="152" rx="10" fill="var(--g0)" stroke="var(--q1)"/>
+<text x="24" y="34" class="t-b">Stage 1 · train (reference data)</text>
+<text x="24" y="54" class="t-sm">e.g. GTEx: a few hundred donors per tissue</text>
+<text x="24" y="76" class="t">genotypes of the variants near the gene</text>
+<text x="24" y="94" class="t">measured expression of the gene</text>
+<text x="24" y="116" class="t-sm">fit expression ~ variants (lasso, elastic net,</text>
+<text x="24" y="131" class="t-sm">top eQTL …); keep the best cross-validated model</text>
+<text x="24" y="151" class="t-b">→ one weight per variant, for each gene</text>
+<line x1="180" y1="164" x2="180" y2="190" stroke="#5b6470" stroke-width="1.8" marker-end="url(#ge-tw-n)"/>
+<text x="192" y="181" class="t-xs">weights</text>
+<rect x="10" y="194" width="340" height="140" rx="10" fill="#fff" stroke="var(--q1)"/>
+<text x="24" y="218" class="t-b">Stage 2 · test (GWAS data)</text>
+<text x="24" y="240" class="t-sm">individual genotypes and a trait:</text>
+<text x="34" y="260" class="t">expression = Σ w × g, then regress Y on it</text>
+<text x="24" y="284" class="t-sm">or summary statistics and an LD reference:</text>
+<text x="34" y="304" class="t">z = wᵀz / √(wᵀΣw)</text>
+<text x="24" y="324" class="t-sm">one test per gene, about 10⁴ genes per tissue</text>
+<rect x="10" y="348" width="340" height="96" rx="8" fill="#fdf3e1" stroke="#e0b25c"/>
+<text x="24" y="368" class="t-sm">Output per gene: TWAS z-score and p-value, with</text>
+<text x="24" y="384" class="t-sm">the model’s cross-validated R². Nearby genes often</text>
+<text x="24" y="400" class="t-sm">share eQTLs in linkage disequilibrium, so several</text>
+<text x="24" y="416" class="t-sm">genes in one region can be significant; at most</text>
+<text x="24" y="432" class="t-sm">one may be causal.</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">The two stages of a transcriptome-wide association study.</span> Notation as in the equations above: \(g\) genotype counts, \(w\) weights, \(z\) GWAS z-scores, \(\Sigma\) the LD matrix; “expression” in Stage 2 is the predicted expression \(\hat{m}\). <span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 25 · Transcriptome-wide association study</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-025.jpg" alt="Lecture 1, slide 25: text defining a transcriptome-wide association study as using genetic predictors of gene expression to test predicted expression against an outcome, useful when the intermediate biomarkers are hard or expensive to measure, and More to come on October 14th" loading="lazy"><figcaption>Lecture 1 · slide 25</figcaption></figure>
+    <div><p>The slide’s definition, “genetic predictors of gene expression”, is Stage 1 above, and “test for association between predicted gene expression and an outcome” is Stage 2. Its second sentence generalizes: the same approach works for any “intermediate biomarker” that is “difficult or expensive to measure”, such as protein levels or splicing. “More to come on October 14th!” refers to Session 5, whose topics are TWAS and SNP heritability.<sup class="cite"><a href="#src-54">54</a></sup></p></div>
+  </div>
+</aside>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> One row of FUSION output</div>
+  <p>FUSION writes one row per gene. This is the example row of its documentation, from a schizophrenia GWAS and expression weights trained in whole blood:<sup class="cite"><a href="#src-53">53</a></sup></p>
+  <div class="table-wrap">
+  <table class="mono compact">
+    <thead><tr><th scope="col">Column</th><th scope="col">Value</th><th scope="col">Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>ID</td><td>FAM109B</td><td>gene</td></tr>
+      <tr><td>CHR, P0, P1</td><td>22, 42470255, 42475445</td><td>chromosome, gene start and end</td></tr>
+      <tr><td>HSQ</td><td>0.0447</td><td>heritability of expression from cis variants</td></tr>
+      <tr><td>BEST.GWAS.ID, BEST.GWAS.Z</td><td>rs1023500, −5.94</td><td>strongest GWAS variant in the locus</td></tr>
+      <tr><td>EQTL.ID, EQTL.R2, EQTL.Z</td><td>rs5758566, 0.0587, −5.16</td><td>best single eQTL and its fit</td></tr>
+      <tr><td>NSNP, MODEL</td><td>327, lasso</td><td>variants in the model; model chosen</td></tr>
+      <tr><td>MODELCV.R2</td><td>0.0589</td><td>cross-validated R² of predicted expression</td></tr>
+      <tr><td>TWAS.Z, TWAS.P</td><td>5.11, 3.22e-07</td><td>the gene’s z-score and p-value</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The model predicts only about 6% of the variance of measured expression (MODELCV.R2), yet the test is strongly significant: a TWAS needs predicted expression to be accurate enough to carry the signal, not a perfect predictor.</p>
+</aside>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021, Table 1</div>
+  <p>The reading’s table of open-access tools lists FUSION (“Performing TWAS by predicting functional/molecular phenotypes based on reference data; uses GWAS summary statistics as input”) and PrediXcan under TWAS, next to the MR and polygenic score tools of the same stage of analysis.<sup class="cite"><a href="#src-28">28</a></sup></p>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> A TWAS hit is not proof of the causal gene</div>
+  <p>Predicted expression of neighboring genes is correlated whenever their eQTLs are in linkage disequilibrium, and a single causal variant can make several genes in a region significant. A variant can also affect the trait through a path other than the gene’s expression in the chosen tissue. Wainberg and colleagues, a Session 5 reading, showed in simulations and real data that TWAS often prioritizes non-causal genes; fine-mapping and colocalization (Session 4) are used to narrow the candidates.<sup class="cite"><a href="#src-55">55</a></sup></p>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>Epidemiology studies the distribution and determinants of health in populations; genetic epidemiology adds the genotype, a determinant fixed at conception, assigned at random within families and measured for millions of variants, but correlated with ancestry and with nearby variants.</li>
+    <li>Loss-of-function variants show what a lifetime of lower protein activity does. <em>ANGPTL3</em> (forward genetics), <em>PCSK9</em> (reverse genetics) and <em>BCL11A</em> (GWAS) became approved drugs in 2021, 2015 and 2023; genetically supported targets are about 2.6 times as likely to succeed.</li>
+    <li>Screening uses genotypes to predict: rare high-risk variants (<em>BRCA1</em>/<em>BRCA2</em>, Lynch syndrome), newborn screening of metabolites for 29 conditions in 2006 (38 core in 2024), and risk-stratified screening that combines a polygenic score with other factors into an absolute risk, \(r = 1 - \exp(-\Lambda_0 e^{\eta})\).</li>
+    <li>Mendelian randomization estimates a causal effect as the Wald ratio \(\hat{\beta}_{GY}/\hat{\beta}_{GX}\); it needs a strong instrument (\(F \ge 10\)), no link between the variant and the confounders, and no path to the outcome that bypasses the exposure. It showed that HDL cholesterol and CRP are not causes of coronary disease, as the trials did.</li>
+    <li>A TWAS predicts gene expression from genotypes with weights trained in reference data and tests it against a trait; its z-score is \(\mathbf{w}^{\top}\mathbf{z}/\sqrt{\mathbf{w}^{\top}\boldsymbol{\Sigma}\mathbf{w}}\), and its hits point to regions and candidate genes rather than proving the causal gene.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+  <details class="q"><summary>A UK Biobank analysis of coronary heart disease uses these columns: age, sex, region of the assessment centre, year of diagnosis, LDL cholesterol, smoking, statin use, and the genotype at rs11591147. Which columns describe the distribution of the disease and which are candidate determinants? What sets the genotype apart from the other determinants?</summary><div class="a"><p>Age, sex, region and calendar year describe the distribution: who gets the disease, where and when, from which prevalence and incidence are computed. LDL cholesterol, smoking, statin use and the genotype are candidate determinants. (Age and sex are determinants too, but they are used here to describe the distribution.)</p><p>The genotype was fixed at conception, so the disease cannot have changed it (no reverse causation), and it was assigned at random within the family, so it is not influenced by the person’s later behavior. Statin use, by contrast, is a consequence of high LDL cholesterol and of diagnosis, so its association with heart disease mixes cause and consequence. But the genotype is correlated with ancestry and with neighboring variants, so its association still needs adjustment for ancestry and does not identify the causal variant.</p></div></details>
+  <details class="q"><summary>Carriers of a <em>PCSK9</em> nonsense variant in ARIC had 28% lower LDL cholesterol and 88% fewer coronary events. Assume a typical LDL cholesterol of 3.5 mmol/L and the statin-trial effect of 22% lower risk per 1 mmol/L. What reduction would the trials predict, and why is the observed reduction larger?</summary><div class="a"><p>28% of 3.5 mmol/L is about 1.0 mmol/L. Statin trials give a rate ratio of 0.78 per mmol/L, so they predict about 22% fewer events, a rate ratio near 0.78. The observed hazard ratio was 0.11.</p><p>The main reason is duration: carriers have had lower LDL cholesterol since conception, so less atherosclerosis built up over decades, whereas trial participants were treated for about five years in middle or old age. Mendelian randomization studies of LDL-lowering variants estimate about 54.5% lower risk per mmol/L of lifelong lowering, about three times the trial effect. Part of the gap is also chance: the estimate came from a few events among the 2.6% of carriers, and its 95% interval (0.02–0.81) is wide.</p></div></details>
+  <details class="q"><summary>A variant raises an exposure by \(\hat{\beta}_{GX} = 0.10\) units per allele. In an independent study its effect on the log odds of a disease is \(\hat{\beta}_{GY} = 0.03\) with standard error 0.01. Compute the Wald ratio, its approximate standard error and a 95% confidence interval, and express the result as an odds ratio per unit of exposure.</summary><div class="a"><p>\(\hat{\beta}_{\mathrm{IV}} = 0.03/0.10 = 0.30\) log odds per unit of exposure. Standard error \(\approx 0.01/0.10 = 0.10\). The 95% interval is \(0.30 \pm 1.96 \times 0.10\), from 0.10 to 0.50.</p><p>As odds ratios: \(e^{0.30} = 1.35\) per unit, with interval \(e^{0.10} = 1.11\) to \(e^{0.50} = 1.65\). This is valid only if the variant is a strong instrument, is not linked to confounders of the exposure and the disease, and affects the disease only through the exposure.</p></div></details>
+  <details class="q"><summary>A variant explains \(R^2 = 0.1\%\) of an exposure’s variance. What is the first-stage F statistic in 10,000 people? In 5,000? How many people would a variant with \(R^2 = 0.05\%\) need to reach F = 10?</summary><div class="a"><p>\(F \approx nR^2/(1 - R^2)\). With \(n = 10{,}000\): \(10{,}000 \times 0.001 / 0.999 \approx 10.0\), at the usual threshold. With \(n = 5{,}000\): about 5.0, a weak instrument whose one-sample MR estimate would be biased toward the confounded observational estimate.</p><p>For \(R^2 = 0.0005\): \(n \approx 10 \times 0.9995 / 0.0005 \approx 20{,}000\) people. Doubling the variance explained halves the sample needed. This is why MR studies combine many variants and use GWAS of hundreds of thousands of people.</p></div></details>
+  <details class="q"><summary>HDL cholesterol is strongly associated with fewer heart attacks in observational data, but the <em>LIPG</em> 396Ser variant, which raises HDL cholesterol by 0.14 mmol/L, does not lower risk. What does this suggest, which assumption would have to fail for MR to be wrong here, and what did the trials show?</summary><div class="a"><p>It suggests that HDL cholesterol itself does not protect against myocardial infarction: the observational association comes from confounding (people with high HDL differ in diet, exercise, triglycerides and other factors) or from HDL being a marker of something else. The expected odds ratio for carriers was 0.87 (0.84–0.91); the observed was 0.99 (0.88–1.11), so the data exclude the expected effect.</p><p>For MR to be wrong, the variant would need an opposite effect through another path (a violation of Assumption 3, for example raising risk through another lipid), or its effect on HDL would need to differ from the effect of raising HDL in other ways. The authors chose a variant that changes no other lipid, and a score of 14 HDL variants gave the same answer, while LDL variants, the positive control, behaved as expected. The trials agreed: dalcetrapib raised HDL cholesterol by 31–40% with a hazard ratio of 1.04, and niacin raised it without reducing events.</p></div></details>
+  <details class="q"><summary>Using \(r = 1 - \exp(-\Lambda_0 e^{\eta})\) with \(\Lambda_0 = 0.10\), compute the lifetime risk of a woman whose polygenic score is 1.5 SD above the mean (relative risk \(1.61^{1.5}\)) and whose breast density gives a relative risk of 1.3. Which NICE band is she in, with and without the polygenic score?</summary><div class="a"><p>\(1.61^{1.5} = e^{1.5 \times 0.476} = e^{0.714} = 2.04\). Combined relative risk \(2.04 \times 1.3 = 2.66\), so \(\eta = \ln 2.66 = 0.98\). Cumulative hazard \(0.10 \times 2.66 = 0.266\), risk \(1 - e^{-0.266} = 23.3\%\): the moderate band (17% to below 30%).</p><p>Without the polygenic score her relative risk is 1.3: \(1 - e^{-0.13} = 12.2\%\), near-population risk. The polygenic score changes her category, which is the point of slide 20: information that spreads predicted risks apart moves women across the thresholds.</p></div></details>
+  <details class="q"><summary>A newborn screening test flags every baby with a condition that affects 1 in 25,000 births, and also flags 0.05% of healthy babies. In a state with 100,000 births a year, how many positive screens are there, and what share are true? What happens to that share if the false-positive rate is halved?</summary><div class="a"><p>True positives: \(100{,}000/25{,}000 = 4\). False positives: \(0.0005 \times 99{,}996 \approx 50\). Positive screens: about 54, of which 4 are true, a positive predictive value of about 7%.</p><p>Halving the false-positive rate gives 25 false positives and \(4/29 \approx 14\%\). For a rare condition the positive predictive value is limited by the false positives among the many healthy babies, which is why screening programs set cutoffs carefully and confirm every positive screen with a diagnostic test.</p></div></details>
+  <details class="q"><summary>A gene’s FUSION model has two variants with weights 0.5 and 0.5, whose GWAS z-scores are 4.0 and 2.0 and whose LD correlation is 0.5. Compute the TWAS z-score. If the neighboring gene shares one of these eQTLs, what can you conclude when both genes are significant?</summary><div class="a"><p>Numerator: \(0.5 \times 4.0 + 0.5 \times 2.0 = 3.0\). Denominator: \(\sqrt{0.25 + 0.25 + 2 \times 0.5 \times 0.5 \times 0.5} = \sqrt{0.75} = 0.866\). So \(z_{\mathrm{TWAS}} = 3.0/0.866 = 3.46\). With uncorrelated variants the denominator would be \(\sqrt{0.5}\) and the z-score 4.24.</p><p>If both genes are significant because they share an eQTL in LD with the GWAS signal, the TWAS cannot say which gene, if either, carries the effect: the two predicted expressions are correlated across people. The result marks a region and candidate genes; fine-mapping, colocalization and experiments are needed to name the causal gene.</p></div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson1/section1.html" target="_blank" rel="noopener">Principles of Epidemiology, Lesson 1</a> <span class="src">· U.S. Centers for Disease Control and Prevention</span> <span class="level intro">intro</span> — the definition of epidemiology, phrase by phrase, with examples of distribution and determinants.</li>
+    <li><a href="https://doi.org/10.1016/S0140-6736(05)67322-9" target="_blank" rel="noopener">Key concepts in genetic epidemiology</a> <span class="src">· Burton, Tobin &amp; Hopper, The Lancet 2005</span> <span class="level intro">intro</span> — the questions genetic epidemiology asks, from familial aggregation to association, and the designs for each.</li>
+    <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7614635/" target="_blank" rel="noopener">Mendelian randomization</a> <span class="src">· Sanderson et al., Nature Reviews Methods Primers 2022</span> <span class="level intermediate">intermediate</span> — assumptions, estimators, sensitivity analyses and reporting, in the same series as the reading.</li>
+    <li><a href="https://doi.org/10.1038/s41586-024-07316-0" target="_blank" rel="noopener">Refining the impact of genetic evidence on clinical success</a> <span class="src">· Minikel et al., Nature 2024</span> <span class="level intermediate">intermediate</span> — how much genetic support raises the chance that a drug target succeeds, by disease area and type of evidence.</li>
+    <li><a href="https://www.canrisk.org/" target="_blank" rel="noopener">CanRisk</a> <span class="src">· University of Cambridge</span> <span class="level intro">intro</span> — the web tool that runs BOADICEA, with documentation of every input it uses.</li>
+    <li><a href="https://doi.org/10.1177/0962280215597579" target="_blank" rel="noopener">A review of instrumental variable estimators for Mendelian randomization</a> <span class="src">· Burgess, Small &amp; Thompson, Statistical Methods in Medical Research 2017</span> <span class="level advanced">advanced</span> — the ratio, two-stage and likelihood estimators, with their biases.</li>
+    <li><a href="https://doi.org/10.1038/s41588-019-0385-z" target="_blank" rel="noopener">Opportunities and challenges for transcriptome-wide association studies</a> <span class="src">· Wainberg et al., Nature Genetics 2019</span> <span class="level advanced">advanced</span> — a Session 5 reading on when TWAS finds the right gene and when it does not.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Last JM, ed. <em>A Dictionary of Epidemiology</em>. 4th ed. Oxford University Press; 2001: p. 61. Quoted in: U.S. Centers for Disease Control and Prevention. <em>Principles of Epidemiology in Public Health Practice</em>, 3rd ed., Lesson 1, Section 1. <a href="https://archive.cdc.gov/www_cdc_gov/csels/dsepd/ss1978/lesson1/section1.html" target="_blank" rel="noopener">archive.cdc.gov</a></li>
+    <li id="src-2">Khoury MJ, Beaty TH, Cohen BH. <em>Fundamentals of Genetic Epidemiology</em>. Oxford University Press; 1993.</li>
+    <li id="src-3">Morton NE. <em>Outline of Genetic Epidemiology</em>. Karger; 1982.</li>
+    <li id="src-4">Burton PR, Tobin MD, Hopper JL. Key concepts in genetic epidemiology. <em>Lancet</em>. 2005;366:941–951. <a href="https://doi.org/10.1016/S0140-6736(05)67322-9" target="_blank" rel="noopener">doi:10.1016/S0140-6736(05)67322-9</a></li>
+    <li id="src-5">Musunuru K, Pirruccello JP, Do R, et al. Exome sequencing, <em>ANGPTL3</em> mutations, and familial combined hypolipidemia. <em>N Engl J Med</em>. 2010;363:2220–2227. <a href="https://doi.org/10.1056/NEJMoa1002926" target="_blank" rel="noopener">doi:10.1056/NEJMoa1002926</a></li>
+    <li id="src-6">Dewey FE, Gusarova V, Dunbar RL, et al. Genetic and pharmacologic inactivation of ANGPTL3 and cardiovascular disease. <em>N Engl J Med</em>. 2017;377:211–221. <a href="https://doi.org/10.1056/NEJMoa1612790" target="_blank" rel="noopener">doi:10.1056/NEJMoa1612790</a></li>
+    <li id="src-7">Raal FJ, Rosenson RS, Reeskamp LF, et al. Evinacumab for homozygous familial hypercholesterolemia. <em>N Engl J Med</em>. 2020;383:711–720. <a href="https://doi.org/10.1056/NEJMoa2004215" target="_blank" rel="noopener">doi:10.1056/NEJMoa2004215</a></li>
+    <li id="src-8">U.S. Food and Drug Administration. FDA approves add-on therapy for patients with genetic form of severely high cholesterol (Evkeeza, evinacumab). 11 February 2021. <a href="https://www.fda.gov/drugs/news-events-human-drugs/fda-approves-add-therapy-patients-genetic-form-severely-high-cholesterol-0" target="_blank" rel="noopener">fda.gov</a></li>
+    <li id="src-9">Abifadel M, Varret M, Rabès JP, et al. Mutations in <em>PCSK9</em> cause autosomal dominant hypercholesterolemia. <em>Nat Genet</em>. 2003;34:154–156. <a href="https://doi.org/10.1038/ng1161" target="_blank" rel="noopener">doi:10.1038/ng1161</a></li>
+    <li id="src-10">Cohen J, Pertsemlidis A, Kotowski IK, et al. Low LDL cholesterol in individuals of African descent resulting from frequent nonsense mutations in <em>PCSK9</em>. <em>Nat Genet</em>. 2005;37:161–165. <a href="https://doi.org/10.1038/ng1509" target="_blank" rel="noopener">doi:10.1038/ng1509</a></li>
+    <li id="src-11">Cohen JC, Boerwinkle E, Mosley TH, Hobbs HH. Sequence variations in <em>PCSK9</em>, low LDL, and protection against coronary heart disease. <em>N Engl J Med</em>. 2006;354:1264–1272. <a href="https://doi.org/10.1056/NEJMoa054013" target="_blank" rel="noopener">doi:10.1056/NEJMoa054013</a></li>
+    <li id="src-12">Zhao Z, Tuakli-Wosornu Y, Lagace TA, et al. Molecular characterization of loss-of-function mutations in <em>PCSK9</em> and identification of a compound heterozygote. <em>Am J Hum Genet</em>. 2006;79:514–523. <a href="https://doi.org/10.1086/507488" target="_blank" rel="noopener">doi:10.1086/507488</a></li>
+    <li id="src-13">U.S. Food and Drug Administration, Drugs@FDA: Praluent (alirocumab), approved 24 July 2015; Repatha (evolocumab), approved 27 August 2015. <a href="https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&amp;ApplNo=125559" target="_blank" rel="noopener">accessdata.fda.gov</a></li>
+    <li id="src-14">Sabatine MS, Giugliano RP, Keech AC, et al. Evolocumab and clinical outcomes in patients with cardiovascular disease. <em>N Engl J Med</em>. 2017;376:1713–1722. <a href="https://doi.org/10.1056/NEJMoa1615664" target="_blank" rel="noopener">doi:10.1056/NEJMoa1615664</a></li>
+    <li id="src-15">Menzel S, Garner C, Gut I, et al. A QTL influencing F cell production maps to a gene encoding a zinc-finger protein on chromosome 2p15. <em>Nat Genet</em>. 2007;39:1197–1199. <a href="https://doi.org/10.1038/ng2108" target="_blank" rel="noopener">doi:10.1038/ng2108</a></li>
+    <li id="src-16">Uda M, Galanello R, Sanna S, et al. Genome-wide association study shows <em>BCL11A</em> associated with persistent fetal hemoglobin and amelioration of the phenotype of β-thalassemia. <em>Proc Natl Acad Sci USA</em>. 2008;105:1620–1625. <a href="https://doi.org/10.1073/pnas.0711566105" target="_blank" rel="noopener">doi:10.1073/pnas.0711566105</a></li>
+    <li id="src-17">Sankaran VG, Menne TF, Xu J, et al. Human fetal hemoglobin expression is regulated by the developmental stage-specific repressor BCL11A. <em>Science</em>. 2008;322:1839–1842. <a href="https://doi.org/10.1126/science.1165409" target="_blank" rel="noopener">doi:10.1126/science.1165409</a></li>
+    <li id="src-18">Xu J, Peng C, Sankaran VG, et al. Correction of sickle cell disease in adult mice by interference with fetal hemoglobin silencing. <em>Science</em>. 2011;334:993–996. <a href="https://doi.org/10.1126/science.1211053" target="_blank" rel="noopener">doi:10.1126/science.1211053</a></li>
+    <li id="src-19">Bauer DE, Kamran SC, Lessard S, et al. An erythroid enhancer of <em>BCL11A</em> subject to genetic variation determines fetal hemoglobin level. <em>Science</em>. 2013;342:253–257. <a href="https://doi.org/10.1126/science.1242088" target="_blank" rel="noopener">doi:10.1126/science.1242088</a></li>
+    <li id="src-20">Frangoul H, Altshuler D, Cappellini MD, et al. CRISPR-Cas9 gene editing for sickle cell disease and β-thalassemia. <em>N Engl J Med</em>. 2021;384:252–260. <a href="https://doi.org/10.1056/NEJMoa2031054" target="_blank" rel="noopener">doi:10.1056/NEJMoa2031054</a></li>
+    <li id="src-21">U.S. Food and Drug Administration. FDA approves first gene therapies to treat patients with sickle cell disease. 8 December 2023. <a href="https://www.fda.gov/news-events/press-announcements/fda-approves-first-gene-therapies-treat-patients-sickle-cell-disease" target="_blank" rel="noopener">fda.gov</a></li>
+    <li id="src-22">Frangoul H, Locatelli F, Sharma A, et al. Exagamglogene autotemcel for severe sickle cell disease. <em>N Engl J Med</em>. 2024;390:1649–1662. <a href="https://doi.org/10.1056/NEJMoa2309676" target="_blank" rel="noopener">doi:10.1056/NEJMoa2309676</a></li>
+    <li id="src-23">FDA expands Casgevy approval to children 2 years and older with sickle cell disease. <em>Healio</em>, 2 July 2026. <a href="https://www.healio.com/news/hematology-oncology/20260702/fda-expands-casgevy-approval-to-children-2-years-and-older-with-sickle-cell-disease" target="_blank" rel="noopener">healio.com</a></li>
+    <li id="src-24">Ference BA, Yoo W, Alesh I, et al. Effect of long-term exposure to lower low-density lipoprotein cholesterol beginning early in life on the risk of coronary heart disease: a Mendelian randomization analysis. <em>J Am Coll Cardiol</em>. 2012;60:2631–2639. <a href="https://doi.org/10.1016/j.jacc.2012.09.017" target="_blank" rel="noopener">doi:10.1016/j.jacc.2012.09.017</a></li>
+    <li id="src-25">Cholesterol Treatment Trialists’ (CTT) Collaboration. Efficacy and safety of more intensive lowering of LDL cholesterol: a meta-analysis of data from 170,000 participants in 26 randomised trials. <em>Lancet</em>. 2010;376:1670–1681. <a href="https://doi.org/10.1016/S0140-6736(10)61350-5" target="_blank" rel="noopener">doi:10.1016/S0140-6736(10)61350-5</a></li>
+    <li id="src-26">Nelson MR, Tipney H, Painter JL, et al. The support of human genetic evidence for approved drug indications. <em>Nat Genet</em>. 2015;47:856–860. <a href="https://doi.org/10.1038/ng.3314" target="_blank" rel="noopener">doi:10.1038/ng.3314</a></li>
+    <li id="src-27">Minikel EV, Painter JL, Dong CC, Nelson MR. Refining the impact of genetic evidence on clinical success. <em>Nature</em>. 2024;629:624–629. <a href="https://doi.org/10.1038/s41586-024-07316-0" target="_blank" rel="noopener">doi:10.1038/s41586-024-07316-0</a></li>
+    <li id="src-28">Uffelmann E, Huang QQ, Munung NS, et al. Genome-wide association studies. <em>Nat Rev Methods Primers</em>. 2021;1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a></li>
+    <li id="src-29">Watson MS, Mann MY, Lloyd-Puryear MA, Rinaldo P, Howell RR, eds. Newborn screening: toward a uniform screening panel and system. <em>Genet Med</em>. 2006;8(Suppl 1):1S–252S.</li>
+    <li id="src-30">National Cancer Institute. BRCA gene changes: cancer risk and genetic testing (fact sheet, reviewed 19 July 2024). <a href="https://www.cancer.gov/about-cancer/causes-prevention/genetics/brca-fact-sheet" target="_blank" rel="noopener">cancer.gov</a></li>
+    <li id="src-31">Kuchenbaecker KB, Hopper JL, Barnes DR, et al. Risks of breast, ovarian, and contralateral breast cancer for <em>BRCA1</em> and <em>BRCA2</em> mutation carriers. <em>JAMA</em>. 2017;317:2402–2416. <a href="https://doi.org/10.1001/jama.2017.7112" target="_blank" rel="noopener">doi:10.1001/jama.2017.7112</a></li>
+    <li id="src-32">Win AK, Jenkins MA, Dowty JG, et al. Prevalence and penetrance of major genes and polygenes for colorectal cancer. <em>Cancer Epidemiol Biomarkers Prev</em>. 2017;26:404–412. <a href="https://doi.org/10.1158/1055-9965.EPI-16-0693" target="_blank" rel="noopener">doi:10.1158/1055-9965.EPI-16-0693</a></li>
+    <li id="src-33">American College of Medical Genetics Newborn Screening Expert Group. Newborn screening: toward a uniform screening panel and system—executive summary. <em>Pediatrics</em>. 2006;117(5 Pt 2):S296–S307. <a href="https://doi.org/10.1542/peds.2005-2633I" target="_blank" rel="noopener">doi:10.1542/peds.2005-2633I</a></li>
+    <li id="src-34">Health Resources and Services Administration. Recommended Uniform Screening Panel. <a href="https://www.hrsa.gov/advisory-committees/heritable-disorders/rusp" target="_blank" rel="noopener">hrsa.gov</a> (counts after the addition of Krabbe disease, July 2024).</li>
+    <li id="src-35">Lee A, Mavaddat N, Wilcox AN, et al. BOADICEA: a comprehensive breast cancer risk prediction model incorporating genetic and nongenetic risk factors. <em>Genet Med</em>. 2019;21:1708–1718. <a href="https://doi.org/10.1038/s41436-018-0406-9" target="_blank" rel="noopener">doi:10.1038/s41436-018-0406-9</a></li>
+    <li id="src-36">National Institute for Health and Care Excellence. Familial breast cancer: classification, care and managing breast cancer and related risks in people with a family history of breast cancer (CG164). <a href="https://www.nice.org.uk/guidance/cg164" target="_blank" rel="noopener">nice.org.uk</a></li>
+    <li id="src-37">Mavaddat N, Michailidou K, Dennis J, et al. Polygenic risk scores for prediction of breast cancer and breast cancer subtypes. <em>Am J Hum Genet</em>. 2019;104:21–34. <a href="https://doi.org/10.1016/j.ajhg.2018.11.002" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2018.11.002</a></li>
+    <li id="src-38">Sekula P, Del Greco M F, Pattaro C, Köttgen A. Mendelian randomization as an approach to assess causality using observational data. <em>J Am Soc Nephrol</em>. 2016;27:3253–3265. <a href="https://doi.org/10.1681/ASN.2016010098" target="_blank" rel="noopener">doi:10.1681/ASN.2016010098</a></li>
+    <li id="src-39">Davey Smith G, Ebrahim S. ‘Mendelian randomization’: can genetic epidemiology contribute to understanding environmental determinants of disease? <em>Int J Epidemiol</em>. 2003;32:1–22. <a href="https://doi.org/10.1093/ije/dyg070" target="_blank" rel="noopener">doi:10.1093/ije/dyg070</a></li>
+    <li id="src-40">Katan MB. Apolipoprotein E isoforms, serum cholesterol, and cancer. <em>Lancet</em>. 1986;1:507–508. <a href="https://doi.org/10.1016/S0140-6736(86)92972-7" target="_blank" rel="noopener">doi:10.1016/S0140-6736(86)92972-7</a></li>
+    <li id="src-41">Burgess S, Thompson SG; CRP CHD Genetics Collaboration. Avoiding bias from weak instruments in Mendelian randomization studies. <em>Int J Epidemiol</em>. 2011;40:755–764. <a href="https://doi.org/10.1093/ije/dyr036" target="_blank" rel="noopener">doi:10.1093/ije/dyr036</a></li>
+    <li id="src-42">Burgess S, Small DS, Thompson SG. A review of instrumental variable estimators for Mendelian randomization. <em>Stat Methods Med Res</em>. 2017;26:2333–2355. <a href="https://doi.org/10.1177/0962280215597579" target="_blank" rel="noopener">doi:10.1177/0962280215597579</a></li>
+    <li id="src-43">Voight BF, Peloso GM, Orho-Melander M, et al. Plasma HDL cholesterol and risk of myocardial infarction: a mendelian randomisation study. <em>Lancet</em>. 2012;380:572–580. <a href="https://doi.org/10.1016/S0140-6736(12)60312-2" target="_blank" rel="noopener">doi:10.1016/S0140-6736(12)60312-2</a></li>
+    <li id="src-44">Elliott P, Chambers JC, Zhang W, et al. Genetic loci associated with C-reactive protein levels and risk of coronary heart disease. <em>JAMA</em>. 2009;302:37–48. <a href="https://doi.org/10.1001/jama.2009.954" target="_blank" rel="noopener">doi:10.1001/jama.2009.954</a></li>
+    <li id="src-45">C Reactive Protein Coronary Heart Disease Genetics Collaboration (CCGC). Association between C reactive protein and coronary heart disease: mendelian randomisation analysis based on individual participant data. <em>BMJ</em>. 2011;342:d548. <a href="https://doi.org/10.1136/bmj.d548" target="_blank" rel="noopener">doi:10.1136/bmj.d548</a></li>
+    <li id="src-46">Schwartz GG, Olsson AG, Abt M, et al. Effects of dalcetrapib in patients with a recent acute coronary syndrome. <em>N Engl J Med</em>. 2012;367:2089–2099. <a href="https://doi.org/10.1056/NEJMoa1206797" target="_blank" rel="noopener">doi:10.1056/NEJMoa1206797</a></li>
+    <li id="src-47">HPS2-THRIVE Collaborative Group. Effects of extended-release niacin with laropiprant in high-risk patients. <em>N Engl J Med</em>. 2014;371:203–212. <a href="https://doi.org/10.1056/NEJMoa1300955" target="_blank" rel="noopener">doi:10.1056/NEJMoa1300955</a></li>
+    <li id="src-48">Interleukin-6 Receptor Mendelian Randomisation Analysis (IL6R MR) Consortium. The interleukin-6 receptor as a target for prevention of coronary heart disease: a mendelian randomisation analysis. <em>Lancet</em>. 2012;379:1214–1224. <a href="https://doi.org/10.1016/S0140-6736(12)60110-X" target="_blank" rel="noopener">doi:10.1016/S0140-6736(12)60110-X</a></li>
+    <li id="src-49">Ridker PM, Everett BM, Thuren T, et al. Antiinflammatory therapy with canakinumab for atherosclerotic disease. <em>N Engl J Med</em>. 2017;377:1119–1131. <a href="https://doi.org/10.1056/NEJMoa1707914" target="_blank" rel="noopener">doi:10.1056/NEJMoa1707914</a></li>
+    <li id="src-50">Sanderson E, Glymour MM, Holmes MV, et al. Mendelian randomization. <em>Nat Rev Methods Primers</em>. 2022;2:6. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC7614635/" target="_blank" rel="noopener">PMC7614635</a></li>
+    <li id="src-51">Gamazon ER, Wheeler HE, Shah KP, et al. A gene-based association method for mapping traits using reference transcriptome data. <em>Nat Genet</em>. 2015;47:1091–1098. <a href="https://doi.org/10.1038/ng.3367" target="_blank" rel="noopener">doi:10.1038/ng.3367</a></li>
+    <li id="src-52">Gusev A, Ko A, Shi H, et al. Integrative approaches for large-scale transcriptome-wide association studies. <em>Nat Genet</em>. 2016;48:245–252. <a href="https://doi.org/10.1038/ng.3506" target="_blank" rel="noopener">doi:10.1038/ng.3506</a></li>
+    <li id="src-53">Gusev A. FUSION: functional summary-based imputation (documentation, including output columns and the example row). <a href="http://gusevlab.org/projects/fusion/" target="_blank" rel="noopener">gusevlab.org/projects/fusion</a></li>
+    <li id="src-54">DCEG Statistical Genetics Workshop. Sessions (Session 5, 14 October 2026: transcriptome-wide association studies and genetic heritability estimation). <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/sessions/session_5" target="_blank" rel="noopener">dceg-workshops.github.io</a></li>
+    <li id="src-55">Wainberg M, Sinnott-Armstrong N, Mancuso N, et al. Opportunities and challenges for transcriptome-wide association studies. <em>Nat Genet</em>. 2019;51:592–599. <a href="https://doi.org/10.1038/s41588-019-0385-z" target="_blank" rel="noopener">doi:10.1038/s41588-019-0385-z</a></li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

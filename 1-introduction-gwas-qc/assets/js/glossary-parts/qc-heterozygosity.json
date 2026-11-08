@@ -1,0 +1,34 @@
+[
+  {
+    "id": "heterozygosity-rate",
+    "term": "Heterozygosity rate (het_rate)",
+    "aka": ["het_rate", "observed heterozygosity rate"],
+    "short": "The share of a person's genotype calls that are heterozygous: the number of heterozygous calls divided by the number of non-missing calls. Unusually high values suggest contaminated DNA; low values suggest related parents or poor DNA; genetic ancestry can move it either way.",
+    "long": "<p>In the practical it is computed from PLINK's <code>.het</code> file as \\(h_i = (N_i - O_i)/N_i\\), where \\(N_i\\) is <code>N(NM)</code>, the person's non-missing calls at non-monomorphic autosomal SNPs, and \\(O_i\\) is <code>O(HOM)</code>, how many of them are homozygous.</p><p>The rate has no fixed expected value: each SNP contributes its own \\(2pq\\), so the average depends on which SNPs are used (around 0.3 to 0.4 for SNPs with common alleles). It is therefore judged against the sample, usually by flagging people more than 3 standard deviations from the mean. It is tied to PLINK's inbreeding coefficient estimate by \\(\\hat{F}_i = 1 - h_i/\\bar{H}_i\\), where \\(\\bar{H}_i\\) is the average of \\(2\\hat{p}\\hat{q}\\) over the person's called SNPs, so the two order people the same way; the usual rules (mean ± 3 SD of \\(h\\), |F| &gt; 0.1) cut in different places.</p>",
+    "l1": "Page 19 (QC step 5): the practical's het_rate, the mean ± 3 SD rule and its relation to F.",
+    "see": ["heterozygosity", "inbreeding-coefficient", "sample-contamination", "method-of-moments"],
+    "links": [
+      {"t": "PLINK 1.9: --het", "u": "https://www.cog-genomics.org/plink/1.9/basic_stats#ibc"},
+      {"t": "Anderson et al. 2010, Nature Protocols", "u": "https://doi.org/10.1038/nprot.2010.116"}
+    ],
+    "match": ["heterozygosity rate"],
+    "owner": "qc-heterozygosity"
+  },
+  {
+    "id": "runs-of-homozygosity",
+    "term": "Run of homozygosity (ROH)",
+    "aka": ["runs of homozygosity", "ROH", "autozygous segment"],
+    "short": "A long stretch of a chromosome in which a person is homozygous at every SNP, usually because both copies of the stretch were inherited from one ancestor of both parents. The share of the genome in long runs estimates the inbreeding coefficient.",
+    "long": "<p>Short runs occur in everyone, by chance and because of distant shared ancestry. Long runs, several megabases or more, come from a recent ancestor of both parents: the more recent the ancestor, the longer the runs, because fewer crossovers have cut the shared stretch. A child of first cousins is expected to have about 1/16 of the autosomes, roughly 180 megabases, in such runs.</p><p>\\(F_{\\mathrm{ROH}}\\), the total length of runs above a minimum length divided by the length of the autosomes, estimates the inbreeding coefficient and, unlike the single number from <code>--het</code>, shows where the homozygosity lies. PLINK 1.9's <code>--homozyg</code> finds runs; by default it reports runs of at least 100 SNPs and 1,000 kb with at least one SNP per 50 kb.</p>",
+    "l1": "Page 19 (QC step 5), optional section on runs of homozygosity.",
+    "see": ["inbreeding-coefficient", "consanguinity", "ibd", "heterozygosity-rate"],
+    "links": [
+      {"t": "Ceballos et al. 2018, Nature Reviews Genetics", "u": "https://doi.org/10.1038/nrg.2017.109"},
+      {"t": "McQuillan et al. 2008, AJHG", "u": "https://doi.org/10.1016/j.ajhg.2008.08.007"},
+      {"t": "PLINK 1.9: runs of homozygosity", "u": "https://www.cog-genomics.org/plink/1.9/ibd#homozyg"}
+    ],
+    "match": ["run of homozygosity", "runs of homozygosity"],
+    "noPlural": true,
+    "owner": "qc-heterozygosity"
+  }
+]

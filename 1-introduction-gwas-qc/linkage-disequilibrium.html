@@ -1,0 +1,1211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linkage disequilibrium: from genotypes to haplotypes to r² · Lecture 1</title>
+<meta name="description" content="How linkage disequilibrium arises, how haplotype frequencies are estimated from unphased genotypes with the EM algorithm, how D, D′ and r² are computed, why LD decays with distance and differs between populations, and how PLINK, LD matrices, heatmaps and reference panels report it.">
+<link rel="icon" href="../assets/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="../assets/icons/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../0-biological-foundations/assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../0-biological-foundations/assets/css/site.css">
+<link rel="stylesheet" href="assets/css/lecture1.css">
+<script defer src="../0-biological-foundations/assets/vendor/katex/katex.min.js"></script>
+<script defer src="../0-biological-foundations/assets/vendor/katex/contrib/auto-render.min.js"></script>
+<script defer src="../0-biological-foundations/assets/js/math.js"></script>
+<script defer src="assets/js/pages.js"></script>
+<script defer src="../0-biological-foundations/assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-data.js"></script>
+<script defer src="assets/js/glossary-usage.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/widgets/linkage-disequilibrium-em.js"></script>
+<script defer src="assets/js/widgets/linkage-disequilibrium-decay.js"></script>
+<script defer src="assets/js/widgets/linkage-disequilibrium-heatmap.js"></script>
+<style>
+/* Page-specific styles only; scope every rule with body[data-page="linkage-disequilibrium"]. */
+body[data-page="linkage-disequilibrium"] .mental-model figure svg { display: block; width: 100%; height: auto; }
+body[data-page="linkage-disequilibrium"] .mental-model figure .only-narrow svg { max-width: 420px; margin: 0 auto; }
+body[data-page="linkage-disequilibrium"] .ldp-cell-dh { background: #fff3e0; font-weight: 600; }
+body[data-page="linkage-disequilibrium"] table.ldp-map td, body[data-page="linkage-disequilibrium"] table.ldp-map th { text-align: center; vertical-align: middle; }
+body[data-page="linkage-disequilibrium"] table.ldp-map td { font-family: var(--mono); font-size: 0.84rem; }
+body[data-page="linkage-disequilibrium"] table.ldp-iter td, body[data-page="linkage-disequilibrium"] table.ldp-iter th { text-align: right; }
+body[data-page="linkage-disequilibrium"] table.ldp-iter td:first-child, body[data-page="linkage-disequilibrium"] table.ldp-iter th:first-child { text-align: left; }
+body[data-page="linkage-disequilibrium"] .widget .controls > label { max-width: 100%; min-width: 0; flex-wrap: wrap; }
+body[data-page="linkage-disequilibrium"] .widget .controls select { max-width: 100%; min-width: 0; }
+/* EM widget */
+body[data-page="linkage-disequilibrium"] .ldem-top { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 14px 20px; align-items: start; }
+@media (max-width: 760px) { body[data-page="linkage-disequilibrium"] .ldem-top { grid-template-columns: minmax(0, 1fr); } }
+body[data-page="linkage-disequilibrium"] .ldem-ptitle, body[data-page="linkage-disequilibrium"] .ldd-ptitle, body[data-page="linkage-disequilibrium"] .ldh-ptitle { font-size: 0.82rem; font-weight: 700; color: var(--fg-muted); margin: 6px 0 4px; }
+body[data-page="linkage-disequilibrium"] .ldem-table { width: auto; border: 1px solid var(--border); border-radius: 8px; border-collapse: separate; border-spacing: 0; }
+body[data-page="linkage-disequilibrium"] .ldem-table th, body[data-page="linkage-disequilibrium"] .ldem-table td { padding: 4px 6px; text-align: center; border-bottom: 0; }
+body[data-page="linkage-disequilibrium"] .ldem-table input { width: 4.4em; text-align: right; }
+body[data-page="linkage-disequilibrium"] .ldem-table td.ldem-dh { background: #fff3e0; border-radius: 6px; }
+body[data-page="linkage-disequilibrium"] .ldem-btns { margin-top: 8px; }
+body[data-page="linkage-disequilibrium"] .ldem-panel svg, body[data-page="linkage-disequilibrium"] .ldd-panel svg, body[data-page="linkage-disequilibrium"] .ldh-panel svg { display: block; max-width: 100%; height: auto; }
+body[data-page="linkage-disequilibrium"] .ldem-llwrap { margin-top: 8px; }
+body[data-page="linkage-disequilibrium"] .ldem-key, body[data-page="linkage-disequilibrium"] .ldd-key { font-size: 0.78rem; line-height: 1.45; color: var(--fg-muted); margin: 2px 0 6px; }
+body[data-page="linkage-disequilibrium"] .ldd-sw { display: inline-block; width: 20px; height: 0; border-top: 3px solid; vertical-align: middle; margin: 0 4px 0 0; }
+body[data-page="linkage-disequilibrium"] .ldd-sw.ldd-dash { border-top-style: dashed; }
+body[data-page="linkage-disequilibrium"] .ldem-readout, body[data-page="linkage-disequilibrium"] .ldd-readout, body[data-page="linkage-disequilibrium"] .ldh-hover { line-height: 1.6; margin-top: 10px; overflow-x: auto; }
+body[data-page="linkage-disequilibrium"] .ldem-iters { margin-top: 8px; font-size: 0.9rem; }
+body[data-page="linkage-disequilibrium"] .ldem-iters > summary { cursor: pointer; font-weight: 600; }
+body[data-page="linkage-disequilibrium"] .ldem-itertable { max-height: 280px; overflow: auto; margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; }
+body[data-page="linkage-disequilibrium"] .ldem-itertable table td, body[data-page="linkage-disequilibrium"] .ldem-itertable table th { text-align: right; }
+/* Decay widget */
+body[data-page="linkage-disequilibrium"] .ldd-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 10px 18px; }
+body[data-page="linkage-disequilibrium"] .ldd-wide { grid-column: 1 / -1; }
+body[data-page="linkage-disequilibrium"] .ldd-out { display: inline-block; min-width: 4.6em; font-family: var(--mono); font-size: 0.86rem; }
+/* Heatmap widget */
+body[data-page="linkage-disequilibrium"] .ldh-panels { display: flex; flex-wrap: wrap; gap: 8px 18px; }
+body[data-page="linkage-disequilibrium"] .ldh-panel { min-width: 0; }
+body[data-page="linkage-disequilibrium"] .ldh-svg { touch-action: pan-y; cursor: crosshair; }
+body[data-page="linkage-disequilibrium"] .ldh-svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+body[data-page="linkage-disequilibrium"] .ldh-sw { display: inline-block; width: 12px; height: 12px; border: 1px solid var(--border-strong); vertical-align: -1px; margin: 0 2px; }
+body[data-page="linkage-disequilibrium"] .ldh-legend { margin: 2px 0 6px; }
+body[data-page="linkage-disequilibrium"] .ldh-summary { margin-top: 8px; overflow-x: auto; padding: 0; background: transparent; }
+body[data-page="linkage-disequilibrium"] .ldh-table { font-family: var(--font); font-size: 0.86rem; }
+body[data-page="linkage-disequilibrium"] .ldh-table td { font-variant-numeric: tabular-nums; }
+body[data-page="linkage-disequilibrium"] details.ldp-deep { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0 16px; margin: 1em 0 1.6em; background: var(--bg-alt); }
+body[data-page="linkage-disequilibrium"] details.ldp-deep > summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
+body[data-page="linkage-disequilibrium"] details.ldp-deep[open] > summary { border-bottom: 1px dashed var(--border); margin-bottom: 8px; }
+body[data-page="linkage-disequilibrium"] .ldp-deep-body { font-size: 0.95rem; padding-bottom: 6px; }
+</style>
+</head>
+<body data-page="linkage-disequilibrium">
+<header class="topbar">
+  <button class="menu-btn" type="button" aria-controls="sidebar" aria-expanded="false">☰ Contents</button>
+  <a class="brand" href="index.html"><span class="course">Statistical genetics · Lecture 1</span><span class="title">Genetic epidemiology, GWAS and quality control</span></a>
+  <span class="spacer"></span>
+  <nav class="toplinks" aria-label="Quick links">
+    <a href="../index.html" class="optional">All lectures</a>
+    <a href="index.html" class="optional">Overview</a>
+    <a href="practical-overview.html" class="optional">Practical</a>
+    <a href="slide-guide.html" class="optional">Slide guide</a>
+    <a href="glossary.html">Glossary</a>
+    <a href="resources.html" class="optional">Learn more</a>
+  </nav>
+</header>
+<div class="layout">
+<nav class="sidebar" id="sidebar" aria-label="Lecture contents"></nav>
+<main class="content" id="main">
+<article>
+
+<header class="page-head">
+  <p class="eyebrow">Part B · A few basic definitions · Page 6 of 23</p>
+  <h1>Linkage disequilibrium: from genotypes to haplotypes to r²</h1>
+  <p class="lede">Nearby SNPs are correlated because chromosome copies are passed on in long pieces. This correlation, linkage disequilibrium (LD), is defined on haplotypes, the combinations of alleles on one chromosome copy, but a genotyping array measures each SNP separately and never reports haplotypes. This page shows how haplotype frequencies are estimated from genotype counts with the EM algorithm, how D, D′ and r² are computed from them, why LD fades with distance and differs between populations, and how PLINK, LD matrices, heatmaps and reference panels report it.</p>
+  <div class="chips">
+    <span class="chip core">Slides 84–86, 94–96, 107–124</span>
+    <span class="chip time">≈ 75 min</span>
+    <span class="chip data">Shows up in the data as: correlated neighboring columns of the genotype matrix, <code>plink.ld</code> files, LD heatmaps</span>
+  </div>
+</header>
+
+<section class="mental-model" aria-labelledby="mm">
+  <span class="mm-label">Mental model</span>
+  <h2 id="mm" data-toc="Mental model">LD lives in a 2 × 2 table of haplotype frequencies that genotype data only let you estimate</h2>
+  <figure>
+    <div class="only-wide">
+<svg viewBox="0 0 760 332" role="img" aria-labelledby="mm-t mm-d"><title id="mm-t">From genotype counts to the haplotype table to D, D′ and r²</title><desc id="mm-d">Box 1: the 3 by 3 table of genotype counts for two SNPs from slide 117, with 5 double heterozygotes whose phase is unknown. An arrow labeled EM leads to box 2: the 2 by 2 table of estimated haplotype frequencies, AG 0.500, aG 0.000, Ag 0.125, ag 0.375. An arrow leads to box 3: one number, D equals 0.1875. Two arrows lead to D prime equals 1, read as recombination history, and r squared equals 0.60, read as prediction. A band below says history sets the table: mutation creates LD, recombination removes a fraction theta per generation, population size and bottlenecks make LD differ between populations. A second band lists where LD shows up in the data.</desc>
+  <rect x="8" y="8" width="180" height="198" rx="10" fill="#fff" stroke="var(--border-strong)"/>
+  <text x="98" y="28" class="t-b" text-anchor="middle">1 · Genotype counts</text>
+  <text x="98" y="44" class="t-xs" text-anchor="middle">people, two SNPs (slide 117)</text>
+  <text x="84" y="66" class="t-xs" text-anchor="middle">AA</text><text x="122" y="66" class="t-xs" text-anchor="middle">Aa</text><text x="160" y="66" class="t-xs" text-anchor="middle">aa</text>
+  <text x="40" y="88" class="t-xs" text-anchor="middle">GG</text><text x="40" y="116" class="t-xs" text-anchor="middle">Gg</text><text x="40" y="144" class="t-xs" text-anchor="middle">gg</text>
+  <g stroke="var(--border)" fill="#fff">
+    <rect x="67" y="72" width="34" height="24"/><rect x="105" y="72" width="34" height="24"/><rect x="143" y="72" width="34" height="24"/>
+    <rect x="67" y="100" width="34" height="24"/><rect x="143" y="100" width="34" height="24"/>
+    <rect x="67" y="128" width="34" height="24"/><rect x="105" y="128" width="34" height="24"/><rect x="143" y="128" width="34" height="24"/>
+  </g>
+  <rect x="105" y="100" width="34" height="24" fill="#fff3e0" stroke="var(--q2)" stroke-width="2"/>
+  <text x="84" y="88" class="t" text-anchor="middle">1</text><text x="122" y="88" class="t" text-anchor="middle">0</text><text x="160" y="88" class="t" text-anchor="middle">0</text>
+  <text x="84" y="116" class="t" text-anchor="middle">1</text><text x="122" y="116" class="t-b" text-anchor="middle">5</text><text x="160" y="116" class="t" text-anchor="middle">0</text>
+  <text x="84" y="144" class="t" text-anchor="middle">0</text><text x="122" y="144" class="t" text-anchor="middle">1</text><text x="160" y="144" class="t" text-anchor="middle">0</text>
+  <text x="98" y="176" class="t-xs" text-anchor="middle">5 people are Aa and Gg:</text>
+  <text x="98" y="190" class="t-xs" text-anchor="middle">their phase is unknown</text>
+  <line x1="192" y1="104" x2="230" y2="104" stroke="var(--mm)" stroke-width="2"/><path d="M232 104l-8 -5v10z" fill="var(--mm)"/>
+  <text x="211" y="96" class="t-b t-mm" text-anchor="middle">EM</text>
+  <rect x="236" y="8" width="172" height="198" rx="10" fill="#fff" stroke="var(--border-strong)"/>
+  <text x="322" y="28" class="t-b" text-anchor="middle">2 · Haplotype table</text>
+  <text x="322" y="44" class="t-xs" text-anchor="middle">estimated frequencies, 16 copies</text>
+  <text x="298" y="68" class="t-xs" text-anchor="middle">A</text><text x="356" y="68" class="t-xs" text-anchor="middle">a</text>
+  <text x="258" y="92" class="t-xs" text-anchor="middle">G</text><text x="258" y="128" class="t-xs" text-anchor="middle">g</text>
+  <rect x="272" y="74" width="52" height="30" fill="var(--g1)" fill-opacity="0.5" stroke="var(--border)"/>
+  <rect x="330" y="74" width="52" height="30" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="4 3"/>
+  <rect x="272" y="110" width="52" height="30" fill="var(--g1)" fill-opacity="0.2" stroke="var(--border)"/>
+  <rect x="330" y="110" width="52" height="30" fill="var(--g1)" fill-opacity="0.4" stroke="var(--border)"/>
+  <text x="298" y="94" class="t" text-anchor="middle">0.500</text><text x="356" y="94" class="t" text-anchor="middle">0.000</text>
+  <text x="298" y="130" class="t" text-anchor="middle">0.125</text><text x="356" y="130" class="t" text-anchor="middle">0.375</text>
+  <text x="322" y="166" class="t-xs" text-anchor="middle">aG is missing:</text>
+  <text x="322" y="180" class="t-xs" text-anchor="middle">no recombinant seen</text>
+  <line x1="412" y1="104" x2="444" y2="104" stroke="var(--mm)" stroke-width="2"/><path d="M446 104l-8 -5v10z" fill="var(--mm)"/>
+  <rect x="450" y="52" width="120" height="104" rx="10" fill="var(--mm-soft)" stroke="var(--mm)"/>
+  <text x="510" y="74" class="t-b" text-anchor="middle">3 · One number</text>
+  <text x="510" y="100" class="t-h" text-anchor="middle">D = 0.1875</text>
+  <text x="510" y="122" class="t-xs" text-anchor="middle">departure from</text>
+  <text x="510" y="136" class="t-xs" text-anchor="middle">independence</text>
+  <line x1="572" y1="86" x2="600" y2="56" stroke="var(--mm)" stroke-width="2"/><path d="M603 53l-9 2l6 6z" fill="var(--mm)"/>
+  <line x1="572" y1="122" x2="600" y2="152" stroke="var(--mm)" stroke-width="2"/><path d="M603 155l-3 -8l-6 6z" fill="var(--mm)"/>
+  <rect x="604" y="8" width="150" height="88" rx="10" fill="#fff" stroke="var(--border-strong)"/>
+  <text x="679" y="30" class="t-b" text-anchor="middle">D′ = 1</text>
+  <text x="679" y="50" class="t-xs" text-anchor="middle">D relative to its limit:</text>
+  <text x="679" y="64" class="t-xs" text-anchor="middle">a haplotype is missing,</text>
+  <text x="679" y="78" class="t-xs" text-anchor="middle">recombination history</text>
+  <rect x="604" y="118" width="150" height="88" rx="10" fill="#fff" stroke="var(--border-strong)"/>
+  <text x="679" y="140" class="t-b" text-anchor="middle">r² = 0.60</text>
+  <text x="679" y="160" class="t-xs" text-anchor="middle">squared correlation:</text>
+  <text x="679" y="174" class="t-xs" text-anchor="middle">how well one SNP</text>
+  <text x="679" y="188" class="t-xs" text-anchor="middle">predicts the other</text>
+  <rect x="8" y="224" width="562" height="100" rx="10" fill="#fafaff" stroke="var(--mm)" stroke-dasharray="5 3"/>
+  <text x="20" y="246" class="t-b">History sets the table</text>
+  <text x="20" y="267" class="t-sm">• mutation creates LD: a new allele starts on a single haplotype</text>
+  <text x="20" y="286" class="t-sm">• recombination keeps a fraction 1 − θ of D per generation, so LD decays with distance</text>
+  <text x="20" y="305" class="t-sm">• population size and bottlenecks: LD differs between populations</text>
+  <line x1="322" y1="224" x2="322" y2="212" stroke="var(--mm)" stroke-width="2"/><path d="M322 208l-5 8h10z" fill="var(--mm)"/>
+  <rect x="584" y="224" width="170" height="100" rx="10" fill="var(--data-soft)" stroke="var(--data)"/>
+  <text x="596" y="246" class="t-b">In the data</text>
+  <text x="596" y="266" class="t-sm">plink --r2 → .ld files</text>
+  <text x="596" y="284" class="t-sm">LD matrices, heatmaps</text>
+  <text x="596" y="302" class="t-sm">reference panels, LDlink</text>
+  <text x="596" y="320" class="t-sm">LD pruning (QC step 3)</text>
+</svg>
+    </div>
+    <div class="only-narrow">
+<svg viewBox="0 0 340 706" role="img" aria-labelledby="mmn-t mmn-d"><title id="mmn-t">From genotype counts to the haplotype table to D, D′ and r²</title><desc id="mmn-d">The same model drawn from top to bottom: genotype counts from slide 117 with 5 double heterozygotes; EM; the 2 by 2 table of haplotype frequencies AG 0.500, aG 0.000, Ag 0.125, ag 0.375; one number D equals 0.1875; D prime equals 1 and r squared equals 0.60; history sets the table; where LD appears in the data.</desc>
+  <rect x="10" y="8" width="320" height="152" rx="10" fill="#fff" stroke="var(--border-strong)"/>
+  <text x="22" y="28" class="t-b">1 · Genotype counts (people)</text>
+  <text x="76" y="52" class="t-xs" text-anchor="middle">AA</text><text x="114" y="52" class="t-xs" text-anchor="middle">Aa</text><text x="152" y="52" class="t-xs" text-anchor="middle">aa</text>
+  <text x="34" y="74" class="t-xs" text-anchor="middle">GG</text><text x="34" y="102" class="t-xs" text-anchor="middle">Gg</text><text x="34" y="130" class="t-xs" text-anchor="middle">gg</text>
+  <g stroke="var(--border)" fill="#fff">
+    <rect x="59" y="58" width="34" height="24"/><rect x="97" y="58" width="34" height="24"/><rect x="135" y="58" width="34" height="24"/>
+    <rect x="59" y="86" width="34" height="24"/><rect x="135" y="86" width="34" height="24"/>
+    <rect x="59" y="114" width="34" height="24"/><rect x="97" y="114" width="34" height="24"/><rect x="135" y="114" width="34" height="24"/>
+  </g>
+  <rect x="97" y="86" width="34" height="24" fill="#fff3e0" stroke="var(--q2)" stroke-width="2"/>
+  <text x="76" y="74" class="t" text-anchor="middle">1</text><text x="114" y="74" class="t" text-anchor="middle">0</text><text x="152" y="74" class="t" text-anchor="middle">0</text>
+  <text x="76" y="102" class="t" text-anchor="middle">1</text><text x="114" y="102" class="t-b" text-anchor="middle">5</text><text x="152" y="102" class="t" text-anchor="middle">0</text>
+  <text x="76" y="130" class="t" text-anchor="middle">0</text><text x="114" y="130" class="t" text-anchor="middle">1</text><text x="152" y="130" class="t" text-anchor="middle">0</text>
+  <text x="188" y="84" class="t-xs">5 people are Aa</text>
+  <text x="188" y="98" class="t-xs">and Gg: their phase</text>
+  <text x="188" y="112" class="t-xs">is unknown</text>
+  <line x1="170" y1="162" x2="170" y2="190" stroke="var(--mm)" stroke-width="2"/><path d="M170 196l-5 -8h10z" fill="var(--mm)"/>
+  <text x="182" y="184" class="t-b t-mm">EM</text>
+  <rect x="10" y="200" width="320" height="130" rx="10" fill="#fff" stroke="var(--border-strong)"/>
+  <text x="22" y="220" class="t-b">2 · Haplotype frequencies</text>
+  <text x="86" y="242" class="t-xs" text-anchor="middle">A</text><text x="146" y="242" class="t-xs" text-anchor="middle">a</text>
+  <text x="42" y="266" class="t-xs" text-anchor="middle">G</text><text x="42" y="300" class="t-xs" text-anchor="middle">g</text>
+  <rect x="60" y="248" width="52" height="28" fill="var(--g1)" fill-opacity="0.5" stroke="var(--border)"/>
+  <rect x="120" y="248" width="52" height="28" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="4 3"/>
+  <rect x="60" y="282" width="52" height="28" fill="var(--g1)" fill-opacity="0.2" stroke="var(--border)"/>
+  <rect x="120" y="282" width="52" height="28" fill="var(--g1)" fill-opacity="0.4" stroke="var(--border)"/>
+  <text x="86" y="267" class="t" text-anchor="middle">0.500</text><text x="146" y="267" class="t" text-anchor="middle">0.000</text>
+  <text x="86" y="301" class="t" text-anchor="middle">0.125</text><text x="146" y="301" class="t" text-anchor="middle">0.375</text>
+  <text x="188" y="268" class="t-xs">aG is missing:</text>
+  <text x="188" y="282" class="t-xs">no recombinant seen</text>
+  <line x1="170" y1="332" x2="170" y2="354" stroke="var(--mm)" stroke-width="2"/><path d="M170 360l-5 -8h10z" fill="var(--mm)"/>
+  <rect x="10" y="364" width="320" height="62" rx="10" fill="var(--mm-soft)" stroke="var(--mm)"/>
+  <text x="22" y="386" class="t-b">3 · One number: D = 0.1875</text>
+  <text x="22" y="408" class="t-sm">departure from independence</text>
+  <line x1="110" y1="428" x2="92" y2="446" stroke="var(--mm)" stroke-width="2"/><path d="M89 450l2 -9l6 6z" fill="var(--mm)"/>
+  <line x1="230" y1="428" x2="248" y2="446" stroke="var(--mm)" stroke-width="2"/><path d="M251 450l-8 -3l6 -6z" fill="var(--mm)"/>
+  <rect x="10" y="452" width="155" height="88" rx="10" fill="#fff" stroke="var(--border-strong)"/>
+  <text x="87" y="474" class="t-b" text-anchor="middle">D′ = 1</text>
+  <text x="87" y="494" class="t-xs" text-anchor="middle">D relative to its limit:</text>
+  <text x="87" y="508" class="t-xs" text-anchor="middle">a haplotype is missing,</text>
+  <text x="87" y="522" class="t-xs" text-anchor="middle">recombination history</text>
+  <rect x="175" y="452" width="155" height="88" rx="10" fill="#fff" stroke="var(--border-strong)"/>
+  <text x="252" y="474" class="t-b" text-anchor="middle">r² = 0.60</text>
+  <text x="252" y="494" class="t-xs" text-anchor="middle">squared correlation:</text>
+  <text x="252" y="508" class="t-xs" text-anchor="middle">how well one SNP</text>
+  <text x="252" y="522" class="t-xs" text-anchor="middle">predicts the other</text>
+  <rect x="10" y="554" width="320" height="94" rx="10" fill="#fafaff" stroke="var(--mm)" stroke-dasharray="5 3"/>
+  <text x="22" y="575" class="t-b">History sets the table</text>
+  <text x="22" y="594" class="t-sm">• mutation creates LD</text>
+  <text x="22" y="612" class="t-sm">• recombination: × (1 − θ) per generation</text>
+  <text x="22" y="630" class="t-sm">• population size and bottlenecks</text>
+  <rect x="10" y="658" width="320" height="44" rx="10" fill="var(--data-soft)" stroke="var(--data)"/>
+  <text x="22" y="676" class="t-sm">In the data: plink --r2, LD matrices,</text>
+  <text x="22" y="694" class="t-sm">heatmaps, reference panels, LD pruning</text>
+</svg>
+    </div>
+  </figure>
+  <p class="mm-statement">For two SNPs, LD is a property of the 2 × 2 table of haplotype frequencies. Genotype data give only a 3 × 3 table of genotype counts, so the haplotype table is estimated (by EM), summarized by one number, D, and rescaled into D′ and r². Mutation, recombination and population history set the values, which is why LD decays with distance and differs between populations.</p>
+  <ul class="mm-hooks">
+    <li><strong>Origin.</strong> A new allele arises on one haplotype, so a new SNP starts with three haplotypes next to an older one, and only recombination (or a repeat mutation) creates the fourth.</li>
+    <li><strong>Genotypes to haplotypes.</strong> The 3 × 3 table fixes everyone's haplotypes except the double heterozygotes; EM splits them in proportion to the current haplotype frequencies until the estimates stop changing.</li>
+    <li><strong>Measures.</strong> Once the allele frequencies are fixed, the table has one free number, D; D′ divides it by its largest possible value, r² by the allele-frequency variances.</li>
+    <li><strong>Decay.</strong> Each generation keeps a fraction 1 − θ of D, and Haldane's map function turns map distance into θ, so LD fades with distance at a rate set by the local recombination rate.</li>
+    <li><strong>Populations.</strong> A larger, older population has had more recombination and less drift, so LD is shorter in samples of African ancestry: more tag SNPs are needed, imputation is harder and fine-mapping is sharper.</li>
+    <li><strong>In the data.</strong> PLINK reports r² of allele counts for pairs of SNPs or whole matrices (D′ on request); heatmaps draw the matrix; reference panels and LDlink supply LD when you have no genotypes; LD pruning uses it in QC step 3.</li>
+  </ul>
+</section>
+
+<aside class="callout background">
+  <div class="callout-title"><span class="badge">Background</span> From Lecture 0</div>
+  <p>This page builds on <a href="../0-biological-foundations/haplotypes-ld.html">Lecture 0 · Haplotypes and linkage disequilibrium</a> (haplotypes, phase, D, D′, r², LD blocks and tag SNPs), on <a href="../0-biological-foundations/inheritance.html#meiosis">Lecture 0 · Meiosis and recombination</a> and on <a href="../0-biological-foundations/allele-frequencies.html#drift">Lecture 0 · Genetic drift</a>. Allele-frequency estimates and the chi-square test are on the previous page, <a href="frequencies-hwe.html">Estimating frequencies and testing Hardy–Weinberg equilibrium</a>.</p>
+</aside>
+
+<h2 id="origins" data-toc="Where LD comes from">Where LD comes from: one new allele, three haplotypes, then recombination <span class="tag core">Core</span></h2>
+
+<p>Throughout this page, SNP 1 has alleles A and a and SNP 2 has alleles G and g, as on the slides. A chromosome copy carries one of four combinations of them, the <dfn>haplotypes</dfn> AG, Ag, aG and ag. <dfn>Linkage disequilibrium</dfn> (LD) is a non-random association between the alleles at the two SNPs across the chromosome copies of a population: among copies that carry A, the share that carries G differs from the share among copies that carry a. The reading defines it as "the non-independent association of two alleles in a population"<sup><a href="#src-1">1</a></sup>. Slide 85 adds that it is "typically measured using r²", the squared correlation defined in the measures section below, and lists why it matters: it sets the number of independent tests in a genome scan, lets a few SNPs stand for many (tag SNPs), makes imputation possible and records the history of genetic variation. <a href="../0-biological-foundations/haplotypes-ld.html#gwas-peaks">Lecture 0 · LD in GWAS</a> covers those uses; this page is about where the association comes from and how it is estimated and measured.</p>
+
+<p>Every SNP began as a single mutation on a single chromosome copy, and that copy already carried alleles at the SNPs around it (slides 109–111). The figure below follows two SNPs through that history.</p>
+
+<figure class="fig" id="fig-origins">
+  <div class="fig-body"><div class="fig-panels">
+<svg viewBox="0 0 290 172" role="img" aria-labelledby="or1-t"><title id="or1-t">Stage 1: before either mutation, all five copies carry a and g</title>
+  <text x="8" y="16" class="t-b">1 · Before the mutations</text>
+  <g><rect x="12" y="36" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="30" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="45" class="t-b" text-anchor="middle">a</text><rect x="120" y="30" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="45" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="62" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="56" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="71" class="t-b" text-anchor="middle">a</text><rect x="120" y="56" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="71" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="88" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="82" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="97" class="t-b" text-anchor="middle">a</text><rect x="120" y="82" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="97" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="114" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="108" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="123" class="t-b" text-anchor="middle">a</text><rect x="120" y="108" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="123" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="140" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="134" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="149" class="t-b" text-anchor="middle">a</text><rect x="120" y="134" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="149" class="t-b" text-anchor="middle">g</text></g>
+  <text x="228" y="36" class="t-xs" text-anchor="middle">A</text><text x="262" y="36" class="t-xs" text-anchor="middle">a</text>
+  <text x="200" y="58" class="t-xs" text-anchor="middle">G</text><text x="200" y="88" class="t-xs" text-anchor="middle">g</text>
+  <g stroke="var(--border)" fill="#fff"><rect x="212" y="42" width="32" height="26"/><rect x="246" y="42" width="32" height="26"/><rect x="212" y="72" width="32" height="26"/><rect x="246" y="72" width="32" height="26"/></g>
+  <text x="228" y="60" class="t-sm" text-anchor="middle">–</text><text x="262" y="60" class="t-sm" text-anchor="middle">–</text><text x="228" y="90" class="t-sm" text-anchor="middle">–</text><text x="262" y="90" class="t-b" text-anchor="middle">5</text>
+  <text x="245" y="122" class="t-sm" text-anchor="middle">1 haplotype:</text>
+  <text x="245" y="138" class="t-sm" text-anchor="middle">no variation yet</text>
+</svg>
+<svg viewBox="0 0 290 172" role="img" aria-labelledby="or2-t"><title id="or2-t">Stage 2: a mutation creates allele A on one copy; its descendants carry A with g</title>
+  <text x="8" y="16" class="t-b">2 · A mutation creates A</text>
+  <g><rect x="12" y="36" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="30" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="45" class="t-b" text-anchor="middle">a</text><rect x="120" y="30" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="45" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="62" width="160" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="56" width="20" height="20" rx="4" fill="#fff" stroke="var(--q4)" stroke-width="2"/><text x="50" y="71" class="t-b" text-anchor="middle">A</text><rect x="120" y="56" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="71" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="88" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="82" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="97" class="t-b" text-anchor="middle">a</text><rect x="120" y="82" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="97" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="114" width="160" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="108" width="20" height="20" rx="4" fill="#fff" stroke="var(--q4)" stroke-width="2"/><text x="50" y="123" class="t-b" text-anchor="middle">A</text><rect x="120" y="108" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="123" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="140" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="134" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="149" class="t-b" text-anchor="middle">a</text><rect x="120" y="134" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="149" class="t-b" text-anchor="middle">g</text></g>
+  <text x="228" y="36" class="t-xs" text-anchor="middle">A</text><text x="262" y="36" class="t-xs" text-anchor="middle">a</text>
+  <text x="200" y="58" class="t-xs" text-anchor="middle">G</text><text x="200" y="88" class="t-xs" text-anchor="middle">g</text>
+  <g stroke="var(--border)" fill="#fff"><rect x="212" y="42" width="32" height="26"/><rect x="246" y="42" width="32" height="26"/><rect x="212" y="72" width="32" height="26"/><rect x="246" y="72" width="32" height="26"/></g>
+  <text x="228" y="60" class="t-sm" text-anchor="middle">–</text><text x="262" y="60" class="t-sm" text-anchor="middle">–</text><text x="228" y="90" class="t-b" text-anchor="middle">2</text><text x="262" y="90" class="t-b" text-anchor="middle">3</text>
+  <text x="245" y="122" class="t-sm" text-anchor="middle">2 haplotypes:</text>
+  <text x="245" y="138" class="t-sm" text-anchor="middle">no G allele yet</text>
+</svg>
+<svg viewBox="0 0 290 172" role="img" aria-labelledby="or3-t"><title id="or3-t">Stage 3: a second mutation creates G on a copy that carries A, so three haplotypes exist and aG is missing</title>
+  <text x="8" y="16" class="t-b">3 · A mutation creates G on an A copy</text>
+  <g><rect x="12" y="36" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="30" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="45" class="t-b" text-anchor="middle">a</text><rect x="120" y="30" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="45" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="62" width="160" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="56" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="71" class="t-b" text-anchor="middle">A</text><rect x="120" y="56" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="71" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="88" width="160" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="82" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="97" class="t-b" text-anchor="middle">A</text><rect x="120" y="82" width="20" height="20" rx="4" fill="#fff" stroke="var(--q4)" stroke-width="2"/><text x="130" y="97" class="t-b" text-anchor="middle">G</text></g>
+  <g><rect x="12" y="114" width="160" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="108" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="123" class="t-b" text-anchor="middle">A</text><rect x="120" y="108" width="20" height="20" rx="4" fill="#fff" stroke="var(--q4)" stroke-width="2"/><text x="130" y="123" class="t-b" text-anchor="middle">G</text></g>
+  <g><rect x="12" y="140" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="134" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="149" class="t-b" text-anchor="middle">a</text><rect x="120" y="134" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="149" class="t-b" text-anchor="middle">g</text></g>
+  <text x="228" y="36" class="t-xs" text-anchor="middle">A</text><text x="262" y="36" class="t-xs" text-anchor="middle">a</text>
+  <text x="200" y="58" class="t-xs" text-anchor="middle">G</text><text x="200" y="88" class="t-xs" text-anchor="middle">g</text>
+  <g stroke="var(--border)" fill="#fff"><rect x="212" y="42" width="32" height="26"/><rect x="246" y="42" width="32" height="26"/><rect x="212" y="72" width="32" height="26"/><rect x="246" y="72" width="32" height="26"/></g>
+  <rect x="246" y="42" width="32" height="26" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="4 3"/>
+  <text x="228" y="60" class="t-b" text-anchor="middle">2</text><text x="262" y="60" class="t-sm" text-anchor="middle">–</text><text x="228" y="90" class="t-b" text-anchor="middle">1</text><text x="262" y="90" class="t-b" text-anchor="middle">2</text>
+  <text x="245" y="122" class="t-sm" text-anchor="middle">aG missing:</text>
+  <text x="245" y="138" class="t-b" text-anchor="middle">|D′| = 1</text>
+</svg>
+<svg viewBox="0 0 290 172" role="img" aria-labelledby="or4-t"><title id="or4-t">Stage 4: a crossover between an ag copy and an AG copy produces an aG copy, so all four haplotypes exist</title>
+  <text x="8" y="16" class="t-b">4 · Recombination creates aG</text>
+  <g><rect x="12" y="36" width="160" height="8" rx="4" fill="#dfe3e8"/><rect x="40" y="30" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="45" class="t-b" text-anchor="middle">a</text><rect x="120" y="30" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="45" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="62" width="160" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="56" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="71" class="t-b" text-anchor="middle">A</text><rect x="120" y="56" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="71" class="t-b" text-anchor="middle">g</text></g>
+  <g><rect x="12" y="88" width="160" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="82" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="97" class="t-b" text-anchor="middle">A</text><rect x="120" y="82" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="97" class="t-b" text-anchor="middle">G</text></g>
+  <g><rect x="12" y="114" width="160" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="108" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="123" class="t-b" text-anchor="middle">A</text><rect x="120" y="108" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="130" y="123" class="t-b" text-anchor="middle">G</text></g>
+  <g><rect x="12" y="140" width="80" height="8" rx="4" fill="#dfe3e8"/><rect x="92" y="140" width="80" height="8" rx="4" fill="var(--pat-fill)"/><rect x="40" y="134" width="20" height="20" rx="4" fill="#fff" stroke="var(--border-strong)"/><text x="50" y="149" class="t-b" text-anchor="middle">a</text><rect x="120" y="134" width="20" height="20" rx="4" fill="#fff" stroke="var(--q4)" stroke-width="2"/><text x="130" y="149" class="t-b" text-anchor="middle">G</text><text x="92" y="166" class="t-xs" text-anchor="middle">crossover</text><path d="M92 136v18" stroke="var(--q4)" stroke-width="2"/></g>
+  <text x="228" y="36" class="t-xs" text-anchor="middle">A</text><text x="262" y="36" class="t-xs" text-anchor="middle">a</text>
+  <text x="200" y="58" class="t-xs" text-anchor="middle">G</text><text x="200" y="88" class="t-xs" text-anchor="middle">g</text>
+  <g stroke="var(--border)" fill="#fff"><rect x="212" y="42" width="32" height="26"/><rect x="246" y="42" width="32" height="26"/><rect x="212" y="72" width="32" height="26"/><rect x="246" y="72" width="32" height="26"/></g>
+  <text x="228" y="60" class="t-b" text-anchor="middle">2</text><text x="262" y="60" class="t-b" text-anchor="middle">1</text><text x="228" y="90" class="t-b" text-anchor="middle">1</text><text x="262" y="90" class="t-b" text-anchor="middle">1</text>
+  <text x="245" y="122" class="t-sm" text-anchor="middle">all four present:</text>
+  <text x="245" y="138" class="t-b" text-anchor="middle">|D′| = 0.17</text>
+</svg>
+  </div></div>
+  <figcaption><span class="fig-title">How a pair of SNPs gets its LD.</span> Five chromosome copies at each stage; the 2 × 2 table on the right of each panel counts the four haplotypes among them, with columns for SNP 1 and rows for SNP 2 as on slides 117 and 123. A mutation creates allele A (stage 2), then a second mutation creates G on a copy that already carries A (stage 3), so every copy with G descends from an A copy and the aG haplotype cannot exist: \(|D'| = 1\). A crossover between SNPs in a person whose two copies are ag and AG makes a copy that carries a and G (stage 4); with all four haplotypes present, \(|D'|\) falls below 1 (here \(D'\) = 0.04/0.24 ≈ 0.17). New alleles are outlined in red; gray and blue mark the ancestral and the mutant lineage. The story follows slides 109–111, which use the alleles A/C and G/C.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<p>The figure carries three ideas that the rest of the page uses.</p>
+<ul>
+  <li><strong>A new SNP starts in complete LD with its neighbors.</strong> At stage 3 the table has a zero cell. The measures section shows that any table with a zero cell has \(|D'| = 1\), whatever the allele frequencies. Slide 121 reads \(|D'| = 1\) as "evidence for no recombination" between the two SNPs.</li>
+  <li><strong>Only recombination (or a repeat mutation) makes the fourth haplotype.</strong> If each SNP arose by a single mutation and the same mutation never happened twice, seeing all four haplotypes in a sample proves that at least one crossover happened between the SNPs in the history of that sample. This is the four-gamete test<sup><a href="#src-2">2</a></sup>.</li>
+  <li><strong>After that, the association erodes slowly.</strong> Recombination keeps reshuffling alleles at the two SNPs, and drift keeps changing the haplotype frequencies; the closer the SNPs, the rarer the crossovers between them and the longer the association lasts (the decay section).</li>
+</ul>
+
+<p>Slide 112 shows the long-run result: present-day chromosome copies are mosaics of pieces of ancestral copies, and copies that share an ancestral piece around a site share its alleles. How long the shared pieces are depends on the recombination rate, the mutation rate, the size of the population and natural selection<sup><a href="#src-3">3</a></sup>. Alleles at very close SNPs usually sit on the same ancestral piece, so their combinations reflect single ancestral haplotypes; alleles further apart have been reshuffled by recombination. <a href="../0-biological-foundations/haplotypes-ld.html#origins">Lecture 0 · How LD arises</a> shows how fast the shared pieces shrink.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 84–85 · What LD is and why it is studied</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-085.jpg" alt="Lecture 1, slide 85: bullet points defining LD as the correlation between genetic markers in a population, typically measured using r squared, noting that high r squared needs similar minor allele frequencies, listing mutation and recombination, selection and demographics as mechanisms, and listing reasons to study LD" loading="lazy"><figcaption>Lecture 1 · slide 85</figcaption></figure>
+    <div><p>Slide 84 lists the "basic definitions" of this part of the lecture: SNPs, genotype and allele frequencies, Hardy–Weinberg equilibrium, LD, and how allele frequencies and LD vary. Slide 85 is the summary of this page in bullet form. Its warning "high r² between two SNPs requires both have similar MAFs" (minor allele frequencies) is explained in the measures section. Its mechanisms, "mutation and recombination in meiosis", "selection" and "demographics", are the subjects of this section, the decay section and the populations section. Its reasons to study LD each have a home: "the number of independent tests" is the 5 × 10<sup>−8</sup> threshold (<a href="../0-biological-foundations/haplotypes-ld.html#effective-tests">Lecture 0</a>), "a minimum number of variants that retain coverage" is tag SNPs, and imputation fills in variants that were not genotyped (<a href="../0-biological-foundations/haplotypes-ld.html#gwas-peaks">Lecture 0 · LD in GWAS</a>).</p></div>
+  </div>
+</aside>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 107–112 · The appendix: origins of LD</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-111.jpg" alt="Lecture 1, slide 111: before recombination, three chromosome lines carry the allele pairs A–G, C–G and C–C; after recombination a fourth, circled line carries A–C, half red and half green, labeled recombinant haplotype" loading="lazy"><figcaption>Lecture 1 · slide 111</figcaption></figure>
+    <div><p>The lecture moves the details of LD to an appendix: slide 107 is its title ("details on measures of LD") and slide 108 opens Part 1, "Haplotypes and their relationship to LD". Slides 109–111 are <a href="#fig-origins">the origins figure</a> drawn with other letters: a mutation turns A into C at the first site (109), then a mutation turns G into C at the second site on a copy that carries C at the first (110), giving the three haplotypes A–G, C–G and C–C; recombination then makes the fourth, A–C (111). Slide 112 is the mosaic picture described above: present-day copies share a piece of an ancestral copy (dark) around a marked site, and the pieces have different lengths.</p></div>
+  </div>
+</aside>
+
+<h3 id="gametic">LD between unlinked loci: gametic disequilibrium</h3>
+<p>The name "linkage disequilibrium" suggests that the two loci must be linked, that is, close enough on one chromosome that crossovers between them happen in fewer than half of meioses (recombination fraction \(\theta &lt; 1/2\); <a href="../0-biological-foundations/inheritance.html#linkage">Lecture 0 · Linkage</a>). Slide 115 separates the two conditions. Condition A, that the alleles at the two loci are not independently distributed, is <dfn>gametic disequilibrium</dfn>; condition B, that the loci are linked, is linkage. The usual LD measures check only condition A, so they measure gametic disequilibrium. Association without linkage does occur: if a sample mixes people from two populations whose allele frequencies differ at two loci on different chromosomes, the alleles at the two loci are associated across the pooled copies (see the <a href="population-structure.html">population-structure page</a>). For unlinked loci \(\theta = 1/2\), so such an association halves in every generation of random mating (the decay section) and soon disappears; association between close loci lasts much longer. LD is in practice computed for SNPs on the same chromosome, where the two terms mean the same thing.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 115 · A comment about the definition of LD</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-115.jpg" alt="Lecture 1, slide 115: text slide saying two loci are described as being in LD if their alleles are not independently distributed (A) and the loci are linked (B); condition A is gametic disequilibrium and condition B is linkage, so standard LD measures are measures of gametic disequilibrium, and the terms are equivalent for markers on the same chromosome" loading="lazy"><figcaption>Lecture 1 · slide 115</figcaption></figure>
+    <div><p>The slide's point in one line: D, D′ and r² measure association between alleles on the same gamete (an egg or sperm cell, which carries one chromosome copy), whatever caused it; linkage is what makes that association last. "Often people say LD when they mean gametic disequilibrium", and for SNPs on one chromosome nothing is lost by doing so.</p></div>
+  </div>
+</aside>
+
+<h2 id="genotypes-to-haplotypes" data-toc="Genotypes to haplotypes">From genotypes to haplotypes: estimating haplotype frequencies <span class="tag core">Core</span></h2>
+
+<p>Every LD measure is computed from the frequencies of the four haplotypes. A genotyping array does not report haplotypes, so the frequencies have to be estimated. This section defines them (slide 113), shows which haplotypes a table of genotypes fixes and which it leaves open (slides 114 and 117), and derives the algorithm that estimates them.</p>
+
+<h3 id="haplotypes">Haplotypes and haplotype frequencies</h3>
+
+<p>Slide 113 defines haplotypes as "the ordered arrangements of alleles at specific loci along the same chromosome", that is, "phased genotypes", the alleles as they were passed down from each parent. Its example has three loci. The chromosome copy from parent 1 carries A, T and A; the copy from parent 2 carries A, C and C. The genotypes are AA, CT and AC, and they do not say whether the T travels with the first A or the second, or with A or C at the third locus.</p>
+
+<p>For two SNPs, the <dfn>haplotype frequency</dfn> \(p_{\mathrm{AG}}\) is the fraction of chromosome copies in the population that carry A at SNP 1 and G at SNP 2; \(p_{\mathrm{Ag}}\), \(p_{\mathrm{aG}}\) and \(p_{\mathrm{ag}}\) are defined the same way, and the four add up to 1. Slide 118 arranges them in a 2 × 2 table whose margins are the allele frequencies:</p>
+
+<div class="table-wrap">
+<table class="compact" style="max-width:420px">
+  <caption>The haplotype table of slide 118: columns are SNP 1, rows are SNP 2</caption>
+  <thead><tr><th></th><th>A</th><th>a</th><th>Row total</th></tr></thead>
+  <tbody>
+    <tr><th>G</th><td>\(p_{\mathrm{AG}}\)</td><td>\(p_{\mathrm{aG}}\)</td><td>\(p_{\mathrm{G}}\)</td></tr>
+    <tr><th>g</th><td>\(p_{\mathrm{Ag}}\)</td><td>\(p_{\mathrm{ag}}\)</td><td>\(p_{\mathrm{g}} = 1 - p_{\mathrm{G}}\)</td></tr>
+    <tr><th>Column total</th><td>\(p_{\mathrm{A}}\)</td><td>\(p_{\mathrm{a}} = 1 - p_{\mathrm{A}}\)</td><td>1</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>So \(p_{\mathrm{A}} = p_{\mathrm{AG}} + p_{\mathrm{Ag}}\) and \(p_{\mathrm{G}} = p_{\mathrm{AG}} + p_{\mathrm{aG}}\). In the course's general notation, with allele 1 = A or G and allele 2 = a or g, the same four numbers are \(p_{11}, p_{12}, p_{21}, p_{22}\). If every person's two haplotypes were known, the estimate would be a count: among the \(2n\) chromosome copies of \(n\) people, \(\hat{p}_{\mathrm{AG}}\) is the number of AG copies divided by \(2n\), exactly as an allele frequency is estimated on the <a href="frequencies-hwe.html">previous page</a>.</p>
+
+<h3 id="phase">Phase is not observed: the 3 × 3 genotype table</h3>
+
+<p>An array measures each SNP with its own probes and reports, for each person, an unordered pair of alleles per SNP (<a href="../0-biological-foundations/samples-to-genotypes.html">Lecture 0 · From samples to genotypes</a>). A person who is heterozygous at both SNPs carries A on one copy and a on the other, and G on one copy and g on the other, but the data do not say whether A sits on the same copy as G or as g. Which alleles share a copy is the person's phase (<a href="../0-biological-foundations/haplotypes-ld.html#haplotypes">Lecture 0 · Haplotypes and phase</a>). Slide 114 puts it as "genotype data typically does not include information about phase of alleles". Long-range single-molecule sequencing can read phase directly, because one DNA molecule comes from one chromosome copy, but it is "experimentally challenging", so haplotypes are usually inferred from genotypes.</p>
+
+<p>For a pair of SNPs, each person falls into one of nine genotype combinations, and the data are a 3 × 3 table of counts of people. The next table shows what each cell implies about the person's two haplotypes.</p>
+
+<div class="table-wrap">
+<table class="ldp-map" style="max-width:560px">
+  <caption>The haplotype pair implied by each genotype combination; only the shaded cell is ambiguous</caption>
+  <thead><tr><th>SNP 2 ↓ · SNP 1 →</th><th>AA</th><th>Aa</th><th>aa</th></tr></thead>
+  <tbody>
+    <tr><th>GG</th><td>AG + AG</td><td>AG + aG</td><td>aG + aG</td></tr>
+    <tr><th>Gg</th><td>AG + Ag</td><td class="ldp-cell-dh">AG + ag<br>or<br>Ag + aG</td><td>aG + ag</td></tr>
+    <tr><th>gg</th><td>Ag + Ag</td><td>Ag + ag</td><td>ag + ag</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>A person who is homozygous at either SNP has known haplotypes: an AA person carries A on both copies, so the G and g at SNP 2 can only pair with A. Only the center cell, the <dfn>double heterozygotes</dfn> (Aa and Gg), is ambiguous: each such person carries either AG and ag, or Ag and aG. This splits the data into two parts:</p>
+<ul>
+  <li><strong>Known haplotype counts</strong> \(c_{\mathrm{AG}}, c_{\mathrm{Ag}}, c_{\mathrm{aG}}, c_{\mathrm{ag}}\): the copies of each haplotype carried by people outside the center cell (two copies from a person in a corner, one from a person on an edge).</li>
+  <li><strong>The number of double heterozygotes</strong> \(m\): each contributes one AG and one ag copy, or one Ag and one aG copy. The known copies and the double heterozygotes' copies add up to \(2n\).</li>
+</ul>
+
+<figure class="fig" id="fig-slide117">
+  <div class="fig-body"><div class="fig-panels">
+<svg viewBox="0 0 300 196" role="img" aria-labelledby="s117a-t"><title id="s117a-t">Slide 117's genotype table: rows GG, Gg, gg; columns AA, Aa, aa; counts 1, 0, 0; 1, 5, 0; 0, 1, 0</title>
+  <text x="8" y="16" class="t-b">Genotypes (data), 8 people</text>
+  <text x="120" y="44" class="t-xs" text-anchor="middle">AA</text><text x="170" y="44" class="t-xs" text-anchor="middle">Aa</text><text x="220" y="44" class="t-xs" text-anchor="middle">aa</text>
+  <text x="76" y="70" class="t-xs" text-anchor="middle">GG</text><text x="76" y="106" class="t-xs" text-anchor="middle">Gg</text><text x="76" y="142" class="t-xs" text-anchor="middle">gg</text>
+  <g stroke="var(--border)" fill="#fff">
+    <rect x="98" y="50" width="44" height="32"/><rect x="148" y="50" width="44" height="32"/><rect x="198" y="50" width="44" height="32"/>
+    <rect x="98" y="86" width="44" height="32"/><rect x="198" y="86" width="44" height="32"/>
+    <rect x="98" y="122" width="44" height="32"/><rect x="148" y="122" width="44" height="32"/><rect x="198" y="122" width="44" height="32"/>
+  </g>
+  <rect x="148" y="86" width="44" height="32" fill="#fff3e0" stroke="var(--q2)" stroke-width="2"/>
+  <text x="120" y="71" class="t-b" text-anchor="middle">1</text><text x="170" y="71" class="t" text-anchor="middle">0</text><text x="220" y="71" class="t" text-anchor="middle">0</text>
+  <text x="120" y="107" class="t-b" text-anchor="middle">1</text><text x="170" y="107" class="t-b" text-anchor="middle">5</text><text x="220" y="107" class="t" text-anchor="middle">0</text>
+  <text x="120" y="143" class="t" text-anchor="middle">0</text><text x="170" y="143" class="t-b" text-anchor="middle">1</text><text x="220" y="143" class="t" text-anchor="middle">0</text>
+  <text x="150" y="176" class="t-xs" text-anchor="middle">AA GG → AG, AG · AA Gg → AG, Ag</text>
+  <text x="150" y="190" class="t-xs" text-anchor="middle">Aa gg → Ag, ag · 5 × Aa Gg → ?</text>
+</svg>
+<svg viewBox="0 0 300 196" role="img" aria-labelledby="s117b-t"><title id="s117b-t">Known haplotype counts from slide 117: AG 3, Ag 2, aG 0, ag 1, plus 5 double heterozygotes who carry either AG and ag or Ag and aG</title>
+  <text x="8" y="16" class="t-b">What the table fixes</text>
+  <text x="8" y="40" class="t-sm">known copies (6 of 16)</text>
+  <g>
+    <rect x="8" y="50" width="62" height="30" rx="6" fill="var(--q1)" fill-opacity="0.18" stroke="var(--q1)"/><text x="39" y="70" class="t-b" text-anchor="middle">AG 3</text>
+    <rect x="78" y="50" width="62" height="30" rx="6" fill="var(--q2)" fill-opacity="0.18" stroke="var(--q2)"/><text x="109" y="70" class="t-b" text-anchor="middle">Ag 2</text>
+    <rect x="148" y="50" width="62" height="30" rx="6" fill="#fff" stroke="var(--pitfall)" stroke-dasharray="4 3"/><text x="179" y="70" class="t-b" text-anchor="middle">aG 0</text>
+    <rect x="218" y="50" width="62" height="30" rx="6" fill="var(--q1)" fill-opacity="0.18" stroke="var(--q1)"/><text x="249" y="70" class="t-b" text-anchor="middle">ag 1</text>
+  </g>
+  <text x="8" y="106" class="t-sm">5 double heterozygotes (10 copies), each one of</text>
+  <rect x="8" y="116" width="128" height="30" rx="6" fill="var(--q1)" fill-opacity="0.18" stroke="var(--q1)"/><text x="72" y="136" class="t-b" text-anchor="middle">AG + ag</text>
+  <text x="150" y="136" class="t-sm" text-anchor="middle">or</text>
+  <rect x="164" y="116" width="128" height="30" rx="6" fill="var(--q2)" fill-opacity="0.18" stroke="var(--q2)"/><text x="228" y="136" class="t-b" text-anchor="middle">Ag + aG</text>
+  <text x="8" y="172" class="t-xs">aG never appears among the known copies,</text>
+  <text x="8" y="186" class="t-xs">so EM gives the second option probability 0</text>
+</svg>
+  </div></div>
+  <figcaption><span class="fig-title">Slide 117's data, split into known haplotypes and ambiguous people.</span> First panel: the 3 × 3 table of genotype counts (8 people, 16 chromosome copies). Second panel: three people have known haplotypes (one AA GG person contributes two AG copies, one AA Gg person contributes AG and Ag, one Aa gg person contributes Ag and ag), so \(c_{\mathrm{AG}} = 3\), \(c_{\mathrm{Ag}} = 2\), \(c_{\mathrm{aG}} = 0\), \(c_{\mathrm{ag}} = 1\), and \(m = 5\) double heterozygotes remain. Check: 3 + 2 + 0 + 1 + 2 × 5 = 16 copies.<span class="fig-credit">Drawn for this lecture from the data on slide 117.</span></figcaption>
+</figure>
+
+<p>Slide 117 annotates its table with two remarks. "Low counts implies low numbers of aG haps": the people outside the center cell carry no aG copy at all, and that is the evidence that the frequency of aG is low. "Only ambiguous haplotypes. Why?" points at the 5 in the center: these are the only people whose haplotypes are not fixed, because everyone else is homozygous at one of the two SNPs. The estimation problem is therefore one number per double heterozygote: the probability that the person carries AG + ag rather than Ag + aG.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 113–114 · Haplotypes, and why they must be inferred</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-114.jpg" alt="Lecture 1, slide 114: bullet points saying genotype data usually lack phase, that long-range single-molecule sequencing can determine it, that haplotypes are usually inferred; an example shows genotypes Aa and Gg consistent with haplotype pairs AG with ag (probability 0.9) or Ag with aG (probability 0.1), and lists the steps of the Expectation Maximization algorithm, citing Thomas pages 243 to 245" loading="lazy"><figcaption>Lecture 1 · slide 114</figcaption></figure>
+    <div><p>Slide 113 defines haplotypes with a three-locus example (copies A–T–A and A–C–C, genotypes AA, CT and AC). Slide 114 shows the double heterozygote Aa/Gg with its two possible haplotype pairs and gives them probabilities 0.9 and 0.1. Those two numbers are an example of \(w\) and \(1 - w\) in the E-step below. Its four bullet points are the EM algorithm in words: "start with a guess for haplotype frequencies"; "given this guess, calculate expected haplotype counts, assuming haplotypes are in HWE" (the E-step, which uses random mating); "use these counts to update haplotype frequency estimates" (the M-step); "repeat until convergence". The reference is the textbook by Thomas, pages 243–245<sup><a href="#src-4">4</a></sup>.</p></div>
+  </div>
+</aside>
+
+<h3 id="em">The EM algorithm, step by step</h3>
+
+<p><strong>Likelihood, in one paragraph.</strong> A <dfn>likelihood</dfn> is the probability of the observed data under a model, read as a function of the model's unknown parameters. Here the parameters are the four haplotype frequencies and the model is random mating: each person's two chromosome copies are two independent draws from the population's haplotypes (Hardy–Weinberg proportions for haplotypes). Under this model a person with haplotypes AG and AG has probability \(p_{\mathrm{AG}}^2\), a person with AG and Ag has probability \(2p_{\mathrm{AG}}p_{\mathrm{Ag}}\) (the 2 counts the two ways the copies can come from the two parents), and a double heterozygote has probability \(2p_{\mathrm{AG}}p_{\mathrm{ag}} + 2p_{\mathrm{Ag}}p_{\mathrm{aG}}\), the sum over the two possible phases. Multiplying over people gives the likelihood; its logarithm turns the product into a sum. The maximum-likelihood estimate is the set of frequencies that makes the observed table most probable, the same principle the <a href="frequencies-hwe.html">previous page</a> uses for allele frequencies.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} \ell(p) &amp;= \sum_{h} c_h \ln p_h + m \ln P_{\mathrm{dh}} \\ P_{\mathrm{dh}} &amp;= 2p_{\mathrm{AG}}\,p_{\mathrm{ag}} + 2p_{\mathrm{Ag}}\,p_{\mathrm{aG}} \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\ell(p)\)</dt><dd>Log-likelihood (natural logarithm) of the four haplotype frequencies \(p = (p_{\mathrm{AG}}, p_{\mathrm{Ag}}, p_{\mathrm{aG}}, p_{\mathrm{ag}})\), leaving out a constant (a \(\ln 2\) for each person heterozygous at exactly one SNP) that does not depend on \(p\).</dd>
+    <dt>\(h\)</dt><dd>One of the four haplotypes AG, Ag, aG, ag; the sum runs over all four.</dd>
+    <dt>\(c_h\)</dt><dd>Known count of haplotype \(h\): its copies among people who are not double heterozygotes (0 to \(2n\)).</dd>
+    <dt>\(p_h\)</dt><dd>Frequency of haplotype \(h\) in the population (0 to 1; the four add up to 1).</dd>
+    <dt>\(m\)</dt><dd>Number of double heterozygotes (people who are Aa and Gg).</dd>
+    <dt>\(P_{\mathrm{dh}}\)</dt><dd>Probability that a person is a double heterozygote: AG with ag, or Ag with aG, each in either order.</dd>
+  </dl>
+  <p class="eq-intuition">Without double heterozygotes the log-likelihood would be \(\sum_h c_h \ln p_h\), which is largest at \(\hat{p}_h = c_h / \sum_h c_h\): each haplotype's share of the copies, a count. The term \(m \ln P_{\mathrm{dh}}\) mixes two phases, so setting the derivatives to zero gives a cubic equation in one frequency<sup><a href="#src-5">5</a></sup> instead of a formula. For slide 117, \(\ell = -14.744\) at the no-LD starting point used below and \(-12.123\) at the final estimate: the final frequencies make the observed table \(e^{2.621} \approx 14\) times more probable.</p>
+</div>
+
+<p>The <dfn>EM algorithm</dfn> (expectation–maximization) climbs to the maximum without solving the cubic<sup><a href="#src-6">6</a>,<a href="#src-7">7</a></sup>. It alternates two steps that are each easy.</p>
+
+<p><strong>E-step.</strong> Given the current frequencies, compute for each double heterozygote the probability of each phase, and from it the expected number of copies of each haplotype.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ w = \frac{p_{\mathrm{AG}}\,p_{\mathrm{ag}}}{p_{\mathrm{AG}}\,p_{\mathrm{ag}} + p_{\mathrm{Ag}}\,p_{\mathrm{aG}}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(w\)</dt><dd>Probability, under the current frequencies, that a double heterozygote carries AG + ag rather than Ag + aG (0 to 1). The same for every double heterozygote.</dd>
+    <dt>\(p_{\mathrm{AG}}, \ldots, p_{\mathrm{ag}}\)</dt><dd>The current estimates of the four haplotype frequencies.</dd>
+  </dl>
+  <p class="eq-intuition">This is the probability of one phase divided by the probability of either, \(2p_{\mathrm{AG}}p_{\mathrm{ag}} / P_{\mathrm{dh}}\); the factors of 2 cancel. If AG and ag are common and Ag or aG is rare, \(w\) is close to 1. With no LD, \(p_{\mathrm{AG}}p_{\mathrm{ag}} = p_{\mathrm{Ag}}p_{\mathrm{aG}}\) (the measures section shows that their difference is \(D\)), so \(w = 0.5\). The expected counts are then \(c_{\mathrm{AG}} + mw\) for AG and \(c_{\mathrm{ag}} + mw\) for ag, and \(c_{\mathrm{Ag}} + m(1 - w)\) and \(c_{\mathrm{aG}} + m(1 - w)\) for Ag and aG.</p>
+</div>
+
+<p><strong>M-step.</strong> Treat the expected counts as if they had been observed and estimate the frequencies by counting.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} p_{\mathrm{AG}}^{(t+1)} &amp;= \frac{c_{\mathrm{AG}} + m\,w^{(t)}}{2n} \\[4pt] p_{\mathrm{Ag}}^{(t+1)} &amp;= \frac{c_{\mathrm{Ag}} + m\,(1 - w^{(t)})}{2n} \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(t\)</dt><dd>Iteration number; \(t = 0\) is the starting guess.</dd>
+    <dt>\(w^{(t)}\)</dt><dd>The E-step probability computed from the frequencies of iteration \(t\).</dd>
+    <dt>\(2n\)</dt><dd>Number of chromosome copies in the sample (\(n\) people).</dd>
+    <dt>\(p_{\mathrm{AG}}^{(t+1)}\)</dt><dd>The updated estimate; \(p_{\mathrm{ag}}\) is updated like \(p_{\mathrm{AG}}\) (with \(c_{\mathrm{ag}}\) and \(w\)), \(p_{\mathrm{aG}}\) like \(p_{\mathrm{Ag}}\) (with \(c_{\mathrm{aG}}\) and \(1 - w\)).</dd>
+  </dl>
+  <p class="eq-intuition">Each double heterozygote is split between its two possible pairs in proportion to their current probabilities, and the frequencies are recounted. Every double heterozygote carries exactly one A and one G whichever phase it has, so from the first update on, the allele frequencies equal the sample allele frequencies and only \(D\) moves. Each iteration can only raise \(\ell\) or leave it unchanged, a general property of EM<sup><a href="#src-6">6</a></sup>. With \(m = 0\) the M-step gives the counting answer at once.</p>
+</div>
+
+<p><strong>The slide 117 example, iteration by iteration.</strong> The sample allele frequencies are \(\hat{p}_{\mathrm{A}} = 10/16 = 0.625\) and \(\hat{p}_{\mathrm{G}} = 8/16 = 0.5\). Start from no LD, each haplotype frequency equal to the product of its allele frequencies: \(p^{(0)}_{\mathrm{AG}} = 0.625 \times 0.5 = 0.3125\), and likewise 0.3125 for Ag and 0.1875 for aG and ag. Then \(w^{(0)} = 0.5\), the expected AG count is \(3 + 5 \times 0.5 = 5.5\), and \(p^{(1)}_{\mathrm{AG}} = 5.5/16 = 0.34375\). The table continues the iterations (\(\hat{D} = \hat{p}_{\mathrm{AG}}\hat{p}_{\mathrm{ag}} - \hat{p}_{\mathrm{Ag}}\hat{p}_{\mathrm{aG}}\) is defined in the next section).</p>
+
+<div class="table-wrap">
+<table class="ldp-iter compact">
+  <caption>EM on slide 117 from the no-LD start; \(w\) is the E-step value that produced each row</caption>
+  <thead><tr><th>Iteration</th><th>\(w\)</th><th>\(\hat{p}_{\mathrm{AG}}\)</th><th>\(\hat{p}_{\mathrm{Ag}}\)</th><th>\(\hat{p}_{\mathrm{aG}}\)</th><th>\(\hat{p}_{\mathrm{ag}}\)</th><th>\(\hat{D}\)</th><th>\(\ell\)</th></tr></thead>
+  <tbody>
+    <tr><td>0 (start)</td><td>–</td><td>0.3125</td><td>0.3125</td><td>0.1875</td><td>0.1875</td><td>0.0000</td><td>−14.744</td></tr>
+    <tr><td>1</td><td>0.5000</td><td>0.3438</td><td>0.2813</td><td>0.1563</td><td>0.2188</td><td>0.0313</td><td>−14.432</td></tr>
+    <tr><td>2</td><td>0.6311</td><td>0.3847</td><td>0.2403</td><td>0.1153</td><td>0.2597</td><td>0.0722</td><td>−13.893</td></tr>
+    <tr><td>3</td><td>0.7830</td><td>0.4322</td><td>0.1928</td><td>0.0678</td><td>0.3072</td><td>0.1197</td><td>−13.150</td></tr>
+    <tr><td>4</td><td>0.9103</td><td>0.4720</td><td>0.1530</td><td>0.0280</td><td>0.3470</td><td>0.1595</td><td>−12.517</td></tr>
+    <tr><td>5</td><td>0.9745</td><td>0.4920</td><td>0.1330</td><td>0.0080</td><td>0.3670</td><td>0.1795</td><td>−12.228</td></tr>
+    <tr><td>6</td><td>0.9942</td><td>0.4982</td><td>0.1268</td><td>0.0018</td><td>0.3732</td><td>0.1857</td><td>−12.147</td></tr>
+    <tr><td>7</td><td>0.9988</td><td>0.4996</td><td>0.1254</td><td>0.0004</td><td>0.3746</td><td>0.1871</td><td>−12.128</td></tr>
+    <tr><td>Limit</td><td>1</td><td>0.5000</td><td>0.1250</td><td>0.0000</td><td>0.3750</td><td>0.1875</td><td>−12.123</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Two things in the table are worth following.</p>
+<ul>
+  <li><strong>Why \(\hat{p}_{\mathrm{aG}}\) goes to zero.</strong> No known copy is aG (\(c_{\mathrm{aG}} = 0\)), so aG gets copies only from the double heterozygotes' second option: \(p^{(t+1)}_{\mathrm{aG}} = m(1 - w^{(t)})/2n\). And \(1 - w\) is proportional to \(p_{\mathrm{aG}}\) itself. Once \(p_{\mathrm{aG}}\) is small, \(1 - w \approx p_{\mathrm{Ag}}p_{\mathrm{aG}}/(p_{\mathrm{AG}}p_{\mathrm{ag}})\), so each iteration multiplies \(p_{\mathrm{aG}}\) by about \((m/2n)\,p_{\mathrm{Ag}}/(p_{\mathrm{AG}}p_{\mathrm{ag}}) = (5/16) \times 0.125/(0.5 \times 0.375) \approx 0.21\). The estimate approaches 0 but reaches it only in the limit; software stops when the estimates change by less than a set tolerance. The limit, 8 AG, 2 Ag, 0 aG and 6 ag copies out of 16, is the table on the right of slide 117: all five double heterozygotes are assigned AG + ag.</li>
+  <li><strong>The maximum sits on the edge.</strong> The log-likelihood keeps rising until \(\hat{p}_{\mathrm{aG}} = 0\), the edge of the allowed range, so \(\hat{D}\) ends at the largest value the allele frequencies allow. That is why \(|\hat{D}'| = 1\) in slide 124's worked example.</li>
+</ul>
+
+<p><strong>Several maxima.</strong> Once the allele frequencies are fixed, the log-likelihood is a function of one number, \(p_{\mathrm{AG}}\) (equivalently \(D\)). For most tables it has one peak. When most people are double heterozygotes it can have two peaks with a valley between them, and EM climbs to whichever peak is uphill from its start. Its stationary points are the real roots of the cubic equation mentioned above<sup><a href="#src-5">5</a>,<a href="#src-8">8</a></sup>. PLINK 1.9 solves the cubic directly instead of iterating, uses the maximum-likelihood solution for <code>--r2 dprime</code>, and its single-pair command <code>--ld</code> prints all biologically possible solutions when there is more than one<sup><a href="#src-9">9</a></sup>. A program that iterates can guard against the wrong peak by starting EM from several points and keeping the result with the highest log-likelihood.</p>
+
+<p><strong>More than two SNPs.</strong> The same E- and M-steps work for haplotypes of many SNPs<sup><a href="#src-7">7</a></sup>, but the number of possible haplotypes doubles with each added SNP, so whole-genome phasing uses other methods that build each person's haplotypes from haplotypes common in the rest of the sample (<a href="../0-biological-foundations/samples-to-genotypes.html#phasing">Lecture 0 · Phasing</a>). All of them, like two-SNP EM, rely on people sharing haplotypes, and they work better as the sample grows.</p>
+
+<div class="widget" id="w-ld-em">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">EM step by step: from a 3 × 3 genotype table to haplotype frequencies</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The iteration table above shows the same calculation for slide 117.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Press <em>Step</em> on the slide 117 table: the pale dashed part of each bar is the double heterozygotes' share, \(w\) climbs from 0.5 toward 1, the aG bar shrinks by about a factor of 5 per step, and the dot climbs the log-likelihood curve to the triangle at its maximum. Choose the simulated sample of 200 people: the estimates land close to the true frequencies the simulation used, and the correlation of allele counts (what <code>plink --r2</code> reports) is close to the haplotype \(r^2\). Choose <em>Two likelihood peaks</em> and switch <em>Start EM from</em> between "near the largest possible D" and "near the smallest possible D": EM stops at different answers, and only one of them is the maximum-likelihood estimate. With <em>Only double heterozygotes</em> the data cannot tell the two phases apart, and from the no-LD start EM does not move at all. You can also type your own counts into the table.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 116–117 · From genotypes to haplotypes</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-117.jpg" alt="Lecture 1, slide 117: the haplotypes of eight people at two nearby loci, a 3 by 3 table of genotype counts with 5 people heterozygous at both loci, an arrow labeled EM algorithm, and the inferred 2 by 2 haplotype table with counts AG 8, aG 0, Ag 2, ag 6, margins 50 percent and 62.5 and 37.5 percent, annotated low counts imply low numbers of aG haplotypes and only ambiguous haplotypes, why" loading="lazy"><figcaption>Lecture 1 · slide 117</figcaption></figure>
+    <div><p>Slide 116 opens Part 2 of the appendix, "Estimating and quantifying LD". Slide 117 is this section in one picture. At the top are the true haplotypes of the eight people (two copies each), which a genotyping study would not see. Below left is what it does see, the 3 × 3 genotype table; below right is what EM infers, a 2 × 2 table of haplotype counts with its margins (50% G, 62.5% A). The inferred table equals the true one here because every double heterozygote really is AG + ag. With real data that is not guaranteed: EM gives the most likely frequencies, not each person's true phase.</p></div>
+  </div>
+</aside>
+
+<h2 id="measures" data-toc="Measures of LD">Measures of LD: D, D′ and r² <span class="tag core">Core</span></h2>
+
+<p>With the haplotype frequencies estimated, the LD measures are short formulas. This section derives them in the order of slides 118–124 and computes them for the slide 117 table. <a href="../0-biological-foundations/haplotypes-ld.html#measuring">Lecture 0 · Measuring LD</a> introduces the same measures with a calculator; here the emphasis is on why each formula has its form and how it behaves.</p>
+
+<h3 id="measure-d">D: one free number in the 2 × 2 table</h3>
+
+<p>Fix the allele frequencies, the margins of the 2 × 2 table. Then the four cells have only one degree of freedom left: if \(p_{\mathrm{AG}}\) goes up by some amount, \(p_{\mathrm{Ag}}\) must go down by the same amount to keep the column total \(p_{\mathrm{A}}\), \(p_{\mathrm{aG}}\) must go down to keep the row total \(p_{\mathrm{G}}\), and \(p_{\mathrm{ag}}\) must go up. Slide 118 names that one free number \(d\) (also written \(D\), or \(\delta\) on slide 120) and measures it from the cell values expected under independence:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{aligned} p_{\mathrm{AG}} &amp;= p_{\mathrm{A}}\,p_{\mathrm{G}} + D \\ p_{\mathrm{Ag}} &amp;= p_{\mathrm{A}}\,p_{\mathrm{g}} - D \\ p_{\mathrm{aG}} &amp;= p_{\mathrm{a}}\,p_{\mathrm{G}} - D \\ p_{\mathrm{ag}} &amp;= p_{\mathrm{a}}\,p_{\mathrm{g}} + D \end{aligned} \]</div>
+  <dl class="eq-terms">
+    <dt>\(p_{\mathrm{AG}}, \ldots, p_{\mathrm{ag}}\)</dt><dd>Haplotype frequencies (0 to 1).</dd>
+    <dt>\(p_{\mathrm{A}}, p_{\mathrm{a}}\)</dt><dd>Allele frequencies at SNP 1, \(p_{\mathrm{a}} = 1 - p_{\mathrm{A}}\).</dd>
+    <dt>\(p_{\mathrm{G}}, p_{\mathrm{g}}\)</dt><dd>Allele frequencies at SNP 2, \(p_{\mathrm{g}} = 1 - p_{\mathrm{G}}\).</dd>
+    <dt>\(D\)</dt><dd>The LD coefficient: the excess of AG (and ag) copies over what independence predicts, as a fraction of all copies. Positive, negative or zero.</dd>
+  </dl>
+  <p class="eq-intuition">If the alleles were independent, each cell would be the product of its margins and \(D = 0\); the SNPs are then said to be in <dfn>linkage equilibrium</dfn>. Every cell must stay between 0 and 1, which bounds \(D\): \(D_{\max} = \min(p_{\mathrm{A}}p_{\mathrm{g}},\, p_{\mathrm{a}}p_{\mathrm{G}})\), reached when Ag or aG hits zero, and \(D_{\min} = -\min(p_{\mathrm{A}}p_{\mathrm{G}},\, p_{\mathrm{a}}p_{\mathrm{g}})\), reached when AG or ag hits zero. For slide 124's table, \(p_{\mathrm{A}} = 0.625\) and \(p_{\mathrm{G}} = 0.5\), so \(D\) can range from \(-0.1875\) to \(0.1875\), and the estimate \(\hat{D} = 0.5 - 0.3125 = 0.1875\) is at its maximum.</p>
+</div>
+
+<p>Two equivalent forms are used on the slides. From the first line, \(D = p_{\mathrm{AG}} - p_{\mathrm{A}}p_{\mathrm{G}}\). Multiplying out the four lines gives \(D = p_{\mathrm{AG}}\,p_{\mathrm{ag}} - p_{\mathrm{Ag}}\,p_{\mathrm{aG}}\) (slide 120): the product of the "coupling" diagonal minus the product of the other diagonal. The second form needs no allele frequencies, which is why the counting formulas below use it.</p>
+
+<figure class="fig" id="fig-one-free">
+  <div class="fig-body"><div class="fig-panels">
+<svg viewBox="0 0 310 236" role="img" aria-labelledby="of1-t"><title id="of1-t">The four haplotype frequencies as straight lines in D, for allele frequencies 0.625 and 0.5: AG and ag rise with D, Ag and aG fall; at the largest D the aG frequency reaches zero</title>
+  <text x="8" y="16" class="t-b">Four cells, one free number</text>
+  <line x1="52" y1="190.0" x2="240" y2="190.0" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="193.5" class="t-xs" text-anchor="end">0</text>
+  <line x1="52" y1="152.5" x2="240" y2="152.5" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="156.0" class="t-xs" text-anchor="end">0.125</text>
+  <line x1="52" y1="115.0" x2="240" y2="115.0" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="118.5" class="t-xs" text-anchor="end">0.25</text>
+  <line x1="52" y1="77.5" x2="240" y2="77.5" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="81.0" class="t-xs" text-anchor="end">0.375</text>
+  <line x1="52" y1="40.0" x2="240" y2="40.0" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="43.5" class="t-xs" text-anchor="end">0.5</text>
+  <line x1="52" y1="40" x2="52" y2="190" stroke="var(--border-strong)"/>
+  <line x1="146.0" y1="34" x2="146.0" y2="190" stroke="var(--fg-faint)" stroke-dasharray="3 3"/>
+  <text x="146.0" y="30" class="t-xs" text-anchor="middle">no LD</text>
+  <line x1="240" y1="34" x2="240" y2="190" stroke="var(--pitfall)" stroke-dasharray="3 3"/>
+  <text x="240" y="30" class="t-xs" text-anchor="middle">slide 124</text>
+  <line x1="52.0" y1="152.5" x2="240.0" y2="40.0" stroke="var(--q1)" stroke-width="2.5"/>
+  <text x="246" y="44.0" class="t-sm" style="fill:var(--q1);font-weight:700">AG 0.500</text>
+  <line x1="52.0" y1="40.0" x2="240.0" y2="152.5" stroke="var(--q2)" stroke-width="2.5"/>
+  <text x="246" y="156.5" class="t-sm" style="fill:var(--q2);font-weight:700">Ag 0.125</text>
+  <line x1="52.0" y1="77.5" x2="240.0" y2="190.0" stroke="var(--q3)" stroke-width="2.5" stroke-dasharray="6 3"/>
+  <text x="246" y="194.0" class="t-sm" style="fill:var(--q3);font-weight:700">aG 0.000</text>
+  <line x1="52.0" y1="190.0" x2="240.0" y2="77.5" stroke="var(--q4)" stroke-width="2.5" stroke-dasharray="6 3"/>
+  <text x="246" y="81.5" class="t-sm" style="fill:var(--q4);font-weight:700">ag 0.375</text>
+  <text x="52.0" y="205" class="t-xs" text-anchor="middle">−0.1875</text>
+  <text x="146.0" y="205" class="t-xs" text-anchor="middle">0</text>
+  <text x="240.0" y="205" class="t-xs" text-anchor="middle">0.1875</text>
+  <text x="146.0" y="224" class="t-sm" text-anchor="middle">D, from its smallest to its largest value</text>
+  <text x="14" y="115.0" class="t-xs" text-anchor="middle" transform="rotate(-90 14 115.0)">haplotype frequency</text>
+</svg>
+<svg viewBox="0 0 310 236" role="img" aria-labelledby="of2-t"><title id="of2-t">D prime is a straight line from minus 1 to 1 across the allowed range of D; r squared is a parabola that is 0 at D equal 0 and reaches 0.6 at both ends</title>
+  <text x="8" y="16" class="t-b">Two rescalings of D</text>
+  <line x1="52" y1="190.0" x2="240" y2="190.0" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="193.5" class="t-xs" text-anchor="end">−1</text>
+  <line x1="52" y1="152.5" x2="240" y2="152.5" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="156.0" class="t-xs" text-anchor="end">−0.5</text>
+  <line x1="52" y1="115.0" x2="240" y2="115.0" stroke="var(--border)" stroke-width="1.5"/>
+  <text x="46" y="118.5" class="t-xs" text-anchor="end">0</text>
+  <line x1="52" y1="77.5" x2="240" y2="77.5" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="81.0" class="t-xs" text-anchor="end">0.5</text>
+  <line x1="52" y1="40.0" x2="240" y2="40.0" stroke="var(--border)" stroke-width="1"/>
+  <text x="46" y="43.5" class="t-xs" text-anchor="end">1</text>
+  <line x1="52" y1="40" x2="52" y2="190" stroke="var(--border-strong)"/>
+  <line x1="146.0" y1="34" x2="146.0" y2="190" stroke="var(--fg-faint)" stroke-dasharray="3 3"/>
+  <text x="146.0" y="30" class="t-xs" text-anchor="middle">no LD</text>
+  <line x1="240" y1="34" x2="240" y2="190" stroke="var(--pitfall)" stroke-dasharray="3 3"/>
+  <text x="240" y="30" class="t-xs" text-anchor="middle">slide 124</text>
+  <line x1="52.0" y1="190.0" x2="240.0" y2="40.0" stroke="var(--accent)" stroke-width="2.5"/>
+  <polyline points="52.0,70.0 55.9,73.7 59.8,77.2 63.8,80.5 67.7,83.8 71.6,86.8 75.5,89.7 79.4,92.4 83.3,95.0 87.2,97.4 91.2,99.7 95.1,101.8 99.0,103.8 102.9,105.5 106.8,107.2 110.8,108.7 114.7,110.0 118.6,111.2 122.5,112.2 126.4,113.0 130.3,113.8 134.2,114.3 138.2,114.7 142.1,114.9 146.0,115.0 149.9,114.9 153.8,114.7 157.8,114.3 161.7,113.8 165.6,113.0 169.5,112.2 173.4,111.2 177.3,110.0 181.2,108.7 185.2,107.2 189.1,105.5 193.0,103.8 196.9,101.8 200.8,99.7 204.8,97.4 208.7,95.0 212.6,92.4 216.5,89.7 220.4,86.8 224.3,83.8 228.2,80.5 232.2,77.2 236.1,73.7 240.0,70.0" fill="none" stroke="var(--q2)" stroke-width="2.5" stroke-dasharray="6 3"/>
+  <circle cx="240" cy="40.0" r="4" fill="var(--accent)"/>
+  <circle cx="240" cy="70.0" r="4" fill="var(--q2)"/>
+  <text x="248" y="44.0" class="t-sm" style="fill:var(--accent);font-weight:700">D′ = 1</text>
+  <text x="248" y="74.0" class="t-sm" style="fill:var(--q2);font-weight:700">r² = 0.6</text>
+  <text x="52.0" y="205" class="t-xs" text-anchor="middle">−0.1875</text>
+  <text x="146.0" y="205" class="t-xs" text-anchor="middle">0</text>
+  <text x="240.0" y="205" class="t-xs" text-anchor="middle">0.1875</text>
+  <text x="146.0" y="224" class="t-sm" text-anchor="middle">D, from its smallest to its largest value</text>
+</svg>
+  </div></div>
+  <figcaption><span class="fig-title">With the allele frequencies fixed, D moves all four cells at once.</span> Allele frequencies \(p_{\mathrm{A}} = 0.625\) and \(p_{\mathrm{G}} = 0.5\), as in slides 117 and 124. First panel: the four haplotype frequencies are straight lines in \(D\); at the largest \(D\), aG is missing (slide 124's table), and at the smallest, ag is. Second panel: \(D'\) rescales \(D\) linearly to run from −1 to 1, while \(r^2\) grows with \(D^2\) and reaches only 0.6 at either end, because the two SNPs' allele frequencies differ.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<p><strong>Why \(D\) measures dependence (slide 119).</strong> Two random variables are independent if knowing one gives no information about the other. For a chromosome copy drawn at random from the population, "carries A" and "carries G" are independent when \(\Pr(\mathrm{A}, \mathrm{G}) = \Pr(\mathrm{A})\Pr(\mathrm{G})\), which is \(p_{\mathrm{AG}} = p_{\mathrm{A}}p_{\mathrm{G}}\), that is \(D = 0\). Conditioning shows what a nonzero \(D\) does:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \Pr(\mathrm{A} \mid \mathrm{G}) = \frac{p_{\mathrm{AG}}}{p_{\mathrm{G}}} = p_{\mathrm{A}} + \frac{D}{p_{\mathrm{G}}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\Pr(\mathrm{A} \mid \mathrm{G})\)</dt><dd>Probability that a chromosome copy carries A, among copies that carry G.</dd>
+    <dt>\(p_{\mathrm{A}}\)</dt><dd>Probability that a copy carries A, among all copies.</dd>
+    <dt>\(D / p_{\mathrm{G}}\)</dt><dd>How much learning "G" changes the probability of A.</dd>
+  </dl>
+  <p class="eq-intuition">With \(D = 0\) the allele at SNP 2 tells nothing about SNP 1. In slide 124's table, \(\Pr(\mathrm{A} \mid \mathrm{G}) = 0.5/0.5 = 1\) against \(p_{\mathrm{A}} = 0.625\): every copy with G carries A.</p>
+</div>
+
+<p><strong>Why \(D\) alone is hard to read (slide 120).</strong> "δ depends on allele frequencies and may be positive or negative". Its sign depends only on which allele of each SNP is called A or G: renaming a as A turns \(D\) into \(-D\). Its size is limited by the allele frequencies: for two SNPs with allele frequencies 0.5, \(D\) can reach 0.25, but when A and G both have frequency 0.05, \(D\) cannot exceed \(0.05 \times 0.95 = 0.0475\). The same \(D = 0.04\) is then close to the maximum for the rare pair and modest for the common pair. D′ and r² remove these dependences in two different ways.</p>
+
+<h3 id="measure-dprime-r2">D′ and r²</h3>
+
+<div class="eq-block">
+  <div class="eq-display">\[ D' = \begin{cases} D / D_{\max}, &amp; D &gt; 0 \\ D / |D_{\min}|, &amp; D &lt; 0 \end{cases} \]</div>
+  <dl class="eq-terms">
+    <dt>\(D'\)</dt><dd>D prime: \(D\) as a fraction of the most extreme value it could take in the same direction; from −1 to 1, and \(|D'|\) from 0 to 1. PLINK reports \(|D'|\) unless asked for the signed value.</dd>
+    <dt>\(D_{\max}\)</dt><dd>\(\min(p_{\mathrm{A}}p_{\mathrm{g}},\, p_{\mathrm{a}}p_{\mathrm{G}})\), the largest possible \(D\) given the allele frequencies.</dd>
+    <dt>\(|D_{\min}|\)</dt><dd>\(\min(p_{\mathrm{A}}p_{\mathrm{G}},\, p_{\mathrm{a}}p_{\mathrm{g}})\), the size of the most negative possible \(D\).</dd>
+  </dl>
+  <p class="eq-intuition">\(D'\) was proposed by Lewontin<sup><a href="#src-10">10</a></sup> so that LD between SNPs with different allele frequencies could be compared on one scale. \(|D'| = 1\) exactly when \(D\) is at its limit, and \(D\) is at its limit exactly when one of the four cells is zero (the first eq-block above): \(|D'| = 1\) means a haplotype is missing. For slide 124, \(D' = 0.1875/0.1875 = 1\).</p>
+</div>
+
+<div class="eq-block">
+  <div class="eq-display">\[ r^2 = \frac{D^2}{p_{\mathrm{A}}\,p_{\mathrm{a}}\,p_{\mathrm{G}}\,p_{\mathrm{g}}} \]</div>
+  <dl class="eq-terms">
+    <dt>\(r^2\)</dt><dd>The squared correlation between the alleles at the two SNPs on the same chromosome copy; from 0 to 1.</dd>
+    <dt>\(D\)</dt><dd>The LD coefficient.</dd>
+    <dt>\(p_{\mathrm{A}}\,p_{\mathrm{a}}\)</dt><dd>Variance of the 0/1 allele code at SNP 1 (a Bernoulli variance).</dd>
+    <dt>\(p_{\mathrm{G}}\,p_{\mathrm{g}}\)</dt><dd>Variance of the 0/1 allele code at SNP 2.</dd>
+  </dl>
+  <p class="eq-intuition">Slide 121 states that \(r\) "is identical to the Pearson correlation" between allele codes: code each copy \(X = 1\) if it carries a at SNP 1 (0 for A) and \(Y = 1\) if it carries g at SNP 2 (0 for G). Then \(\Cov(X, Y) = p_{\mathrm{ag}} - p_{\mathrm{a}}p_{\mathrm{g}} = D\) and the variances are \(p_{\mathrm{A}}p_{\mathrm{a}}\) and \(p_{\mathrm{G}}p_{\mathrm{g}}\), so \(r = D/\sqrt{p_{\mathrm{A}}p_{\mathrm{a}}p_{\mathrm{G}}p_{\mathrm{g}}}\). The sign of \(r\) depends on the coding; \(r^2\) does not. For slide 124, \(r^2 = 0.1875^2/(0.625 \times 0.375 \times 0.5 \times 0.5) = 0.6\).</p>
+</div>
+
+<p>Slides 121–122 list how the two measures behave. Each property follows from the formulas.</p>
+<ul>
+  <li><strong>\(|D'| = 1\) is read as "no evidence for historical recombination"</strong> (slide 121, "in the absence of other influences on LD"). A missing haplotype is what stage 3 of <a href="#fig-origins">the origins figure</a> looks like, and the four-gamete test says a fourth haplotype needs a crossover or a repeat mutation. The reverse does not hold: \(|D'| &lt; 1\) can also come from genotyping errors or a repeat mutation.</li>
+  <li><strong>\(|\hat{D}'|\) is biased upward in small samples and for rare alleles.</strong> A rare haplotype can be missing from a sample by chance, and then \(|\hat{D}'| = 1\) regardless of history. With 16 copies, as on slide 124, a haplotype with population frequency 0.05 is missing from \(0.95^{16} \approx 44\%\) of samples. Estimates of \(|D'|\) are inflated when the sample is small or an allele is rare, and more so when haplotype frequencies are estimated from genotypes<sup><a href="#src-11">11</a></sup>.</li>
+  <li><strong>\(r^2 = 1\) needs equal allele frequencies</strong> (slide 122's "perfect LD"): only two haplotypes are present, and each allele at one SNP always comes with the same allele at the other, so the two SNPs carry the same information. When the frequencies differ, \(r^2\) cannot reach 1 even with \(|D'| = 1\): its ceiling, \(r^2_{\max}\), is 0.6 for slide 124's frequencies (second panel of <a href="#fig-one-free">the figure above</a>) and only 0.053 for allele frequencies 0.5 and 0.05 (<a href="../0-biological-foundations/haplotypes-ld.html#measure-r2">Lecture 0 · r²</a> derives \(r^2_{\max}\)). This is slide 85's warning that "high r² between two SNPs requires both have similar MAFs" (minor allele frequencies).</li>
+  <li><strong>\(r^2\) is "very sensitive to marginal allele frequencies"</strong> (slide 122), so two SNPs far apart whose rare alleles arose on the same haplotype can show a higher \(r^2\) than two close common SNPs whose allele frequencies differ. Slide 122 cites a table in Devlin and Risch (1995) for this<sup><a href="#src-12">12</a></sup>.</li>
+  <li><strong>\(r^2\) "is directly related to power for association"</strong> (slide 122). If a causal SNP is not genotyped, testing a marker in LD with it in \(n\) people gives about the power of testing the causal SNP itself in \(r^2 n\) people<sup><a href="#src-13">13</a></sup>: with \(r^2 = 0.8\), 10,000 people genotyped at the marker are worth about 8,000 genotyped at the causal SNP. This is why tag SNPs are chosen by \(r^2\) (<a href="../0-biological-foundations/haplotypes-ld.html#tag-snps">Lecture 0 · Tag SNPs</a>).</li>
+</ul>
+
+<div class="table-wrap">
+<table class="compact">
+  <caption>The three measures side by side</caption>
+  <thead><tr><th>Measure</th><th>Range</th><th>Depends on allele frequencies</th><th>Answers</th><th>Used for</th></tr></thead>
+  <tbody>
+    <tr><td>\(D\)</td><td>\(D_{\min}\) to \(D_{\max}\), within −0.25 to 0.25</td><td>Strongly: its limits are set by them</td><td>Is there association, in which direction?</td><td>The building block of the other two; the decay formula</td></tr>
+    <tr><td>\(|D'|\)</td><td>0 to 1</td><td>Less, but biased upward for rare alleles</td><td>Is a haplotype missing (no recombinant seen)?</td><td>Recombination history, haplotype blocks</td></tr>
+    <tr><td>\(r^2\)</td><td>0 to 1</td><td>Strongly: reaches 1 only when the two SNPs have equal minor allele frequencies</td><td>How well does one SNP predict the other?</td><td>Tag SNPs, power, imputation, pruning, fine-mapping</td></tr>
+  </tbody>
+</table>
+</div>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 118–122 · D, D′ and r²</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-118.jpg" alt="Lecture 1, slide 118: a 2 by 2 table with cells pAG equal to pA pG plus d, paG equal to pa pG minus d, pAg equal to pA pg minus d, pag equal to pa pg plus d, with margins pG, pg, pA, pa; bullets say d is a measure of departure from independence, d is 0 with no association, and give dmin and dmax" loading="lazy"><figcaption>Lecture 1 · slide 118</figcaption></figure>
+    <div><p>Slide 118 is the first eq-block of this section, with \(d\) for \(D\) (note that its table puts aG in the top-right cell, as here). Slide 119 is the argument from conditional probability: if A and G are independent, \(\Pr(\mathrm{A} \mid \mathrm{G}) = \Pr(\mathrm{A}, \mathrm{G})/\Pr(\mathrm{G}) = \Pr(\mathrm{A})\), and "d is just Pr(A,G) − Pr(A)Pr(G)". Slide 120 writes \(\delta = p_{\mathrm{AG}}p_{\mathrm{ag}} - p_{\mathrm{Ag}}p_{\mathrm{aG}}\) and gives \(D'\) with its two denominators and \(r^2\) as \(\delta^2\) over the product of the four allele frequencies; it also calls \(r^2\) "\(D^2\)", an older name. Slide 121 defines \(r\) as the Pearson correlation of 0/1 allele codes, \(r = \frac{1}{N}\sum_i (X_i - \bar{X})(Y_i - \bar{Y})/(\sigma_X\sigma_Y)\) summed over the \(N\) chromosome copies, and adds that computing LD "requires estimating frequency of two-locus haplotypes", which is the EM step. Slide 122 lists the properties discussed above.</p></div>
+  </div>
+</aside>
+
+<h3 id="measure-counts">From haplotype counts: slides 123–124 recomputed</h3>
+
+<p>Software works with counts rather than frequencies. Write \(n_{\mathrm{AG}}, n_{\mathrm{Ag}}, n_{\mathrm{aG}}, n_{\mathrm{ag}}\) for the numbers of chromosome copies (not people) carrying each haplotype, out of \(2n\), and \(n_{\mathrm{A}} = n_{\mathrm{AG}} + n_{\mathrm{Ag}}\), \(n_{\mathrm{a}}\), \(n_{\mathrm{G}} = n_{\mathrm{AG}} + n_{\mathrm{aG}}\), \(n_{\mathrm{g}}\) for the allele counts. Substituting \(\hat{p}_h = n_h/2n\) into the formulas above gives slide 123's versions:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \hat{D} = \frac{n_{\mathrm{AG}}n_{\mathrm{ag}} - n_{\mathrm{Ag}}n_{\mathrm{aG}}}{(2n)^2} \\[8pt] \hat{D}' = \frac{n_{\mathrm{AG}}n_{\mathrm{ag}} - n_{\mathrm{Ag}}n_{\mathrm{aG}}}{\min(n_{\mathrm{A}}n_{\mathrm{g}},\, n_{\mathrm{a}}n_{\mathrm{G}})} \\[8pt] \hat{r}^2 = \frac{(n_{\mathrm{AG}}n_{\mathrm{ag}} - n_{\mathrm{Ag}}n_{\mathrm{aG}})^2}{n_{\mathrm{A}}\,n_{\mathrm{a}}\,n_{\mathrm{G}}\,n_{\mathrm{g}}} \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(n_{\mathrm{AG}}, \ldots, n_{\mathrm{ag}}\)</dt><dd>Haplotype counts: chromosome copies carrying each haplotype (observed, or the expected counts from EM).</dd>
+    <dt>\(n_{\mathrm{A}}, n_{\mathrm{a}}, n_{\mathrm{G}}, n_{\mathrm{g}}\)</dt><dd>Allele counts, the margins of the count table.</dd>
+    <dt>\(2n\)</dt><dd>Total chromosome copies (\(n\) people).</dd>
+    <dt>\(\hat{D}'\)</dt><dd>The formula shown is for \(\hat{D} &gt; 0\); for \(\hat{D} &lt; 0\) the denominator is \(\min(n_{\mathrm{A}}n_{\mathrm{G}},\, n_{\mathrm{a}}n_{\mathrm{g}})\).</dd>
+  </dl>
+  <p class="eq-intuition">The numerator is the cross-product of the table, \(2n\) squared times \(\hat{D}\); the factors \((2n)^2\) cancel in \(\hat{D}'\) and \(\hat{r}^2\), so they need only counts. \(\hat{r}^2\) is the familiar formula for the squared correlation (phi coefficient) of a 2 × 2 table. Slide 123 writes the same formulas with \(n_{11}, n_{10}, n_{01}, n_{00}\), where the first index is SNP 2 (1 = G) and the second is SNP 1 (1 = A), so \(n_{10}\) is aG and \(n_{01}\) is Ag.</p>
+</div>
+
+<p><strong>Slide 124, recomputed.</strong> The table from EM has \(n_{\mathrm{AG}} = 8\), \(n_{\mathrm{aG}} = 0\), \(n_{\mathrm{Ag}} = 2\), \(n_{\mathrm{ag}} = 6\), so \(2n = 16\), \(n_{\mathrm{A}} = 10\), \(n_{\mathrm{a}} = 6\), \(n_{\mathrm{G}} = 8\) and \(n_{\mathrm{g}} = 8\). The cross-product is \(8 \times 6 - 2 \times 0 = 48\).</p>
+<ul>
+  <li>\(\hat{D} = 48/16^2 = 48/256 = 0.1875\), positive.</li>
+  <li>\(\hat{D}' = 48/\min(10 \times 8,\, 6 \times 8) = 48/\min(80, 48) = 48/48 = 1\). (The slide writes the minimum as \(\min(8 \times 6, 10 \times 8)\), the same two numbers.)</li>
+  <li>\(\hat{r}^2 = 48^2/(10 \times 6 \times 8 \times 8) = 2304/3840 = 0.6\).</li>
+</ul>
+
+<p><strong>The tip on slide 124: "If any of the four cells is 0, then |D′| = 1. Why?"</strong> Take \(n_{\mathrm{aG}} = 0\), as here. The cross-product is \(n_{\mathrm{AG}}n_{\mathrm{ag}}\). One candidate denominator is \(n_{\mathrm{a}}n_{\mathrm{G}} = (0 + n_{\mathrm{ag}})(n_{\mathrm{AG}} + 0) = n_{\mathrm{AG}}n_{\mathrm{ag}}\), and the other, \(n_{\mathrm{A}}n_{\mathrm{g}} = (n_{\mathrm{AG}} + n_{\mathrm{Ag}})(n_{\mathrm{Ag}} + n_{\mathrm{ag}})\), is at least as large. So the minimum equals the numerator and \(\hat{D}' = 1\). A zero in the AG or ag cell gives \(\hat{D}' = -1\) by the same argument with the other denominator. (If a whole row or column is zero, one SNP does not vary in the sample and \(D'\) is 0/0, undefined.)</p>
+
+<p><strong>Is the LD more than chance?</strong> A 2 × 2 table of haplotype counts can be tested for independence with the chi-square test (refresher on the <a href="frequencies-hwe.html">previous page</a>). For a 2 × 2 table the Pearson statistic has a short form:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ X^2 = 2n\,\hat{r}^2 \]</div>
+  <dl class="eq-terms">
+    <dt>\(X^2\)</dt><dd>Pearson chi-square statistic for independence of the alleles at the two SNPs; compared with a chi-square distribution with 1 degree of freedom.</dd>
+    <dt>\(2n\)</dt><dd>Number of chromosome copies counted.</dd>
+    <dt>\(\hat{r}^2\)</dt><dd>Estimated squared correlation.</dd>
+  </dl>
+  <p class="eq-intuition">The same \(\hat{r}^2\) is stronger evidence in a larger sample. For slide 124, \(X^2 = 16 \times 0.6 = 9.6\), a p-value of about 0.002. With 16 copies the chi-square approximation is rough (one expected count is \(16 \times 0.375 \times 0.5 = 3\)), and when the counts come from EM, the five double heterozygotes' copies were not observed, so a likelihood-ratio test that compares the fitted haplotype frequencies with those under \(D = 0\) is the more careful choice.</p>
+</div>
+
+<p>LDlink's LDpair module, described below, reports exactly these quantities for two SNPs in a chosen reference population: the 2 × 2 table of haplotype counts, \(D'\), \(r^2\), and a chi-square statistic with its p-value<sup><a href="#src-14">14</a></sup>.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 123–124 · The measures from counts, and the worked example</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-124.jpg" alt="Lecture 1, slide 124: worked example with the haplotype table G row 8 and 0, g row 2 and 6, margins 50 percent and 62.5 and 37.5 percent; delta equals one sixteenth squared times 8 times 6 minus 2 times 0, equals 48 over 256, 0.1875; D prime equals 1; r squared equals 0.6; tip: if any of the four cells is 0 then the absolute value of D prime is 1, why" loading="lazy"><figcaption>Lecture 1 · slide 124</figcaption></figure>
+    <div><p>Slide 123 gives the count formulas in the notation \(n_{11}, n_{10}, n_{01}, n_{00}\) with margins \(n_{1\bullet}\) (G), \(n_{0\bullet}\) (g), \(n_{\bullet 1}\) (A) and \(n_{\bullet 0}\) (a), and notes that "r is also Pearson correlation between alleles G and A". Slide 124 applies them to the table from slide 117 and asks why a zero cell forces \(|D'| = 1\); both are worked above. The numbers to remember: \(\hat{D} = 0.1875\), \(\hat{D}' = 1\), \(\hat{r}^2 = 0.6\).</p></div>
+  </div>
+</aside>
+
+<h2 id="decay" data-toc="LD decay">LD decay: over generations and with distance <span class="tag core">Core</span></h2>
+
+<p>Mutation creates LD and recombination removes it. <a href="../0-biological-foundations/haplotypes-ld.html#origins">Lecture 0 · How LD arises</a> derives the basic decay law; this section restates it for all three measures, turns physical distance into a recombination fraction, and compares the result with the data of slide 86.</p>
+
+<h3 id="decay-generations">Each generation keeps a fraction 1 − θ of D</h3>
+
+<p>The <dfn>recombination fraction</dfn> \(\theta\) of two loci is the probability that a chromosome copy passed on in one meiosis is recombinant between them: it carries the allele of one of the parent's two copies at the first locus and the allele of the other copy at the second (<a href="../0-biological-foundations/inheritance.html#linkage">Lecture 0 · Linkage</a>). It is near 0 for adjacent SNPs and 1/2 for loci on different chromosomes.</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} D_t = (1 - \theta)^t\, D_0 \\[4pt] r^2_t = (1 - \theta)^{2t}\, r^2_0 \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(D_0\)</dt><dd>LD coefficient in a starting generation.</dd>
+    <dt>\(t\)</dt><dd>Number of generations since then.</dd>
+    <dt>\(\theta\)</dt><dd>Recombination fraction between the two loci, from 0 to 1/2.</dd>
+    <dt>\(D_t, r^2_t\)</dt><dd>\(D\) and \(r^2\) after \(t\) generations.</dd>
+  </dl>
+  <p class="eq-intuition">A copy passed on without recombination (a fraction \(1 - \theta\)) keeps the parents' haplotype and its association; a recombinant copy (a fraction \(\theta\)) joins alleles from two copies that are, under random mating, independent, so its contribution to \(D\) is 0. Each generation therefore multiplies \(D\) by \(1 - \theta\). If allele frequencies do not change, \(D_{\max}\) does not change either, so \(D'\) shrinks by the same factor, and \(r^2\), which grows with \(D^2\), by its square. Half of \(D\) is left after \(\ln 2 / (-\ln(1 - \theta)) \approx 0.69/\theta\) generations: about 614 generations for \(\theta = 0.00113\), and 1 generation for unlinked loci.</p>
+</div>
+
+<p>The law describes an infinitely large population, in which LD decays steadily toward linkage equilibrium (\(D = 0\)). In a real, finite population, random changes in haplotype frequencies from one generation to the next (genetic drift; <a href="../0-biological-foundations/allele-frequencies.html#drift">Lecture 0 · Drift</a>) create new LD while recombination removes it. That balance sets how much LD to expect at a given distance, below.</p>
+
+<h3 id="haldane">From map distance to θ: Haldane's map function</h3>
+
+<p>Genetic maps give positions in <dfn>centimorgans</dfn> (cM): the map distance between two loci is the expected number of crossovers between them in one meiosis, on the copy passed on, with 1 morgan = 100 cM = one expected crossover (<a href="../0-biological-foundations/inheritance.html#meiosis">Lecture 0 · Meiosis</a>). The recombination fraction is a different quantity: the probability of an odd number of crossovers between the loci, because an even number puts the original alleles back together. If crossovers occur independently of each other along the chromosome, their number between the loci has a Poisson distribution with mean \(d\), and the probability that it is odd is \(e^{-d}(d + d^3/3! + d^5/5! + \cdots) = e^{-d}\sinh d\). That gives Haldane's <dfn>map function</dfn><sup><a href="#src-15">15</a></sup>:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \theta = \tfrac{1}{2}\left(1 - e^{-2d}\right) \\[4pt] d = -\tfrac{1}{2}\ln(1 - 2\theta) \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\theta\)</dt><dd>Recombination fraction (0 to 1/2).</dd>
+    <dt>\(d\)</dt><dd>Map distance in morgans (centimorgans divided by 100), 0 or more.</dd>
+  </dl>
+  <p class="eq-intuition">For small \(d\), \(e^{-2d} \approx 1 - 2d\) and \(\theta \approx d\): 1 cM gives \(\theta = 0.0099\), essentially 1%. For large \(d\), \(\theta\) levels off at 1/2: 50 cM gives 0.316, 100 cM gives 0.432 and 200 cM gives 0.491, so loci far apart on one chromosome behave almost as if they were on different chromosomes. The second line inverts the first.</p>
+</div>
+
+<p>To use the formula for two SNPs, multiply their physical distance by the local recombination rate. The genome-wide average is about 1.13 cM per megabase in the deCODE genetic map<sup><a href="#src-16">16</a></sup>, so 100 kb is about 0.113 cM and \(\theta \approx 0.00113\). The local rate varies by orders of magnitude: most crossovers fall in recombination hotspots one or two kilobases long, and stretches between hotspots recombine rarely (<a href="../0-biological-foundations/haplotypes-ld.html#patterns">Lecture 0 · LD patterns</a>). Real crossovers also interfere with each other (one crossover makes another one nearby less likely), which Kosambi's map function allows for<sup><a href="#src-17">17</a></sup>; over the short distances that matter for LD, every map function gives \(\theta \approx d\).</p>
+
+<h3 id="decay-distance">What to expect at a given distance, and why pairs scatter</h3>
+
+<p>Balancing drift against recombination gives Sved's approximation for the expected \(r^2\) between two loci<sup><a href="#src-18">18</a></sup>, which Lecture 0 introduces in words:</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \E[r^2] \approx \frac{1}{1 + 4N_{\mathrm{e}}\theta} \]</div>
+  <dl class="eq-terms">
+    <dt>\(\E[r^2]\)</dt><dd>Expected \(r^2\) between two loci in the population, averaged over the random outcomes of drift.</dd>
+    <dt>\(N_{\mathrm{e}}\)</dt><dd>Effective population size: the size of an idealized randomly mating population with the same amount of drift (people).</dd>
+    <dt>\(\theta\)</dt><dd>Recombination fraction between the loci.</dd>
+  </dl>
+  <p class="eq-intuition">Drift creates LD at a rate proportional to \(1/N_{\mathrm{e}}\) and recombination removes it at a rate proportional to \(\theta\); their ratio is \(4N_{\mathrm{e}}\theta\). With an illustrative \(N_{\mathrm{e}} = 10{,}000\) and 1.13 cM/Mb, two SNPs 10 kb apart (\(4N_{\mathrm{e}}\theta \approx 4.5\)) have an expected \(r^2\) of about 0.18, 100 kb apart about 0.02, and 1 Mb apart about 0.002. A larger \(N_{\mathrm{e}}\) lowers the expected \(r^2\) at every distance. A finite sample adds a bias: even for unlinked SNPs, \(2n\hat{r}^2\) follows a chi-square distribution with 1 degree of freedom, so \(\hat{r}^2\) averages \(1/(2n)\) instead of 0.</p>
+</div>
+
+<p>The approximation predicts the average, not individual pairs. Slide 86 shows how widely they scatter. It reproduces a figure from Pritchard and Przeworski<sup><a href="#src-13">13</a></sup> with five panels, one per chromosomal region studied in 2000–2001: \(r\) (not \(r^2\)) for each pair of SNPs, against the distance between them, from 0 to 250 kb. Points above the solid line are pairs in significant LD at the 0.05 level; points above the dotted line, \(r = 0.316\) or \(r^2 = 0.1\), have what Kruglyak called "useful LD" for mapping<sup><a href="#src-19">19</a></sup>. High values cluster at short distances, but at any one distance some pairs are near 0 and others near 1, and the regions differ: in the chromosome 22 region \(r\) is low beyond a few tens of kilobases, while the chromosome X region (Taillon-Miller) has pairs with \(r\) above 0.5 at 200 kb and more. Four causes add up:</p>
+<ul>
+  <li><strong>Recombination is uneven.</strong> Equal physical distances are unequal map distances; a hotspot between two SNPs 5 kb apart can break their LD, while SNPs 50 kb apart with no hotspot between them stay correlated.</li>
+  <li><strong>Allele frequencies cap \(r^2\).</strong> Pairs whose allele frequencies differ cannot have high \(r^2\) at any distance (\(r^2_{\max}\) above).</li>
+  <li><strong>Each pair has its own history.</strong> The genealogy of each stretch of chromosome is one random outcome of drift and recombination, so the spread around Sved's average is large even with perfect data.</li>
+  <li><strong>Sampling error.</strong> Each \(\hat{r}\) comes from a sample of limited size, and rare alleles make \(|\hat{D}'| = 1\) common.</li>
+</ul>
+
+<p>Slide 85 also lists selection: when an advantageous allele rises quickly in frequency, its whole surrounding haplotype rises with it before recombination can break it up, leaving a long stretch of high LD around the selected site (<a href="../0-biological-foundations/allele-frequencies.html#selection">Lecture 0 · Selection</a>).</p>
+
+<p>These data mattered for study design. From population-genetic simulations, Kruglyak had predicted in 1999 that useful LD was "unlikely to extend beyond an average distance of roughly 3 kb in the general population", which would require about 500,000 SNPs for a genome-wide study<sup><a href="#src-19">19</a></sup>. Data such as slide 86's, and the larger survey of Reich et al., showed that LD often extends tens of kilobases in samples of European ancestry, and less far in samples of African ancestry<sup><a href="#src-20">20</a></sup>, which is the subject of the next section.</p>
+
+<div class="widget" id="w-ld-decay">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">LD decay over generations and with distance</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The decay law and Haldane's map function above give the same curves.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> With the default 100 kb at the genome-average 1.13 cM/Mb, \(\theta \approx 0.0011\) and half of \(D'\) is gone after about 600 generations. Move the <em>Generations</em> slider: after 100 generations, 100 kb keeps about 90% of its starting \(D'\) and 1 Mb only about a third; after 10,000 generations even 10 kb has lost about two thirds. Set <em>Rate</em> to 10 cM/Mb (many hotspots) and the same 100 kb loses half its LD in about 70 generations instead of about 600, which is why SNPs on opposite sides of a hotspot are nearly uncorrelated. In the distance panel, \(r^2\) (dashed) falls faster than \(D'\), as \((1 - \theta)^{2t}\) against \((1 - \theta)^t\). The last panel is Haldane's map function: \(\theta\) follows the dashed line \(\theta = d\) for small distances and levels off at 0.5 beyond about 50 cM. The curves follow one starting value of \(D'\) and ignore drift; real populations also regain LD by drift, as Sved's formula describes.</p>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slide 86 · Decay of LD with physical distance</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-086.jpg" alt="Lecture 1, slide 86: five scatter plots of r against physical distance from 0 to 250 kilobases, one per chromosomal region (Abecasis chromosome 2 and 14, Dunning chromosome 19 and 22 in UK samples, Taillon-Miller chromosome X in CEPH samples), each with a solid significance line and a dotted line at r equal 0.316; reproduced from Figure 3 of Am J Hum Genet 69:1–14, 2001" loading="lazy"><figcaption>Lecture 1 · slide 86</figcaption></figure>
+    <div><p>The slide's title says "r as a function of physical distance", and its five panels come from Figure 3 of Pritchard and Przeworski (2001), which collected SNP data from three earlier studies. Read each point as one pair of SNPs: its distance on the x-axis, its estimated correlation \(\hat{r}\) on the y-axis. The message for the lecture is the one in the section above: LD falls with distance on average, but distance alone is a poor predictor for a given pair, so GWAS tools use measured LD rather than distance.</p></div>
+  </div>
+</aside>
+
+<h2 id="populations" data-toc="LD across populations">LD differs between populations <span class="tag core">Core</span></h2>
+
+<p>Slide 94's title states it: "linkage disequilibrium also varies across populations". The HapMap Project (<a href="../0-biological-foundations/haplotypes-ld.html#patterns">Lecture 0</a>) genotyped the same SNPs in samples labeled YRI (Yoruba in Ibadan, Nigeria), CEU (Utah residents with northern and western European ancestry) and CHB+JPT (Han Chinese in Beijing and Japanese in Tokyo), and compared their LD<sup><a href="#src-21">21</a></sup>. Population labels like these describe how the reference samples were recruited; genetic ancestry is continuous, and these groups are reference points (<a href="../0-biological-foundations/ancestry.html#reference-samples">Lecture 0 · Reference samples</a>).</p>
+
+<ul>
+  <li><strong>Slide 95</strong> plots the mean \(D'\) and mean \(r^2\) of SNP pairs against their distance, for chromosomes 2, 12 and 22 in each sample (from the HapMap paper's supplementary Figure S6). Read off the plots: mean \(r^2\) for pairs a few kilobases apart is about 0.3 in YRI and about 0.4 in CEU, and at 30 kb about 0.1 in YRI and about 0.2 in CEU and CHB+JPT; mean \(D'\) at 100 kb is about 0.5 in YRI and about 0.6 in the others (lower for chromosome 22). "LD persists longer in CEU (European) and CHB+JPT (Asian) than in YRI (African), especially visible for r² measure."</li>
+  <li><strong>Slide 96</strong> colors every chromosome by the local amount of LD: the authors fitted a model for how fast LD decays in each stretch and display the fitted \(r^2\) for SNPs 30 kb apart, from dark blue (near 0) to red (near 1). The YRI map is mostly dark blue; the CEU and JPT+CHB maps have many more green, yellow and red stretches. The X chromosome stands out with more LD in all three.</li>
+</ul>
+
+<p>Later data agree: across the 26 populations of the 1000 Genomes Project, LD decays fastest with distance in African populations<sup><a href="#src-22">22</a></sup>.</p>
+
+<p><strong>Why.</strong> Under the decay law and Sved's balance, LD at a given distance is high when the population has had few generations of recombination since its haplotypes last shared ancestors, and low when it has had many. Human populations outside Africa descend from groups that left Africa and went through a bottleneck: a period of small population size, in which drift is strong and the number of distinct haplotypes shrinks (<a href="../0-biological-foundations/ancestry.html#history">Lecture 0 · Human population history</a>). A widely used model fitted to genetic data puts that bottleneck at an effective size of about 2,100 for roughly 4,750 generations<sup><a href="#src-23">23</a></sup>. Haplotypes that passed through it share recent common ancestors, and recombination has had fewer generations to cut them up since. Populations in Africa have kept a larger effective size for longer: their haplotypes trace back many more generations, recombination has shortened the shared segments, and drift has rebuilt less LD. In Sved's formula, a larger \(N_{\mathrm{e}}\) means a smaller \(r^2\) at every distance.</p>
+
+<p><strong>What it changes.</strong> The differences in LD have practical consequences for every analysis that relies on it:</p>
+<ul>
+  <li><strong>Tag SNPs and arrays.</strong> Shorter LD means each SNP stands in for fewer neighbors. HapMap estimated that capturing every common HapMap SNP at \(r^2 \ge 0.8\) needed about 1.09 million tag SNPs in YRI but slightly more than 500,000 in CEU or CHB+JPT<sup><a href="#src-24">24</a></sup>. An array designed from European LD covers African-ancestry genomes less well (<a href="../0-biological-foundations/haplotypes-ld.html#tag-snps">Lecture 0 · Tag SNPs</a>).</li>
+  <li><strong>Imputation.</strong> Imputation predicts unmeasured variants from the measured ones and a reference panel of sequenced haplotypes (<a href="../0-biological-foundations/haplotypes-ld.html#imputation">Lecture 0 · Imputation</a>). With shorter LD there are fewer, weaker proxies for each unmeasured variant, so accuracy is lower at the same array density unless the reference panel contains haplotypes similar to the study's; imputation accuracy was lowest in African populations in an early worldwide comparison<sup><a href="#src-25">25</a></sup>. Conversely, the reading notes that the long-range LD of isolated populations "improves imputation accuracy and power"<sup><a href="#src-1">1</a></sup>.</li>
+  <li><strong>Fine-mapping.</strong> An association peak contains every SNP in high LD with the causal variant (<a href="../0-biological-foundations/haplotypes-ld.html#peaks">Lecture 0 · Peaks</a>). Shorter LD gives narrower peaks with fewer candidates, so combining populations with different LD narrows the list of likely causal variants<sup><a href="#src-26">26</a></sup>; in the reading's words, "differences in linkage disequilibrium structure among ancestries can narrow down the regional windows of associations"<sup><a href="#src-1">1</a></sup>.</li>
+  <li><strong>LD references and polygenic scores.</strong> Methods that take LD from a reference panel give wrong answers when the panel's ancestry does not match the study's, and a polygenic score built from lead SNPs in one population predicts less well in others, partly because those SNPs tag the causal variants with different \(r^2\)<sup><a href="#src-27">27</a></sup> (<a href="gwas-applications.html">Applications and limits</a>).</li>
+</ul>
+
+<aside class="callout reading">
+  <div class="callout-title"><span class="badge">In the reading</span> Uffelmann et al. 2021 on LD</div>
+  <p>The reading defines LD in its margin glossary as "the non-independent association of two alleles in a population" and returns to it where GWAS results are interpreted: GWAS "report blocks of correlated SNPs" (Introduction); its imputation workflow (Box 2) includes a check for "unusual minor allele frequencies and patterns of linkage disequilibrium between reference panel and target data"; the paragraph on isolated populations credits their long-range LD with better imputation; and the section on statistical fine-mapping explains that LD makes it hard to pick a causal SNP among highly correlated ones, and that trans-ethnic meta-analysis helps because LD differs between ancestries<sup><a href="#src-1">1</a></sup>.</p>
+</aside>
+
+<h3 id="heatmaps">LD heatmaps: how to read one</h3>
+
+<p>An <dfn>LD heatmap</dfn> displays the LD of every pair of SNPs in a region at once. The common layout comes from the Haploview software<sup><a href="#src-28">28</a></sup>: the SNPs are listed in genome order along the top, and each pair of SNPs is a diamond below them, colored by its LD. Pair \(i, j\) sits where the diagonal running down to the right from SNP \(i\) meets the diagonal running down to the left from SNP \(j\), so neighbors form the top row and pairs further apart lie lower down. Only half of the symmetric \(M \times M\) matrix is drawn, rotated 45°.</p>
+
+<figure class="fig" id="fig-heatmap-anatomy">
+  <div class="fig-body" style="max-width:520px">
+<svg viewBox="0 0 360 262" role="img" aria-labelledby="hma-t hma-d"><title id="hma-t">Anatomy of an LD heatmap for six SNPs</title><desc id="hma-d">A position axis at the top shows six SNPs, with a recombination hotspot between SNPs 3 and 4. Gray lines connect each SNP to its column. Below, one diamond per pair of SNPs: the pair of SNPs i and j sits where the diagonal going down to the right from SNP i meets the diagonal going down to the left from SNP j. SNPs 1 to 3 form a dark triangle with r squared 0.81 to 0.92, SNPs 4 to 6 another with 0.55 to 0.86; pairs across the hotspot are near white, 0.01 to 0.08. The diamond for SNPs 2 and 5 is outlined, with r squared 0.03.</desc>
+  <text x="8" y="16" class="t-b">Reading an LD heatmap</text>
+  <line x1="30" y1="46" x2="340" y2="46" stroke="var(--border-strong)" stroke-width="2"/>
+  <rect x="150" y="37" width="30" height="18" rx="3" fill="var(--pitfall)" fill-opacity="0.25" stroke="var(--pitfall)"/>
+  <text x="165" y="32" class="t-xs" text-anchor="middle">hotspot</text>
+  <text x="340" y="32" class="t-xs" text-anchor="end">chromosome position →</text>
+  <line x1="40" y1="46" x2="55" y2="80" stroke="var(--fg-faint)" stroke-width="1"/>
+  <circle cx="40" cy="46" r="3.5" fill="var(--fg)"/>
+  <text x="55" y="90" class="t-xs" text-anchor="middle">SNP 1</text>
+  <line x1="70" y1="46" x2="105" y2="80" stroke="var(--fg-faint)" stroke-width="1"/>
+  <circle cx="70" cy="46" r="3.5" fill="var(--fg)"/>
+  <text x="105" y="90" class="t-xs" text-anchor="middle">SNP 2</text>
+  <line x1="98" y1="46" x2="155" y2="80" stroke="var(--fg-faint)" stroke-width="1"/>
+  <circle cx="98" cy="46" r="3.5" fill="var(--fg)"/>
+  <text x="155" y="90" class="t-xs" text-anchor="middle">SNP 3</text>
+  <line x1="232" y1="46" x2="205" y2="80" stroke="var(--fg-faint)" stroke-width="1"/>
+  <circle cx="232" cy="46" r="3.5" fill="var(--fg)"/>
+  <text x="205" y="90" class="t-xs" text-anchor="middle">SNP 4</text>
+  <line x1="262" y1="46" x2="255" y2="80" stroke="var(--fg-faint)" stroke-width="1"/>
+  <circle cx="262" cy="46" r="3.5" fill="var(--fg)"/>
+  <text x="255" y="90" class="t-xs" text-anchor="middle">SNP 5</text>
+  <line x1="318" y1="46" x2="305" y2="80" stroke="var(--fg-faint)" stroke-width="1"/>
+  <circle cx="318" cy="46" r="3.5" fill="var(--fg)"/>
+  <text x="305" y="90" class="t-xs" text-anchor="middle">SNP 6</text>
+  <polygon points="80.0,94 105.0,119 80.0,144 55.0,119" fill="rgb(20,20,20)" stroke="#fff" stroke-width="1.5"/>
+  <text x="80.0" y="122.5" class="t-xs" text-anchor="middle" style="fill:#fff">0.92</text>
+  <polygon points="105.0,119 130.0,144 105.0,169 80.0,144" fill="rgb(31,31,31)" stroke="#fff" stroke-width="1.5"/>
+  <text x="105.0" y="147.5" class="t-xs" text-anchor="middle" style="fill:#fff">0.88</text>
+  <polygon points="130.0,144 155.0,169 130.0,194 105.0,169" fill="rgb(245,245,245)" stroke="#fff" stroke-width="1.5"/>
+  <text x="130.0" y="172.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.04</text>
+  <polygon points="155.0,169 180.0,194 155.0,219 130.0,194" fill="rgb(250,250,250)" stroke="#fff" stroke-width="1.5"/>
+  <text x="155.0" y="197.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.02</text>
+  <polygon points="180.0,194 205.0,219 180.0,244 155.0,219" fill="rgb(252,252,252)" stroke="#fff" stroke-width="1.5"/>
+  <text x="180.0" y="222.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.01</text>
+  <polygon points="130.0,94 155.0,119 130.0,144 105.0,119" fill="rgb(48,48,48)" stroke="#fff" stroke-width="1.5"/>
+  <text x="130.0" y="122.5" class="t-xs" text-anchor="middle" style="fill:#fff">0.81</text>
+  <polygon points="155.0,119 180.0,144 155.0,169 130.0,144" fill="rgb(242,242,242)" stroke="#fff" stroke-width="1.5"/>
+  <text x="155.0" y="147.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.05</text>
+  <polygon points="180.0,144 205.0,169 180.0,194 155.0,169" fill="rgb(247,247,247)" stroke="#fff" stroke-width="1.5"/>
+  <text x="180.0" y="172.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.03</text>
+  <polygon points="205.0,169 230.0,194 205.0,219 180.0,194" fill="rgb(250,250,250)" stroke="#fff" stroke-width="1.5"/>
+  <text x="205.0" y="197.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.02</text>
+  <polygon points="180.0,94 205.0,119 180.0,144 155.0,119" fill="rgb(235,235,235)" stroke="#fff" stroke-width="1.5"/>
+  <text x="180.0" y="122.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.08</text>
+  <polygon points="205.0,119 230.0,144 205.0,169 180.0,144" fill="rgb(240,240,240)" stroke="#fff" stroke-width="1.5"/>
+  <text x="205.0" y="147.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.06</text>
+  <polygon points="230.0,144 255.0,169 230.0,194 205.0,169" fill="rgb(242,242,242)" stroke="#fff" stroke-width="1.5"/>
+  <text x="230.0" y="172.5" class="t-xs" text-anchor="middle" style="fill:var(--fg)">0.05</text>
+  <polygon points="230.0,94 255.0,119 230.0,144 205.0,119" fill="rgb(77,77,77)" stroke="#fff" stroke-width="1.5"/>
+  <text x="230.0" y="122.5" class="t-xs" text-anchor="middle" style="fill:#fff">0.70</text>
+  <polygon points="255.0,119 280.0,144 255.0,169 230.0,144" fill="rgb(115,115,115)" stroke="#fff" stroke-width="1.5"/>
+  <text x="255.0" y="147.5" class="t-xs" text-anchor="middle" style="fill:#fff">0.55</text>
+  <polygon points="280.0,94 305.0,119 280.0,144 255.0,119" fill="rgb(36,36,36)" stroke="#fff" stroke-width="1.5"/>
+  <text x="280.0" y="122.5" class="t-xs" text-anchor="middle" style="fill:#fff">0.86</text>
+  <polygon points="180.0,144 205.0,169 180.0,194 155.0,169" fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+  <line x1="105" y1="94" x2="167.5" y2="156.5" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="255" y1="94" x2="192.5" y2="156.5" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="155.0" y1="169" x2="132" y2="197" stroke="var(--accent)" stroke-width="1.5"/>
+  <text x="128" y="206" class="t-sm" text-anchor="end" style="fill:var(--accent);font-weight:700">SNPs 2 and 5</text>
+  <text x="128" y="220" class="t-sm" text-anchor="end" style="fill:var(--accent)">r² = 0.03</text>
+  <text x="62" y="160" class="t-xs" text-anchor="end">block 1</text>
+  <text x="298" y="160" class="t-xs">block 2</text>
+</svg>
+  </div>
+  <figcaption><span class="fig-title">Anatomy of an LD heatmap <span class="illustrative">Illustrative</span></span> Six SNPs with made-up \(r^2\) values, white for 0 and black for 1, as in the widget below. SNPs 1–3 and SNPs 4–6 each form a dark triangle, an LD block; pairs that span the recombination hotspot between SNPs 3 and 4 are pale. The outlined diamond is the pair SNP 2–SNP 5, found by following the two dashed diagonals; its \(r^2\) is 0.03. Gray lines connect each SNP's physical position to its column, since columns are evenly spaced but SNPs are not.<span class="fig-credit">Drawn for this lecture.</span></figcaption>
+</figure>
+
+<p>Haploview offers several color schemes<sup><a href="#src-29">29</a></sup>. In the \(r^2\) scheme, white is 0 and black is 1, with grays between. The standard scheme combines \(D'\) with a <dfn>LOD</dfn>: the base-10 logarithm of the likelihood ratio comparing the estimated haplotype frequencies with frequencies under no LD (\(D = 0\)), so a LOD of 2 means the data are 100 times more probable with the estimated LD than without. Pairs with \(D' &lt; 1\) and LOD below 2 are white, \(D' = 1\) with LOD below 2 is blue (a haplotype is missing, but there are too few data to be confident), \(D' &lt; 1\) with LOD of 2 or more is pink to red (redder for larger \(D'\)), and \(D' = 1\) with LOD of 2 or more is bright red. A four-gamete scheme colors a pair black when fewer than four haplotypes are seen. Haploview can also print the value inside each diamond; with \(D'\) shown, a diamond with \(D' = 1\) is left empty<sup><a href="#src-29">29</a></sup>.</p>
+
+<p>Haplotype blocks drawn on heatmaps are defined from \(D'\). In the definition of Gabriel et al., two SNPs are in "strong LD" if the 90% confidence interval of \(D'\) runs from above 0.70 to at least 0.98, and a block is a run of SNPs in which at least 95% of informative pairs are in strong LD<sup><a href="#src-30">30</a></sup>. PLINK's <code>--blocks</code> uses the same definition<sup><a href="#src-9">9</a></sup>. An alternative uses the four-gamete test: a block ends where all four haplotypes of a pair are seen at more than a small frequency.</p>
+
+<div class="widget" id="w-ld-heatmap">
+  <div class="widget-head"><span class="badge">Try it</span><span class="wtitle">LD heatmaps of one region in two simulated populations</span></div>
+  <div class="widget-body"></div>
+  <noscript><div class="widget-noscript">This widget needs JavaScript. The anatomy figure above shows how a heatmap is read; slides 95–96 show the real population differences.</div></noscript>
+</div>
+<p class="after-widget"><strong>What to notice.</strong> Both heatmaps show the same 48 SNPs over 200 kb and the same recombination map (the track above each triangle; tall bars are hotspots). In the EUR-like population the dark triangles are larger and darker, and the summary table shows that fewer tag SNPs cover the 48 SNPs at \(r^2 \ge 0.8\) and the mean \(r^2\) is higher in every distance class, as on slide 95. Hover over or tap a diamond to compare the same pair in both populations. Switch <em>Show</em> to \(D'\) with LOD: blocks look larger, because \(D'\) stays at 1 until a recombinant haplotype appears, and blue diamonds (\(D' = 1\) with LOD below 2) mark pairs where a missing haplotype is weak evidence. Switch <em>Estimate from</em> to unphased genotypes: the \(r^2\) values barely change, because under random mating the correlation of allele counts estimates the haplotype \(r^2\) (next section). <em>New region</em> simulates another genealogy: the contrast holds on average but varies from region to region, as the scatter on slide 86 does.</p>
+
+<details class="ldp-deep">
+  <summary>How this simulation works</summary>
+  <div class="ldp-deep-body">
+    <p>The widget does not simulate every person in every generation. It uses the <dfn>coalescent</dfn>, which traces the ancestry of the sampled chromosome copies backward in time. In a population of \(N\) people (\(2N\) copies), two copies have their most recent common ancestor in the previous generation with probability \(1/(2N)\), so lineages merge (coalesce) at that rate; when a recombination falls between two positions, the ancestry of the left and right parts of a copy splits into two lineages. Following lineages back until all have merged gives a genealogy for every stretch of the region (Hudson's algorithm for the coalescent with recombination, as in the program ms<sup><a href="#src-31">31</a></sup>). A SNP is one mutation placed on a branch of the genealogy at its position; the copies below that branch carry the derived allele.</p>
+    <ul>
+      <li><strong>Samples:</strong> 200 chromosome copies (100 people) from each population. People are formed by pairing consecutive copies, for the "unphased genotypes" option.</li>
+      <li><strong>Demography</strong>, simplified from the out-of-Africa model of Gutenkunst et al.<sup><a href="#src-23">23</a></sup>, in generations before the present: the AFR-like population has 12,300 people back to 8,800 generations ago and 7,300 before that; the EUR-like population grows from 1,000 people 848 generations ago to about 29,700 today, has 2,100 people from 848 to 5,600 generations ago (the bottleneck), and then merges with the AFR-like population. Migration between the two is \(25 \times 10^{-5}\) per lineage per generation during the bottleneck and \(3 \times 10^{-5}\) afterwards.</li>
+      <li><strong>Recombination map:</strong> 0.47 cM/Mb in the background plus four 2-kb hotspots of 0.034 cM each, about 60% of the region's 0.23 cM (an average of about 1.13 cM/Mb).</li>
+      <li><strong>SNP choice:</strong> 48 sites, each with the derived allele at a frequency of at least 5% in both populations, so the two heatmaps show the same SNPs. This mimics array SNPs, which are chosen to be common, and is one reason the real HapMap contrast (slide 95) is similar in size.</li>
+      <li><strong>Measures:</strong> from phased haplotypes, \(D\), \(D'\), \(r^2\) and the LOD are computed directly; from unphased genotypes, \(r^2\) is the squared correlation of allele counts (as in <code>plink --r2</code>) and \(D'\) and the LOD come from EM haplotype frequencies (two starting points; the higher likelihood is kept). Tag SNPs are counted greedily: repeatedly pick the SNP that covers the most uncovered SNPs at \(r^2 \ge 0.8\).</li>
+    </ul>
+    <p>Simplifications: one simplified demographic history, no selection, no gene conversion, a fixed map, and an exact SNP choice. The numbers illustrate the direction and rough size of the population difference, not any real population.</p>
+  </div>
+</details>
+
+<aside class="callout bridge">
+  <div class="callout-title"><span class="badge">Slides</span> Slides 94–96 · LD varies across populations</div>
+  <div class="bridge-grid">
+    <figure class="slide-thumb"><img src="../0-biological-foundations/assets/img/lecture1/slide-095.jpg" alt="Lecture 1, slide 95: six line plots for the HapMap samples YRI, CEU and CHB plus JPT; top row mean D prime against distance up to 100 kilobases, bottom row mean r squared against distance up to 30 kilobases, with lines for chromosomes 2, 12 and 22; LD persists longer in CEU and CHB plus JPT than in YRI; source Nature 437:1299, 2005, figure S6" loading="lazy"><figcaption>Lecture 1 · slide 95</figcaption></figure>
+    <div><p>Slide 94 is a section title. Slides 95 and 96 come from the 2005 HapMap paper<sup><a href="#src-21">21</a></sup> and are described above. On slide 95, note the different x-axes: 100 kb for \(D'\) but only 30 kb for \(r^2\), because mean \(r^2\) falls much faster than mean \(D'\) (by the decay law, \(r^2\) shrinks as the square of the factor that shrinks \(D'\), and the \(r^2\) of each pair is also capped by its allele frequencies). The three lines per panel are three chromosomes; they nearly coincide, except that chromosome 22 has somewhat lower \(D'\). Slide 96's genome-wide maps make the same point region by region: YRI has the least LD almost everywhere.</p></div>
+  </div>
+</aside>
+
+<h2 id="in-practice" data-toc="LD in the data">LD in the data: PLINK, LD matrices and reference panels <span class="tag core">Core</span></h2>
+
+<p>This section follows LD from a genotype file to the outputs you will meet: PLINK's <code>.ld</code> files, LD matrices, heatmaps and web tools built on reference panels. It ends where the practical picks LD up, at QC step 3.</p>
+
+<h3 id="genotype-r2">Correlation of allele counts stands in for haplotype r²</h3>
+
+<p>A genotype file gives each person an allele count per SNP: 0, 1 or 2 copies of the counted allele (<a href="snp-data.html">From molecules to SNP data</a>). The simplest LD estimate ignores haplotypes altogether and correlates two columns of allele counts across people. Under random mating it estimates the same \(r\):</p>
+
+<div class="eq-block">
+  <div class="eq-display">\[ \begin{gathered} \Cov(X_1, X_2) = 2D \\[4pt] \Var(X_1) = 2p_{\mathrm{A}}\,p_{\mathrm{a}} \\[4pt] \operatorname{Corr}(X_1, X_2) = r \end{gathered} \]</div>
+  <dl class="eq-terms">
+    <dt>\(X_1\)</dt><dd>Number of A alleles a person carries at SNP 1 (0, 1 or 2).</dd>
+    <dt>\(X_2\)</dt><dd>Number of G alleles the same person carries at SNP 2 (0, 1 or 2), with \(\Var(X_2) = 2p_{\mathrm{G}}\,p_{\mathrm{g}}\).</dd>
+    <dt>\(D\)</dt><dd>The LD coefficient of the haplotypes.</dd>
+    <dt>\(r\)</dt><dd>The haplotype correlation, \(D/\sqrt{p_{\mathrm{A}}p_{\mathrm{a}}p_{\mathrm{G}}p_{\mathrm{g}}}\).</dd>
+  </dl>
+  <p class="eq-intuition">Each count is the sum of two 0/1 codes, one per chromosome copy: \(X_1 = a_1 + a_2\) and \(X_2 = g_1 + g_2\). The covariance splits into four terms. The two within-copy terms, \(\Cov(a_1, g_1)\) and \(\Cov(a_2, g_2)\), are each \(D\). The two between-copy terms are 0 under random mating, because a person's two copies are independent draws. So the covariance is \(2D\), the variances are doubled Bernoulli variances, and the factors of 2 cancel in the correlation. Anything that makes a person's two copies dependent (inbreeding, population structure) or that distorts genotypes (calling errors) breaks the equality.</p>
+</div>
+
+<p>In large samples from one population the two estimates are close; in the EM widget's simulated sample of 200 people they differ only in the second or third decimal. In small samples they can differ a lot: slide 117's eight people give a correlation of allele counts of \(r^2 = 0.333\) against the haplotype estimate 0.6, because five of eight people being double heterozygotes is far from Hardy–Weinberg proportions. The allele-count version needs no EM and no phase, which makes it fast enough for millions of pairs; it is what <code>plink --r2</code> reports by default<sup><a href="#src-9">9</a></sup>.</p>
+
+<h3 id="plink">Computing LD with PLINK 1.9</h3>
+
+<p>PLINK 1.9 is the version the practical uses. Its LD commands read a binary fileset (<code>.bed</code>, <code>.bim</code>, <code>.fam</code>; <a href="plink-data.html">PLINK files inside out</a>) and, like all of PLINK's LD calculations, use only <a class="term" href="glossary.html#founder">founders</a>, the people whose father and mother IDs in the <code>.fam</code> file are both 0<sup><a href="#src-9">9</a></sup>. In data from unrelated people, such as the practical's, everyone is a founder.</p>
+
+<p><strong>The default report.</strong> With no options, <code>--r2</code> writes a table of pairs of nearby variants:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile mydata <span class="flag">--r2</span> --out mydata
+<span class="cm"># same as: --r2 --ld-window 10 --ld-window-kb 1000 --ld-window-r2 0.2</span></pre>
+<p>It reports only pairs that lie within a window of 10 variants and 1,000 kb and have \(r^2\) of at least 0.2. Pairs below 0.2 are not written at all, which is convenient for finding strong LD and misleading if you want to see how LD decays.</p>
+
+<p><strong>Every pair in a window, with D′.</strong> To study a region, widen the window and drop the \(r^2\) filter:</p>
+<div class="cmd-anatomy">
+  <div class="cmd-line"><span class="part" data-n="1">plink</span> <span class="part" data-n="2">--bfile mydata</span> <span class="part" data-n="3">--r2 dprime</span> <span class="part" data-n="4">--ld-window-kb 500</span> <span class="part" data-n="5">--ld-window 99999</span> <span class="part" data-n="6">--ld-window-r2 0</span> <span class="part" data-n="7">--out mydata</span></div>
+  <ol class="cmd-parts">
+    <li><code>plink</code>: PLINK 1.9.</li>
+    <li><code>--bfile mydata</code>: read <code>mydata.bed</code>, <code>mydata.bim</code> and <code>mydata.fam</code>.</li>
+    <li><code>--r2 dprime</code>: report \(r^2\) and add a <code>DP</code> column with \(|D'|\). With <code>dprime</code>, both values come from the maximum-likelihood haplotype frequencies (solved as a cubic), not from allele-count correlations; <code>dprime-signed</code> keeps the sign of \(D'\), and <code>--r</code> instead of <code>--r2</code> reports signed \(r\).</li>
+    <li><code>--ld-window-kb 500</code>: pair variants up to 500 kb apart (default 1,000).</li>
+    <li><code>--ld-window 99999</code>: lift the limit on how many variants may lie between the two (default 10), so the kb limit is the only one.</li>
+    <li><code>--ld-window-r2 0</code>: report every pair, not only those with \(r^2 \ge 0.2\).</li>
+    <li><code>--out mydata</code>: write <code>mydata.ld</code> (and <code>mydata.log</code>).</li>
+  </ol>
+</div>
+
+<span class="output-label">Output</span> <span class="illustrative">Illustrative</span>
+<pre class="output">mydata.ld
+ CHR_A         BP_A               SNP_A  CHR_B         BP_B               SNP_B           R2           DP
+    22     17050123     22:17050123:G:A     22     17052618     22:17052618:C:T     0.912384     0.987114
+    22     17050123     22:17050123:G:A     22     17061904     22:17061904:A:G     0.264117            1
+    22     17050123     22:17050123:G:A     22     17140775     22:17140775:T:C    0.0213301     0.312062
+    22     17052618     22:17052618:C:T     22     17061904     22:17061904:A:G     0.288903     0.905513</pre>
+
+<dl class="cols-doc">
+  <dt>CHR_A, BP_A, SNP_A</dt><dd>Chromosome, base-pair position and ID of the first variant of the pair.</dd>
+  <dt>CHR_B, BP_B, SNP_B</dt><dd>The same for the second variant. Each pair appears once, with the first variant earlier in the file.</dd>
+  <dt>R2</dt><dd>\(r^2\), from 0 to 1: the squared correlation of allele counts by default, or the haplotype-based estimate when <code>dprime</code> is given. The column is <code>R</code> (signed \(r\)) with <code>--r</code>.</dd>
+  <dt>DP</dt><dd>\(|D'|\), from 0 to 1, present only with <code>dprime</code> (signed with <code>dprime-signed</code>; the modifier <code>d</code> gives a <code>D</code> column instead). The second row shows the typical pattern of SNPs with different allele frequencies: \(|D'| = 1\) with a modest \(r^2\).</dd>
+  <dt>MAF_A, MAF_B</dt><dd>Allele frequencies of the two variants, added with the modifier <code>with-freqs</code>.</dd>
+</dl>
+
+<p><strong>LD with one variant.</strong> To see every variant's LD with a lead SNP, for example to draw a regional plot, name it with <code>--ld-snp</code> (or a list with <code>--ld-snp-list</code>); each reported pair then has that variant first:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile mydata <span class="flag">--r2</span> <span class="flag">--ld-snp</span> YOUR_SNP --ld-window-kb 1000 --ld-window 99999 --ld-window-r2 0 --out lead_ld
+<span class="cm"># YOUR_SNP: a variant ID from the second column of mydata.bim</span></pre>
+
+<p><strong>A matrix for a region.</strong> A shape modifier switches to matrix output: <code>square</code> writes an \(M \times M\) matrix, one row and one column per variant in <code>.bim</code> order, without labels. The window filters do not limit it, so restrict the variants first:</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile mydata --chr 22 --from-kb 17000 --to-kb 17500 <span class="flag">--r2 square</span> --out region
+<span class="prompt">$ </span>plink --bfile mydata --chr 22 --from-kb 17000 --to-kb 17500 --write-snplist --out region
+<span class="cm"># region.ld: the matrix; region.snplist: the variant IDs, in the same order as its rows</span></pre>
+
+<p><strong>One pair, with haplotype frequencies.</strong> <code>plink --bfile mydata --ld SNP_A SNP_B</code> prints a report for a single pair: the observed (estimated) frequency of each of the four haplotypes next to the frequency expected from the allele frequencies, and the haplotype-based \(r^2\) and \(D'\). When the cubic equation of the EM section has more than one biologically possible solution, it prints all of them, with Hardy–Weinberg test results<sup><a href="#src-9">9</a></sup>. For the slide 117 data, the haplotype part of such a report would contain the numbers below (computed by hand here, not PLINK's layout).</p>
+
+<div class="table-wrap">
+<table class="compact" style="max-width:480px">
+  <caption>Slide 117: estimated and expected haplotype frequencies (16 chromosome copies)</caption>
+  <thead><tr><th>Haplotype</th><th>Estimated (EM)</th><th>Expected with no LD</th></tr></thead>
+  <tbody>
+    <tr><td>AG</td><td>0.500</td><td>0.625 × 0.5 = 0.3125</td></tr>
+    <tr><td>Ag</td><td>0.125</td><td>0.625 × 0.5 = 0.3125</td></tr>
+    <tr><td>aG</td><td>0.000</td><td>0.375 × 0.5 = 0.1875</td></tr>
+    <tr><td>ag</td><td>0.375</td><td>0.375 × 0.5 = 0.1875</td></tr>
+    <tr><td colspan="3">\(\hat{r}^2 = 0.6\), \(\hat{D}' = 1\)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Other PLINK 1.9 LD commands: <code>--show-tags</code> lists, for target variants, all variants with allele-count \(r^2 \ge 0.8\) within 250 kb (tag SNPs); <code>--blocks</code> finds haplotype blocks with the Gabriel et al. definition; <code>--indep-pairwise</code> prunes (below). PLINK 2 renamed and changed several of these commands, so check its documentation before reusing PLINK 1.9 command lines with it.</p>
+
+<h3 id="ld-matrix">LD matrices</h3>
+
+<p>An <dfn>LD matrix</dfn> for \(M\) variants is the \(M \times M\) matrix whose entry \((i, j)\) is the correlation \(r_{ij}\) between variants \(i\) and \(j\) (or its square), with ones on the diagonal. It is symmetric, and in a region it is close to block-diagonal: large values in squares along the diagonal (the LD blocks), small values elsewhere. An LD heatmap is a picture of half of it.</p>
+<ul>
+  <li><strong>Size.</strong> The matrix has \(M^2\) entries. For 10,000 variants, a modest region of a dense imputed dataset, that is \(10^8\) numbers: about 800 MB in double precision (PLINK's <code>bin</code>), 400 MB in single precision (<code>bin4</code>), and about 1 GB as text. Tools therefore store LD for limited windows, in sparse or compressed formats, or only for pruned or tagged variants.</li>
+  <li><strong>Sign.</strong> Many methods need signed \(r\), not \(r^2\): the sign says whether the counted alleles of the two variants tend to occur together, so it depends on which allele is counted at each variant. The allele coding of the LD matrix must match the allele coding of the summary statistics it is used with.</li>
+  <li><strong>Uses.</strong> Fine-mapping methods such as SuSiE combine GWAS summary statistics with an LD matrix to find the variants most likely to be causal; conditional analysis with GCTA-COJO tests for further signals in a region from summary statistics and LD<sup><a href="#src-1">1</a></sup>; LD scores, row sums of \(r^2\) within a window, drive LD score regression (<a href="../0-biological-foundations/haplotypes-ld.html#ld-scores">Lecture 0 · LD scores</a>).</li>
+  <li><strong>Matching.</strong> When the matrix comes from a reference panel instead of the GWAS sample itself, its ancestry must match the GWAS sample, or these methods report spurious or missed signals (populations section).</li>
+</ul>
+
+<h3 id="reference-panels">When you have no genotypes: reference panels and LDlink</h3>
+
+<p>Much LD work starts from published summary statistics, without individual genotypes. LD then comes from a reference panel, a public set of genotypes or haplotypes from people sampled to represent particular populations (<a href="../0-biological-foundations/haplotypes-ld.html#patterns">Lecture 0 · LD reference panels</a>). The most used for LD is the 1000 Genomes Project: 2,504 people from 26 populations, grouped into five continental superpopulations labeled AFR, AMR, EAS, EUR and SAS<sup><a href="#src-22">22</a></sup>. Population labels describe how people were recruited; they are reference points for genetic similarity, not categories that every person fits (<a href="../0-biological-foundations/ancestry.html#reference-samples">Lecture 0 · Reference samples</a>).</p>
+
+<p><dfn>LDlink</dfn> is a free web application from the National Cancer Institute's Division of Cancer Epidemiology and Genetics (the workshop's host) that computes LD in 1000 Genomes data for any of its populations, on genome build GRCh37 or GRCh38<sup><a href="#src-32">32</a>,<a href="#src-14">14</a></sup>. Its modules include:</p>
+<ul>
+  <li><strong>LDpair</strong>: two variants; the 2 × 2 table of haplotype counts, \(D'\), \(r^2\), a chi-square test with its p-value, and which alleles go together when \(r^2 &gt; 0.1\).</li>
+  <li><strong>LDmatrix</strong>: an interactive heatmap of \(D'\) and \(r^2\) for a list of variants (up to 300 on the web page).</li>
+  <li><strong>LDproxy</strong>: every variant within 500 kb of a query variant, with its \(r^2\), plotted with the recombination rate; used to find proxies for a variant that is missing from your data.</li>
+  <li><strong>LDpop</strong>: allele frequencies and LD of two variants across all 1000 Genomes populations.</li>
+  <li><strong>LDhap</strong>: haplotypes and their frequencies for up to 30 variants; <strong>SNPclip</strong>: LD pruning of a variant list; <strong>SNPchip</strong>: which commercial arrays contain given variants. Further modules link variants and their proxies to GWAS Catalog traits (LDtrait), gene expression (LDexpress), association results (LDassoc) and LD scores (LDscore).</li>
+</ul>
+<p>LDlink can also be queried programmatically after registering for an access token, for example from R with the CRAN package LDlinkR<sup><a href="#src-14">14</a></sup>.</p>
+
+<aside class="callout lab">
+  <div class="callout-title"><span class="badge">Run it</span> Compare one pair of SNPs across populations</div>
+  <p>Open <a href="https://ldlink.nih.gov/" target="_blank" rel="noopener">LDlink</a> and choose LDpair. Enter rs4988235 and rs182549, two variants about 8 kb apart upstream of the lactase gene <em>LCT</em>, and select a European population (for example CEU). Note the 2 × 2 table, \(D'\) and \(r^2\). Repeat with an African population (for example YRI), then run LDpop on the same pair to see all 26 populations at once.</p>
+  <ul>
+    <li>Recompute \(D'\) and \(r^2\) from LDpair's 2 × 2 table with the count formulas above, and check them against what LDlink reports.</li>
+    <li>Where \(D'\) is 1, find the empty cell of the table. Where \(r^2\) is far below \(D'^2\), compare the two variants' allele frequencies.</li>
+    <li>Then try LDmatrix on a list of 20–30 variants from one region in two populations and compare the heatmaps with the widget above.</li>
+  </ul>
+</aside>
+
+<h3 id="to-pruning">From LD to LD pruning (QC step 3)</h3>
+
+<p>Several QC steps need SNPs that are roughly independent of each other, because otherwise regions of strong LD count many times over. The practical prunes with</p>
+<span class="code-label bash">bash</span>
+<pre class="code"><span class="prompt">$ </span>plink --bfile penncath.geno0.01.mind0.01 <span class="flag">--indep-pairwise</span> 50 5 0.3 --out penncath.geno0.01.mind0.01</pre>
+<p>which slides a window of 50 variants along each chromosome, 5 variants at a time, and within each window greedily removes variants until no pair has allele-count \(r^2\) above 0.3. It writes the kept IDs to a <code>.prune.in</code> file and the removed ones to <code>.prune.out</code><sup><a href="#src-9">9</a>,<a href="#src-33">33</a></sup>. The pruned set is then used for relatedness (step 4), heterozygosity (step 5) and principal components (step 6). <a href="qc-ld-pruning.html">QC step 3: LD pruning</a> explains the choice of window and threshold and what pruning leaves out; <a href="../0-biological-foundations/haplotypes-ld.html#pruning-clumping">Lecture 0 · Pruning and clumping</a> contrasts pruning with clumping.</p>
+
+<aside class="callout data">
+  <div class="callout-title"><span class="badge">In the data</span> Where LD shows up</div>
+  <ul>
+    <li><strong>The genotype matrix:</strong> neighboring columns are correlated; <code>plink --r2</code> turns that into a table of pairs in <code>.ld</code>.</li>
+    <li><strong>QC:</strong> <code>.prune.in</code> and <code>.prune.out</code> from <code>--indep-pairwise</code> (step 3).</li>
+    <li><strong>GWAS results:</strong> peaks of neighboring variants with small p-values; regional plots color points by \(r^2\) with the lead SNP.</li>
+    <li><strong>Downstream:</strong> LD matrices and LD scores from a reference panel, in fine-mapping, conditional analysis and LD score regression; LDlink for single questions.</li>
+  </ul>
+</aside>
+
+<aside class="callout pitfall">
+  <div class="callout-title"><span class="badge">Pitfall</span> Four easy ways to misread LD</div>
+  <ul>
+    <li><strong>Reading \(|D'| = 1\) as "perfectly correlated".</strong> It means a haplotype is missing; \(r^2\) can still be tiny, and one SNP is then a poor proxy for the other.</li>
+    <li><strong>Trusting \(|\hat{D}'|\) for rare variants or small samples.</strong> A rare haplotype is easily missed by chance, which forces \(|\hat{D}'| = 1\).</li>
+    <li><strong>Using distance as a proxy for LD.</strong> A hotspot can separate two SNPs a few kilobases apart, and LD can reach far in a region without one.</li>
+    <li><strong>Using an LD reference from the wrong population.</strong> \(r^2\) between the same two SNPs can differ severalfold between populations.</li>
+  </ul>
+</aside>
+
+<aside class="callout key">
+  <div class="callout-title"><span class="badge">Key points</span></div>
+  <ul>
+    <li>LD between two SNPs is a property of the 2 × 2 table of haplotype frequencies. With the allele frequencies fixed, the table has one free number, \(D = p_{\mathrm{AG}} - p_{\mathrm{A}}p_{\mathrm{G}} = p_{\mathrm{AG}}p_{\mathrm{ag}} - p_{\mathrm{Ag}}p_{\mathrm{aG}}\).</li>
+    <li>A genotype table fixes everyone's haplotypes except the double heterozygotes. EM estimates the haplotype frequencies by splitting each double heterozygote between AG + ag and Ag + aG in proportion to their current probabilities, then recounting, until nothing changes; the likelihood can have more than one peak.</li>
+    <li>\(D' = D/D_{\max}\): \(|D'| = 1\) exactly when a haplotype is missing, read as no evidence of recombination, but inflated in small samples and for rare alleles. \(r^2 = D^2/(p_{\mathrm{A}}p_{\mathrm{a}}p_{\mathrm{G}}p_{\mathrm{g}})\): the squared correlation, 1 only with equal allele frequencies, and the measure that sets power, tagging and imputation.</li>
+    <li>From counts: \(\hat{r}^2 = (n_{\mathrm{AG}}n_{\mathrm{ag}} - n_{\mathrm{Ag}}n_{\mathrm{aG}})^2/(n_{\mathrm{A}}n_{\mathrm{a}}n_{\mathrm{G}}n_{\mathrm{g}})\), and \(2n\hat{r}^2\) is the chi-square test of no LD. Slide 124: \(\hat{D} = 0.1875\), \(\hat{D}' = 1\), \(\hat{r}^2 = 0.6\), chi-square 9.6.</li>
+    <li>Each generation keeps a fraction \(1 - \theta\) of \(D\); Haldane's map function turns map distance into \(\theta\); drift rebuilds LD, so the expected \(r^2\) is about \(1/(1 + 4N_{\mathrm{e}}\theta)\). Individual pairs scatter widely around that average.</li>
+    <li>LD extends less far in samples of African ancestry: more tag SNPs are needed, imputation is harder, fine-mapping is sharper, and LD references must match the study population.</li>
+    <li><code>plink --r2</code> reports the correlation of allele counts for nearby pairs with \(r^2 \ge 0.2\) by default; <code>dprime</code> switches to maximum-likelihood haplotype frequencies; LDlink answers LD questions from 1000 Genomes data; <code>--indep-pairwise 50 5 0.3</code> prunes for QC.</li>
+  </ul>
+</aside>
+
+<section class="quiz">
+  <h2 id="check">Check your understanding</h2>
+
+  <details class="q"><summary>A 3 × 3 genotype table for 100 people has, by rows GG, Gg, gg and columns AA, Aa, aa: 30, 10, 2 / 8, 20, 4 / 1, 5, 20. What are the known haplotype counts, how many people are double heterozygotes, and what is the first EM estimate of the AG frequency from a no-LD start?</summary><div class="a">
+    <p>Count the copies of people outside the center cell. AG: two from each AA GG person, one from each AA Gg and each Aa GG person: \(2 \times 30 + 8 + 10 = 78\). Ag: \(2 \times 1 + 8 + 5 = 15\) (AA gg, AA Gg, Aa gg). aG: \(2 \times 2 + 4 + 10 = 18\) (aa GG, aa Gg, Aa GG). ag: \(2 \times 20 + 4 + 5 = 49\) (aa gg, aa Gg, Aa gg). The center cell has \(m = 20\) double heterozygotes. Check: \(78 + 15 + 18 + 49 + 2 \times 20 = 200\) copies.</p>
+    <p>At a no-LD start \(D = 0\), so \(w^{(0)} = 0.5\), and \(\hat{p}^{(1)}_{\mathrm{AG}} = (78 + 20 \times 0.5)/200 = 0.44\). (The sample allele frequencies are \(\hat{p}_{\mathrm{A}} = 113/200 = 0.565\) and \(\hat{p}_{\mathrm{G}} = 116/200 = 0.58\), so the no-LD value was \(0.565 \times 0.58 \approx 0.328\); the data already push AG well above it.)</p>
+  </div></details>
+
+  <details class="q"><summary>Why does EM assign all five double heterozygotes on slide 117 to AG + ag, rather than splitting them?</summary><div class="a">
+    <p>The known copies contain no aG haplotype at all. The probability that a double heterozygote is Ag + aG is proportional to \(p_{\mathrm{Ag}}p_{\mathrm{aG}}\), and aG gets copies only from that option, so a small \(p_{\mathrm{aG}}\) makes the option less likely, which makes the next \(p_{\mathrm{aG}}\) smaller still. Each iteration multiplies \(\hat{p}_{\mathrm{aG}}\) by about 0.21, and in the limit it is 0 and \(w = 1\). In likelihood terms, the observed table is most probable when aG does not exist. It is the most likely answer, not a certainty: with only eight people, a population in which aG has a small frequency would produce this table almost as often.</p>
+  </div></details>
+
+  <details class="q"><summary>Haplotype counts among 200 chromosome copies are AG 60, Ag 20, aG 10, ag 110. Compute \(\hat{D}\), \(\hat{D}'\), \(\hat{r}^2\) and the chi-square statistic.</summary><div class="a">
+    <p>Allele counts: \(n_{\mathrm{A}} = 80\), \(n_{\mathrm{a}} = 120\), \(n_{\mathrm{G}} = 70\), \(n_{\mathrm{g}} = 130\). Cross-product: \(60 \times 110 - 20 \times 10 = 6{,}400\).</p>
+    <ul>
+      <li>\(\hat{D} = 6{,}400/200^2 = 0.16\). (Check: \(\hat{p}_{\mathrm{AG}} - \hat{p}_{\mathrm{A}}\hat{p}_{\mathrm{G}} = 0.30 - 0.40 \times 0.35 = 0.16\).)</li>
+      <li>\(\hat{D} &gt; 0\), so \(\hat{D}' = 6{,}400/\min(80 \times 130,\, 120 \times 70) = 6{,}400/8{,}400 \approx 0.76\).</li>
+      <li>\(\hat{r}^2 = 6{,}400^2/(80 \times 120 \times 70 \times 130) = 40{,}960{,}000/87{,}360{,}000 \approx 0.47\).</li>
+      <li>\(X^2 = 200 \times 0.469 \approx 93.8\) with 1 degree of freedom: overwhelming evidence of LD (a p-value below 10⁻²⁰).</li>
+    </ul>
+    <p>All four haplotypes are present, so \(|\hat{D}'| &lt; 1\): recombination (or a repeat mutation) has occurred in the history of these SNPs.</p>
+  </div></details>
+
+  <details class="q"><summary>Two SNPs are 500 kb apart in a region with 1.2 cM/Mb. What is their recombination fraction, and after how many generations is half of their D left?</summary><div class="a">
+    <p>Map distance: \(0.5 \text{ Mb} \times 1.2 \text{ cM/Mb} = 0.6\) cM \(= 0.006\) morgans. Haldane: \(\theta = \tfrac{1}{2}(1 - e^{-0.012}) \approx 0.00596\), essentially equal to \(d\) at this distance. Half-life: \(\ln 2/(-\ln(1 - 0.00596)) \approx 116\) generations (the shortcut \(0.69/\theta\) gives the same). After 1,000 generations only \((1 - 0.00596)^{1000} \approx 0.0025\), about 0.25%, of the starting \(D\) is left, which is why SNPs this far apart are usually in weak LD unless the association is recent.</p>
+  </div></details>
+
+  <details class="q"><summary>A pair of SNPs has \(|D'| = 1\) but \(r^2 = 0.05\). What does that tell you, and could one serve as a tag SNP for the other?</summary><div class="a">
+    <p>\(|D'| = 1\) means one of the four haplotypes is missing from the sample: no recombinant has been seen. \(r^2 = 0.05\) means one SNP predicts the other poorly. Both hold when the allele frequencies differ a lot, for example a rare allele that arose on one copy of a common haplotype: for allele frequencies 0.5 and 0.05, \(r^2\) cannot exceed about 0.053 even with \(|D'| = 1\). As a tag, the pair is poor: testing the tag in \(n\) people gives about the power of testing the other SNP in \(0.05n\) people. If the rare allele is not rare in the sample, check the sample size too: a missing haplotype is weak evidence when the data are few.</p>
+  </div></details>
+
+  <details class="q"><summary>Why does a genotyping array designed from European LD capture the genomes of people of African ancestry less well, and what does that change for imputation?</summary><div class="a">
+    <p>Populations of African ancestry have a longer history at a larger effective size; non-African populations went through the out-of-Africa bottleneck. More generations of recombination and weaker drift leave shorter LD in African-ancestry genomes, so each array SNP is correlated with fewer neighbors at high \(r^2\). HapMap estimated about 1.09 million tag SNPs to cover common variants at \(r^2 \ge 0.8\) in YRI against slightly more than 500,000 in CEU. For imputation, each unmeasured variant has fewer and weaker proxies on the array, so accuracy drops unless the reference panel contains haplotypes like the study's; this was the pattern in early worldwide comparisons, where African populations had the lowest accuracy.</p>
+  </div></details>
+
+  <details class="q"><summary>You run <code>plink --bfile mydata --r2 --out mydata</code> to plot LD decay with distance. The plot shows no pairs with \(r^2\) below 0.2 and none further than about 10 variants apart. Why, and how do you fix it?</summary><div class="a">
+    <p>Those are the defaults: <code>--ld-window-r2 0.2</code> drops pairs with \(r^2\) below 0.2, and <code>--ld-window 10</code> with <code>--ld-window-kb 1000</code> pairs each variant only with nearby variants. For a decay plot, add <code>--ld-window-r2 0 --ld-window 99999 --ld-window-kb 500</code> (or whatever distance you want) and restrict to a region or a subset of variants, because the number of pairs grows quickly. Plot the mean \(r^2\) in distance bins, as on slide 95.</p>
+  </div></details>
+
+  <details class="q"><summary>For slide 117's eight people, the correlation of allele counts gives \(r^2 = 0.333\), but the haplotype estimate is 0.6. Which one does <code>plink --r2</code> report, and why do they differ?</summary><div class="a">
+    <p>By default <code>plink --r2</code> reports the squared correlation of allele counts, 0.333. (With <code>--r2 dprime</code> it would report the haplotype-based 0.6.) The two agree in expectation only under random mating, when a person's two chromosome copies are independent; then the between-copy covariance terms vanish and the correlation of counts equals \(r\). Slide 117's table is far from Hardy–Weinberg proportions (five of eight people are heterozygous at both SNPs) and has only eight people, so the two estimates differ. In large samples from one population they are usually close.</p>
+  </div></details>
+</section>
+
+<section class="learn-more">
+  <h2 id="learn-more">Learn more</h2>
+  <ul>
+    <li><a href="../0-biological-foundations/haplotypes-ld.html">Haplotypes and linkage disequilibrium</a> <span class="src">· Lecture 0</span> <span class="level intro">intro</span> — the biology behind this page, with an LD calculator and LD in GWAS (tagging, imputation, peaks, pruning, LD scores).</li>
+    <li><a href="https://ldlink.nih.gov/" target="_blank" rel="noopener">LDlink</a> <span class="src">· NCI DCEG</span> <span class="level intro">intro</span> — compute LD for any pair or list of variants in the 1000 Genomes populations; its help page documents every module.</li>
+    <li><a href="https://doi.org/10.1038/nrg2361" target="_blank" rel="noopener">Slatkin (2008), Linkage disequilibrium — understanding the evolutionary past and mapping the medical future</a> <span class="src">· Nature Reviews Genetics</span> <span class="level intermediate">intermediate</span> — the review the reading cites for LD: measures, causes and uses, with clear figures.</li>
+    <li><a href="https://doi.org/10.1086/321275" target="_blank" rel="noopener">Pritchard and Przeworski (2001), Linkage disequilibrium in humans: models and data</a> <span class="src">· American Journal of Human Genetics</span> <span class="level intermediate">intermediate</span> — the source of slide 86: what population-genetic models predict about LD, and how early data compared.</li>
+    <li><a href="https://www.cog-genomics.org/plink/1.9/ld" target="_blank" rel="noopener">PLINK 1.9: Linkage disequilibrium</a> <span class="src">· PLINK documentation</span> <span class="level intermediate">intermediate</span> — every option of <code>--r2</code>, <code>--ld</code>, <code>--show-tags</code>, <code>--blocks</code> and the pruning commands.</li>
+    <li><a href="https://www.broadinstitute.org/haploview/ld-display" target="_blank" rel="noopener">Haploview: LD display</a> <span class="src">· Broad Institute</span> <span class="level intro">intro</span> — the color schemes used for LD heatmaps.</li>
+    <li><a href="https://doi.org/10.1186/1471-2105-8-428" target="_blank" rel="noopener">Gaunt, Rodríguez and Day (2007), Cubic exact solutions for the estimation of pairwise haplotype frequencies</a> <span class="src">· BMC Bioinformatics</span> <span class="level advanced">advanced</span> — the cubic behind two-SNP haplotype estimation, and what happens when it has several solutions.</li>
+    <li><a href="https://doi.org/10.1093/oxfordjournals.molbev.a040269" target="_blank" rel="noopener">Excoffier and Slatkin (1995), Maximum-likelihood estimation of molecular haplotype frequencies in a diploid population</a> <span class="src">· Molecular Biology and Evolution</span> <span class="level advanced">advanced</span> — EM for haplotypes of many loci, with its assumptions and limits.</li>
+  </ul>
+</section>
+
+<section class="sources">
+  <h2 id="sources">Sources for this page</h2>
+  <ol>
+    <li id="src-1">Uffelmann E, Huang QQ, Munung NS, et al. (2021). Genome-wide association studies. <em>Nat Rev Methods Primers</em> 1:59. <a href="https://doi.org/10.1038/s43586-021-00056-9" target="_blank" rel="noopener">doi:10.1038/s43586-021-00056-9</a>. The lecture's reading: LD definition (margin glossary), Box 2 (imputation workflow), the paragraph on isolated populations, statistical fine-mapping and Table 1 (SuSiE, GCTA-COJO).</li>
+    <li id="src-2">Hudson RR, Kaplan NL (1985). Statistical properties of the number of recombination events in the history of a sample of DNA sequences. <em>Genetics</em> 111:147–164. <a href="https://doi.org/10.1093/genetics/111.1.147" target="_blank" rel="noopener">doi:10.1093/genetics/111.1.147</a>. The four-gamete test.</li>
+    <li id="src-3">Slatkin M (2008). Linkage disequilibrium — understanding the evolutionary past and mapping the medical future. <em>Nat Rev Genet</em> 9:477–485. <a href="https://doi.org/10.1038/nrg2361" target="_blank" rel="noopener">doi:10.1038/nrg2361</a>.</li>
+    <li id="src-4">Thomas DC (2004). <em>Statistical Methods in Genetic Epidemiology</em>. Oxford University Press. Pages 243–245, cited on slide 114 for the EM algorithm.</li>
+    <li id="src-5">Hill WG (1974). Estimation of linkage disequilibrium in randomly mating populations. <em>Heredity</em> 33:229–239. <a href="https://doi.org/10.1038/hdy.1974.89" target="_blank" rel="noopener">doi:10.1038/hdy.1974.89</a>. Maximum-likelihood estimation of two-locus haplotype frequencies from genotypes; the cubic equation.</li>
+    <li id="src-6">Dempster AP, Laird NM, Rubin DB (1977). Maximum likelihood from incomplete data via the EM algorithm. <em>J R Stat Soc B</em> 39:1–38. <a href="https://doi.org/10.1111/j.2517-6161.1977.tb01600.x" target="_blank" rel="noopener">doi:10.1111/j.2517-6161.1977.tb01600.x</a>.</li>
+    <li id="src-7">Excoffier L, Slatkin M (1995). Maximum-likelihood estimation of molecular haplotype frequencies in a diploid population. <em>Mol Biol Evol</em> 12:921–927. <a href="https://doi.org/10.1093/oxfordjournals.molbev.a040269" target="_blank" rel="noopener">doi:10.1093/oxfordjournals.molbev.a040269</a>.</li>
+    <li id="src-8">Gaunt TR, Rodríguez S, Day IN (2007). Cubic exact solutions for the estimation of pairwise haplotype frequencies: implications for linkage disequilibrium analyses and a web tool ‘CubeX’. <em>BMC Bioinformatics</em> 8:428. <a href="https://doi.org/10.1186/1471-2105-8-428" target="_blank" rel="noopener">doi:10.1186/1471-2105-8-428</a>.</li>
+    <li id="src-9">PLINK 1.9 documentation: <a href="https://www.cog-genomics.org/plink/1.9/ld" target="_blank" rel="noopener">Linkage disequilibrium</a> and <a href="https://www.cog-genomics.org/plink/1.9/formats#ld" target="_blank" rel="noopener">file formats (.ld)</a> (accessed November 2026): allele-count correlations by default; <code>dprime</code> uses the maximum-likelihood solution of the cubic of Gaunt et al.; default windows of 10 variants, 1,000 kb and \(r^2 \ge 0.2\); founders only; <code>--ld</code> shows all biologically possible solutions; <code>--show-tags</code>, <code>--blocks</code>, <code>--indep-pairwise</code>. Chang CC, Chow CC, Tellier LC, Vattikuti S, Purcell SM, Lee JJ (2015). Second-generation PLINK: rising to the challenge of larger and richer datasets. <em>GigaScience</em> 4:7. <a href="https://doi.org/10.1186/s13742-015-0047-8" target="_blank" rel="noopener">doi:10.1186/s13742-015-0047-8</a>.</li>
+    <li id="src-10">Lewontin RC (1964). The interaction of selection and linkage. I. General considerations; heterotic models. <em>Genetics</em> 49:49–67. <a href="https://doi.org/10.1093/genetics/49.1.49" target="_blank" rel="noopener">doi:10.1093/genetics/49.1.49</a>. Introduces the normalized coefficient \(D'\).</li>
+    <li id="src-11">Teare MD, Dunning AM, Durocher F, Rennart G, Easton DF (2002). Sampling distribution of summary linkage disequilibrium measures. <em>Ann Hum Genet</em> 66:223–233. <a href="https://doi.org/10.1017/S0003480002001082" target="_blank" rel="noopener">doi:10.1017/S0003480002001082</a>. \(D'\) estimates are inflated in small samples and for extreme allele frequencies, more so when haplotypes are inferred from genotypes.</li>
+    <li id="src-12">Devlin B, Risch N (1995). A comparison of linkage disequilibrium measures for fine-scale mapping. <em>Genomics</em> 29:311–322. <a href="https://doi.org/10.1006/geno.1995.9003" target="_blank" rel="noopener">doi:10.1006/geno.1995.9003</a>. Cited on slide 122.</li>
+    <li id="src-13">Pritchard JK, Przeworski M (2001). Linkage disequilibrium in humans: models and data. <em>Am J Hum Genet</em> 69:1–14. <a href="https://doi.org/10.1086/321275" target="_blank" rel="noopener">doi:10.1086/321275</a>. Figure 3 is slide 86; sample size must grow by \(1/r^2\) when a marker is tested in place of the causal variant.</li>
+    <li id="src-14">LDlink documentation: <a href="https://ldlink.nih.gov/help" target="_blank" rel="noopener">help pages</a> and <a href="https://ldlink.nih.gov/apiaccess" target="_blank" rel="noopener">API access</a> (accessed November 2026). Modules, genome builds, LDpair outputs, LDmatrix and LDproxy limits; API access token. LDlinkR: <a href="https://cran.r-project.org/package=LDlinkR" target="_blank" rel="noopener">CRAN package</a>.</li>
+    <li id="src-15">Haldane JBS (1919). The combination of linkage values, and the calculation of distances between the loci of linked factors. <em>J Genet</em> 8:299–309.</li>
+    <li id="src-16">Kong A, Gudbjartsson DF, Sainz J, et al. (2002). A high-resolution recombination map of the human genome. <em>Nat Genet</em> 31:241–247. <a href="https://doi.org/10.1038/ng917" target="_blank" rel="noopener">doi:10.1038/ng917</a>. Sex-averaged genome-wide rate of about 1.13 cM/Mb.</li>
+    <li id="src-17">Kosambi DD (1944). The estimation of map distances from recombination values. <em>Ann Eugen</em> 12:172–175.</li>
+    <li id="src-18">Tenesa A, Navarro P, Hayes BJ, et al. (2007). Recent human effective population size estimated from linkage disequilibrium. <em>Genome Res</em> 17:520–526. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1832099/" target="_blank" rel="noopener">PMC1832099</a>. Uses \(\E(r^2) = 1/(1 + 4N_{\mathrm{e}}c)\), first reported by Sved (1971, <em>Theor Popul Biol</em> 2:125–141).</li>
+    <li id="src-19">Kruglyak L (1999). Prospects for whole-genome linkage disequilibrium mapping of common disease genes. <em>Nat Genet</em> 22:139–144. <a href="https://doi.org/10.1038/9642" target="_blank" rel="noopener">doi:10.1038/9642</a>.</li>
+    <li id="src-20">Reich DE, Cargill M, Bolk S, et al. (2001). Linkage disequilibrium in the human genome. <em>Nature</em> 411:199–204. <a href="https://doi.org/10.1038/35075590" target="_blank" rel="noopener">doi:10.1038/35075590</a>.</li>
+    <li id="src-21">International HapMap Consortium (2005). A haplotype map of the human genome. <em>Nature</em> 437:1299–1320. <a href="https://doi.org/10.1038/nature04226" target="_blank" rel="noopener">doi:10.1038/nature04226</a>. Source of slides 95 (supplementary Figure S6) and 96.</li>
+    <li id="src-22">1000 Genomes Project Consortium (2015). A global reference for human genetic variation. <em>Nature</em> 526:68–74. <a href="https://doi.org/10.1038/nature15393" target="_blank" rel="noopener">doi:10.1038/nature15393</a>. 2,504 people from 26 populations; LD decay is fastest in African populations.</li>
+    <li id="src-23">Gutenkunst RN, Hernandez RD, Williamson SH, Bustamante CD (2009). Inferring the joint demographic history of multiple populations from multidimensional SNP frequency data. <em>PLoS Genet</em> 5:e1000695. <a href="https://doi.org/10.1371/journal.pgen.1000695" target="_blank" rel="noopener">doi:10.1371/journal.pgen.1000695</a>. Out-of-Africa model: bottleneck size 2,100 from 140,000 to 21,200 years ago (25 years per generation), migration rates used in the widget.</li>
+    <li id="src-24">International HapMap Consortium (2007). A second generation human haplotype map of over 3.1 million SNPs. <em>Nature</em> 449:851–861. <a href="https://doi.org/10.1038/nature06258" target="_blank" rel="noopener">doi:10.1038/nature06258</a>. Tag SNPs needed at \(r^2 \ge 0.8\): about 1.09 million in YRI, slightly more than 500,000 in CEU or CHB+JPT.</li>
+    <li id="src-25">Huang L, Li Y, Singleton AB, et al. (2009). Genotype-imputation accuracy across worldwide human populations. <em>Am J Hum Genet</em> 84:235–250. <a href="https://doi.org/10.1016/j.ajhg.2009.01.013" target="_blank" rel="noopener">doi:10.1016/j.ajhg.2009.01.013</a>. With a single HapMap panel, accuracy was highest in European and lowest in African populations; mixed panels did best.</li>
+    <li id="src-26">Asimit JL, Hatzikotoulas K, McCarthy M, Morris AP, Zeggini E (2016). Trans-ethnic study design approaches for fine-mapping. <em>Eur J Hum Genet</em> 24:1330–1336. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4856879/" target="_blank" rel="noopener">PMC4856879</a>.</li>
+    <li id="src-27">Martin AR, Kanai M, Kamatani Y, et al. (2019). Clinical use of current polygenic risk scores may exacerbate health disparities. <em>Nat Genet</em> 51:584–591. <a href="https://doi.org/10.1038/s41588-019-0379-x" target="_blank" rel="noopener">doi:10.1038/s41588-019-0379-x</a>.</li>
+    <li id="src-28">Barrett JC, Fry B, Maller J, Daly MJ (2005). Haploview: analysis and visualization of LD and haplotype maps. <em>Bioinformatics</em> 21:263–265. <a href="https://doi.org/10.1093/bioinformatics/bth457" target="_blank" rel="noopener">doi:10.1093/bioinformatics/bth457</a>.</li>
+    <li id="src-29">Broad Institute. <a href="https://www.broadinstitute.org/haploview/ld-display" target="_blank" rel="noopener">Haploview: LD display</a> (accessed November 2026). Color schemes; \(D' = 1\) values are not printed (the box is empty).</li>
+    <li id="src-30">Gabriel SB, Schaffner SF, Nguyen H, et al. (2002). The structure of haplotype blocks in the human genome. <em>Science</em> 296:2225–2229. <a href="https://doi.org/10.1126/science.1069424" target="_blank" rel="noopener">doi:10.1126/science.1069424</a>.</li>
+    <li id="src-31">Hudson RR (2002). Generating samples under a Wright–Fisher neutral model of genetic variation. <em>Bioinformatics</em> 18:337–338. <a href="https://doi.org/10.1093/bioinformatics/18.2.337" target="_blank" rel="noopener">doi:10.1093/bioinformatics/18.2.337</a>.</li>
+    <li id="src-32">Machiela MJ, Chanock SJ (2015). LDlink: a web-based application for exploring population-specific haplotype structure and linking correlated alleles of possible functional variants. <em>Bioinformatics</em> 31:3555–3557. <a href="https://doi.org/10.1093/bioinformatics/btv402" target="_blank" rel="noopener">doi:10.1093/bioinformatics/btv402</a>.</li>
+    <li id="src-33">DCEG Statistical Genetics Workshop, Session 1 practical (01_qc.Rmd), QC step 3: LD pruning with <code>--indep-pairwise 50 5 0.3</code>. <a href="https://dceg-workshops.github.io/statistical_genetics_workshop/" target="_blank" rel="noopener">dceg-workshops.github.io/statistical_genetics_workshop/</a>.</li>
+  </ol>
+</section>
+
+</article>
+</main>
+</div>
+</body>
+</html>

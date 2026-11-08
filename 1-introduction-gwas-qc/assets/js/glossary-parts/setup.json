@@ -1,0 +1,116 @@
+[
+ {
+  "id": "wsl",
+  "term": "WSL (Windows Subsystem for Linux)",
+  "short": "A Windows feature that runs a Linux system, such as Ubuntu, inside Windows. Linux programs such as PLINK and GrafAnc run in its terminal, and the Windows C: drive appears inside it as /mnt/c.",
+  "long": "<p>Install it with <code>wsl --install</code> in an administrator PowerShell window (Windows 10 version 2004 or later, or Windows 11) and restart. Keep the practical's files inside the Linux file system (for example <code>~/statgen-workshop</code>); reading large files from <code>/mnt/c</code> is much slower.</p>",
+  "see": [
+   "shell",
+   "terminal",
+   "docker"
+  ],
+  "links": [
+   {
+    "t": "Microsoft: install WSL",
+    "u": "https://learn.microsoft.com/en-us/windows/wsl/install"
+   }
+  ],
+  "match": [
+   "WSL",
+   "Windows Subsystem for Linux"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "setup"
+ },
+ {
+  "id": "rstudio",
+  "term": "RStudio",
+  "aka": [
+   "RStudio Desktop",
+   "RStudio Server",
+   "Positron"
+  ],
+  "short": "A program for working in R, with panes for scripts, the R console, a terminal, plots and files; it knits R Markdown documents. Its maker, Posit, also offers Positron, a newer editor for R and Python.",
+  "l1": "On Biowulf the practical runs in RStudio Server started from NIH HPC OnDemand; on your own computer RStudio Desktop does the same job.",
+  "see": [
+   "r-markdown",
+   "terminal"
+  ],
+  "links": [
+   {
+    "t": "posit.co/download/rstudio-desktop",
+    "u": "https://posit.co/download/rstudio-desktop/"
+   },
+   {
+    "t": "positron.posit.co",
+    "u": "https://positron.posit.co/"
+   }
+  ],
+  "match": [
+   "RStudio",
+   "Positron"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "setup"
+ },
+ {
+  "id": "checksum",
+  "term": "Checksum (SHA-256, MD5)",
+  "aka": [
+   "hash"
+  ],
+  "short": "A fixed-length number computed from every byte of a file and written in hexadecimal digits: 64 for SHA-256, 32 for MD5. If a download's SHA-256 checksum equals the published one, the file arrived complete and unchanged.",
+  "long": "<p>On macOS run <code>shasum -a 256 FILE</code>, on Linux and WSL <code>sha256sum FILE</code>. Changing a single byte of the file changes the checksum completely, and two different files with the same SHA-256 checksum have never been found. MD5 is an older, shorter checksum that still detects accidental damage such as a truncated download.</p>",
+  "match": [
+   "checksum",
+   "SHA-256",
+   "MD5"
+  ],
+  "owner": "setup"
+ },
+ {
+  "id": "cpu-architecture",
+  "term": "Processor architecture (x86_64, arm64)",
+  "aka": [
+   "CPU architecture",
+   "Apple Silicon",
+   "amd64",
+   "aarch64"
+  ],
+  "short": "The instruction set a processor understands. A program is compiled for one: x86_64 (also called amd64) for Intel and AMD processors, or arm64 (aarch64) for Apple Silicon Macs and some cloud machines. A program built for the other one does not run, or runs only under translation.",
+  "see": [
+   "rosetta-2",
+   "docker"
+  ],
+  "match": [
+   "processor architecture",
+   "CPU architecture",
+   "Apple Silicon"
+  ],
+  "noPlural": true,
+  "owner": "setup"
+ },
+ {
+  "id": "rosetta-2",
+  "term": "Rosetta 2",
+  "short": "Apple software that translates programs built for Intel (x86_64) processors so that they run on Apple Silicon Macs, more slowly than programs built for Apple Silicon. Apple says it is available through macOS 27; from macOS 28 it will be limited to certain older games.",
+  "see": [
+   "cpu-architecture"
+  ],
+  "links": [
+   {
+    "t": "Apple: using Intel-based apps on a Mac with Apple silicon",
+    "u": "https://support.apple.com/en-us/102527"
+   }
+  ],
+  "match": [
+   "Rosetta 2",
+   "Rosetta"
+  ],
+  "cs": true,
+  "noPlural": true,
+  "owner": "setup"
+ }
+]
