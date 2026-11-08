@@ -12,7 +12,7 @@ and for working with UK Biobank data.
 ## Structure
 | Path | What it is |
 |---|---|
-| `index.html` | Overview: the two mental models for the whole lecture, roadmap, suggested 2-hour path |
+| `index.html` | Overview: the two mental models for the whole lecture, roadmap |
 | `cells-chromosomes.html` … `the-data.html` | 13 topic pages (Part A: the biological system; Part B: measuring it) |
 | `lecture-1-bridge.html` | Lecture 1 decoder: slide-by-slide map to the pages here |
 | `glossary.html` | All definitions (rendered from `assets/js/glossary-data.js`) |
